@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.5.1';
+  const VERSION = '2.5.2';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -184,8 +184,7 @@
     translit: false,
     sfx: true,
     audio: true,
-    repeat: 1,
-    slow: false,
+    speed: 1, // recitation speed (v2.5.2; replaces "slower" and "repeat each āyah": the loop button repeats)
     reciter: 'alafasy',
     hearts: true,
     actions: false, // the "Do it" actions start off (v2.4.4); grown-ups can switch them on
@@ -193,6 +192,7 @@
     pzrtl: false, // Picture Puzzle from right to left
     wordmean: false, // the meaning of each word (Word Steps, the muṣḥaf)
   };
+  const SPEEDS = [0.25, 0.5, 0.75, 1, 1.5, 2];
   let store = null;
   let prefs = Object.assign({}, DEFAULT_PREFS);
 
@@ -329,11 +329,12 @@
   function cleanPrefs(o) {
     const out = Object.assign({}, DEFAULT_PREFS);
     if (!o || typeof o !== 'object') return out;
-    ['meaning', 'translit', 'sfx', 'audio', 'slow', 'hearts', 'actions', 'fullscreen', 'pzrtl', 'wordmean'].forEach((k) => {
+    ['meaning', 'translit', 'sfx', 'audio', 'hearts', 'actions', 'fullscreen', 'pzrtl', 'wordmean'].forEach((k) => {
       if (typeof o[k] === 'boolean') out[k] = o[k];
     });
     if (['auto', 'light', 'dim'].includes(o.theme)) out.theme = o.theme;
-    if ([1, 2, 3].includes(o.repeat)) out.repeat = o.repeat;
+    if (SPEEDS.includes(o.speed)) out.speed = o.speed;
+    else if (o.slow === true) out.speed = 0.75; // "slower recitation" (80%) before v2.5.2
     if (typeof o.reciter === 'string' && /^[a-z0-9-]{2,32}$/.test(o.reciter)) out.reciter = o.reciter;
     return out;
   }
@@ -687,10 +688,7 @@
       loopRun = { total: opts.loop, per: items.length, played: 0, items };
     } else {
       loopRun = null;
-      items.forEach((it) => {
-        const reps = it.length > 2 || opts.once || opts.loop ? 1 : prefs.repeat;
-        for (let r = 0; r < reps; r++) queue.push(it);
-      });
+      queue.push(...items);
     }
     playing = true;
     const tok = ++playTok;
@@ -867,7 +865,7 @@
       markNow(it);
       const url = fileSrc || `audio/${id}/${pad(it[0])}.mp3`;
       if (player.getAttribute('src') !== url) player.src = url;
-      player.defaultPlaybackRate = player.playbackRate = prefs.slow ? 0.8 : 1;
+      player.defaultPlaybackRate = player.playbackRate = prefs.speed;
       const seek = () => {
         try {
           if (Math.abs(player.currentTime - curSeg.start) > 0.03) player.currentTime = curSeg.start;
@@ -983,9 +981,6 @@
       f.classList.toggle('playing', playing);
       f.querySelector('b').textContent = playing ? 'Stop' : 'Listen';
       if (t) f.querySelector('small').textContent = dlPct != null ? `Downloading ${dlPct}%` : t.label;
-      const rep = f.querySelector('.rep');
-      rep.hidden = prefs.repeat < 2 || !t || !!t.loop;
-      rep.textContent = '×' + prefs.repeat;
     });
     const key = t ? t.key : '';
     if (key !== fabKey && playing) {
@@ -1131,7 +1126,7 @@
   function bar(title, sub, to, extra) {
     return `<div class="bar"><button class="icon-btn" data-act="back" data-to="${to}" aria-label="Back">${ICON.back}</button>
     <div class="bar-title">${title}${sub ? `<small>${sub}</small>` : ''}</div>${extra || ''}
-    <button class="listen" data-act="fab" aria-label="Listen to the recitation"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="#fff"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18.3 6.5a7.5 7.5 0 0 1 0 11"/></svg><span class="stop"></span></span><span><b>Listen</b><small></small></span><span class="rep" hidden></span></button></div>`;
+    <button class="listen" data-act="fab" aria-label="Listen to the recitation"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="#fff"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18.3 6.5a7.5 7.5 0 0 1 0 11"/></svg><span class="stop"></span></span><span><b>Listen</b><small></small></span></button></div>`;
   }
   function coach(html, icon = '🦉', extra = '') {
     return `<div class="coach"><span class="owl">${icon}</span><div>${html}</div>${extra}</div>`;
@@ -2868,6 +2863,19 @@
   }
 
   /* ---------- GROWN-UP CORNER ---------- */
+  // recitation speed: a slider with a stop for each speed (tap a label to jump to it)
+  const speedLabel = (v) => v + '×';
+  const speedSlider = () =>
+    `<div class="speed"><input type="range" id="speed" min="0" max="${SPEEDS.length - 1}" step="1" value="${SPEEDS.indexOf(prefs.speed)}" aria-label="Recitation speed" aria-valuetext="${prefs.speed} times">
+      <div class="speedticks">${SPEEDS.map((v) => `<button class="${v === prefs.speed ? 'on' : ''}" data-act="set" data-k="speed" data-v="${v}">${speedLabel(v)}</button>`).join('')}</div></div>`;
+  document.addEventListener('input', (e) => {
+    if (e.target.id !== 'speed') return;
+    prefs.speed = SPEEDS[+e.target.value] || 1;
+    player.playbackRate = prefs.speed;
+    e.target.setAttribute('aria-valuetext', prefs.speed + ' times');
+    document.querySelectorAll('.speedticks button').forEach((b) => b.classList.toggle('on', +b.dataset.v === prefs.speed));
+    save();
+  });
   V.settings = () => {
     const tg = (k, t, d) =>
       `<button class="toggle ${st.flash && st.flash.includes(k) ? 'flash' : ''}" data-act="tog" data-k="${k}"><span>${t}<small>${d}</small></span><span class="sw ${prefs[k] ? 'on' : ''}"></span></button>`;
@@ -2878,7 +2886,8 @@
         `<div class="recrow ${r.id === prefs.reciter ? 'on' : ''}"><button class="recpick" data-act="reciter" data-id="${r.id}"><span class="rdot"></span><span>${esc(r.name)}<small>${esc(r.note)}${r.mb ? ` · ${r.mb} MB` : ''}</small></span></button><button class="icon-btn sm" data-act="sample" data-id="${r.id}" aria-label="Hear a sample">${ICON.play}</button></div>`,
     ).join('');
     return `<div class="screen">
-    ${bar('Grown-up Corner', `Settings · v${VERSION}`, st.ret ? 'ret' : 'splash', '<button class="icon-btn helpbtn" data-act="help" aria-label="How to use it, and the disclaimer">❓</button>')}
+    ${bar('Grown-up Corner', `Settings · v${VERSION}`, st.ret ? 'ret' : 'splash', `<button class="icon-btn helpbtn" data-act="help" aria-label="About Little Hafiz Quest: sources and disclaimer">${INFO_ICON}</button>`)}
+    <button class="btn wide howbtn" data-act="howto">📘 How to use it</button>
     <div class="sheet">
       <h3>🎨 Look</h3>
       ${fsSheet()}
@@ -2896,12 +2905,7 @@
       <h3>🔊 Sounds</h3>
       ${tg('audio', 'Listen button', 'The orange button at the top plays the reciter')}
       <div class="setrow col"><span>Reciter<small>Tap ▶ to hear a sample</small></span><div class="recs">${recs}</div></div>
-      <div class="setrow"><span>Repeat each āyah<small>Hear it again and again (Look &amp; Repeat and the muṣḥaf have their own loop button)</small></span>${seg('repeat', [
-        [1, '1×'],
-        [2, '2×'],
-        [3, '3×'],
-      ])}</div>
-      ${tg('slow', 'Slower recitation', 'Plays at 80% speed')}
+      <div class="setrow col"><span>Recitation speed<small>Slower helps with a new āyah; the loop button repeats it</small></span>${speedSlider()}</div>
       ${tg('sfx', 'Nature sounds', 'Soft water drops, birdsong and a breeze as you play. Quieter while the reciter plays')}
     </div>
     <div class="sheet">
@@ -3169,24 +3173,60 @@
   }
   /* How to use it: the tips, the disclaimer, and where to report a problem */
   const REPO = 'https://github.com/akramali/little-hafiz-quest';
+  const INFO_ICON =
+    '<svg class="infoic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#5fb2ff" stroke="#2b2340" stroke-width="1.8"/><circle cx="12" cy="7.4" r="1.6" fill="#fff"/><path d="M12 11.2v6.4" stroke="#fff" stroke-width="2.8" stroke-linecap="round"/></svg>';
+  const ext = (href, text) => `<a href="${href}" target="_blank" rel="noopener">${text}</a>`;
+  /* ℹ️ About: who made it, the disclaimer, where everything comes from */
   function showHelp() {
     const m = document.getElementById('modal');
-    m.innerHTML = `<div class="card helpcard"><h3>📖 How to use it</h3>
-      <ol class="tips">
-        <li><b>Pick a step.</b> In each sūrah: the quest (Look &amp; Repeat, then Word Steps), then the review games (Stepping Stones, then the Picture Puzzle).</li>
-        <li><b>One checkpoint at a time.</b> Longer sūrahs are split into parts of a few āyāt. Then do the 🏁 whole sūrah.</li>
-        <li><b>Every level finished for the first time wins a gift.</b> One star wins a sūrah's treasure and is enough to move on. <b>Every star</b> in a sūrah wins a special golden edition of it. Surprise gifts bring stickers and everyday accessories; each checkpoint crossed wins a little gift, every few stars wins a prize from the star track, and every 100 stars a star badge. Memorized = Stepping Stones done.</li>
-        <li><b>The summit.</b> A star in every sūrah: the explorer climbs the mountain, and every treasure, every sticker and the Summit cloak are theirs. Three stars in every sūrah: the Hafiz crown. Every single star: the one-of-a-kind Golden hoopoe.</li>
-        <li><b>Revise any sūrah any time:</b> tap it on the map, or tap the 📖 / ⭐ counters at the top of the map to see every sūrah and jump straight in. In review games, tap “Not quite” when a mistake is made; a 💔 on the map shows where the hearts ran out.</li>
-        <li><b>5–10 minutes a day is plenty.</b> Stop while it's still fun; recite again at bedtime or in ṣalāh.</li>
-      </ol>
-      <div class="notice" role="note"><p>ℹ️ The pictures are memory hooks only, not literal images of the meaning. The simple meanings are written for young children; check a full tafsīr for detail.</p>
-      <p><b>Please check the Qur'an text and recitation</b> against a trusted muṣḥaf or teacher. They come from public sources and are not guaranteed to be free of mistakes.</p></div>
-      <p class="saveinfo">Word-by-word transliteration and meanings: the <a href="https://corpus.quran.com" target="_blank" rel="noopener">Quranic Arabic Corpus</a> (GNU GPL v3). Simple meanings are written for this game.</p>
-      <p class="saveinfo">Little Hafiz Quest is free and open source. Found a mistake or a bug, or have an idea? Please tell us in the project's <a href="${REPO}/issues" target="_blank" rel="noopener">Issues on GitHub</a>. The code: <a href="${REPO}" target="_blank" rel="noopener">github.com/akramali/little-hafiz-quest</a>.</p>
-      <div class="row"><button class="btn wide" data-act="cno">Close</button></div></div>`;
+    m.innerHTML = `<div class="card infocard"><button class="cardx" data-act="cno" aria-label="Close">✕</button>
+      <h3>Little Hafiz Quest <small>v${VERSION}</small></h3>
+      <p class="made">Developed with <span class="heart" aria-label="love">❤️</span> for little learners and their families. Free and open source: no ads, no accounts, nothing to buy. Progress stays on your phone.</p>
+      <div class="notice" role="note">
+        <p><b>⚠️ Please check</b> the Qur'an text and recitation against a trusted muṣḥaf or teacher. They come from public sources and may still have mistakes.</p>
+        <p>🖼️ The pictures are memory hooks, not images of the meaning.</p>
+        <p>💬 The simple meanings are written for young children; see a full tafsīr for detail.</p>
+      </div>
+      <h4>📚 Sources</h4>
+      <ul class="srcs">
+        <li><b>Qur'an text</b> (Uthmani): ${ext('https://quranenc.com', 'The Noble Qur\'an Encyclopedia')}, via ${ext('https://github.com/risan/quran-json', 'quran-json')} (CC BY-SA 4.0)</li>
+        <li><b>Recitation</b>: Alafasy, Al-Husary, Al-Minshawi and Abdul Basit, from ${ext('https://everyayah.com', 'EveryAyah.com')}</li>
+        <li><b>Word timings</b>: ${ext('https://quran.com', 'Quran.com')}</li>
+        <li><b>Word-by-word meanings and transliteration</b>: the ${ext('https://corpus.quran.com', 'Quranic Arabic Corpus')} (GNU GPL v3), via the ${ext('https://api-docs.quran.com', 'Quran.com API')}</li>
+        <li><b>Simple meanings, memory cues and āyah transliterations</b>: written for this game</li>
+        <li><b>Fonts</b>: Amiri Quran and Baloo 2 (SIL Open Font License)</li>
+      </ul>
+      <h4>🛠️ Open source</h4>
+      <div class="infolinks">
+        <a class="btn small" href="${REPO}" target="_blank" rel="noopener">💻 The code on GitHub</a>
+        <a class="btn small" href="${REPO}/issues" target="_blank" rel="noopener">🐞 Report a problem or idea</a>
+      </div>
+    </div>`;
     m.classList.add('show');
-    m.querySelector('.helpcard').scrollTop = 0;
+    m.querySelector('.infocard').scrollTop = 0;
+  }
+  /* 📘 How to use it: one tip at a time, each with its icon */
+  const BEADS_IC = `<span class="beads-ico tiny" aria-hidden="true">${WCOL.slice(0, 3)
+    .map((c) => `<i style="background:${c}"></i>`)
+    .join('')}</span>`;
+  function showHowTo() {
+    const tip = (ic, title, body) => `<li><span class="tipic" aria-hidden="true">${ic}</span><div><b>${title}</b>${body}</div></li>`;
+    const m = document.getElementById('modal');
+    m.innerHTML = `<div class="card infocard howcard"><button class="cardx" data-act="cno" aria-label="Close">✕</button>
+      <h3>📘 How to use it</h3>
+      <ol class="howto">
+        ${tip('🧭', 'Pick a step', `<p>Each sūrah has a quest: 👀 <b>Look &amp; Repeat</b>, then ${BEADS_IC} <b>Word Steps</b>.</p><p>Then two review games: 🐸 <b>Stepping Stones</b> and 🧩 <b>Picture Puzzle</b>. A sūrah is memorized ✓ once its Stepping Stones is done.</p>`)}
+        ${tip('🚩', 'One checkpoint at a time', '<p>Long sūrahs come in parts of a few āyāt. Finish each part, then the 🏁 whole sūrah.</p>')}
+        ${tip('🎁', 'Gifts to win', '<p>The first finish of every level wins a gift.</p><ul><li>⭐ One star wins the sūrah\'s treasure, and is enough to move on.</li><li>🌟 Every star in a sūrah wins its golden edition.</li><li>🚩 Each checkpoint crossed, and every few stars, win a little prize.</li><li>🏅 Every 100 stars wins a star badge.</li></ul>')}
+        ${tip('⛰️', 'The summit', '<p>A star in every sūrah: the explorer climbs the mountain and wins every treasure, every sticker and the Summit cloak.</p><p>👑 Three stars everywhere: the Hafiz crown. Every single star: the Golden hoopoe.</p>')}
+        ${tip('🔁', 'Revise any time', '<p>Tap a sūrah on the map, or the 📖 / ⭐ counters at the top of the map to see them all.</p><p>In review games, tap <b>Not quite</b> after a mistake. A 💔 on the map shows where the hearts ran out.</p>')}
+        ${tip('🔊', 'Listen and read', '<p>The orange <b>Listen</b> button plays the reciter; the loop button repeats it.</p><p>📖 <b>Read</b> shows the whole sūrah: hold an āyah to color its words, then tap it again to look closer.</p>')}
+        ${tip('👨‍👩‍👧', 'Explorers', '<p>On the start screen, under <b>Continue the quest</b>: switch explorers, share progress with another phone, or save a backup.</p>')}
+        ${tip('⏱️', '5–10 minutes a day is plenty', '<p>Stop while it\'s still fun. Recite it again at bedtime or in ṣalāh.</p>')}
+      </ol>
+    </div>`;
+    m.classList.add('show');
+    m.querySelector('.howcard').scrollTop = 0;
   }
   function showBism() {
     const m = document.getElementById('modal');
@@ -3807,6 +3847,10 @@
         sfx.tap();
         showHelp();
         break;
+      case 'howto':
+        sfx.tap();
+        showHowTo();
+        break;
       case 'bismplay':
         playList([[1, 1]], { once: true });
         break;
@@ -3837,7 +3881,8 @@
         break;
       case 'set': {
         const k = b.dataset.k;
-        prefs[k] = k === 'repeat' ? +b.dataset.v : b.dataset.v;
+        prefs[k] = k === 'speed' ? +b.dataset.v : b.dataset.v;
+        if (k === 'speed') player.playbackRate = prefs.speed;
         save();
         sfx.tap();
         if (k === 'theme') applyTheme();
@@ -4275,7 +4320,7 @@
     if (kind === 'hop' && el.classList.contains('mprop')) {
       const now = Date.now();
       el._taps = (el._taps || []).filter((t) => now - t < 2500).concat(now);
-      if (el._away) return;
+      if (el._away || el._busy) return; // already running off, or on its way to a fruit
       if (el._taps.length >= 3 && runAway(el)) return;
     }
     el.classList.remove('poke-joy', 'poke-puff', 'poke-hop', 'poke-shake', 'poke-bounce', 'poke-spin', 'poke-dance', 'poke-hops', 'poke-flag');
@@ -4285,7 +4330,147 @@
     el._pk = setTimeout(() => el.classList.remove('poke-' + kind), kind === 'flag' ? 1600 : 1100);
     const set = { joy: ['⭐', '✨', '💛'], spin: ['✨', '⭐'], dance: ['🎵', '✨'], hops: ['⭐', '✨'], flag: ['🎉', '⭐', '✨'], puff: ['☁️', '✨'], hop: ['💕', '✨'], shake: ['🍃', '🌸'], bounce: ['✨', '⭐'] }[kind];
     burstAt(el, kind === 'joy' || kind === 'flag' ? 10 : 5, set);
+    if (kind === 'shake' && FRUIT_OF[k] && el.classList.contains('mprop')) dropFruit(el);
     ({ joy: sfx.hop, spin: sfx.whoosh, dance: sfx.dance, hops: sfx.hop, flag: sfx.win, puff: sfx.whoosh, hop: sfx.pop, shake: sfx.rustle, bounce: sfx.tap })[kind]();
+  }
+
+  /* Tap a fruit tree, a berry bush, a pine or a cactus on the map: a fruit drops beside it, and the nearest
+     animal runs over, eats it in three bites, and goes back to where it was. */
+  const FRUIT_OF = {
+    'meadow-tree': 'apple',
+    'forest-bigtree': 'apple',
+    'meadow-bush': 'cherry',
+    'forest-berries': 'blueberry',
+    'forest-oak': 'acorn',
+    'forest-pine': 'pinecone',
+    'peak-pine': 'pinecone',
+    'sands-palm': 'coconut',
+    'canyon-cactus': 'pear',
+  };
+  const EATER = /sheep|rabbit|fox|owl|deer|squirrel|crab|turtle|camel|lizard|goat/;
+  function dropFruit(tree) {
+    const layer = tree.parentNode;
+    if (!layer || !mapCtl || reduceMotion || layer.querySelectorAll('.mfruit').length >= 4) return;
+    const tx = +tree.dataset.x,
+      ty = +tree.dataset.y;
+    // the nearest animal that isn't busy, not too far away
+    const near = [...layer.querySelectorAll('.mprop')]
+      .filter((a) => EATER.test(a.dataset.k) && !a._away && !a._busy)
+      .map((a) => ({ a, d: Math.hypot(+a.dataset.x - tx, +a.dataset.y - ty) }))
+      .filter((o) => o.d < 520)
+      .sort((p, q) => p.d - q.d)[0];
+    const side = near ? (+near.a.dataset.x < tx ? -1 : 1) : Math.random() < 0.5 ? -1 : 1;
+    const fx = tx + side * (tree.offsetWidth * 0.32 + 12),
+      fy = ty + 2;
+    const f = document.createElement('div');
+    f.className = 'mfruit';
+    f.dataset.x = fx.toFixed(1);
+    f.dataset.y = fy.toFixed(1);
+    f.style.left = (fx - 12).toFixed(1) + 'px';
+    f.style.top = (fy - 24).toFixed(1) + 'px';
+    f.innerHTML = `<div class="mf-in">${ART.fruit(FRUIT_OF[tree.dataset.k])}</div>`;
+    layer.appendChild(f);
+    mapCtl.track(f);
+    const ctl = mapCtl,
+      gone = () => {
+        ctl.untrack(f);
+        f.remove();
+      };
+    if (near) near.a._busy = true; // spoken for, before the fruit lands
+    // falls from the branches, with a little bounce
+    const fall = f.firstElementChild.animate(
+      [
+        { transform: `translateY(${-Math.round(tree.offsetHeight * 0.55)}px) rotate(-30deg)`, easing: 'cubic-bezier(.5,0,1,1)' },
+        { transform: 'translateY(0) rotate(0)', offset: 0.7, easing: 'ease-out' },
+        { transform: 'translateY(-8px) rotate(8deg)', offset: 0.85, easing: 'ease-in' },
+        { transform: 'translateY(0) rotate(0)' },
+      ],
+      { duration: 700 },
+    );
+    fall.onfinish = () => {
+      if (!f.isConnected) return;
+      sfx.pop();
+      if (near && near.a.isConnected) comeEat(near.a, f, gone);
+      else
+        setTimeout(() => {
+          // nobody hungry nearby: it fades away after a while
+          const fade = f.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 600, delay: 2400, fill: 'forwards' });
+          fade.onfinish = gone;
+        }, 0);
+    };
+  }
+  function comeEat(a, f, gone) {
+    const who = a.firstElementChild; // the map moves the prop itself while scrolling, so animate what's inside
+    a._busy = true;
+    a.style.zIndex = 2;
+    // a walker may be mid-stroll: pause its stroll and start from where it is
+    const strolls = who.getAnimations().filter((x) => x instanceof CSSAnimation);
+    strolls.forEach((x) => x.pause());
+    const cs = getComputedStyle(who).transform,
+      m0 = cs && cs !== 'none' ? new DOMMatrixReadOnly(cs) : new DOMMatrixReadOnly(),
+      x0 = m0.m41,
+      face0 = m0.a < 0 ? -1 : 1;
+    const ar = a.getBoundingClientRect(),
+      fr = f.getBoundingClientRect(),
+      k = ar.width / (a.offsetWidth || ar.width) || 1, // things near the horizon are drawn smaller
+      feet = ar.left + ar.width / 2 + x0 * k,
+      dir = fr.left + fr.width / 2 > feet ? 1 : -1,
+      x1 = (fr.left + fr.width / 2 - dir * ar.width * 0.36 - (ar.left + ar.width / 2)) / k, // beside the fruit, facing it
+      y1 = (fr.bottom - ar.bottom) / k;
+    const flies = /owl/.test(a.dataset.k);
+    const pos = (x, y, face, extra) => `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) scaleX(${face})${extra || ''}`;
+    const trip = (xa, ya, xb, yb, face) => {
+      const dist = Math.hypot(xb - xa, yb - ya) * k,
+        steps = Math.max(2, Math.round(dist / 34)),
+        frames = [];
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps,
+          lift = flies ? -Math.sin(t * Math.PI) * 46 : i % 2 ? -8 : 0;
+        frames.push({ transform: pos(xa + (xb - xa) * t, ya + (yb - ya) * t + lift, face) });
+      }
+      return who.animate(frames, { duration: Math.max(700, Math.min(2600, dist / 0.3)), fill: 'forwards' });
+    };
+    const anims = [];
+    const done = () => {
+      anims.forEach((x) => x.cancel());
+      strolls.forEach((x) => x.play());
+      a._busy = false;
+      a.style.zIndex = '';
+    };
+    sfx.whoosh();
+    const go1 = trip(x0, 0, x1, y1, dir);
+    anims.push(go1);
+    go1.onfinish = () => {
+      if (!a.isConnected || !f.isConnected) return done();
+      // three bites
+      const munch = who.animate(
+        [0, 1, 2, 3, 4, 5, 6].map((i) => ({ transform: pos(x1, y1 + (i % 2 ? 3 : 0), dir, ` rotate(${i % 2 ? 6 * dir : 0}deg)`) })),
+        { duration: 1500, fill: 'forwards' },
+      );
+      anims.push(munch);
+      const bite = f.firstElementChild.animate(
+        [
+          { transform: 'scale(1)', opacity: 1, easing: 'steps(1)' },
+          { transform: 'scale(.72)', offset: 0.3, easing: 'steps(1)' },
+          { transform: 'scale(.45)', offset: 0.62, easing: 'steps(1)' },
+          { transform: 'scale(.2)', opacity: 1, offset: 0.9 },
+          { transform: 'scale(0)', opacity: 0 },
+        ],
+        { duration: 1500, fill: 'forwards' },
+      );
+      [0, 450, 930].forEach((t) => setTimeout(() => f.isConnected && (sfx.tap(), burstAt(f, 2, ['✨'])), t));
+      bite.onfinish = () => {
+        gone();
+        burstAt(a, 4, ['💕', '✨']);
+        const back = trip(x1, y1, x0, 0, -dir);
+        anims.push(back);
+        back.onfinish = () => {
+          const settle = who.animate([{ transform: pos(x0, 0, face0) }, { transform: pos(x0, 0, face0) }], { duration: 120, fill: 'forwards' });
+          anims.push(settle);
+          settle.onfinish = done;
+        };
+      };
+    };
   }
 
   function runAway(el) {

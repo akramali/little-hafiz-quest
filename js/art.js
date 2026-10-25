@@ -2276,7 +2276,8 @@
       // a sea inlet: forest bank below, a sandy beach above, waves rolling in
       g += F(band(w, 30, 100, 5, 1.6, 0.2), N('#ffe8b0')) + F(band(w, 40, 92, 6, 1.6, 0.6), N('#22b8d0')) + F(band(w, 44, 70, 5, 1.6, 0.9), N('#5fd8e8'), 0.7);
       for (let j = 0; j < 5; j++) g += '<path class="bd-wave" style="animation-delay:-' + n(r() * 4) + 's" d="' + wavy(w, 48 + j * 9, 2.4, 3 + j, j) + '" fill="none" stroke="#ffffff" stroke-width="2" opacity=".75"/>';
-      g += G(OUT(STKBY.boat(), 3 / 0.4), tf(n(w * 0.18), 40, 0.4)).replace('<g', '<g class="pr-bob"');
+      // the bob animates its own group: a css transform on the group with tf() would replace its scale and place
+      g += '<g class="pr-bob">' + G(OUT(STKBY.boat(), 2.2 / 0.7), tf(n(w * 0.1), 10, 0.7)) + '</g>';
     } else if (i === 2) {
       // a deep gorge with layered rock walls
       g += F(band(w, 38, 98, 7, 2.6, 0.5), N('#c25e34')) + F(band(w, 46, 90, 6, 2.6, 0.9), N('#6a2f3a')) + F(band(w, 56, 82, 4, 2.6, 1.4), N('#3d1c2e')) +
@@ -2304,6 +2305,19 @@
       for (let j = 0; j < 5; j++) g += '<path class="lhq-tw" d="' + star4(n(r() * w), n(56 + r() * 26), 4) + '" fill="#ffffff" stroke="none" style="animation-delay:-' + n(r() * 3) + 's"/>';
     }
     return '<svg class="lhq-art lhq-border" viewBox="0 0 ' + w + ' ' + H + '" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' + g + '</svg>';
+  }
+  /* a fruit that falls from a tree, bush or cactus on the map (viewBox 0 0 40 40, resting on y 38) */
+  function fruit(kind) {
+    const leaf = (x, y, r) => S('M' + x + ' ' + y + 'q7 -7 12 -3q-5 6 -12 3Z', '#5fbf4a', null, null, r ? ' transform="rotate(' + r + ' ' + x + ' ' + y + ')"' : '');
+    let g;
+    if (kind === 'apple') g = ball(20, 26, 12, 11, '#ff5d6c') + L('M20 15Q20 10 23 7', '#8a5a35', 3) + leaf(22, 11);
+    else if (kind === 'cherry') g = L('M12 26Q14 14 22 8M28 28Q28 16 22 8', '#5a8a35', 2.2) + ball(12, 30, 7, 7, '#e8414f') + ball(28, 31, 7, 7, '#e8414f') + leaf(22, 9, -20);
+    else if (kind === 'blueberry') g = ball(13, 30, 7, 7, '#6b5bd6') + ball(27, 30, 7, 7, '#6b5bd6') + ball(20, 21, 7.4, 7.4, '#7a6be2') + L('M18 17L20 15L22 17', INK, 1.6);
+    else if (kind === 'acorn') g = ball(20, 27, 9, 11, '#d9a05b') + S('M9 22Q9 12 20 12Q31 12 31 22Z', '#8a5a35') + L('M13 18L27 18M12 21L28 21', dk('#8a5a35', 0.3), 1.4) + L('M20 12L21 7', '#8a5a35', 3);
+    else if (kind === 'pinecone') g = S('M20 6Q32 14 30 26Q28 38 20 38Q12 38 10 26Q8 14 20 6Z', '#a86b3c') + L('M12 18Q20 22 28 18M11 25Q20 30 29 25M13 32Q20 36 27 32M20 8L20 37', dk('#a86b3c', 0.35), 1.6);
+    else if (kind === 'coconut') g = ball(20, 26, 12, 11.4, '#8a5a35', { hl: false }) + CF(15, 21, 1.8, '#3a2463') + CF(20, 19, 1.8, '#3a2463') + CF(25, 21, 1.8, '#3a2463');
+    else g = ball(20, 25, 10, 13, '#e0457b') + [[15, 20], [24, 18], [18, 29], [25, 30]].map((q) => CF(q[0], q[1], 1.2, '#ffd23f')).join('') + S('M14 13Q16 6 20 10Q24 6 26 13Z', '#4fb36b');
+    return '<svg class="lhq-art lhq-fruit" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' + OUT(g, 2.6) + '</svg>';
   }
   function bridge(i, night) {
     const N = (c) => (night ? dimC(c) : c);
@@ -2551,6 +2565,7 @@
     border,
     BORDER_H,
     bridge,
+    fruit,
     horizon,
     splash,
   };

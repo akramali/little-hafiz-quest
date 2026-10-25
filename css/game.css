@@ -7016,3 +7016,198 @@ body {
   }
 }
 
+
+/* ---------- v2.5.2 ---------- */
+/* recitation speed: a slider whose stops sit over their labels */
+.speed {
+  width: 100%;
+  margin-top: 8px;
+}
+.speed input {
+  display: block;
+  width: calc(100% - 100% / 6);
+  margin: 0 auto;
+  accent-color: #ff7a1a;
+  height: 28px;
+}
+.speedticks {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  margin-top: 2px;
+}
+.speedticks button {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--soft);
+  padding: 4px 0;
+  border-radius: 10px;
+}
+.speedticks button.on {
+  color: var(--ink);
+  font-weight: 800;
+  background: var(--chip);
+}
+/* the info button and the How to use it button in the Grown-up Corner */
+.infoic {
+  width: 28px;
+  height: 28px;
+}
+.howbtn {
+  width: 100%;
+  margin-bottom: 14px;
+}
+/* About and How to use it: cards with a ✕, left-aligned and roomy */
+.infocard {
+  text-align: left;
+  padding: 18px 18px 20px;
+  max-height: calc(100vh - 40px);
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.infocard h3 {
+  font-size: 21px;
+  margin: 2px 46px 10px 0;
+  line-height: 1.2;
+}
+.infocard h3 small {
+  font-size: 14px;
+  color: var(--soft);
+  font-weight: 700;
+}
+.infocard h4 {
+  font-size: 17px;
+  margin: 18px 0 8px;
+}
+.infocard a:not(.btn) {
+  color: #3d7be0;
+  font-weight: 800;
+}
+.infocard .made {
+  font-size: 15.5px;
+  line-height: 1.45;
+  margin-bottom: 14px;
+}
+.infocard .heart {
+  display: inline-block;
+  animation: heartbeat 1.8s ease-in-out infinite;
+}
+@keyframes heartbeat {
+  0%,
+  60%,
+  100% {
+    transform: scale(1);
+  }
+  15%,
+  40% {
+    transform: scale(1.18);
+  }
+}
+.infocard .cardx {
+  top: 14px;
+  right: 14px;
+}
+.infocard .notice p + p {
+  margin-top: 8px;
+}
+.srcs {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+  font-size: 14.5px;
+  line-height: 1.4;
+  color: var(--soft);
+}
+.srcs b {
+  color: var(--ink);
+}
+.infolinks {
+  display: grid;
+  gap: 10px;
+}
+.infolinks .btn {
+  justify-content: flex-start;
+  text-decoration: none;
+  color: var(--ink);
+}
+.howto {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0 0;
+  display: grid;
+  gap: 18px;
+}
+.howto > li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.tipic {
+  flex: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: var(--card2);
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+}
+.howto b {
+  font-size: 16.5px;
+}
+.howto > li > div > b:first-child {
+  display: block;
+  margin: 2px 0 4px;
+}
+.howto p,
+.howto ul {
+  font-size: 14.5px;
+  line-height: 1.45;
+  color: var(--soft);
+  font-weight: 600;
+}
+.howto p b {
+  font-size: inherit;
+  color: var(--ink);
+}
+.howto p + p,
+.howto p + ul {
+  margin-top: 6px;
+}
+.howto ul {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.beads-ico.tiny {
+  display: inline-flex;
+  gap: 2px;
+  vertical-align: -1px;
+}
+.beads-ico.tiny i,
+.beads-ico.tiny i:nth-child(4) {
+  width: 9px;
+  height: 9px;
+  box-shadow: none;
+}
+/* a fruit fallen on the map */
+.mfruit {
+  width: 24px;
+  height: 24px;
+  transform-origin: 50% 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+.mf-in,
+.mf-in svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+.mf-in {
+  transform-origin: 50% 90%;
+}

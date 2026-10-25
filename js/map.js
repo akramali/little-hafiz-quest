@@ -599,6 +599,14 @@
       zoomInto,
       scrollToWorld,
       focusNode,
+      // something added to the map later (a fallen fruit) gets the curved-world effect too
+      track(el) {
+        items.push({ el, x: +el.dataset.x, y: +el.dataset.y });
+        kick();
+      },
+      untrack(el) {
+        items = items.filter((it) => it.el !== el);
+      },
       destroy() {
         alive = false;
         removeEventListener('scroll', onScroll);
