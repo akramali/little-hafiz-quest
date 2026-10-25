@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.5.2';
+  const VERSION = '2.5.3';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -184,6 +184,7 @@
     translit: false,
     sfx: true,
     audio: true,
+    chain: 1, // Look & Repeat: chain after every new āyah (or every 3, 4, 5)
     speed: 1, // recitation speed (v2.5.2; replaces "slower" and "repeat each āyah": the loop button repeats)
     reciter: 'alafasy',
     hearts: true,
@@ -193,14 +194,27 @@
     wordmean: false, // the meaning of each word (Word Steps, the muṣḥaf)
   };
   const SPEEDS = [0.25, 0.5, 0.75, 1, 1.5, 2];
+  const CHAINS = [1, 3, 4, 5]; // Look & Repeat: chain the āyāt after every new one, or every 3, 4 or 5
+  const MAX_EXPLORERS = 10;
   let store = null;
   let prefs = Object.assign({}, DEFAULT_PREFS);
 
+  // starter shirt and pants colors that the other explorers aren't wearing yet
+  function starterColors(others) {
+    const all = [];
+    ART.TEES.forEach((_, tee) => ART.LEGS.forEach((__, legs) => all.push({ tee, legs })));
+    const used = (c, k) => others.some((p) => p.look[k] === c[k]);
+    // a new shirt and new pants if there are any left, else at least a new pair
+    const best = all.filter((c) => !used(c, 'tee') && !used(c, 'legs'));
+    const fresh = all.filter((c) => !others.some((p) => p.look.tee === c.tee && p.look.legs === c.legs));
+    const pool = best.length ? best : fresh.length ? fresh : all;
+    return pool[(Math.random() * pool.length) | 0];
+  }
   function newProfile(name) {
     return {
       id: 'p' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36),
       name: name || '',
-      look: { skin: 1, hair: 'short', hairColor: 0, hijabColor: 0, kid: '' },
+      look: { skin: 1, hair: 'short', hairColor: 0, hijabColor: 0, kid: '', tee: 0, legs: 0 },
       outfit: {},
       prog: {},
       items: [],
@@ -277,6 +291,8 @@
       hairColor: int(L.hairColor, 0, ART.LOOKS.hairColor.length - 1, 0),
       hijabColor: int(L.hijabColor, 0, ART.LOOKS.hijabColor.length - 1, 0),
       kid: ART.LOOKS.kid.includes(L.kid) ? L.kid : '', // '' = not chosen yet (a girl's hair style counts as girl)
+      tee: int(L.tee, 0, ART.TEES.length - 1, 0), // starter shirt and pants colors (v2.5.3)
+      legs: int(L.legs, 0, ART.LEGS.length - 1, 0),
     };
     if (p.look.kid && !ART.LOOKS.hairFor[p.look.kid].includes(p.look.hair)) p.look.hair = ART.LOOKS.hairFor[p.look.kid][0]; // boys and girls have their own styles
     p.prog = cleanProg(o.prog);
@@ -334,13 +350,20 @@
     });
     if (['auto', 'light', 'dim'].includes(o.theme)) out.theme = o.theme;
     if (SPEEDS.includes(o.speed)) out.speed = o.speed;
+    if (CHAINS.includes(o.chain)) out.chain = o.chain;
     else if (o.slow === true) out.speed = 0.75; // "slower recitation" (80%) before v2.5.2
     if (typeof o.reciter === 'string' && /^[a-z0-9-]{2,32}$/.test(o.reciter)) out.reciter = o.reciter;
     return out;
   }
   function cleanStore(o) {
     // there may be no explorers at all (a new device, or every one removed): Begin then makes one
-    const profiles = (o && Array.isArray(o.profiles) ? o.profiles : []).map(cleanProfile).filter(Boolean).slice(0, 8);
+    const raw = o && Array.isArray(o.profiles) ? o.profiles : [];
+    const profiles = raw.map(cleanProfile).filter(Boolean).slice(0, MAX_EXPLORERS);
+    // explorers from before v2.5.3 all wore the same comfy clothes: give each their own starter colors
+    profiles.forEach((p, i) => {
+      const was = raw.find((r) => r && r.id === p.id);
+      if (i && was && was.look && was.look.tee == null) Object.assign(p.look, starterColors(profiles.slice(0, i)));
+    });
     const cur = profiles.some((p) => p.id === o.cur) ? o.cur : profiles.length ? profiles[0].id : '';
     return { v: 2, cur, profiles, prefs: cleanPrefs(o && o.prefs) };
   }
@@ -1126,7 +1149,7 @@
   function bar(title, sub, to, extra) {
     return `<div class="bar"><button class="icon-btn" data-act="back" data-to="${to}" aria-label="Back">${ICON.back}</button>
     <div class="bar-title">${title}${sub ? `<small>${sub}</small>` : ''}</div>${extra || ''}
-    <button class="listen" data-act="fab" aria-label="Listen to the recitation"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="#fff"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18.3 6.5a7.5 7.5 0 0 1 0 11"/></svg><span class="stop"></span></span><span><b>Listen</b><small></small></span></button></div>`;
+    <button class="listen" data-act="fab" aria-label="Listen to the recitation"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="#fff"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18.3 6.5a7.5 7.5 0 0 1 0 11"/></svg><span class="stop"></span></span><span><b>Listen</b><small></small></span></button>${extra ? '' : '<span class="bar-sp" aria-hidden="true"></span>'}</div>`;
   }
   function coach(html, icon = '🦉', extra = '') {
     return `<div class="coach"><span class="owl">${icon}</span><div>${html}</div>${extra}</div>`;
@@ -1174,6 +1197,12 @@
   function partLabel(s, p) {
     const P = s.P[p];
     return `Part ${p + 1} · āyāt ${P.from + 1}–${P.to + 1}`;
+  }
+  // chain now? after every new āyah from the second one on, or after every 3, 4 or 5 (and always at the last one)
+  function chainNow() {
+    const c = ctx(),
+      at = st.a - c.from + 1;
+    return chainList().length > 1 && (at % prefs.chain === 0 || st.a === c.to);
   }
   function chainList() {
     const c = ctx();
@@ -1455,6 +1484,8 @@
     let m;
     if (kind === 'skin') m = face(c);
     else if (kind === 'hijab') m = `<path d="M5 34C3 16 10 6 20 6s17 10 15 28Z" fill="${c}" ${ink}/><ellipse cx="20" cy="22" rx="9.5" ry="10" fill="${SWATCH_SKIN}" ${ink}/><circle cx="16.6" cy="22" r="1.6" fill="#2b2340"/><circle cx="23.4" cy="22" r="1.6" fill="#2b2340"/>`;
+    else if (kind === 'tee') m = `<path d="M7 13L15 7Q20 10 25 7L33 13L29 19L26 17V34H14V17L11 19Z" fill="${c}" ${ink}/>`;
+    else if (kind === 'legs') m = `<path d="M11 6H29L31 34H23.5L20 17L16.5 34H9Z" fill="${c}" ${ink}/>`;
     else m = face(SWATCH_SKIN) + `<path d="M6.5 22C5 12 11 6 20 6s15 6 13.5 16c-2-5-4-6-6-7q-3 3-7.5 0q-4.5 3-7.5 0c-2 1-4 2-6 7Z" fill="${c}" ${ink}/>`;
     return `<svg viewBox="0 0 40 40" aria-hidden="true" focusable="false">${m}</svg>`;
   }
@@ -1480,6 +1511,8 @@
       <div class="lkgroup"><div class="lkh">🙂 Skin tone</div>${sw('skin', ART.LOOKS.skin, 'skin', 'Skin tone')}</div>
       <div class="lkgroup"><div class="lkh">💇 Hair style</div><div class="hairs">${hairs}</div></div>
       <div class="lkgroup"><div class="lkh">🎨 ${hij ? 'Hijab color' : 'Hair color'}</div>${hij ? sw('hijabColor', ART.LOOKS.hijabColor, 'hijab', 'Hijab color') : sw('hairColor', ART.LOOKS.hairColor, 'hair', 'Hair color')}</div>
+      <div class="lkgroup"><div class="lkh">👕 Comfy shirt</div>${sw('tee', ART.TEES, 'tee', 'Shirt color')}</div>
+      <div class="lkgroup"><div class="lkh">👖 Comfy pants</div>${sw('legs', ART.LEGS, 'legs', 'Pants color')}</div>
     </div>`;
   }
   V.create = () => {
@@ -1538,6 +1571,10 @@
       suggest: suggestIdx(),
       status: surahStatus,
       explorerSVG: () => explorer({ view: 'front' }),
+      // everyone else on this phone, standing in the world of the sūrah they're on
+      others: store.profiles
+        .filter((p) => p.id !== store.cur && p.made)
+        .map((p) => ({ id: p.id, name: p.name ? esc(p.name) : 'Explorer', svg: explorer({ view: 'front' }, p), wi: Math.max(0, worldOf(S[p.at] || S[0])) })),
       worldIcon: (wi) => WORLD_ICON[wi],
       onWorld: (wi) => {
         const w = ART.WORLDS[wi];
@@ -2490,7 +2527,7 @@
     <div class="sheet">
       <h3>🧒 Your explorers</h3>
       ${rows}
-      ${store.profiles.length < 8 ? '<div class="setrow" style="justify-content:center"><button class="btn small" data-act="newprof">➕ Add explorer</button></div>' : ''}
+      ${store.profiles.length < MAX_EXPLORERS ? '<div class="setrow" style="justify-content:center"><button class="btn small" data-act="newprof">➕ Add explorer</button></div>' : `<p class="saveinfo center">${MAX_EXPLORERS} explorers is the most for one phone.</p>`}
     </div>
     ${
       noExplorers()
@@ -2632,7 +2669,7 @@
         if (!from) throw new Error('bad');
         from.made = true;
         const match = store.profiles.find((p) => p.id === from.id) || store.profiles.find((p) => p.name && p.name === from.name);
-        incoming = { from, link, sameThings: raw.sameThings, target: match ? match.id : store.profiles.length ? '' : 'new' };
+        incoming = { from, link, sameThings: raw.sameThings, noColors: raw.look.tee == null, target: match ? match.id : store.profiles.length ? '' : 'new' };
         showSync();
       })
       .catch((e) => toast(e && e.message === 'nozip' ? 'This browser is too old to read it. Please update the browser.' : "That progress link didn't work. Ask for a new one."));
@@ -2650,7 +2687,7 @@
     const m = document.getElementById('modal'),
       from = incoming.from,
       nm = from.name ? esc(from.name) : 'An explorer';
-    const choices = [...store.profiles.map((p) => [p.id, p.name ? esc(p.name) : 'Explorer', p]), ['new', '➕ New explorer', null]];
+    const choices = [...store.profiles.map((p) => [p.id, p.name ? esc(p.name) : 'Explorer', p]), ...(store.profiles.length < MAX_EXPLORERS ? [['new', '➕ New explorer', null]] : [])];
     const pick = incoming.target;
     const pv = pick ? preview(pick) : null;
     m.innerHTML = `<div class="card synccard">
@@ -2681,7 +2718,8 @@
     });
     if (newer) {
       if (from.name) into.name = from.name;
-      into.look = Object.assign({}, from.look);
+      // (a link from a phone before v2.5.3 has no shirt and pants colors: keep this phone's)
+      into.look = Object.assign({}, from.look, incoming && incoming.noColors ? { tee: into.look.tee, legs: into.look.legs } : {});
       into.outfit = Object.assign({}, from.outfit);
       into.badge = from.badge;
       into.lost = from.lost.filter((x) => into.items.includes(x.id));
@@ -2701,6 +2739,7 @@
     let into;
     if (incoming.target === 'new') {
       if (store.profiles.some((p) => p.id === from.id)) from.id = newProfile().id;
+      if (incoming.noColors) Object.assign(from.look, starterColors(store.profiles));
       store.profiles.push(from);
       into = from;
       S.forEach((s) => giveSurahGift(s, into));
@@ -2911,6 +2950,12 @@
     <div class="sheet">
       <h3>❤️ Game</h3>
       ${tg('hearts', 'Hearts in review games', 'Three hearts, plus one for each finished world (up to 5). Losing them all drops an item, which comes back after trying again')}
+      <div class="setrow"><span>Chain the āyāt<small>In Look &amp; Repeat, say them all from the first one: after every new āyah, or every few</small></span>${seg('chain', [
+        [1, 'Each'],
+        [3, '3'],
+        [4, '4'],
+        [5, '5'],
+      ])}</div>
       ${tg('pzrtl', 'Puzzle from right to left', 'The Picture Puzzle fills from the right, like reading Arabic. Off: left to right, row by row')}
     </div>
     ${offlineSheet()}
@@ -3174,7 +3219,7 @@
   /* How to use it: the tips, the disclaimer, and where to report a problem */
   const REPO = 'https://github.com/akramali/little-hafiz-quest';
   const INFO_ICON =
-    '<svg class="infoic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#5fb2ff" stroke="#2b2340" stroke-width="1.8"/><circle cx="12" cy="7.4" r="1.6" fill="#fff"/><path d="M12 11.2v6.4" stroke="#fff" stroke-width="2.8" stroke-linecap="round"/></svg>';
+    '<svg class="infoic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.6" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="12" cy="7.6" r="1.5" fill="currentColor"/><path d="M12 11.2v6.2" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>';
   const ext = (href, text) => `<a href="${href}" target="_blank" rel="noopener">${text}</a>`;
   /* ℹ️ About: who made it, the disclaimer, where everything comes from */
   function showHelp() {
@@ -3564,8 +3609,9 @@
         break;
       case 'newprof': {
         sfx.tap();
-        if (store.profiles.length >= 8) break;
+        if (store.profiles.length >= MAX_EXPLORERS) break;
         const p = newProfile();
+        Object.assign(p.look, starterColors(store.profiles));
         store.profiles.push(p);
         store.cur = p.id;
         save();
@@ -3727,6 +3773,14 @@
       case 'poke':
         poke(b);
         break;
+      case 'pal': {
+        // another explorer on this phone: they do a move and say who they are
+        const p = palOf(b);
+        if (!p) break;
+        explorerMove(b.querySelector('svg.ex'), p);
+        sayOnMap(b, `${p.name || 'Explorer'} · ⭐ ${totalStars(p)}`);
+        break;
+      }
       case 'exmove':
         explorerMove(b.querySelector('svg.ex'));
         break;
@@ -3881,7 +3935,7 @@
         break;
       case 'set': {
         const k = b.dataset.k;
-        prefs[k] = k === 'speed' ? +b.dataset.v : b.dataset.v;
+        prefs[k] = k === 'speed' || k === 'chain' ? +b.dataset.v : b.dataset.v;
         if (k === 'speed') player.playbackRate = prefs.speed;
         save();
         sfx.tap();
@@ -4025,7 +4079,7 @@
         sfx.chime();
         burstAt(b, 20);
         setTimeout(() => {
-          if (chainList().length > 1) {
+          if (chainNow()) {
             st.phase = 'chain';
             st.chain = 0;
             render();
@@ -4267,10 +4321,10 @@
     glasses: { run: () => sfx.tap(), needs: 'glasses', front: true },
   };
   let lastMove = '';
-  function explorerMove(svg) {
+  function explorerMove(svg, prof, quiet) {
     if (!svg || reduceMotion) return;
     const back = svg.classList.contains('ex-back'),
-      worn = wornOutfit();
+      worn = wornOutfit(prof);
     const can = Object.keys(MOVES).filter((k) => {
       const m = MOVES[k];
       return k !== lastMove && !(m.needs && !worn[m.needs]) && !(m.noPet && worn.pet) && !(m.noShield && worn.shield) && !(back && m.front);
@@ -4283,7 +4337,7 @@
     Object.keys(MOVES).forEach((x) => svg.classList.remove('mv-' + x));
     void svg.getBoundingClientRect();
     svg.classList.add('mv-' + k);
-    MOVES[k].run();
+    if (!quiet) MOVES[k].run();
     clearTimeout(svg._mv);
     svg._mv = setTimeout(() => svg.classList.remove('mv-' + k), 1700);
     if (k === 'giggle') burstAt(svg, 5, ['😄', '✨']);
@@ -4331,8 +4385,151 @@
     const set = { joy: ['⭐', '✨', '💛'], spin: ['✨', '⭐'], dance: ['🎵', '✨'], hops: ['⭐', '✨'], flag: ['🎉', '⭐', '✨'], puff: ['☁️', '✨'], hop: ['💕', '✨'], shake: ['🍃', '🌸'], bounce: ['✨', '⭐'] }[kind];
     burstAt(el, kind === 'joy' || kind === 'flag' ? 10 : 5, set);
     if (kind === 'shake' && FRUIT_OF[k] && el.classList.contains('mprop')) dropFruit(el);
+    // tap a windmill, a cottage, a lighthouse, a flag… a few times in a row: it gets excited
+    if (kind === 'bounce' && el.classList.contains('mprop')) {
+      const now = Date.now();
+      el._taps = (el._taps || []).filter((t) => now - t < 2500).concat(now);
+      if (el._taps.length >= 3) {
+        el._taps = [];
+        excite(el);
+      }
+    }
     ({ joy: sfx.hop, spin: sfx.whoosh, dance: sfx.dance, hops: sfx.hop, flag: sfx.win, puff: sfx.whoosh, hop: sfx.pop, shake: sfx.rustle, bounce: sfx.tap })[kind]();
   }
+
+  /* A windmill spins fast, a chimney puffs more smoke, a lighthouse beam whirls, flags flap: everything that
+     moves in the picture speeds up, then slows back down over a few seconds. Animals nearby scurry off and
+     creep back as it calms down. */
+  function excite(el) {
+    const anims = el.getAnimations({ subtree: true }).filter((x) => x instanceof CSSAnimation);
+    if (!anims.length || reduceMotion) return;
+    sfx.whoosh();
+    burstAt(el, 8, /cottage|cabin|igloo/.test(el.dataset.k) ? ['💨', '☁️'] : ['✨', '💨', '⭐']);
+    const T = 6000,
+      t0 = performance.now();
+    clearInterval(el._ex);
+    el._ex = setInterval(() => {
+      const f = Math.min(1, (performance.now() - t0) / T),
+        rate = 1 + 5 * (1 - f) * (1 - f); // 6× at first, easing back to normal
+      anims.forEach((x) => x.updatePlaybackRate ? x.updatePlaybackRate(rate) : (x.playbackRate = rate));
+      if (f >= 1 || !el.isConnected) clearInterval(el._ex);
+    }, 120);
+    // the animals nearby, in the same world, scurry away and slowly come back
+    const ex = +el.dataset.x,
+      ey = +el.dataset.y;
+    [...el.parentNode.querySelectorAll('.mprop')]
+      .filter((a) => EATER.test(a.dataset.k) && !a._away && !a._busy && a.dataset.w === el.dataset.w && Math.hypot(+a.dataset.x - ex, +a.dataset.y - ey) < 240)
+      .forEach((a) => scurry(a, ex, ey, T));
+  }
+  function scurry(a, fx, fy, T) {
+    const who = a.firstElementChild;
+    if (!who || !who.animate) return;
+    a._busy = true;
+    const strolls = who.getAnimations().filter((x) => x instanceof CSSAnimation);
+    strolls.forEach((x) => x.pause());
+    const cs = getComputedStyle(who).transform,
+      m0 = cs && cs !== 'none' ? new DOMMatrixReadOnly(cs) : new DOMMatrixReadOnly(),
+      x0 = m0.m41,
+      face0 = m0.a < 0 ? -1 : 1;
+    const ax = +a.dataset.x,
+      dir = ax >= fx ? 1 : -1, // away from the noise
+      far = dir * (70 + Math.random() * 40),
+      at = (offset, x, y, face) => ({ offset, transform: `translate(${x.toFixed(1)}px, ${y}px) scaleX(${face})` });
+    const run = who.animate(
+      [at(0, x0, 0, face0), at(0.03, x0 + far * 0.3, -8, dir), at(0.06, x0 + far * 0.65, 0, dir), at(0.09, x0 + far, -6, dir), at(0.12, x0 + far, 0, dir), at(0.55, x0 + far, 0, -dir), at(0.75, x0 + far * 0.5, 0, -dir), at(0.98, x0, 0, -dir), at(1, x0, 0, face0)],
+      { duration: T + 1500 },
+    );
+    run.onfinish = run.oncancel = () => {
+      strolls.forEach((x) => x.play());
+      a._busy = false;
+    };
+  }
+
+  /* ---------- the other explorers on the map: standing in their own world, doing their own thing ---------- */
+  // a speech bubble over someone on the map, for a moment
+  function sayOnMap(el, text) {
+    const layer = el.parentNode;
+    if (!layer || !mapCtl) return;
+    const b = document.createElement('div');
+    b.className = 'mbubble';
+    b.textContent = text;
+    const inner = el.firstElementChild,
+      m = inner && getComputedStyle(inner).transform,
+      dx = m && m !== 'none' ? new DOMMatrixReadOnly(m).m41 : 0;
+    b.dataset.x = (el.offsetLeft + el.offsetWidth / 2 + dx).toFixed(1);
+    b.dataset.y = el.dataset.y;
+    b.style.left = b.dataset.x + 'px';
+    b.style.top = el.offsetTop - 6 + 'px';
+    layer.appendChild(b);
+    mapCtl.track(b);
+    const ctl = mapCtl;
+    setTimeout(() => {
+      b.classList.add('bye');
+      setTimeout(() => {
+        ctl.untrack(b);
+        b.remove();
+      }, 400);
+    }, 2400);
+  }
+  const onScreen = (el) => {
+    const r = el.getBoundingClientRect();
+    return r.bottom > 90 && r.top < innerHeight - 40 && r.right > 0 && r.left < innerWidth;
+  };
+  const palOf = (el) => store.profiles.find((p) => p.id === el.dataset.id);
+  const palsBusy = new WeakSet();
+  // walk a little way (inside .mpal-in, as the map moves the outer element), then call back
+  function palWalk(el, dx, dy, then) {
+    const who = el.firstElementChild,
+      steps = Math.max(2, Math.round(Math.hypot(dx, dy) / 22)),
+      frames = [];
+    for (let i = 0; i <= steps; i++) frames.push({ transform: `translate(${((dx * i) / steps).toFixed(1)}px, ${((dy * i) / steps + (i % 2 ? -4 : 0)).toFixed(1)}px)` });
+    const a = who.animate(frames, { duration: Math.max(600, Math.hypot(dx, dy) * 14), fill: 'forwards' });
+    a.onfinish = () => then && then(a);
+    return a;
+  }
+  function palIdle() {
+    if (st.view !== 'map' || document.hidden || reduceMotion || document.getElementById('modal').classList.contains('show')) return;
+    const layer = document.querySelector('#map .mlayer');
+    if (!layer) return;
+    const pals = [...layer.querySelectorAll('.mpal')].filter((el) => onScreen(el) && !palsBusy.has(el));
+    if (!pals.length) return;
+    const el = pals[(Math.random() * pals.length) | 0],
+      x = +el.dataset.x,
+      y = +el.dataset.y,
+      w = el.dataset.w;
+    // someone close by? say salām (the explorer by their sūrah counts too)
+    const near = [...layer.querySelectorAll('.mpal, .mex')].filter((o) => o !== el && onScreen(o) && Math.hypot(+o.dataset.x - x, +o.dataset.y - y) < 170);
+    const r = Math.random();
+    if (near.length && r < 0.4 && Date.now() - (el._hi || 0) > 20000) {
+      const o = near[(Math.random() * near.length) | 0];
+      el._hi = o._hi = Date.now();
+      sayOnMap(el, 'As-salāmu ʿalaykum! 👋');
+      setTimeout(() => o.isConnected && sayOnMap(o, 'Wa ʿalaykumu s-salām! 😊'), 1300);
+      return;
+    }
+    if (r < 0.75) {
+      // go and play with something nearby in the same world: shake a tree, pat an animal, poke a thing
+      const things = [...layer.querySelectorAll('.mprop')].filter((t) => t.dataset.w === w && !t._away && !t._busy && Math.hypot(+t.dataset.x - x, +t.dataset.y - y) < 150);
+      const t = things[(Math.random() * things.length) | 0];
+      if (t) {
+        palsBusy.add(el);
+        const side = +t.dataset.x > x ? -1 : 1,
+          dx = +t.dataset.x + side * (t.offsetWidth / 2 + 16) - x,
+          dy = +t.dataset.y - y;
+        const go1 = palWalk(el, dx, dy, () => {
+          poke(t);
+          setTimeout(() => {
+            const back = el.firstElementChild.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0, 0)' }], { duration: Math.max(600, Math.hypot(dx, dy) * 14) });
+            go1.cancel();
+            back.onfinish = () => palsBusy.delete(el);
+          }, 1600);
+        });
+        return;
+      }
+    }
+    explorerMove(el.querySelector('svg.ex'), palOf(el), true);
+  }
+  setInterval(palIdle, 3200);
 
   /* Tap a fruit tree, a berry bush, a pine or a cactus on the map: a fruit drops beside it, and the nearest
      animal runs over, eats it in three bites, and goes back to where it was. */
@@ -4355,7 +4552,7 @@
       ty = +tree.dataset.y;
     // the nearest animal that isn't busy, not too far away
     const near = [...layer.querySelectorAll('.mprop')]
-      .filter((a) => EATER.test(a.dataset.k) && !a._away && !a._busy)
+      .filter((a) => EATER.test(a.dataset.k) && !a._away && !a._busy && a.dataset.w === tree.dataset.w) // animals stay in their own world
       .map((a) => ({ a, d: Math.hypot(+a.dataset.x - tx, +a.dataset.y - ty) }))
       .filter((o) => o.d < 520)
       .sort((p, q) => p.d - q.d)[0];

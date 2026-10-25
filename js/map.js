@@ -197,25 +197,35 @@
           `<i class="mdot ${reached ? 'on' : ''}" data-x="${p.x.toFixed(1)}" data-y="${p.y.toFixed(1)}" style="left:${(p.x - 11).toFixed(1)}px;top:${(p.y - 7).toFixed(1)}px;--pf:${pal(wi).path[0]};--pe:${pal(wi).path[1]}"></i>`,
         );
       }
-      // props, seeded per world, kept off the path and the borders: first the world's landmark, then lots more
+      // props, seeded per world, kept off the path and the borders: first the world's landmark, then lots more.
+      // Nothing is placed where its picture would cover another one (so no animal hides behind a mountain),
+      // and everything is drawn back to front, so what stands nearer is drawn over what stands further away.
       const walkers = new Set(ART.WALKERS || []);
       const isTall = (name) => /viewBox="0 0 100 150"/.test(ART.props[name] || ''); // trees, palms, cacti… are drawn 100×150
       const grow = Math.max(1, Math.min(1.35, width / 460)); // props a little bigger on tablets and computers
-      const propHTML = (name, x, y, size0, rnd) => {
-        const svg = ART.props[name] || '',
-          size = Math.round(size0 * grow);
-        const tall = isTall(name);
-        const hgt = Math.round(tall ? size * 1.5 : size);
+      const scenery = []; // { y, html }, sorted by y before drawing
+      const propHTML = (name, x, y, size, hgt, rnd, wi) => {
+        const svg = ART.props[name] || '';
         // walkers stroll to and fro on the spot (css .mwalk)
         const inner = walkers.has(name) ? `<div class="mwalk" style="animation-duration:${(7 + rnd() * 6).toFixed(1)}s;animation-delay:-${(rnd() * 8).toFixed(1)}s">${svg}</div>` : svg;
-        return `<div class="mprop${walkers.has(name) ? ' walker' : ''}" data-act="poke" data-k="${name}" data-x="${x.toFixed(1)}" data-y="${y.toFixed(1)}" style="left:${(x - size / 2).toFixed(1)}px;top:${(y - hgt).toFixed(1)}px;width:${size}px;height:${hgt}px">${inner}</div>`;
+        return `<div class="mprop${walkers.has(name) ? ' walker' : ''}" data-act="poke" data-k="${name}" data-w="${wi}" data-x="${x.toFixed(1)}" data-y="${y.toFixed(1)}" style="left:${(x - size / 2).toFixed(1)}px;top:${(y - hgt).toFixed(1)}px;width:${size}px;height:${hgt}px">${inner}</div>`;
       };
+      // a picture's box (a little inside its edges, so things may just touch)
+      const boxOf = (x, y, w, h) => ({ x0: x - w * 0.38, x1: x + w * 0.38, y0: y - h * 0.85, y1: y + 4 });
+      const hits = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+      const boxes = [];
       // world signs go beside each world's first stop; props keep clear of them
       const signs = L.bands.map((b) => {
         const nd = L.nodes[b.first],
           left = nd.x > L.cx;
         return { x: left ? Math.max(70, nd.x - 150) : Math.min(width - 90, nd.x + 150), y: nd.y + 74 };
       });
+      signs.forEach((q) => boxes.push({ x0: q.x - 70, x1: q.x + 70, y0: q.y - 50, y1: q.y + 6 }));
+      const szS = Math.min(width * 0.9, 420); // the summit mountain
+      boxes.push({ x0: L.summit.x - szS * 0.42, x1: L.summit.x + szS * 0.42, y0: L.summit.y + 60 - szS * 0.8, y1: L.summit.y + 66 });
+      const exAt = exPos();
+      boxes.push(boxOf(exAt.x, exAt.y, 72, 108));
+      const pals = cfg.others || [];
       L.bands.forEach((b) => {
         const rnd = seeded(97 + b.wi * 131),
           names = (ART.PROPS_BY_WORLD[b.wi] || []).filter((nm) => nm !== 'peak-summit');
@@ -225,33 +235,61 @@
         const h = lo - hi,
           count = Math.round((h / 44) * Math.min(1.8, width / 400));
         const placed = signs.map((q) => ({ x: q.x, y: q.y - 30, room: 50 }));
-        const free = (x, y, room) =>
+        const free = (x, y, room, box) =>
           !L.pathXs(y).some((px) => Math.abs(px - x) < 70 + room) &&
           !L.nodes.some((nd) => Math.hypot(nd.x - x, nd.y - y) < 92 + room) &&
           !placed.some((q) => Math.hypot(q.x - x, q.y - y) < 48 + room + q.room) &&
-          !(width < 700 && x > width - 58 - room); // leave the world rail clear on phones
+          !(width < 700 && x > width - 58 - room) && // leave the world rail clear on phones
+          !(box && boxes.some((q) => hits(q, box)));
         const lm = ART.LANDMARKS && ART.LANDMARKS[b.wi];
         if (lm && ART.props[lm]) {
+          const size = Math.round(Math.min(120, width * 0.3) * grow), // grows with the screen too
+            hgt = Math.round(isTall(lm) ? size * 1.5 : size);
           for (let t = 0; t < 40; t++) {
             const y = hi + 40 + rnd() * (h - 40),
               px = L.pathXs(y)[0] || L.cx,
-              x = px > L.cx ? 30 + rnd() * Math.max(10, px - 190) : px + 120 + rnd() * Math.max(10, width - px - 220);
-            if (x < 40 || x > width - 40 || !free(x, y, 30)) continue;
+              x = px > L.cx ? 30 + rnd() * Math.max(10, px - 190) : px + 120 + rnd() * Math.max(10, width - px - 220),
+              box = boxOf(x, y, size, hgt);
+            if (x < 40 || x > width - 40 || !free(x, y, 30, box)) continue;
             placed.push({ x, y, room: 40 });
-            html.push(propHTML(lm, x, y, Math.round(Math.min(120, width * 0.3)), rnd)); // grows with the screen too
+            boxes.push(box);
+            scenery.push({ y, html: propHTML(lm, x, y, size, hgt, rnd, b.wi) });
             break;
           }
         }
+        // the other explorers who are in this world: each on a free spot of their own, spread out
+        const here = pals.filter((q) => q.wi === b.wi);
+        here.forEach((q) => {
+          const r2 = seeded(7 + [...q.id].reduce((t, c) => t * 31 + c.charCodeAt(0), 0) % 100000);
+          for (let t = 0; t < 120; t++) {
+            const x = 40 + r2() * (width - 80),
+              y = hi + 60 + r2() * (h - 60),
+              box = boxOf(x, y, 60, 90);
+            if (!free(x, y, 16, box)) continue;
+            placed.push({ x, y, room: 20 });
+            boxes.push({ x0: x - 42, x1: x + 42, y0: y - 90, y1: y + 10 }); // a little room around each
+            scenery.push({
+              y,
+              html: `<div class="mpal" data-act="pal" data-id="${q.id}" data-w="${b.wi}" data-x="${x.toFixed(1)}" data-y="${y.toFixed(1)}" style="left:${(x - 27).toFixed(1)}px;top:${(y - 81).toFixed(1)}px"><div class="mpal-in">${q.svg}</div><span class="mpal-name">${q.name}</span></div>`,
+            });
+            break;
+          }
+        });
         for (let t = 0, made = 0; t < count * 8 && made < count; t++) {
           const x = 10 + rnd() * (width - 20),
             y = hi + rnd() * h;
-          if (!free(x, y, 0)) continue;
+          const name = names[(rnd() * names.length) | 0],
+            size = Math.round((40 + rnd() * 30 + (isTall(name) ? 10 : 0)) * grow),
+            hgt = Math.round(isTall(name) ? size * 1.5 : size),
+            box = boxOf(x, y, size, hgt);
+          if (!free(x, y, 0, box)) continue;
           placed.push({ x, y, room: 0 });
+          boxes.push(box);
           made++;
-          const name = names[(rnd() * names.length) | 0];
-          html.push(propHTML(name, x, y, Math.round(40 + rnd() * 30 + (isTall(name) ? 10 : 0)), rnd));
+          scenery.push({ y, html: propHTML(name, x, y, size, hgt, rnd, b.wi) });
         }
       });
+      scenery.sort((p, q) => p.y - q.y).forEach((it) => html.push(it.html));
       // world signs
       L.bands.forEach((b) => {
         const w = cfg.worlds[b.wi],

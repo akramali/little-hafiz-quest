@@ -1,7 +1,14 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.5.2",
+ "latest": "2.5.3",
  "versions": [
+  { "v": "2.5.3", "notes": [
+   "Every explorer on the phone is in the world, saying salām when they meet",
+   "Up to 10 explorers, with comfy clothes in their own colors",
+   "New setting: chain the āyāt after every 1, 3, 4 or 5",
+   "Tap a windmill or cottage a few times to get it going",
+   "Small visual tweaks"
+  ] },
   { "v": "2.5.2", "notes": [
    "Tap fruit trees and bushes on the map: animals come to eat",
    "Recitation speed from 0.25× to 2×",

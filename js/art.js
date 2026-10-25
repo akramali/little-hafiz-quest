@@ -1076,6 +1076,25 @@
   /* ---------- pants ---------- */
   ART['basic-pants'] = { pants: '#3d5a99', box: [44, 202, 140, 286] };
   ART['astro-pants'] = { pants: '#e6ebf3', box: [44, 202, 140, 286] };
+  /* Starter colors: the comfy shirt and pants come in a few soft everyday colors (look.tee, look.legs), so no
+     two explorers start out the same. None of them is a prize color: the prizes are bright hue turns. */
+  const TEES = ['#7cc8f5', '#f3e6cc', '#c3c8d4', '#a9c79f'];
+  const LEGS = ['#3d5a99', '#ae9466', '#55566a', '#7d9fd4'];
+  TEES.forEach((c, k) => {
+    if (!k) return;
+    ART['basic-shirt~' + k] = Object.assign({}, ART['basic-shirt'], { top: Object.assign({}, ART['basic-shirt'].top, { c, sl: c, cf: lt(c, 0.32) }) });
+    BYID['basic-shirt~' + k] = Object.assign({}, BYID['basic-shirt'], { id: 'basic-shirt~' + k });
+  });
+  LEGS.forEach((c, k) => {
+    if (!k) return;
+    ART['basic-pants~' + k] = Object.assign({}, ART['basic-pants'], { pants: c });
+    BYID['basic-pants~' + k] = Object.assign({}, BYID['basic-pants'], { id: 'basic-pants~' + k });
+  });
+  // the comfy clothes in this explorer's own starter colors
+  const starterOf = (id, look) => {
+    const l = normLook(look);
+    return id === 'basic-shirt' && l.tee ? 'basic-shirt~' + l.tee : id === 'basic-pants' && l.legs ? 'basic-pants~' + l.legs : id;
+  };
 
   /* ---------- shoes: drawn for the viewer-left foot, mirrored for the other ---------- */
   const SHOE = Object.create(null);
@@ -1764,14 +1783,15 @@
   function normLook(l) {
     l = l || {};
     const i = (v, m) => (Number.isInteger(+v) && +v >= 0 && +v < m ? +v : 0);
-    return { skin: i(l.skin, 5), hair: LOOKS.hair.indexOf(l.hair) >= 0 ? l.hair : 'short', hairColor: i(l.hairColor, 4), hijabColor: i(l.hijabColor, 6), kid: LOOKS.kid.indexOf(l.kid) >= 0 ? l.kid : '' };
+    return { skin: i(l.skin, 5), hair: LOOKS.hair.indexOf(l.hair) >= 0 ? l.hair : 'short', hairColor: i(l.hairColor, 4), hijabColor: i(l.hijabColor, 6), kid: LOOKS.kid.indexOf(l.kid) >= 0 ? l.kid : '', tee: i(l.tee, TEES.length), legs: i(l.legs, LEGS.length) };
   }
-  function normOutfit(o) {
+  function normOutfit(o, look) {
     const out = {};
     SLOTS.forEach((s) => {
       const id = o && o[s];
       out[s] = id && BYID[id] && BYID[id].slot === s ? id : DEFAULTS[s] || null;
     });
+    if (look) ['top', 'pants'].forEach((s) => (out[s] = out[s] && starterOf(out[s], look)));
     return out;
   }
   function explorerInner(look, outfit, back, mood) {
@@ -1781,7 +1801,7 @@
     if (hs) look = Object.assign({}, look, { hair: 'hijab' });
     const sad = mood === 'sad',
       mess = sad ? scruffy(look, back) : null;
-    const o = normOutfit(outfit),
+    const o = normOutfit(outfit, look),
       v = back ? 'back' : 'front',
       sk = SKIN[look.skin],
       T = (s) => (o[s] ? BYID[o[s]].tier : 0),
@@ -1899,6 +1919,7 @@
     return tw(15, 20, 9.5, 0, t === 4 ? '#fff3a8' : '#fff') + tw(86, 26, 7, 0.9) + tw(82, 84, 8, 1.7, t === 4 ? '#fff3a8' : '#fff') + (t === 4 ? tw(18, 80, 6.5, 0.5) + tw(52, 8, 6, 2.2, '#fff3a8') : '');
   }
   function item(id, look) {
+    id = starterOf(id, look);
     const it = BYID[id];
     if (!it) return '';
     const t = it.tier,
@@ -1908,6 +1929,7 @@
     return svg100('lhq-item lhq-t' + t, back + art + front, (isGirl(look) && it.girl ? it.girl : it.name).replace(/"/g, ''));
   }
   function silhouette(id, look) {
+    id = starterOf(id, look);
     if (!BYID[id]) return '';
     return svg100('lhq-item lhq-sil', flat(iconArt(id, look), '#cdc5dc') +
       '<text x="50" y="66" text-anchor="middle" font-family="Baloo 2, ui-rounded, system-ui, sans-serif" font-weight="800" font-size="44" fill="#fff" stroke="#a99fbd" stroke-width="3" paint-order="stroke" stroke-linejoin="round">?</text>');
@@ -2542,6 +2564,8 @@
     DROPS: ITEMS.filter((it) => it.drop), // everyday accessories given as random surprise gifts (also flagged drop: true)
     SLOTS,
     DEFAULTS,
+    TEES,
+    LEGS,
     explorer,
     item,
     silhouette,

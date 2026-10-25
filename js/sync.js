@@ -17,7 +17,7 @@
 (function () {
   'use strict';
 
-  const FORMAT = 1;
+  const FORMAT = 2; // 2 (v2.5.3): adds the starter shirt and pants colors. Format 1 codes still open.
 
   /* ---------- bits ---------- */
   function writer() {
@@ -130,6 +130,8 @@
     w.num(p.look.hairColor, 4);
     w.num(p.look.hijabColor, 4);
     w.num(p.look.kid === 'boy' ? 1 : p.look.kid === 'girl' ? 2 : 0, 2);
+    w.num(p.look.tee || 0, 3);
+    w.num(p.look.legs || 0, 3);
     // treasures and stickers
     w.num(cat.sum, 16);
     w.num(cat.list.length, 12);
@@ -176,7 +178,8 @@
 
   async function decode(code, ctx) {
     const raw = unb64(String(code).trim());
-    if (raw[0] !== FORMAT) throw new Error('format');
+    const fmt = raw[0];
+    if (fmt !== 1 && fmt !== 2) throw new Error('format');
     let body = raw.slice(2);
     if (raw[1] & 1) {
       if (!CAN_ZIP) throw new Error('nozip');
@@ -188,6 +191,7 @@
     const p = { id: r.text(), name: r.text() };
     p.touched = r.big() * 1000;
     p.look = { skin: r.num(4), hair: L.hair[r.num(5)] || 'short', hairColor: r.num(4), hijabColor: r.num(4), kid: ['', 'boy', 'girl'][r.num(2)] || '' };
+    if (fmt >= 2) Object.assign(p.look, { tee: r.num(3), legs: r.num(3) });
     const sum = r.num(16),
       count = r.num(12);
     const same = sum === cat.sum && count === cat.list.length; // the same list of things on both phones
