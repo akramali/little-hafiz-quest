@@ -1,7 +1,13 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.5.0",
+ "latest": "2.5.1",
  "versions": [
+  { "v": "2.5.1", "notes": [
+   "Buttons have a clear edge",
+   "Family sync: one tap and done",
+   "Read: a ⚙️ shortcut to switch on word meanings",
+   "Fixed: Back on Share progress, and vowel marks touching word meanings"
+  ] },
   { "v": "2.5.0", "notes": [
    "Family sync: share an explorer's progress with another phone by link or QR code",
    "Explorers button on the start screen: switch, add, share, back up, reset",

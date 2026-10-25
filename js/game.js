@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.5.0';
+  const VERSION = '2.5.1';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -1796,10 +1796,10 @@
     return `<div class="screen mushafscr" style="${cv(s.color)}" data-act="mclear">
     ${bar(`📖 ${s.name}`, `${s.ayat.length} āyāt · ${st.sel != null ? `āyah ${st.sel + 1} chosen` : 'the whole sūrah'}`, 'surah')}
     <div class="mtools"><span>${st.sel != null ? (st.focus ? 'Listen plays this āyah. Tap anywhere to close.' : '<b>Tap the āyah again</b> to look closer. Tap anywhere else to clear the colors.') : '<b>Hold an āyah</b> to color its words, like Word Steps.'}</span></div>
-    <div class="card mushaf">
+    <div class="card mushaf ${focus ? 'focusing' : ''}">
       <div class="mtitle" lang="ar">سُورَةُ ${s.ar}</div>
       <div class="mbism" lang="ar">${BISM}</div>
-      <div class="mtext ${focus ? 'focusing' : ''}" lang="ar" dir="rtl">${ayat}</div>
+      <div class="mtext" lang="ar" dir="rtl">${ayat}</div>
     </div>
     ${focus}
   </div>
@@ -1819,7 +1819,7 @@
       <div class="mfhead"><span class="ayah-tag"><span class="num">${k + 1}</span>Āyah ${k + 1}</span><button class="mfx" data-act="mclear" aria-label="Close">✕</button></div>
       <div class="mfwords" dir="rtl">${words}</div>
       ${prefs.meaning ? `<div class="mean">💬 ${a.kid}</div>` : ''}
-      ${!prefs.translit && !prefs.wordmean && !prefs.meaning ? '<p class="saveinfo center">Switch on transliteration, word meanings or simple meanings in the Grown-up Corner to see them here.</p>' : ''}
+      ${!prefs.translit && !prefs.wordmean ? '<div class="mfhint"><span>See how each word sounds and what it means: switch on transliteration and word meanings.</span><button class="icon-btn sm" data-act="wordset" aria-label="Open the word settings">⚙️</button></div>' : ''}
     </div></div>`;
   }
   // hold an āyah (about half a second) to choose it
@@ -2478,13 +2478,15 @@
   /* On the start screen, outside the quest. Remove and Reset need a press and hold (the border fills up). */
   const holdBtn = (act, label, data, tip) =>
     `<button class="btn small danger holdbtn" data-hold="${act}" ${data || ''} data-tip="${tip}"><svg class="holdring" aria-hidden="true"><rect width="100%" height="100%" rx="14" pathLength="100"/></svg>${label}</button>`;
+  // an explorer's stars and sūrahs, as on the map
+  const exStats = (p) => `<small class="exstats"><span aria-label="stars">⭐ ${totalStars(p)}</span><span aria-label="sūrahs">📖 ${doneSurahs(p)}</span></small>`;
   V.explorers = () => {
     const prof = P(),
       nm = prof.name ? esc(prof.name) : 'this explorer';
     const rows = store.profiles
       .map((p) => {
         const on = p.id === store.cur;
-        return `<div class="exrow ${on ? 'on' : ''}"><button class="exsel" data-act="pickprof" data-id="${p.id}" aria-pressed="${on}"><span class="phead">${explorer({ view: 'front', cls: 'mini' }, p)}</span><span><b>${p.name ? esc(p.name) : 'Explorer'}</b><small>⭐ ${totalStars(p)} · ${S.filter((s) => surahDone(s, p)).length} memorized</small></span></button>
+        return `<div class="exrow ${on ? 'on' : ''}"><button class="exsel" data-act="pickprof" data-id="${p.id}" aria-pressed="${on}"><span class="phead">${explorer({ view: 'front', cls: 'mini' }, p)}</span><span><b>${p.name ? esc(p.name) : 'Explorer'}</b>${exStats(p)}</span></button>
           <button class="btn small" data-act="editlook" data-id="${p.id}" aria-label="Change look">✏️</button>${holdBtn('delprof', 'Remove', `data-id="${p.id}"`, `Press and hold to remove ${p.name ? esc(p.name) : 'this explorer'}`)}</div>`;
       })
       .join('');
@@ -2598,7 +2600,7 @@
     return `<div class="screen">
     ${bar('Share progress', nm, 'explorers')}
     <div class="sheet syncsheet">
-      <div class="syncwho"><span class="phead">${explorer({ view: 'front', cls: 'mini' })}</span><span><b>${nm}</b><small>⭐ ${totalStars()} stars · ${doneSurahs()} sūrahs</small></span></div>
+      <div class="syncwho"><span class="phead">${explorer({ view: 'front', cls: 'mini' })}</span><span><b>${nm}</b>${exStats(prof)}</span></div>
       ${st.link ? `<div class="qrbox">${qrSVG(st.link)}</div>` : '<div class="qrbox wait">Making the code…</div>'}
       <p class="saveinfo center">Point the other phone's camera at the QR code, or send the link. Opening it adds ${nm}'s progress to that phone.</p>
       <div class="row"><button class="btn go wide" data-act="synclink" ${st.link ? '' : 'disabled'}>📤 Share</button><button class="btn wide" data-act="synccopy" ${st.link ? '' : 'disabled'}>📋 Copy</button></div>
@@ -2726,13 +2728,10 @@
     save(true);
     incoming = null;
     sfx.win();
-    const m = document.getElementById('modal'),
-      nm = into.name ? esc(into.name) : 'Your explorer';
-    m.innerHTML = `<div class="card synccard"><div class="syncwho big"><span class="phead">${explorer({ view: 'front', cls: 'mini' }, into)}</span><span><b>✨ ${nm} is up to date</b><small>⭐ ${totalStars(into)} stars in all</small></span></div>
-      <p class="syncsum">${gain.stars > 0 || gain.things > 0 ? `+${gain.stars} star${gain.stars === 1 ? '' : 's'} · ${gain.things} new treasure${gain.things === 1 ? '' : 's'}` : 'Nothing new this time'}</p>
-      <p class="saveinfo">To bring the other phone up to date too, send ${nm}'s progress back.</p>
-      <div class="row"><button class="btn wide" data-act="syncdone">Done</button><button class="btn go wide" data-act="syncback">📤 Send it back</button></div></div>`;
-    m.classList.add('show');
+    // done: say so, and get out of the way
+    document.getElementById('modal').classList.remove('show');
+    const nm = into.name || 'Your explorer';
+    toast(`✨ ${nm} is up to date${gain.stars > 0 || gain.things > 0 ? ` · +${gain.stars} ⭐${gain.things ? ` · ${gain.things} new treasure${gain.things === 1 ? '' : 's'}` : ''}` : ''}`);
     render();
   }
   function showPaste() {
@@ -2786,7 +2785,7 @@
   }
   function showUpdates() {
     const m = document.getElementById('modal');
-    m.innerHTML = `<div class="card updcard"><h3>🧭 Little Hafiz Quest v${VERSION}</h3>${updatesHTML()}<div class="row"><button class="btn small" data-act="cno">Close</button></div></div>`;
+    m.innerHTML = `<div class="card updcard"><button class="cardx" data-act="cno" aria-label="Close">✕</button><h3>🧭 Version</h3>${updatesHTML()}</div>`;
     m.classList.add('show');
   }
   function refreshUpdateUI() {
@@ -2871,7 +2870,7 @@
   /* ---------- GROWN-UP CORNER ---------- */
   V.settings = () => {
     const tg = (k, t, d) =>
-      `<button class="toggle" data-act="tog" data-k="${k}"><span>${t}<small>${d}</small></span><span class="sw ${prefs[k] ? 'on' : ''}"></span></button>`;
+      `<button class="toggle ${st.flash && st.flash.includes(k) ? 'flash' : ''}" data-act="tog" data-k="${k}"><span>${t}<small>${d}</small></span><span class="sw ${prefs[k] ? 'on' : ''}"></span></button>`;
     const seg = (k, opts) =>
       `<span class="seg">${opts.map(([v, l]) => `<button class="${prefs[k] === v ? 'on' : ''}" data-act="set" data-k="${k}" data-v="${v}">${l}</button>`).join('')}</span>`;
     const recs = RECITERS.map(
@@ -2879,7 +2878,7 @@
         `<div class="recrow ${r.id === prefs.reciter ? 'on' : ''}"><button class="recpick" data-act="reciter" data-id="${r.id}"><span class="rdot"></span><span>${esc(r.name)}<small>${esc(r.note)}${r.mb ? ` · ${r.mb} MB` : ''}</small></span></button><button class="icon-btn sm" data-act="sample" data-id="${r.id}" aria-label="Hear a sample">${ICON.play}</button></div>`,
     ).join('');
     return `<div class="screen">
-    ${bar('Grown-up Corner', `Settings · v${VERSION}`, 'splash', '<button class="icon-btn helpbtn" data-act="help" aria-label="How to use it, and the disclaimer">❓</button>')}
+    ${bar('Grown-up Corner', `Settings · v${VERSION}`, st.ret ? 'ret' : 'splash', '<button class="icon-btn helpbtn" data-act="help" aria-label="How to use it, and the disclaimer">❓</button>')}
     <div class="sheet">
       <h3>🎨 Look</h3>
       ${fsSheet()}
@@ -3502,14 +3501,6 @@
       case 'synccopyin':
         if (incoming && incoming.link) copyText(incoming.link, 'Copied: now open the game from your Home Screen and tap Paste from family');
         break;
-      case 'syncdone':
-        sfx.tap();
-        m.classList.remove('show');
-        break;
-      case 'syncback':
-        m.classList.remove('show');
-        openShare();
-        break;
       case 'updates':
         sfx.tap();
         showUpdates();
@@ -3801,6 +3792,8 @@
         if (to === 'map') go('map');
         else if (to === 'splash') go('splash');
         else if (to === 'bag') go('bag', { tab: 'hat' });
+        else if (to === 'explorers') go('explorers');
+        else if (to === 'ret' && st.ret) go(st.ret.view, st.ret);
         else toSurah();
         break;
       }
@@ -3826,6 +3819,14 @@
         sfx.tap();
         go('settings');
         break;
+      case 'wordset': {
+        // from the Read focus card: straight to the word switches, and back to the same āyah after
+        sfx.tap();
+        go('settings', { ret: Object.assign({}, st), flash: ['wordmean', 'translit'] });
+        const t = document.querySelector('[data-act=tog][data-k=wordmean]');
+        if (t) t.scrollIntoView({ block: 'center' });
+        break;
+      }
       case 'tog':
         prefs[b.dataset.k] = !prefs[b.dataset.k];
         save();
