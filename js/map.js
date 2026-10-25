@@ -264,13 +264,14 @@
           for (let t = 0; t < 120; t++) {
             const x = 40 + r2() * (width - 80),
               y = hi + 60 + r2() * (h - 60),
-              box = boxOf(x, y, 60, 90);
+              box = boxOf(x, y, 80, 120);
             if (!free(x, y, 16, box)) continue;
             placed.push({ x, y, room: 20 });
-            boxes.push({ x0: x - 42, x1: x + 42, y0: y - 90, y1: y + 10 }); // a little room around each
+            boxes.push({ x0: x - 48, x1: x + 48, y0: y - 120, y1: y + 10 }); // a little room around each
             scenery.push({
               y,
-              html: `<div class="mpal" data-act="pal" data-id="${q.id}" data-w="${b.wi}" data-x="${x.toFixed(1)}" data-y="${y.toFixed(1)}" style="left:${(x - 27).toFixed(1)}px;top:${(y - 81).toFixed(1)}px"><div class="mpal-in">${q.svg}</div><span class="mpal-name">${q.name}</span></div>`,
+              // the same size as the explorer by their sūrah, feet at the same point
+              html: `<div class="mpal" data-act="pal" data-id="${q.id}" data-w="${b.wi}" data-x="${x.toFixed(1)}" data-y="${y.toFixed(1)}" style="left:${(x - EX_FOOT).toFixed(1)}px;top:${(y - 108).toFixed(1)}px" aria-label="${q.name}"><div class="mpal-in">${q.svg}</div></div>`,
             });
             break;
           }

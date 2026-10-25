@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.5.3';
+  const VERSION = '2.5.4';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -1421,6 +1421,7 @@
           box = tabs.getBoundingClientRect();
         if (r.left < box.left || r.right > box.right) tabs.scrollLeft += r.left - box.left - (box.width - r.width) / 2;
       }
+      scrollCue(tabs); // arrows while there are more categories to either side
     }
     updateFab();
   }
@@ -1446,7 +1447,7 @@
           : `<button class="pchip exbtn" data-act="explorers" aria-label="Explorers: switch, add, share and sync"><span class="phead">${explorer({ view: 'front', cls: 'mini' })}</span><span class="exb-tx"><b>${prof.name ? esc(prof.name) : 'Explorer'}</b><small>Explorers · switch, add, share &amp; sync</small></span><span class="exb-go">›</span></button>`
       }
     </div>
-    ${justUpdated ? `<div class="updnote"><b>✨ Updated to v${VERSION}</b>${notesHTML(VERSION)}<button class="updx" data-act="updok" aria-label="Close">✕</button></div>` : ''}
+    ${justUpdated ? `<div class="updnote"><b>✨ Updated to v${VERSION}</b>${notesHTML(VERSION, updatedFrom)}<button class="updx" data-act="updok" aria-label="Close">✕</button></div>` : ''}
   </div>`;
   };
 
@@ -1713,11 +1714,9 @@
     return `<div class="h2">🚩 Checkpoints <small>One part at a time, then the whole sūrah · swipe for more</small></div><div class="cpwrap"><div class="cptrail" id="cptrail">${cps.join('<i class="cpline"></i>')}</div><button class="cpmore cpless" data-act="cpscroll" data-d="-1" aria-label="Earlier checkpoints">‹</button><button class="cpmore" data-act="cpscroll" data-d="1" aria-label="More checkpoints">›</button></div>`;
   }
   /* keep the chosen checkpoint in view, and show the "more" cue only while there is more to swipe to */
-  function showSelectedCheckpoint() {
-    const tr = document.getElementById('cptrail');
+  // a sideways row: its wrapper shows ‹ › arrows while there is more to see that way
+  function scrollCue(tr) {
     if (!tr) return;
-    const sel = tr.querySelector('.cpf.sel');
-    if (sel) tr.scrollLeft = Math.max(0, sel.offsetLeft - (tr.clientWidth - sel.offsetWidth) / 2);
     const cue = () => {
       const w = tr.parentNode;
       w.classList.toggle('more-r', tr.scrollLeft + tr.clientWidth < tr.scrollWidth - 4);
@@ -1728,6 +1727,13 @@
       tr.dataset.cue = 1;
       tr.addEventListener('scroll', cue, { passive: true });
     }
+  }
+  function showSelectedCheckpoint() {
+    const tr = document.getElementById('cptrail');
+    if (!tr) return;
+    const sel = tr.querySelector('.cpf.sel');
+    if (sel) tr.scrollLeft = Math.max(0, sel.offsetLeft - (tr.clientWidth - sel.offsetWidth) / 2);
+    scrollCue(tr);
   }
   V.surah = () => {
     const s = S[st.i],
@@ -2354,7 +2360,7 @@
     return `<div class="screen bagscr">
     ${bar('My Explorer', prof.name ? esc(prof.name) : 'Dress up and collect', 'map', giftIcon(prof, 'inbar') + `<button class="mebtn ${tab === 'look' ? 'on' : ''}" data-act="tab" data-t="${tab === 'look' ? 'hat' : 'look'}" aria-label="Change my name and how I look" aria-pressed="${tab === 'look'}">${tab === 'look' ? '✓ Done' : '✏️ My look'}</button>`)}
     <div class="wd-stage"><button class="wd-ex" data-act="exmove" aria-label="Tap your explorer">${explorer({ view: st.backView ? 'back' : 'front' })}</button>${comfy}<button class="wd-side wd-turn" data-act="turn" aria-label="Turn around">↻<small>Turn</small></button><button class="wd-side wd-show" data-act="show" aria-label="My achievements">🏆<small>Awards</small></button></div>
-    <div class="wtabs" id="wtabs">${tabs}</div>
+    <div class="wtwrap"><div class="wtabs" id="wtabs">${tabs}</div><button class="cpmore cpless" data-act="wtscroll" data-d="-1" aria-label="Earlier categories">‹</button><button class="cpmore" data-act="wtscroll" data-d="1" aria-label="More categories">›</button></div>
     <div class="wbody">${body}</div>
   </div>`;
   };
@@ -2791,10 +2797,12 @@
     lastCheck = 0,
     changelog = null;
   const upd = { available: false, ready: false, version: '' };
-  let justUpdated = false;
+  let justUpdated = false,
+    updatedFrom = ''; // the version this phone ran before, so the note can list everything since
   try {
     const seenV = localStorage.getItem(VER_SEEN);
     justUpdated = !!seenV && vnum(seenV) < vnum(VERSION);
+    if (justUpdated) updatedFrom = seenV;
     if (!seenV) localStorage.setItem(VER_SEEN, VERSION);
   } catch (e) {}
   function loadChangelog() {
@@ -2806,15 +2814,33 @@
       })
       .catch(() => changelog);
   }
-  function notesHTML(v) {
-    const e = changelog && changelog.versions.find((x) => x.v === v);
-    return e && e.notes && e.notes.length ? `<details class="whatsnew"><summary>What's new</summary><ul>${e.notes.map((t) => `<li>${esc(t)}</li>`).join('')}</ul></details>` : '';
+  // the notes of version `to`, or of every version after `from` up to `to` (newest first; a note repeated in
+  // an older version, like "Small visual tweaks", is listed once)
+  function notesHTML(to, from) {
+    if (!changelog) return '';
+    const list = changelog.versions
+      .filter((x) => x.notes && x.notes.length && (from ? vnum(x.v) > vnum(from) && vnum(x.v) <= vnum(to) : x.v === to))
+      .sort((a, b) => vnum(b.v) - vnum(a.v));
+    if (!list.length) return '';
+    const seen = new Set();
+    const ul = (notes) => `<ul>${notes.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>`;
+    const body =
+      list.length === 1
+        ? ul(list[0].notes)
+        : list
+            .map((x) => {
+              const fresh = x.notes.filter((t) => !seen.has(t));
+              fresh.forEach((t) => seen.add(t));
+              return fresh.length ? `<div class="wnv">v${esc(x.v)}</div>${ul(fresh)}` : '';
+            })
+            .join('');
+    return `<details class="whatsnew"><summary>What's new${list.length > 1 ? ` since v${esc(from)}` : ''}</summary>${body}</details>`;
   }
   function updatesHTML() {
     const status = upd.available
       ? `<b>${upd.version ? 'v' + esc(upd.version) : 'A new version'} is ready.</b> Update now, or keep playing; it updates by itself within a week.`
       : `You have v${VERSION}${changelog ? ', the latest' : ''}.`;
-    return `<div class="updbox"><p class="saveinfo">${status}</p>${notesHTML(upd.available ? upd.version : VERSION)}
+    return `<div class="updbox"><p class="saveinfo">${status}</p>${upd.available ? notesHTML(upd.version, VERSION) : notesHTML(VERSION)}
       <div class="row">${upd.available ? '<button class="btn go wide" data-act="updnow">✨ Update now</button>' : '<button class="btn wide" data-act="updcheck">🔄 Check for updates</button>'}</div></div>`;
   }
   function showUpdates() {
@@ -3778,7 +3804,7 @@
         const p = palOf(b);
         if (!p) break;
         explorerMove(b.querySelector('svg.ex'), p);
-        sayOnMap(b, `${p.name || 'Explorer'} · ⭐ ${totalStars(p)}`);
+        sayOnMap(b, `${p.name || 'Explorer'} · ⭐ ${totalStars(p)}`, 3200);
         break;
       }
       case 'exmove':
@@ -3867,8 +3893,9 @@
         sfx.tap();
         document.getElementById('loadfile').click();
         break;
-      case 'cpscroll': {
-        const tr = document.getElementById('cptrail');
+      case 'cpscroll':
+      case 'wtscroll': {
+        const tr = document.getElementById(act === 'wtscroll' ? 'wtabs' : 'cptrail');
         if (tr) tr.scrollBy({ left: +b.dataset.d * tr.clientWidth * 0.7, behavior: 'smooth' });
         break;
       }
@@ -4446,30 +4473,42 @@
   }
 
   /* ---------- the other explorers on the map: standing in their own world, doing their own thing ---------- */
-  // a speech bubble over someone on the map, for a moment
-  function sayOnMap(el, text) {
+  // a speech bubble over someone on the map, for a moment. Another explorer carries theirs along as they walk
+  // (it sits inside what moves); the explorer by their sūrah gets one on the map above them.
+  function sayOnMap(el, text, ms) {
     const layer = el.parentNode;
     if (!layer || !mapCtl) return;
     const b = document.createElement('div');
     b.className = 'mbubble';
     b.textContent = text;
-    const inner = el.firstElementChild,
-      m = inner && getComputedStyle(inner).transform,
-      dx = m && m !== 'none' ? new DOMMatrixReadOnly(m).m41 : 0;
-    b.dataset.x = (el.offsetLeft + el.offsetWidth / 2 + dx).toFixed(1);
-    b.dataset.y = el.dataset.y;
-    b.style.left = b.dataset.x + 'px';
-    b.style.top = el.offsetTop - 6 + 'px';
-    layer.appendChild(b);
-    mapCtl.track(b);
-    const ctl = mapCtl;
-    setTimeout(() => {
-      b.classList.add('bye');
-      setTimeout(() => {
+    let done;
+    if (el.classList.contains('mpal')) {
+      const old = el.querySelector('.mbubble');
+      if (old) old.remove();
+      el.firstElementChild.appendChild(b);
+      el.style.zIndex = 7; // over the scenery in front
+      done = () => {
+        b.remove();
+        if (!el.querySelector('.mbubble')) el.style.zIndex = '';
+      };
+    } else {
+      b.classList.add('onmap');
+      b.dataset.x = (el.offsetLeft + el.offsetWidth / 2).toFixed(1);
+      b.dataset.y = el.dataset.y;
+      b.style.left = b.dataset.x + 'px';
+      b.style.top = el.offsetTop - 6 + 'px';
+      layer.appendChild(b);
+      mapCtl.track(b);
+      const ctl = mapCtl;
+      done = () => {
         ctl.untrack(b);
         b.remove();
-      }, 400);
-    }, 2400);
+      };
+    }
+    setTimeout(() => {
+      b.classList.add('bye');
+      setTimeout(done, 400);
+    }, ms || 2400);
   }
   const onScreen = (el) => {
     const r = el.getBoundingClientRect();

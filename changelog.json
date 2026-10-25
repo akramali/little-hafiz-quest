@@ -1,7 +1,13 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.5.3",
+ "latest": "2.5.4",
  "versions": [
+  { "v": "2.5.4", "notes": [
+   "Tap another explorer to see their name",
+   "What's new lists every update you missed",
+   "Arrows show more categories in My Explorer",
+   "Small visual tweaks"
+  ] },
   { "v": "2.5.3", "notes": [
    "Every explorer on the phone is in the world, saying salām when they meet",
    "Up to 10 explorers, with comfy clothes in their own colors",

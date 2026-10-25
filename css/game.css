@@ -7226,8 +7226,8 @@ body {
 }
 /* the other explorers on the map */
 .mpal {
-  width: 54px;
-  height: 81px;
+  width: 72px;
+  height: 108px;
   transform-origin: 50% 100%;
   pointer-events: auto;
   cursor: pointer;
@@ -7239,28 +7239,22 @@ body {
   display: block;
   overflow: visible;
 }
-.mpal-name {
-  position: absolute;
-  left: 50%;
-  top: 100%;
-  transform: translate(-50%, -2px);
-  padding: 0 7px;
-  border-radius: 99px;
-  background: rgba(255, 255, 255, 0.82);
-  color: #2b2340;
-  font-size: 11px;
-  font-weight: 800;
-  line-height: 16px;
-  white-space: nowrap;
-  pointer-events: none;
-}
 /* a speech bubble over someone on the map */
-.mbubble {
+.mbubble.onmap {
   z-index: 6;
   transform-origin: 50% 100%;
-  pointer-events: none;
+}
+/* inside another explorer: above their head, moving with them */
+.mpal-in {
+  position: relative;
+}
+.mpal-in > .mbubble {
+  position: absolute;
+  left: 46%;
+  top: 4px;
 }
 .mbubble {
+  pointer-events: none;
   translate: -50% -100%;
   max-width: 190px;
   padding: 6px 11px;
@@ -7284,4 +7278,37 @@ body {
     opacity: 0;
     scale: 0.6;
   }
+}
+
+/* ---------- v2.5.4 ---------- */
+/* What's new, after skipping a few versions: each version's notes under its number */
+.whatsnew .wnv {
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--soft);
+}
+.whatsnew .wnv + ul {
+  margin-top: 2px;
+}
+.updnote .whatsnew[open] {
+  max-height: 55vh;
+  max-height: 55dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+/* My Explorer: ‹ › arrows on the category row while there are more categories to either side */
+.wtwrap {
+  position: relative;
+}
+.wtwrap .cpmore {
+  margin-top: -20px;
+}
+.wtwrap.more-r .cpmore:not(.cpless),
+.wtwrap.more-l .cpmore.cpless {
+  opacity: 1;
+  pointer-events: auto;
+}
+.wtwrap.more-r .cpmore:not(.cpless) {
+  animation: nudgeR 1.2s ease-in-out infinite;
 }
