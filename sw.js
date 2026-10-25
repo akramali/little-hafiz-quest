@@ -4,17 +4,20 @@
  * - On install, stores the app itself (page, styles, scripts, data, fonts, icons) so it opens without internet.
  * - Recitation files (audio/<reciter>/NNN.mp3, one per sūrah, plus that reciter's timings.json) are stored
  *   the first time they play, or all at once from the Grown-up Corner ("Save all recitations").
- * - Older versions live in their own folders (v1/ …) with their own service worker. This one leaves
- *   their requests alone, and uses cache names they never touch ("lhq2-…").
+ * - The retired classic version's folder (v1/) has a service worker of its own that clears it away; this one
+ *   leaves v1/ requests alone, and uses cache names it never touched ("lhq2-…").
+ * - Updates (v2.5.0 on): a new version downloads and then waits, until the family taps Update in the game or
+ *   a week has passed (js/game.js asks with a "SKIP_WAITING" message). Versions before 2.5.0 have no Update
+ *   button, so an update from one of them takes over at once, as it always did.
  * - Audio players ask for byte ranges (to jump to an āyah). Safari requires a proper "206 Partial Content"
  *   answer, so ranges are cut from the stored file here.
  * - Only this site's own files are handled; nothing else is requested or stored.
  *
- * When you change any app file, bump VERSION so installed copies update on their next visit.
+ * When you change any app file, bump VERSION (and add it to changelog.json) so installed copies update.
  */
 'use strict';
 
-const VERSION = '2.4.6';
+const VERSION = '2.5.0';
 const SHELL_CACHE = `lhq2-shell-${VERSION}`;
 const AUDIO_CACHE = 'lhq2-audio'; // keep across app updates; change only if the audio files change
 const DATA_CACHE = 'lhq2-data'; // small lists that can change between versions (reciters, versions)
@@ -30,6 +33,9 @@ const SHELL_FILES = [
   './js/art.js',
   './js/map.js',
   './js/sounds.js',
+  './js/sync.js',
+  './js/qrcode.js',
+  './words.json',
   './audio/silence.mp3',
   './js/game.js',
   './css/art.css',
@@ -42,13 +48,22 @@ const SHELL_FILES = [
   './icons/apple-touch-icon.png',
 ];
 
+const vnum = (v) => String(v || '0').split('.').reduce((t, x) => t * 1000 + (parseInt(x, 10) || 0), 0);
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
       .open(SHELL_CACHE)
       .then((cache) => cache.addAll(SHELL_FILES.map((u) => new Request(u, { cache: 'reload' }))))
-      .then(() => self.skipWaiting()),
+      .then(() => caches.keys())
+      .then((keys) => {
+        // the version this phone runs now; no Update button before 2.5.0, so take over at once from those
+        const old = keys.filter((k) => k.startsWith('lhq2-shell-') && k !== SHELL_CACHE).map((k) => k.slice(11));
+        if (!old.length || old.every((v) => vnum(v) < vnum('2.5.0'))) return self.skipWaiting();
+      }),
   );
+});
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting(); // the family tapped Update
 });
 
 self.addEventListener('activate', (event) => {
@@ -80,7 +95,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(networkFirst(req, AUDIO_CACHE));
     return;
   }
-  if (/\/(versions|audio\/reciters)\.json$/.test(url.pathname)) {
+  if (/\/(changelog|audio\/reciters)\.json$/.test(url.pathname)) {
     event.respondWith(networkFirst(req));
     return;
   }

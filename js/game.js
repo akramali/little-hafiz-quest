@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.4.6';
+  const VERSION = '2.5.0';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -191,6 +191,7 @@
     actions: false, // the "Do it" actions start off (v2.4.4); grown-ups can switch them on
     fullscreen: false,
     pzrtl: false, // Picture Puzzle from right to left
+    wordmean: false, // the meaning of each word (Word Steps, the muṣḥaf)
   };
   let store = null;
   let prefs = Object.assign({}, DEFAULT_PREFS);
@@ -219,6 +220,7 @@
       made: false,
       time: 0, // seconds spent learning (for grown-ups)
       stime: {}, // the same, per sūrah
+      touched: 0, // when this explorer was last used (ms): the newer phone's look and outfit win in a sync
     };
   }
   const int = (v, lo, hi, d) => (Number.isInteger(v) && v >= lo && v <= hi ? v : d);
@@ -320,13 +322,14 @@
     p.made = !!o.made;
     const secs = (v) => (typeof v === 'number' && isFinite(v) && v > 0 ? Math.min(Math.round(v), 1e8) : 0);
     p.time = secs(o.time);
+    p.touched = typeof o.touched === 'number' && isFinite(o.touched) && o.touched > 0 ? Math.round(o.touched) : 0;
     if (o.stime && typeof o.stime === 'object') for (const n in o.stime) if (BYN[n] && secs(o.stime[n])) p.stime[BYN[n].n] = secs(o.stime[n]);
     return p;
   }
   function cleanPrefs(o) {
     const out = Object.assign({}, DEFAULT_PREFS);
     if (!o || typeof o !== 'object') return out;
-    ['meaning', 'translit', 'sfx', 'audio', 'slow', 'hearts', 'actions', 'fullscreen', 'pzrtl'].forEach((k) => {
+    ['meaning', 'translit', 'sfx', 'audio', 'slow', 'hearts', 'actions', 'fullscreen', 'pzrtl', 'wordmean'].forEach((k) => {
       if (typeof o[k] === 'boolean') out[k] = o[k];
     });
     if (['auto', 'light', 'dim'].includes(o.theme)) out.theme = o.theme;
@@ -357,8 +360,10 @@
       return null;
     }
   }
-  function save() {
+  function save(keepTouched) {
     store.prefs = prefs;
+    const cur = store.profiles.find((p) => p.id === store.cur);
+    if (cur && cur.made && !keepTouched) cur.touched = Date.now();
     const json = JSON.stringify(store);
     try {
       localStorage.setItem(STORE_KEY, json);
@@ -446,6 +451,16 @@
       const hadV1 = Object.keys(first.prog).length > 0;
       store = { v: 2, cur: hadV1 ? first.id : '', profiles: hadV1 ? [first] : [], prefs: cleanPrefs(oldPrefs) };
     }
+    // The classic version (v1, retired in v2.5.0) kept its stars apart; fold them into the first explorer
+    // once, so a family that went back to it loses nothing (the best of both is kept).
+    try {
+      const v1 = localStorage.getItem('lhq_prog');
+      if (v1 && !localStorage.getItem('lhq_v1folded') && store.profiles.length) {
+        const prog = cleanProg(decProgV1(v1));
+        for (const n in prog) mergeProg(store.profiles[0], n, prog[n]);
+      }
+      if (v1) localStorage.setItem('lhq_v1folded', '1');
+    } catch (e) {}
     // treasures follow the stars: one star wins a sūrah's treasure, every star its golden edition, and the
     // star track gives a prize every few stars
     store.profiles.forEach((prof) => {
@@ -454,6 +469,23 @@
       giveStarBadges(prof);
     });
     prefs = store.prefs;
+  }
+  /* the best of two records of a sūrah's progress (used by family sync and the classic version's stars) */
+  function mergeProg(into, n, from) {
+    const s = BYN[n];
+    if (!s || !from) return;
+    const r = rec(s.n, into);
+    s.P.forEach((_, q) => {
+      const a = r.parts[q] || (r.parts[q] = blank()),
+        b = from.parts[q];
+      if (!b) return;
+      ['learn', 'words', 'order', 'next'].forEach((k) => (a[k] = a[k] || b[k] ? 1 : 0));
+      a.path = Math.max(a.path || 0, b.path || 0);
+      a.la = (a.la | b.la) & 1023;
+      a.wa = (a.wa | b.wa) & 1023;
+    });
+    r.all = Math.max(r.all || 0, from.all || 0);
+    if (from.big) r.big = 1;
   }
   // The current explorer. With no explorers yet, a blank stand-in (never saved) keeps every screen working.
   let nobody = null;
@@ -1238,6 +1270,13 @@
     st = Object.assign({ view }, params);
     if (GAMES.includes(view)) st.starsBefore = totalStars(); // a first finish (a new star) always brings a gift
     render(true);
+    if (view === 'splash' || view === 'map') maybeForce();
+    if (view !== 'splash' && justUpdated) {
+      justUpdated = false; // the "Updated to …" note has been seen
+      try {
+        localStorage.setItem(VER_SEEN, VERSION);
+      } catch (e) {}
+    }
   }
   const GAMES = ['learn', 'words', 'path', 'order'];
   let sceneKeyNow = '',
@@ -1370,7 +1409,7 @@
     return `<div class="splash">
     <div class="sp-art">${ART.splash(prof.look, Object.assign(wornOutfit(prof), { sticker: prof.badge }), { night: isNight(), mood: prof.lost.length ? 'sad' : '' })}</div>
     <div class="sp-top">
-      <button class="verchip" data-act="versions" aria-label="Choose version">v${VERSION}</button>
+      <button class="verchip ${upd.available ? 'ready' : ''}" data-act="updates" aria-label="Version and updates">v${VERSION}${upd.available ? ' · Update ✨' : ''}</button>
       <span class="sp-tr">${FS_OK && !STANDALONE ? `<button class="icon-btn" data-act="fs" aria-label="${fsNow() ? 'Exit fullscreen' : 'Fullscreen'}">${fsNow() ? ICON.fsOut : ICON.fsIn}</button>` : ''}<button class="icon-btn" data-act="settings" aria-label="Grown-up corner">${ICON.gear}</button></span>
     </div>
     <div class="sp-bottom">
@@ -1379,10 +1418,11 @@
       <button class="btn gold sp-begin" data-act="begin">${started ? 'Continue the quest ▶' : 'Begin ▶'}</button>
       ${
         noExplorers()
-          ? '<button class="pchip" data-act="newprof"><span class="phead">➕</span>Add an explorer<small>to start</small></button>'
-          : `<button class="pchip" data-act="profiles"><span class="phead">${explorer({ view: 'front', cls: 'mini' })}</span>${prof.name ? esc(prof.name) : 'Explorer'}<small>${store.profiles.length > 1 ? 'switch' : 'add a child'}</small></button>`
+          ? '<button class="pchip" data-act="newprof"><span class="phead">➕</span>Add explorer<small>to start</small></button>'
+          : `<button class="pchip exbtn" data-act="explorers" aria-label="Explorers: switch, add, share and sync"><span class="phead">${explorer({ view: 'front', cls: 'mini' })}</span><span class="exb-tx"><b>${prof.name ? esc(prof.name) : 'Explorer'}</b><small>Explorers · switch, add, share &amp; sync</small></span><span class="exb-go">›</span></button>`
       }
     </div>
+    ${justUpdated ? `<div class="updnote"><b>✨ Updated to v${VERSION}</b>${notesHTML(VERSION)}<button class="updx" data-act="updok" aria-label="Close">✕</button></div>` : ''}
   </div>`;
   };
 
@@ -1485,7 +1525,6 @@
       <button class="hud-stars" data-act="progress" data-t="stars" aria-label="Stars: ${totalStars()} of ${MAX_STARS}">⭐ <b>${totalStars()}</b><small>/${MAX_STARS}</small></button>
       ${giftIcon(prof)}
       <button class="icon-btn hud-bag hud-me" data-act="bag" aria-label="My explorer: dress up, collection and achievements"><span class="phead">${explorer({ cls: 'mini' })}</span>${prof.fresh.length ? NEWDOT : ''}</button>
-      <button class="icon-btn" data-act="settings" aria-label="Grown-up corner">${ICON.gear}</button>
     </div>
     <div id="map" class="mroot"></div>
   </div>`;
@@ -1753,17 +1792,36 @@
         return `<span class="mayah ${sel ? 'sel' : ''}" data-k="${k}">${words} <span class="mnum">﴿${toArNum(k + 1)}﴾</span></span>`;
       })
       .join(' ');
+    const focus = st.sel != null && st.focus ? focusCard(s, st.sel) : '';
     return `<div class="screen mushafscr" style="${cv(s.color)}" data-act="mclear">
     ${bar(`📖 ${s.name}`, `${s.ayat.length} āyāt · ${st.sel != null ? `āyah ${st.sel + 1} chosen` : 'the whole sūrah'}`, 'surah')}
-    <div class="mtools"><span>${st.sel != null ? 'Listen plays this āyah. Tap anywhere to clear the colors.' : '<b>Hold an āyah</b> to color its words, like Word Steps.'}</span></div>
+    <div class="mtools"><span>${st.sel != null ? (st.focus ? 'Listen plays this āyah. Tap anywhere to close.' : '<b>Tap the āyah again</b> to look closer. Tap anywhere else to clear the colors.') : '<b>Hold an āyah</b> to color its words, like Word Steps.'}</span></div>
     <div class="card mushaf">
       <div class="mtitle" lang="ar">سُورَةُ ${s.ar}</div>
       <div class="mbism" lang="ar">${BISM}</div>
-      <div class="mtext" lang="ar" dir="rtl">${ayat}</div>
+      <div class="mtext ${focus ? 'focusing' : ''}" lang="ar" dir="rtl">${ayat}</div>
     </div>
+    ${focus}
   </div>
   <div class="mfloat">${loopBtn()}</div>`;
   };
+  /* one āyah up close: its colored words, with the transliteration over each and the meaning under each
+     (as the settings say), and the simple meaning of the whole āyah */
+  function focusCard(s, k) {
+    const a = s.ayat[k];
+    const words = wordsOf(a.ar)
+      .map((w, j) => {
+        const ln = wordLines(s.n, k, j);
+        return `<span class="fword" style="${wv(WCOL[j % WCOL.length])}">${ln.above}<span class="fwar" lang="ar">${w}</span>${ln.below}</span>`;
+      })
+      .join('');
+    return `<div class="mfocus" role="dialog" aria-label="Āyah ${k + 1}"><div class="mfcard">
+      <div class="mfhead"><span class="ayah-tag"><span class="num">${k + 1}</span>Āyah ${k + 1}</span><button class="mfx" data-act="mclear" aria-label="Close">✕</button></div>
+      <div class="mfwords" dir="rtl">${words}</div>
+      ${prefs.meaning ? `<div class="mean">💬 ${a.kid}</div>` : ''}
+      ${!prefs.translit && !prefs.wordmean && !prefs.meaning ? '<p class="saveinfo center">Switch on transliteration, word meanings or simple meanings in the Grown-up Corner to see them here.</p>' : ''}
+    </div></div>`;
+  }
   // hold an āyah (about half a second) to choose it
   let hold = null;
   document.addEventListener('pointerdown', (e) => {
@@ -1778,6 +1836,7 @@
       t: setTimeout(() => {
         hold.fired = true;
         st.sel = +el.dataset.k;
+        st.focus = false;
         sfx.pop();
         render();
       }, 450),
@@ -1805,10 +1864,35 @@
     if (st.view === 'mushaf' && e.target.closest('.mushaf')) e.preventDefault(); // a long press chooses an āyah
   });
 
+  /* ---------- each word's transliteration and meaning (words.json: the Quranic Arabic Corpus) ---------- */
+  let WORDS = null,
+    wordsLoading = null;
+  function loadWords() {
+    if (WORDS || wordsLoading) return;
+    wordsLoading = fetch('words.json')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (j && j.surahs) WORDS = j.surahs;
+        if (['words', 'mushaf'].includes(st.view)) render();
+      })
+      .catch(() => {})
+      .then(() => (wordsLoading = null));
+  }
+  const wordInfo = (n, k, j) => (WORDS && WORDS[n] && WORDS[n][k] && WORDS[n][k][j]) || ['', ''];
+  // the lines over and under a word: transliteration above, meaning below (as the settings say)
+  function wordLines(n, k, j) {
+    const [tr, en] = wordInfo(n, k, j);
+    return {
+      above: prefs.translit && tr ? `<span class="wtl">${esc(tr)}</span>` : '',
+      below: prefs.wordmean && en ? `<span class="wen">${esc(en)}</span>` : '',
+    };
+  }
+
   /* ---------- WORD STEPS (tap a word to hear just that word) ---------- */
   /* Every word sits in a box exactly as wide as the word, in practice and from memory alike (a hidden word
      still takes its room, with its number on top), so each colored box stays in the same place. */
-  const wbox = (w, j, cls, attrs) => `<${attrs ? 'button' : 'span'} class="wbox ${cls}" style="${wv(WCOL[j % WCOL.length])}" ${attrs || ''}><span class="wtx" lang="ar">${w}</span><span class="wnum">${j + 1}</span></${attrs ? 'button' : 'span'}>`;
+  const wbox = (w, j, cls, attrs, ln) =>
+    `<${attrs ? 'button' : 'span'} class="wbox ${cls}" style="${wv(WCOL[j % WCOL.length])}" ${attrs || ''}>${ln ? ln.above : ''}<span class="wtx" lang="ar">${w}</span>${ln ? ln.below : ''}<span class="wnum">${j + 1}</span></${attrs ? 'button' : 'span'}>`;
   V.words = () => {
     const s = S[st.i],
       c = ctx(),
@@ -1828,7 +1912,9 @@
     let stage, controls, note;
     if (st.phase === 'build') {
       stage = `<div class="wflow">${W.map((w, j) =>
-        j < st.w ? wbox(w, j, `word ${j === st.w - 1 ? 'new' : ''}`, `data-act="sayw" data-n="${s.n}" data-k="${k}" data-w="${j}"`) : wbox(w, j, 'word ph'),
+        j < st.w
+          ? wbox(w, j, `word ${j === st.w - 1 ? 'new' : ''}`, `data-act="sayw" data-n="${s.n}" data-k="${k}" data-w="${j}"`, wordLines(s.n, k, j))
+          : wbox(w, j, 'word ph', '', wordLines(s.n, k, j)),
       ).join('')}</div>`;
       note =
         st.w === 1
@@ -1840,8 +1926,8 @@
       const all = st.shown.length === n;
       stage = `<div class="wflow">${W.map((w, j) =>
         st.shown.includes(j)
-          ? wbox(w, j, 'wtile shown', `data-act="sayw" data-n="${s.n}" data-k="${k}" data-w="${j}"`)
-          : wbox(w, j, 'wtile', `data-act="wshow" data-j="${j}" aria-label="Word ${j + 1}"`),
+          ? wbox(w, j, 'wtile shown', `data-act="sayw" data-n="${s.n}" data-k="${k}" data-w="${j}"`, wordLines(s.n, k, j))
+          : wbox(w, j, 'wtile', `data-act="wshow" data-j="${j}" aria-label="Word ${j + 1}"`, wordLines(s.n, k, j)),
       ).join('')}</div>`;
       note = all ? 'Every word in its place. Well done!' : 'Child says the whole āyah from memory. Grown-up taps each tile as the word is said.';
       const last = nextTodo(c, k, [...st.doneA, k]) < 0;
@@ -2388,48 +2474,412 @@
     toast('Picture saved to your downloads');
   }
 
+  /* ---------- EXPLORERS: switch, add, share & sync, back up, start again ---------- */
+  /* On the start screen, outside the quest. Remove and Reset need a press and hold (the border fills up). */
+  const holdBtn = (act, label, data, tip) =>
+    `<button class="btn small danger holdbtn" data-hold="${act}" ${data || ''} data-tip="${tip}"><svg class="holdring" aria-hidden="true"><rect width="100%" height="100%" rx="14" pathLength="100"/></svg>${label}</button>`;
+  V.explorers = () => {
+    const prof = P(),
+      nm = prof.name ? esc(prof.name) : 'this explorer';
+    const rows = store.profiles
+      .map((p) => {
+        const on = p.id === store.cur;
+        return `<div class="exrow ${on ? 'on' : ''}"><button class="exsel" data-act="pickprof" data-id="${p.id}" aria-pressed="${on}"><span class="phead">${explorer({ view: 'front', cls: 'mini' }, p)}</span><span><b>${p.name ? esc(p.name) : 'Explorer'}</b><small>⭐ ${totalStars(p)} · ${S.filter((s) => surahDone(s, p)).length} memorized</small></span></button>
+          <button class="btn small" data-act="editlook" data-id="${p.id}" aria-label="Change look">✏️</button>${holdBtn('delprof', 'Remove', `data-id="${p.id}"`, `Press and hold to remove ${p.name ? esc(p.name) : 'this explorer'}`)}</div>`;
+      })
+      .join('');
+    return `<div class="screen exscr">
+    ${bar('Explorers', noExplorers() ? 'Add one for each child (or grown-up)' : `${store.profiles.length} on this phone`, 'splash')}
+    <div class="sheet">
+      <h3>🧒 Your explorers</h3>
+      ${rows}
+      ${store.profiles.length < 8 ? '<div class="setrow" style="justify-content:center"><button class="btn small" data-act="newprof">➕ Add explorer</button></div>' : ''}
+    </div>
+    ${
+      noExplorers()
+        ? ''
+        : `<div class="sheet">
+      <h3>👨‍👩‍👧 Family sync · ${nm}</h3>
+      <p class="saveinfo">Practicing on more than one phone? Share ${nm}'s progress with a link or QR code, and the other phone adds it to theirs. Nothing is stored online.</p>
+      <div class="row"><button class="btn go wide" data-act="syncshare">📤 Share progress</button></div>
+      <div class="row"><button class="btn wide" data-act="syncpaste">📋 Paste from family</button></div>
+    </div>`
+    }
+    ${noExplorers() ? `<div class="sheet"><h3>👨‍👩‍👧 Family sync</h3><div class="setrow" style="justify-content:center"><button class="btn small" data-act="syncpaste">📋 Paste from family</button></div></div>` : ''}
+    <div class="sheet">
+      <h3>💾 Backup</h3>
+      <p class="saveinfo">A file with every explorer on this phone, in case its storage is cleared. Load it back any time.</p>
+      <div class="setrow" style="justify-content:center;gap:10px"><button class="btn small" data-act="savefile" ${noExplorers() ? 'disabled' : ''}>💾 Save progress</button><button class="btn small" data-act="loadfile">📂 Load progress</button><input type="file" id="loadfile" accept=".json,application/json" hidden></div>
+    </div>
+    ${
+      noExplorers()
+        ? ''
+        : `<div class="sheet">
+      <h3>🔄 Start again · ${nm}</h3>
+      <p class="saveinfo">One sūrah, or every star. Treasures already found stay. Resets stay on this phone (a sync can bring stars back from another phone).</p>
+      <div class="setrow"><select class="selbox" id="resetSel" style="max-width:none;flex:1">${S.map((s, i) => `<option value="${i}">${s.n}. ${s.name} (⭐ ${surahStars(s)})</option>`).join('')}</select>
+        ${holdBtn('resetone', 'Reset', '', 'Press and hold to reset this sūrah')}</div>
+      <div class="setrow" style="justify-content:center">${holdBtn('reset', '🔄 Reset every star', '', `Press and hold to reset all of ${nm}'s stars`)}</div>
+    </div>`
+    }
+  </div>`;
+  };
+  // press and hold: the border fills up, then the action happens
+  const HOLD_MS = 1600;
+  let holding = null;
+  document.addEventListener('pointerdown', (e) => {
+    const b = e.target.closest && e.target.closest('[data-hold]');
+    if (!b) return;
+    b._fired = false;
+    b.classList.add('holding');
+    holding = { b, t: setTimeout(() => {
+      b._fired = true;
+      b.classList.remove('holding');
+      holding = null;
+      runHold(b);
+    }, HOLD_MS) };
+  });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach((ev) =>
+    document.addEventListener(
+      ev,
+      (e) => {
+        if (!holding || (ev === 'pointerleave' && e.target !== holding.b)) return; // only leaving the button itself
+        clearTimeout(holding.t);
+        holding.b.classList.remove('holding');
+        holding = null;
+      },
+      true,
+    ),
+  );
+  document.addEventListener('contextmenu', (e) => {
+    if (e.target.closest && e.target.closest('[data-hold]')) e.preventDefault(); // a long press is the hold, not a menu
+  });
+  function runHold(b) {
+    const act = b.dataset.hold;
+    if (act === 'delprof') {
+      const p = store.profiles.find((x) => x.id === b.dataset.id);
+      if (!p) return;
+      store.profiles = store.profiles.filter((x) => x.id !== p.id);
+      if (store.cur === p.id) store.cur = store.profiles.length ? store.profiles[0].id : '';
+      nobody = null;
+      save(true);
+      toast(`${p.name || 'The explorer'} was removed`);
+    } else if (act === 'resetone') {
+      const x = S[+document.getElementById('resetSel').value];
+      delete P().prog[x.n];
+      save();
+      toast(`${x.name} reset ✨`);
+    } else if (act === 'reset') {
+      P().prog = {};
+      P().lost = [];
+      save();
+      toast('All stars reset ✨');
+    }
+    sfx.boop();
+    render();
+  }
+
+  /* ---------- FAMILY SYNC: one explorer, as a link or a QR code (js/sync.js) ---------- */
+  const SYNC = window.LHQ_SYNC;
+  const syncCtx = () => ({ surahs: S, items: ITEMS, stickers: [...ART.STICKERS, ...ART.BADGES], looks: ART.LOOKS, slots: SLOTS });
+  const appURL = () => location.origin + location.pathname.replace(/index\.html$/, '');
+  function qrSVG(text) {
+    const q = window.qrcode(0, 'L');
+    q.addData(text, 'Byte');
+    q.make();
+    const n = q.getModuleCount();
+    let d = '';
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) d += `M${c} ${r}h1v1h-1z`;
+    return `<svg class="qrsvg" viewBox="-4 -4 ${n + 8} ${n + 8}" shape-rendering="crispEdges" role="img" aria-label="QR code"><rect x="-4" y="-4" width="${n + 8}" height="${n + 8}" fill="#fff"/><path d="${d}" fill="#000"/></svg>`;
+  }
+  V.syncshare = () => {
+    const prof = P(),
+      nm = prof.name ? esc(prof.name) : 'Explorer';
+    return `<div class="screen">
+    ${bar('Share progress', nm, 'explorers')}
+    <div class="sheet syncsheet">
+      <div class="syncwho"><span class="phead">${explorer({ view: 'front', cls: 'mini' })}</span><span><b>${nm}</b><small>⭐ ${totalStars()} stars · ${doneSurahs()} sūrahs</small></span></div>
+      ${st.link ? `<div class="qrbox">${qrSVG(st.link)}</div>` : '<div class="qrbox wait">Making the code…</div>'}
+      <p class="saveinfo center">Point the other phone's camera at the QR code, or send the link. Opening it adds ${nm}'s progress to that phone.</p>
+      <div class="row"><button class="btn go wide" data-act="synclink" ${st.link ? '' : 'disabled'}>📤 Share</button><button class="btn wide" data-act="synccopy" ${st.link ? '' : 'disabled'}>📋 Copy</button></div>
+      <p class="saveinfo center small">The link holds ${nm}'s progress (stars, treasures and look). It isn't stored anywhere online.</p>
+    </div>
+  </div>`;
+  };
+  function openShare() {
+    go('syncshare', { link: '' });
+    SYNC.encode(P(), syncCtx())
+      .then((code) => {
+        if (st.view === 'syncshare') {
+          st.link = `${appURL()}#sync=${code}`;
+          render();
+        }
+      })
+      .catch(() => toast("The code couldn't be made on this phone."));
+  }
+  function copyText(t, done) {
+    const ok = () => toast(done || 'Copied');
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok, () => prompt('Copy this:', t));
+    else prompt('Copy this:', t);
+  }
+  /* receiving: from a link (#sync=…) or pasted */
+  const codeIn = (text) => {
+    const m = String(text || '').match(/sync=([A-Za-z0-9_-]{8,})/) || String(text || '').trim().match(/^([A-Za-z0-9_-]{16,})$/);
+    return m ? m[1] : '';
+  };
+  let incoming = null; // { from (cleaned explorer), link, target }
+  function openSync(code, link) {
+    SYNC.decode(code, syncCtx())
+      .then((raw) => {
+        const from = cleanProfile(raw);
+        if (!from) throw new Error('bad');
+        from.made = true;
+        const match = store.profiles.find((p) => p.id === from.id) || store.profiles.find((p) => p.name && p.name === from.name);
+        incoming = { from, link, sameThings: raw.sameThings, target: match ? match.id : store.profiles.length ? '' : 'new' };
+        showSync();
+      })
+      .catch((e) => toast(e && e.message === 'nozip' ? 'This browser is too old to read it. Please update the browser.' : "That progress link didn't work. Ask for a new one."));
+  }
+  const thingsOf = (p) => p.items.length + p.stickers.length;
+  function preview(target) {
+    const from = incoming.from;
+    if (target === 'new') return { stars: totalStars(from), plus: totalStars(from), things: thingsOf(from) };
+    const into = store.profiles.find((p) => p.id === target);
+    const copy = JSON.parse(JSON.stringify(into));
+    mergeInto(copy, from);
+    return { stars: totalStars(copy), plus: totalStars(copy) - totalStars(into), things: thingsOf(copy) - thingsOf(into) };
+  }
+  function showSync() {
+    const m = document.getElementById('modal'),
+      from = incoming.from,
+      nm = from.name ? esc(from.name) : 'An explorer';
+    const choices = [...store.profiles.map((p) => [p.id, p.name ? esc(p.name) : 'Explorer', p]), ['new', '➕ New explorer', null]];
+    const pick = incoming.target;
+    const pv = pick ? preview(pick) : null;
+    m.innerHTML = `<div class="card synccard">
+      <div class="syncwho big"><span class="phead">${ART.explorer(from.look, Object.assign({}, from.outfit, { sticker: from.badge }), { view: 'front', cls: 'mini' })}</span><span><b>Sync ${nm}'s progress?</b><small>⭐ ${totalStars(from)} stars from another phone</small></span></div>
+      ${store.profiles.length ? `<p class="saveinfo">Which explorer on this phone is ${nm}?</p><div class="synclist">${choices.map(([id, label, p]) => `<button class="syncopt ${pick === id ? 'on' : ''}" data-act="synctarget" data-id="${id}">${p ? `<span class="phead">${explorer({ view: 'front', cls: 'mini' }, p)}</span>` : ''}<span>${label}${p ? `<small>⭐ ${totalStars(p)}</small>` : ''}</span></button>`).join('')}</div>` : ''}
+      ${pv ? `<p class="syncsum">${pick === 'new' ? `A new explorer with ⭐ ${pv.stars} stars` : pv.plus > 0 || pv.things > 0 ? `+${pv.plus} star${pv.plus === 1 ? '' : 's'} · ${pv.things} new treasure${pv.things === 1 ? '' : 's'} · ⭐ ${pv.stars} in all` : 'Already up to date: nothing new'}</p>` : ''}
+      ${!incoming.sameThings ? '<p class="saveinfo">The two phones are on different versions: treasures won from stars come along; update both phones to bring the rest.</p>' : ''}
+      ${incoming.link && !STANDALONE ? `<p class="saveinfo">Using the game from your Home Screen? <button class="linkbtn" data-act="synccopyin">Copy this</button>, open the game there, and tap <b>Paste from family</b>.</p>` : ''}
+      <div class="row"><button class="btn wide" data-act="cno">Not now</button><button class="btn go wide" data-act="syncdo" ${pick ? '' : 'disabled'}>✨ Sync</button></div></div>`;
+    m.classList.add('show');
+  }
+  /* the best of both phones: stars and āyāt practiced, every treasure and sticker; the most recently used
+     phone's look, outfit and lost things; the higher learning time */
+  function mergeInto(into, from) {
+    const newer = (from.touched || 0) > (into.touched || 0);
+    for (const n in from.prog) mergeProg(into, n, from.prog[n]);
+    from.items.forEach((id) => {
+      if (!into.items.includes(id)) {
+        into.items.push(id);
+        gotIt(into, 'i:' + id);
+      }
+    });
+    from.stickers.forEach((id) => {
+      if (!into.stickers.includes(id)) {
+        into.stickers.push(id);
+        gotIt(into, 's:' + id);
+      }
+    });
+    if (newer) {
+      if (from.name) into.name = from.name;
+      into.look = Object.assign({}, from.look);
+      into.outfit = Object.assign({}, from.outfit);
+      into.badge = from.badge;
+      into.lost = from.lost.filter((x) => into.items.includes(x.id));
+      into.fix = from.fix.slice();
+    }
+    ['wdone', 'feats', 'cpg'].forEach((k) => (into[k] = [...new Set([...into[k], ...from[k]])]));
+    into.time = Math.max(into.time || 0, from.time || 0);
+    for (const n in from.stime) into.stime[n] = Math.max(into.stime[n] || 0, from.stime[n]);
+    into.touched = Math.max(into.touched || 0, from.touched || 0);
+    into.pending = into.pending.filter((g) => (g.k === 'i' ? !into.items.includes(g.id) : !into.stickers.includes(g.id)));
+    S.forEach((s) => giveSurahGift(s, into));
+    giveTrackPrizes(into);
+    giveStarBadges(into);
+  }
+  function doSync() {
+    const from = incoming.from;
+    let into;
+    if (incoming.target === 'new') {
+      if (store.profiles.some((p) => p.id === from.id)) from.id = newProfile().id;
+      store.profiles.push(from);
+      into = from;
+      S.forEach((s) => giveSurahGift(s, into));
+      giveTrackPrizes(into);
+      giveStarBadges(into);
+    } else {
+      into = store.profiles.find((p) => p.id === incoming.target);
+      const before = { stars: totalStars(into), things: thingsOf(into) };
+      mergeInto(into, from);
+      // next time the two phones recognize this explorer by itself
+      if (into.id !== from.id && !store.profiles.some((p) => p.id === from.id)) {
+        if (store.cur === into.id) store.cur = from.id;
+        into.id = from.id;
+      }
+      into._gain = { stars: totalStars(into) - before.stars, things: thingsOf(into) - before.things };
+    }
+    store.cur = into.id;
+    const gain = into._gain || { stars: totalStars(into), things: thingsOf(into) };
+    delete into._gain;
+    save(true);
+    incoming = null;
+    sfx.win();
+    const m = document.getElementById('modal'),
+      nm = into.name ? esc(into.name) : 'Your explorer';
+    m.innerHTML = `<div class="card synccard"><div class="syncwho big"><span class="phead">${explorer({ view: 'front', cls: 'mini' }, into)}</span><span><b>✨ ${nm} is up to date</b><small>⭐ ${totalStars(into)} stars in all</small></span></div>
+      <p class="syncsum">${gain.stars > 0 || gain.things > 0 ? `+${gain.stars} star${gain.stars === 1 ? '' : 's'} · ${gain.things} new treasure${gain.things === 1 ? '' : 's'}` : 'Nothing new this time'}</p>
+      <p class="saveinfo">To bring the other phone up to date too, send ${nm}'s progress back.</p>
+      <div class="row"><button class="btn wide" data-act="syncdone">Done</button><button class="btn go wide" data-act="syncback">📤 Send it back</button></div></div>`;
+    m.classList.add('show');
+    render();
+  }
+  function showPaste() {
+    const m = document.getElementById('modal');
+    m.innerHTML = `<div class="card synccard"><h3>📋 Paste from family</h3>
+      <p class="saveinfo">Paste the progress link another phone shared with you.</p>
+      <textarea id="pastebox" class="pastebox" rows="3" placeholder="https://…#sync=…" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
+      <div class="row">${navigator.clipboard && navigator.clipboard.readText ? '<button class="btn wide" data-act="pastein">📋 Paste</button>' : ''}<button class="btn go wide" data-act="pastego">Next ›</button></div>
+      <div class="row"><button class="btn small" data-act="cno">Cancel</button></div></div>`;
+    m.classList.add('show');
+  }
+
+  /* ================= updates ================= */
+  /* A new version downloads in the background (sw.js) and waits. The start screen and the Grown-up Corner
+     offer it; Update switches over and reloads. A family can wait, but a week after this phone first saw the
+     update it is applied the next time the game is back on the start screen or the map (never mid-lesson).
+     Checked when the game opens and whenever it comes back to the screen (at most every 15 minutes). */
+  const UPD_SEEN = 'lhq_upd_seen', // when this phone first saw a waiting update
+    VER_SEEN = 'lhq_ver'; // the version this phone last ran (to say "Updated to …")
+  const vnum = (v) => String(v || '0').split('.').reduce((t, x) => t * 1000 + (parseInt(x, 10) || 0), 0);
+  let swReg = null,
+    updWanted = false,
+    lastCheck = 0,
+    changelog = null;
+  const upd = { available: false, ready: false, version: '' };
+  let justUpdated = false;
+  try {
+    const seenV = localStorage.getItem(VER_SEEN);
+    justUpdated = !!seenV && vnum(seenV) < vnum(VERSION);
+    if (!seenV) localStorage.setItem(VER_SEEN, VERSION);
+  } catch (e) {}
+  function loadChangelog() {
+    return fetch('changelog.json', { cache: 'no-cache' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (j && Array.isArray(j.versions)) changelog = j;
+        return changelog;
+      })
+      .catch(() => changelog);
+  }
+  function notesHTML(v) {
+    const e = changelog && changelog.versions.find((x) => x.v === v);
+    return e && e.notes && e.notes.length ? `<details class="whatsnew"><summary>What's new</summary><ul>${e.notes.map((t) => `<li>${esc(t)}</li>`).join('')}</ul></details>` : '';
+  }
+  function updatesHTML() {
+    const status = upd.available
+      ? `<b>${upd.version ? 'v' + esc(upd.version) : 'A new version'} is ready.</b> Update now, or keep playing; it updates by itself within a week.`
+      : `You have v${VERSION}${changelog ? ', the latest' : ''}.`;
+    return `<div class="updbox"><p class="saveinfo">${status}</p>${notesHTML(upd.available ? upd.version : VERSION)}
+      <div class="row">${upd.available ? '<button class="btn go wide" data-act="updnow">✨ Update now</button>' : '<button class="btn wide" data-act="updcheck">🔄 Check for updates</button>'}</div></div>`;
+  }
+  function showUpdates() {
+    const m = document.getElementById('modal');
+    m.innerHTML = `<div class="card updcard"><h3>🧭 Little Hafiz Quest v${VERSION}</h3>${updatesHTML()}<div class="row"><button class="btn small" data-act="cno">Close</button></div></div>`;
+    m.classList.add('show');
+  }
+  function refreshUpdateUI() {
+    if (st.view === 'splash' || st.view === 'settings') render();
+    const card = document.querySelector('#modal.show .updcard');
+    if (card) showUpdates();
+  }
+  function checkUpdates(manual) {
+    lastCheck = Date.now();
+    if (swReg) swReg.update().catch(() => {});
+    return loadChangelog().then((j) => {
+      if (j && vnum(j.latest) > vnum(VERSION)) {
+        upd.available = true;
+        upd.version = j.latest;
+      }
+      if (manual && !upd.available) toast(j ? `You have the latest version (v${VERSION})` : "Couldn't check: no internet?");
+      refreshUpdateUI();
+      maybeForce();
+    });
+  }
+  function markReady() {
+    upd.ready = true;
+    upd.available = true;
+    if (!upd.version && changelog && vnum(changelog.latest) > vnum(VERSION)) upd.version = changelog.latest;
+    try {
+      if (!localStorage.getItem(UPD_SEEN)) localStorage.setItem(UPD_SEEN, String(Date.now()));
+    } catch (e) {}
+    if (updWanted) applyUpdate();
+    refreshUpdateUI();
+    maybeForce();
+  }
+  function applyUpdate() {
+    updWanted = true;
+    try {
+      localStorage.removeItem(UPD_SEEN);
+    } catch (e) {}
+    if (swReg && swReg.waiting) swReg.waiting.postMessage({ type: 'SKIP_WAITING' });
+    else if (!swReg) location.reload();
+    else {
+      toast('Downloading the update…');
+      swReg.update().catch(() => {});
+    }
+  }
+  // a week after it was first offered, an update applies itself at a calm moment
+  function maybeForce() {
+    if (!upd.ready || updWanted || !['splash', 'map'].includes(st.view)) return;
+    let since = 0;
+    try {
+      since = +localStorage.getItem(UPD_SEEN) || 0;
+    } catch (e) {}
+    if (since && Date.now() - since > 7 * 86400000) applyUpdate();
+  }
+  function registerOffline() {
+    if (!OFFLINE_OK) return;
+    window.addEventListener('load', () => {
+      navigator.serviceWorker
+        .register('sw.js')
+        .then((reg) => {
+          swReg = reg;
+          if (reg.waiting && navigator.serviceWorker.controller) markReady();
+          reg.addEventListener('updatefound', () => {
+            const w = reg.installing;
+            if (w)
+              w.addEventListener('statechange', () => {
+                if (w.state === 'installed' && navigator.serviceWorker.controller) markReady();
+              });
+          });
+          checkUpdates(false);
+        })
+        .catch(() => {});
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (updWanted) location.reload(); // the new version took over: start it
+      });
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) return;
+      if (Date.now() - lastCheck > 15 * 60000) checkUpdates(false);
+      else maybeForce();
+    });
+  }
+
   /* ---------- GROWN-UP CORNER ---------- */
   V.settings = () => {
     const tg = (k, t, d) =>
       `<button class="toggle" data-act="tog" data-k="${k}"><span>${t}<small>${d}</small></span><span class="sw ${prefs[k] ? 'on' : ''}"></span></button>`;
     const seg = (k, opts) =>
       `<span class="seg">${opts.map(([v, l]) => `<button class="${prefs[k] === v ? 'on' : ''}" data-act="set" data-k="${k}" data-v="${v}">${l}</button>`).join('')}</span>`;
-    const prof = P();
-    const progress = S.map((s) => {
-      const got = surahStars(s),
-        max = surahMax(s),
-        done = surahDone(s);
-      return `<div class="prow ${done ? 'done' : got ? 'part' : ''}"><span class="pn">${s.n}</span><span class="pname">${s.name}${done ? ' ✓' : ''}</span>
-        <span class="pbar"><i style="width:${Math.round((got / max) * 100)}%"></i></span><span class="pst">${got}/${max} ⭐</span></div>`;
-    }).join('');
-    const doneCount = S.filter((s) => surahDone(s)).length;
     const recs = RECITERS.map(
       (r) =>
         `<div class="recrow ${r.id === prefs.reciter ? 'on' : ''}"><button class="recpick" data-act="reciter" data-id="${r.id}"><span class="rdot"></span><span>${esc(r.name)}<small>${esc(r.note)}${r.mb ? ` · ${r.mb} MB` : ''}</small></span></button><button class="icon-btn sm" data-act="sample" data-id="${r.id}" aria-label="Hear a sample">${ICON.play}</button></div>`,
     ).join('');
     return `<div class="screen">
-    ${bar('Grown-up Corner', `Settings · v${VERSION}`, st.back || 'splash', '<button class="icon-btn helpbtn" data-act="help" aria-label="How to use it, and the disclaimer">❓</button>')}
-    <div class="sheet">
-      <h3>🧒 Explorers</h3>
-      ${store.profiles
-        .map(
-          (p) =>
-            `<div class="setrow"><button class="profrow ${p.id === store.cur ? 'on' : ''}" data-act="pickprof" data-id="${p.id}"><span class="phead">${explorer({ view: 'front', cls: 'mini' }, p)}</span><span>${p.name ? esc(p.name) : 'Explorer'}<small>⭐ ${totalStars(p)} · ${S.filter((s) => surahDone(s, p)).length} memorized</small></span></button><button class="btn small danger" data-act="delprof" data-id="${p.id}">Remove</button></div>`,
-        )
-        .join('')}
-      <div class="setrow" style="justify-content:center"><button class="btn small" data-act="newprof">➕ ${noExplorers() ? 'Add an explorer' : 'Add another child'}</button></div>
-      ${noExplorers() ? '<p class="saveinfo center">No explorers yet. Add one for each child.</p>' : ''}
-      <p class="saveinfo">💾 Keep a copy of every explorer (stars, treasures, stickers, looks and settings) in a file, in case this device's storage is cleared. Load it back here any time.</p>
-      <div class="setrow" style="justify-content:center;gap:10px"><button class="btn small" data-act="savefile" ${noExplorers() ? 'disabled' : ''}>💾 Save progress</button><button class="btn small" data-act="loadfile">📂 Load progress</button><input type="file" id="loadfile" accept=".json,application/json" hidden></div>
-      ${
-        noExplorers()
-          ? ''
-          : `<p class="saveinfo">Start again${prof.name ? ` for <b>${esc(prof.name)}</b>` : ''}: one sūrah, or every star. Treasures already found stay.</p>
-      <div class="setrow"><select class="selbox" id="resetSel" style="max-width:none;flex:1">${S.map((s, i) => `<option value="${i}">${s.n}. ${s.name} (⭐ ${surahStars(s)})</option>`).join('')}</select>
-        <button class="btn small" data-act="resetone">Reset</button></div>
-      <div class="setrow" style="justify-content:center"><button class="btn small danger" data-act="reset">🔄 Reset this explorer</button></div>`
-      }
-    </div>
+    ${bar('Grown-up Corner', `Settings · v${VERSION}`, 'splash', '<button class="icon-btn helpbtn" data-act="help" aria-label="How to use it, and the disclaimer">❓</button>')}
     <div class="sheet">
       <h3>🎨 Look</h3>
       ${fsSheet()}
@@ -2439,7 +2889,8 @@
         ['dim', 'Dim'],
       ])}</div>
       ${tg('meaning', 'Show simple meaning', 'A kid-friendly sentence under each āyah')}
-      ${tg('translit', 'Show transliteration', "Latin letters, for helpers who can't read Arabic")}
+      ${tg('wordmean', 'Show word meanings', 'The meaning of each word, in Word Steps and Read (📖). From the Quranic Arabic Corpus')}
+      ${tg('translit', 'Show transliteration', "Latin letters, for helpers who can't read Arabic: under each āyah, and over each word in Word Steps and Read")}
       ${tg('actions', 'Show the actions', 'The “Do it” movement for each āyah. Switch off for more room on screen')}
     </div>
     <div class="sheet">
@@ -2462,7 +2913,7 @@
     ${offlineSheet()}
     <div class="sheet">
       <h3>🧭 Version</h3>
-      <div class="setrow"><span>Little Hafiz Quest v${VERSION}<small>You can switch to the classic version any time</small></span><button class="btn small" data-act="versions">Change</button></div>
+      ${updatesHTML()}
     </div>
   </div>`;
   };
@@ -2476,12 +2927,6 @@
     return [`audio/${id}/timings.json`, ...nums.map((n) => `audio/${id}/${pad(+n)}.mp3`)];
   };
   let offline = { saved: null, busy: false, done: 0, id: '' };
-  function registerOffline() {
-    if (!OFFLINE_OK) return;
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
-    });
-  }
   function countSavedAudio(id) {
     if (!OFFLINE_OK) return Promise.resolve(0);
     return caches
@@ -2597,48 +3042,6 @@
       return '<div class="setrow"><span>Fullscreen<small>This browser can\'t hide its address bar for websites. On iPhone: tap Share, then <b>Add to Home Screen</b>, and play from that icon.</small></span></div>';
     const on = fsNow();
     return `<div class="setrow"><span>Fullscreen<small>Hides the address bar. Exit with this button or your device's back / swipe</small></span><button class="btn small" data-act="fs">${on ? ICON.fsOut + ' Exit' : ICON.fsIn + ' Fullscreen'}</button></div>`;
-  }
-
-  /* ================= versions ================= */
-  const CHANNEL_KEY = 'lhq_channel'; // read by js/boot.js before the page draws
-  function showVersions() {
-    const m = document.getElementById('modal');
-    const draw = (list) => {
-      m.innerHTML = `<div class="card verscard"><h3>Choose a version</h3>
-      <p class="saveinfo">The newest version is the default. Some families prefer the classic one; you can switch back any time.</p>
-      <div class="vlist">${list
-        .map(
-          (v) =>
-            `<button class="vrow ${v.id === 'latest' ? 'on' : ''}" data-act="pickver" data-v="${v.id}"><b>${esc(v.label)}</b><small>${esc(v.note || '')}</small></button>`,
-        )
-        .join('')}</div>
-      <div class="row"><button class="btn wide" data-act="cno">Close</button></div></div>`;
-      m.classList.add('show');
-    };
-    draw([{ id: 'latest', label: `v${VERSION} · latest`, note: 'The quest map, explorer and gifts' }]);
-    fetch('versions.json', { cache: 'no-cache' })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j) => {
-        if (!j || !Array.isArray(j.versions) || !m.classList.contains('show') || !m.querySelector('.verscard')) return;
-        draw(
-          j.versions
-            .filter((v) => v && /^[a-z0-9-]{1,16}$/.test(v.id))
-            .map((v) => ({ id: v.id === j.latest ? 'latest' : v.id, label: String(v.label || v.id), note: String(v.note || '') })),
-        );
-      })
-      .catch(() => {});
-  }
-  function pickVersion(id) {
-    try {
-      if (id === 'latest') localStorage.removeItem(CHANNEL_KEY);
-      else localStorage.setItem(CHANNEL_KEY, id);
-    } catch (e) {}
-    if (id === 'latest') {
-      document.getElementById('modal').classList.remove('show');
-      toast(`You're on the latest version (v${VERSION})`);
-      return;
-    }
-    location.href = id + '/';
   }
 
   /* ================= actions ================= */
@@ -2780,6 +3183,7 @@
       </ol>
       <div class="notice" role="note"><p>ℹ️ The pictures are memory hooks only, not literal images of the meaning. The simple meanings are written for young children; check a full tafsīr for detail.</p>
       <p><b>Please check the Qur'an text and recitation</b> against a trusted muṣḥaf or teacher. They come from public sources and are not guaranteed to be free of mistakes.</p></div>
+      <p class="saveinfo">Word-by-word transliteration and meanings: the <a href="https://corpus.quran.com" target="_blank" rel="noopener">Quranic Arabic Corpus</a> (GNU GPL v3). Simple meanings are written for this game.</p>
       <p class="saveinfo">Little Hafiz Quest is free and open source. Found a mistake or a bug, or have an idea? Please tell us in the project's <a href="${REPO}/issues" target="_blank" rel="noopener">Issues on GitHub</a>. The code: <a href="${REPO}" target="_blank" rel="noopener">github.com/akramali/little-hafiz-quest</a>.</p>
       <div class="row"><button class="btn wide" data-act="cno">Close</button></div></div>`;
     m.classList.add('show');
@@ -2795,19 +3199,6 @@
     ${prefs.meaning ? '<div class="mean">💬 In the name of Allah, the Most Kind, the Most Merciful</div>' : ''}
     <div class="row"><button class="btn small" data-act="bismplay">🔊 Hear it</button><button class="btn go" data-act="closemodal">Bismillah! ✨</button></div>
   </div>`;
-    m.classList.add('show');
-  }
-  function showProfiles() {
-    const m = document.getElementById('modal');
-    m.innerHTML = `<div class="card profcard"><h3>Who's exploring today?</h3>
-    <div class="plistm">${store.profiles
-      .map(
-        (p) =>
-          `<button class="profpick ${p.id === store.cur ? 'on' : ''}" data-act="pickprof" data-id="${p.id}" data-go="1"><span class="phead">${explorer({ view: 'front', cls: 'mini' }, p)}</span><b>${p.name ? esc(p.name) : 'Explorer'}</b><small>⭐ ${totalStars(p)}</small></button>`,
-      )
-      .join('')}
-      ${store.profiles.length < 8 ? '<button class="profpick add" data-act="newprof"><span class="phead">➕</span><b>New explorer</b><small>for another child</small></button>' : ''}</div>
-    <div class="row"><button class="btn wide" data-act="cno">Close</button></div></div>`;
     m.classList.add('show');
   }
   /* open the first waiting gift: a wobbling box, tap, it pops open */
@@ -2996,6 +3387,12 @@
       return;
     }
     if (document.body.classList.contains('busy')) return; // the explorer is walking
+    const hb = e.target.closest('[data-hold]');
+    if (hb) {
+      if (!hb._fired) toast(hb.dataset.tip || 'Press and hold');
+      hb._fired = false;
+      return;
+    }
     if (!window.PointerEvent && st.view === 'order') {
       const pc = e.target.closest('.pcard');
       if (pc) {
@@ -3039,19 +3436,101 @@
         sfx.tap();
         go('splash');
         break;
-      case 'profiles':
+      case 'explorers':
         sfx.tap();
-        showProfiles();
+        go('explorers');
         break;
       case 'pickprof': {
         sfx.tap();
         store.cur = b.dataset.id;
-        save();
+        save(true);
         m.classList.remove('show');
-        if (st.view === 'settings' || st.view === 'bag') render();
-        else go('splash');
+        render();
         break;
       }
+      case 'editlook':
+        sfx.tap();
+        store.cur = b.dataset.id;
+        save(true);
+        go('create', { back: 'explorers' });
+        break;
+      case 'syncshare':
+        sfx.tap();
+        openShare();
+        break;
+      case 'synclink':
+        if (!st.link) break;
+        sfx.tap();
+        if (navigator.share) navigator.share({ title: 'Little Hafiz Quest', text: `${P().name || 'Our explorer'}'s progress on Little Hafiz Quest: open it to sync`, url: st.link }).catch(() => {});
+        else copyText(st.link, 'Link copied: paste it in a message');
+        break;
+      case 'synccopy':
+        sfx.tap();
+        if (st.link) copyText(st.link, 'Link copied: paste it in a message');
+        break;
+      case 'syncpaste':
+        sfx.tap();
+        showPaste();
+        break;
+      case 'pastein':
+        navigator.clipboard
+          .readText()
+          .then((t) => {
+            const box = document.getElementById('pastebox');
+            if (box) box.value = t;
+          })
+          .catch(() => toast('Press and hold in the box, then Paste'));
+        break;
+      case 'pastego': {
+        const code = codeIn((document.getElementById('pastebox') || {}).value);
+        if (!code) {
+          toast("That doesn't look like a progress link");
+          break;
+        }
+        m.classList.remove('show');
+        openSync(code, '');
+        break;
+      }
+      case 'synctarget':
+        sfx.tap();
+        incoming.target = b.dataset.id;
+        showSync();
+        break;
+      case 'syncdo':
+        if (incoming && incoming.target) doSync();
+        break;
+      case 'synccopyin':
+        if (incoming && incoming.link) copyText(incoming.link, 'Copied: now open the game from your Home Screen and tap Paste from family');
+        break;
+      case 'syncdone':
+        sfx.tap();
+        m.classList.remove('show');
+        break;
+      case 'syncback':
+        m.classList.remove('show');
+        openShare();
+        break;
+      case 'updates':
+        sfx.tap();
+        showUpdates();
+        if (!upd.available && Date.now() - lastCheck > 60000) checkUpdates(false);
+        break;
+      case 'updcheck':
+        sfx.tap();
+        checkUpdates(true);
+        break;
+      case 'updnow':
+        sfx.chime();
+        applyUpdate();
+        break;
+      case 'updok':
+        sfx.tap();
+        justUpdated = false;
+        try {
+          localStorage.setItem(VER_SEEN, VERSION);
+        } catch (e) {}
+        render();
+        break;
       case 'newprof': {
         sfx.tap();
         if (store.profiles.length >= 8) break;
@@ -3061,18 +3540,6 @@
         save();
         m.classList.remove('show');
         go('create', { first: true });
-        break;
-      }
-      case 'delprof': {
-        const p = store.profiles.find((x) => x.id === b.dataset.id);
-        if (!p) break;
-        askConfirm(`Remove ${p.name ? esc(p.name) : 'this explorer'} and all their stars and treasures?`, 'Remove', () => {
-          store.profiles = store.profiles.filter((x) => x.id !== p.id);
-          if (store.cur === p.id) store.cur = store.profiles.length ? store.profiles[0].id : '';
-          nobody = null;
-          save();
-          render();
-        });
         break;
       }
       case 'look': {
@@ -3110,7 +3577,8 @@
         sfx.chime();
         P().made = true;
         save();
-        go(st.first ? 'map' : 'bag', st.first ? {} : { tab: 'look' });
+        if (st.back === 'explorers') go('explorers');
+        else go(st.first ? 'map' : 'bag', st.first ? {} : { tab: 'look' });
         break;
       }
       case 'surah':
@@ -3275,13 +3743,6 @@
           enterFs();
         }
         break;
-      case 'versions':
-        sfx.tap();
-        showVersions();
-        break;
-      case 'pickver':
-        pickVersion(b.dataset.v);
-        break;
 
       /* sūrah */
       case 'part':
@@ -3363,11 +3824,12 @@
         break;
       case 'settings':
         sfx.tap();
-        go('settings', { back: st.view === 'map' ? 'map' : 'splash' });
+        go('settings');
         break;
       case 'tog':
         prefs[b.dataset.k] = !prefs[b.dataset.k];
         save();
+        if (prefs.translit || prefs.wordmean) loadWords();
         sfx.tap();
         if (b.dataset.k === 'audio') stopAudio();
         render();
@@ -3395,26 +3857,6 @@
       case 'saveaudio':
         saveAllAudio();
         break;
-      case 'reset':
-        askConfirm(`Reset all stars for ${P().name ? esc(P().name) : 'this explorer'}? Treasures already found stay.`, 'Reset stars', function () {
-          P().prog = {};
-          P().lost = [];
-          save();
-          toast('All stars reset ✨');
-          render();
-        });
-        break;
-      case 'resetone': {
-        const i = +document.getElementById('resetSel').value;
-        const x = S[i];
-        askConfirm(`Reset the stars for ${x.name}?`, 'Reset', function () {
-          delete P().prog[x.n];
-          save();
-          toast(`${x.name} reset ✨`);
-          render();
-        });
-        break;
-      }
       case 'cyes': {
         const f = pendingYes;
         pendingYes = null;
@@ -3446,6 +3888,7 @@
       }
       case 'mushaf':
         sfx.tap();
+        if (prefs.translit || prefs.wordmean) loadWords();
         go('mushaf', { i: st.i, p: st.p, sel: null });
         break;
       case 'mclear':
@@ -3453,8 +3896,17 @@
           hold = null; // the click that ends a long press
           break;
         }
+        if (st.sel != null && !st.focus && e.target.closest('.mayah.sel')) {
+          // the colored āyah tapped again: look at it up close
+          sfx.pop();
+          st.focus = true;
+          loadWords();
+          render();
+          break;
+        }
         if (st.sel != null) {
           st.sel = null;
+          st.focus = false;
           render();
         }
         break;
@@ -3561,6 +4013,7 @@
       /* word steps */
       case 'words': {
         sfx.tap();
+        if (prefs.translit || prefs.wordmean) loadWords();
         const p = pnum(st.p),
           r = startRun(s, p, 'wa');
         go('words', { i: st.i, p, a: r.first, w: 1, phase: 'build', shown: [], doneA: r.run, savedA: r.saved });
@@ -4076,11 +4529,20 @@
     });
 
   /* ================= start ================= */
+  const linkCode = codeIn(location.hash);
+  if (linkCode) {
+    try {
+      history.replaceState(null, '', location.pathname + location.search); // the code stays out of the address bar
+    } catch (e) {}
+  }
   loadAll();
   applyTheme();
+  if (prefs.translit || prefs.wordmean) loadWords();
   document.getElementById('defs').innerHTML = ART.defs();
   render();
   loadReciters().then(() => loadTimings(reciter().id).catch(() => {}));
   registerOffline();
+  if (linkCode) setTimeout(() => openSync(linkCode, `${appURL()}#sync=${linkCode}`), 400);
+  if (justUpdated) loadChangelog().then(() => st.view === 'splash' && render());
   window.__lhq = { st: () => st, store: () => store, go, player }; // for testing in the browser console
 })();

@@ -1,0 +1,68 @@
+{
+ "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
+ "latest": "2.5.0",
+ "versions": [
+  { "v": "2.5.0", "notes": [
+   "Family sync: share an explorer's progress with another phone by link or QR code",
+   "Explorers button on the start screen: switch, add, share, back up, reset",
+   "Word meanings and transliteration under each word (switch on in the Grown-up Corner)",
+   "Read: tap a colored āyah again to look at it up close",
+   "Updates are announced on the start screen"
+  ] },
+  { "v": "2.4.6", "notes": [
+   "42 new everyday accessories as surprise gifts",
+   "Fixed a blank map after opening the last gift"
+  ] },
+  { "v": "2.4.5", "notes": [
+   "Installed on Android, the game runs full screen",
+   "New world map button showing the world you're in"
+  ] },
+  { "v": "2.4.4", "notes": [
+   "\"How to use it\" moved to the ❓ in the Grown-up Corner",
+   "The \"Do it\" actions start switched off"
+  ] },
+  { "v": "2.4.3", "notes": [
+   "Simpler quest: Look & Repeat and Word Steps, then Stepping Stones and the Picture Puzzle",
+   "Stepping Stones starts from the pictures, no levels",
+   "What Comes Next is gone; 4 stars a checkpoint"
+  ] },
+  { "v": "2.4.2", "notes": [
+   "A tapped word in Word Steps plays alone",
+   "Bald hair style and everyday glasses",
+   "Text readable on every world"
+  ] },
+  { "v": "2.4.1", "notes": [
+   "Awards page with learning time, and Share as a picture",
+   "Save and load progress files",
+   "A star badge every 100 stars"
+  ] },
+  { "v": "2.4.0", "notes": [
+   "The Picture Puzzle is a jigsaw",
+   "Read the whole sūrah (📖), with a loop button",
+   "A gift for every level finished the first time"
+  ] },
+  { "v": "2.3.2", "notes": [
+   "Calm nature sounds instead of game sounds"
+  ] },
+  { "v": "2.3.1", "notes": [
+   "Kufis for boys, hijabs for girls",
+   "Progress list from the map's 📖 and ⭐"
+  ] },
+  { "v": "2.3.0", "notes": [
+   "Star track: a prize every few stars",
+   "Hafiz crown for three stars in every sūrah"
+  ] },
+  { "v": "2.2.0", "notes": [
+   "The summit: climb to the top with a star in every sūrah",
+   "Gifts open one at a time; checkpoints win small gifts"
+  ] },
+  { "v": "2.1.0", "notes": [
+   "Stickers on the explorer's shirt",
+   "One star wins a sūrah's treasure, every star its golden edition"
+  ] },
+  { "v": "2.0.0", "notes": [
+   "The quest: a map through seven worlds to the mountain top",
+   "Your own explorer, gifts to win, and hearts in review games"
+  ] }
+ ]
+}
