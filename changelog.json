@@ -1,7 +1,11 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.5.4",
+ "latest": "2.5.5",
  "versions": [
+  { "v": "2.5.5", "notes": [
+   "Fixed: puzzle pieces stuck on the screen",
+   "Small visual tweaks"
+  ] },
   { "v": "2.5.4", "notes": [
    "Tap another explorer to see their name",
    "What's new lists every update you missed",

@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.5.4';
+  const VERSION = '2.5.5';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -1291,6 +1291,7 @@
       P().fresh = [];
       save();
     }
+    document.querySelectorAll('.drag-ghost').forEach((g) => g.remove()); // a piece being dragged never follows to a new screen
     st = Object.assign({ view }, params);
     if (GAMES.includes(view)) st.starsBefore = totalStars(); // a first finish (a new star) always brings a gift
     render(true);
@@ -1483,8 +1484,7 @@
     const face = (sk) =>
       `<circle cx="20" cy="22" r="13" fill="${sk}" ${ink}/><circle cx="15.5" cy="22" r="1.8" fill="#2b2340"/><circle cx="24.5" cy="22" r="1.8" fill="#2b2340"/><path d="M16.5 27q3.5 3 7 0" fill="none" ${ink}/>`;
     let m;
-    if (kind === 'skin') m = face(c);
-    else if (kind === 'hijab') m = `<path d="M5 34C3 16 10 6 20 6s17 10 15 28Z" fill="${c}" ${ink}/><ellipse cx="20" cy="22" rx="9.5" ry="10" fill="${SWATCH_SKIN}" ${ink}/><circle cx="16.6" cy="22" r="1.6" fill="#2b2340"/><circle cx="23.4" cy="22" r="1.6" fill="#2b2340"/>`;
+    if (kind === 'hijab') m = `<path d="M5 34C3 16 10 6 20 6s17 10 15 28Z" fill="${c}" ${ink}/><ellipse cx="20" cy="22" rx="9.5" ry="10" fill="${SWATCH_SKIN}" ${ink}/><circle cx="16.6" cy="22" r="1.6" fill="#2b2340"/><circle cx="23.4" cy="22" r="1.6" fill="#2b2340"/>`;
     else if (kind === 'tee') m = `<path d="M7 13L15 7Q20 10 25 7L33 13L29 19L26 17V34H14V17L11 19Z" fill="${c}" ${ink}/>`;
     else if (kind === 'legs') m = `<path d="M11 6H29L31 34H23.5L20 17L16.5 34H9Z" fill="${c}" ${ink}/>`;
     else m = face(SWATCH_SKIN) + `<path d="M6.5 22C5 12 11 6 20 6s15 6 13.5 16c-2-5-4-6-6-7q-3 3-7.5 0q-4.5 3-7.5 0c-2 1-4 2-6 7Z" fill="${c}" ${ink}/>`;
@@ -1500,6 +1500,14 @@
           `<button class="hairpick ${L.hair === h ? 'on' : ''}" data-act="look" data-k="hair" data-v="${h}" aria-label="${h}" aria-pressed="${L.hair === h}">${ART.explorer(Object.assign({}, L, { hair: h }), {}, { view: 'front', cls: 'mini' })}</button>`,
       )
       .join('');
+    // faces: the explorer's own face (with their hair), the way hair styles are picked, so it is choosing a
+    // character rather than a color
+    const faces = ART.LOOKS.skin
+      .map(
+        (_, j) =>
+          `<button class="hairpick ${L.skin === j ? 'on' : ''}" data-act="look" data-k="skin" data-v="${j}" aria-label="Skin tone ${j + 1}" aria-pressed="${L.skin === j}">${ART.explorer(Object.assign({}, L, { skin: j }), {}, { view: 'front', cls: 'mini' })}</button>`,
+      )
+      .join('');
     const hij = L.hair === 'hijab';
     return `<div class="lookbox">
       <label class="lk"><span>Name</span><input id="exname" class="namein" maxlength="16" autocomplete="off" placeholder="Your name" value="${esc(prof.name)}"></label>
@@ -1509,7 +1517,7 @@
       ]
         .map(([v, t]) => `<button class="btn small ${(ART.isGirl(L) ? 'girl' : 'boy') === v ? 'on' : ''}" data-act="look" data-k="kid" data-v="${v}" aria-pressed="${(ART.isGirl(L) ? 'girl' : 'boy') === v}">${t}</button>`)
         .join('')}</div></div>
-      <div class="lkgroup"><div class="lkh">🙂 Skin tone</div>${sw('skin', ART.LOOKS.skin, 'skin', 'Skin tone')}</div>
+      <div class="lkgroup"><div class="lkh">🙂 Face</div><div class="hairs">${faces}</div></div>
       <div class="lkgroup"><div class="lkh">💇 Hair style</div><div class="hairs">${hairs}</div></div>
       <div class="lkgroup"><div class="lkh">🎨 ${hij ? 'Hijab color' : 'Hair color'}</div>${hij ? sw('hijabColor', ART.LOOKS.hijabColor, 'hijab', 'Hijab color') : sw('hairColor', ART.LOOKS.hairColor, 'hair', 'Hair color')}</div>
       <div class="lkgroup"><div class="lkh">👕 Comfy shirt</div>${sw('tee', ART.TEES, 'tee', 'Shirt color')}</div>
@@ -4889,18 +4897,21 @@
     const el = document.elementFromPoint(x, y);
     return el && el.closest('.slot:not(.filled)');
   }
+  // the copy of a piece that follows the finger: never left behind (a second finger, a lost touch, a new screen)
+  const sweepGhosts = () => document.querySelectorAll('.drag-ghost').forEach((g) => g.remove());
   document.addEventListener('pointerdown', (e) => {
-    if (st.view !== 'order') return;
+    if (st.view !== 'order' || drag) return; // one piece at a time: a second finger is ignored
     const c = e.target.closest('.pcard');
     if (!c) return;
     e.preventDefault();
+    sweepGhosts();
     const r = c.getBoundingClientRect();
-    drag = { el: c, k: +c.dataset.k, x0: e.clientX, y0: e.clientY, offX: e.clientX - r.left, offY: e.clientY - r.top, moved: false, ghost: null };
+    drag = { id: e.pointerId, el: c, k: +c.dataset.k, x0: e.clientX, y0: e.clientY, offX: e.clientX - r.left, offY: e.clientY - r.top, moved: false, ghost: null };
   });
   document.addEventListener(
     'pointermove',
     (e) => {
-      if (!drag) return;
+      if (!drag || e.pointerId !== drag.id) return;
       if (!drag.moved && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 8) return;
       if (!drag.moved) {
         drag.moved = true;
@@ -4925,10 +4936,10 @@
     { passive: true },
   );
   function endDrag(e, cancel) {
-    if (!drag) return;
+    if (!drag || (e && e.pointerId != null && e.pointerId !== drag.id)) return;
     const d = drag;
     drag = null;
-    if (d.ghost) d.ghost.remove();
+    sweepGhosts();
     d.el.classList.remove('lifted');
     $app.querySelectorAll('.slot.over').forEach((x) => x.classList.remove('over'));
     if (cancel) return;
@@ -4943,6 +4954,9 @@
   }
   document.addEventListener('pointerup', (e) => endDrag(e, false));
   document.addEventListener('pointercancel', (e) => endDrag(e, true));
+  // the app goes to the background mid-drag: drop the piece back
+  addEventListener('blur', () => endDrag(null, true));
+  document.addEventListener('visibilitychange', () => document.hidden && endDrag(null, true));
 
   /* follow the device's light/dark setting while on "Auto" */
   if (darkMQ && darkMQ.addEventListener)
