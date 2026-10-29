@@ -1,7 +1,14 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.5.6",
+ "latest": "2.5.7",
  "versions": [
+  { "v": "2.5.7", "notes": [
+   "Tap outside a gift to close it",
+   "Chain time comes every 3 āyāt at first",
+   "Look & Repeat plays the āyah only when you tap Listen",
+   "Review game hearts start once both quests are done",
+   "Small visual tweaks"
+  ] },
   { "v": "2.5.6", "notes": [
    "Fixed: a gift that wouldn't open while the explorer was walking",
    "Chain time: tap an āyah again to go back to it; Listen plays from where you are",

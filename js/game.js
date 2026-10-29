@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.5.6';
+  const VERSION = '2.5.7';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -95,11 +95,14 @@
     shoes: ['👟', 'Shoes'],
     cape: ['🦸', 'Capes'],
     bag: ['🎒', 'Bags'],
-    stick: ['🪵', 'Sticks'],
+    stick: ['🪵', 'Sticks'], // shown as STICK_IC (a walking stick) in My Explorer
     shield: ['🛡️', 'Shields'],
     watch: ['⌚', 'Watches'],
     pet: ['🐾', 'Buddies'],
   };
+  // the Sticks category: a walking stick (the 🪵 emoji is a log)
+  const STICK_IC =
+    '<span class="wtab-svg"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 21.5L17.5 4" stroke="#2b2340" stroke-width="5.4" stroke-linecap="round"/><path d="M6.5 21.5L17.5 4" stroke="#c98a4b" stroke-width="2.8" stroke-linecap="round"/><path d="M15.2 7.6Q19.6 4.4 22 6.6Q19 10.2 15.2 7.6Z" fill="#5fbf4a" stroke="#2b2340" stroke-width="1.3" stroke-linejoin="round"/></svg></span>';
   const TIER_LABEL = ['', 'A new treasure!', '✨ Shiny!', '🌟 Sparkly!', '👑 Legendary!'];
 
   function hexRgb(h) {
@@ -184,7 +187,8 @@
     translit: false,
     sfx: true,
     audio: true,
-    chain: 1, // Look & Repeat: chain after every new āyah (or every 3, 4, 5)
+    chain: 3, // Look & Repeat: chain after every 3 new āyāt (or every 1, 4, 5)
+    chainSet: false, // chosen by a grown-up (v2.5.7: until then, the default of 3)
     speed: 1, // recitation speed (v2.5.2; replaces "slower" and "repeat each āyah": the loop button repeats)
     reciter: 'alafasy',
     hearts: true,
@@ -350,7 +354,7 @@
     });
     if (['auto', 'light', 'dim'].includes(o.theme)) out.theme = o.theme;
     if (SPEEDS.includes(o.speed)) out.speed = o.speed;
-    if (CHAINS.includes(o.chain)) out.chain = o.chain;
+    if (o.chainSet === true && CHAINS.includes(o.chain)) Object.assign(out, { chain: o.chain, chainSet: true });
     else if (o.slow === true) out.speed = 0.75; // "slower recitation" (80%) before v2.5.2
     if (typeof o.reciter === 'string' && /^[a-z0-9-]{2,32}$/.test(o.reciter)) out.reciter = o.reciter;
     return out;
@@ -1146,7 +1150,7 @@
   function arHTML(s, a, k, opts = {}) {
     return `<div class="ar-box">
     <div class="ar-label">${opts.label || '📖 Grown-up reads'}</div>
-    <div class="ar ${opts.blur ? 'blur' : ''} ${opts.sm ? 'sm' : ''}" lang="ar" data-act="say" data-n="${s.n}" data-k="${k}">${a.ar} ﴿${toArNum(k + 1)}﴾</div>
+    <div class="ar ${opts.blur ? 'blur' : ''} ${opts.sm ? 'sm' : ''}" lang="ar" ${opts.quiet ? '' : `data-act="say" data-n="${s.n}" data-k="${k}"`}>${a.ar} ﴿${toArNum(k + 1)}﴾</div>
     ${prefs.translit && !opts.blur ? `<div class="tr">${a.tr}</div>` : ''}
     ${prefs.meaning && !opts.blur ? `<div class="mean">💬 ${a.kid}</div>` : ''}
   </div>`;
@@ -1223,12 +1227,14 @@
   }
 
   /* ================= hearts (review games) ================= */
+  // both quests (Look & Repeat and Word Steps) done: the review games then have hearts
   function learned() {
     const s = S[st.i];
     const r = P().prog[s.n];
     if (!r) return false;
-    if (st.p === 'all') return r.parts.every((x) => x && x.learn);
-    return !!(r.parts[pnum(st.p)] && r.parts[pnum(st.p)].learn);
+    const both = (x) => !!(x && x.learn && x.words);
+    if (st.p === 'all') return r.parts.every(both);
+    return both(r.parts[pnum(st.p)]);
   }
   const heartsOn = () => prefs.hearts && ['path', 'order'].includes(st.view) && st.hearts != null && learned();
   function heartsBar() {
@@ -1771,7 +1777,7 @@
     steps.forEach((x, j) => {
       if (x.review && !reviewShown) {
         reviewShown = true;
-        stepsHTML += `<div class="qsep"><span>Review games</span>${prefs.hearts ? `<small>${ART.heart(true).repeat(maxHearts(P()))} careful, ${maxHearts(P())} hearts!</small>` : ''}</div>`;
+        stepsHTML += `<div class="qsep"><span>Review games</span>${prefs.hearts && learned() ? `<small>${ART.heart(true).repeat(maxHearts(P()))} careful, ${maxHearts(P())} hearts!</small>` : ''}</div>`;
       }
       const isNext = j === nextIdx;
       stepsHTML += `<button class="qstep ${x.done ? 'done' : ''} ${isNext && !x.locked ? 'next' : ''} ${x.locked ? 'locked' : ''}" data-act="${x.key}" ${p === 'all' ? 'data-p="all"' : ''}>
@@ -1817,7 +1823,7 @@
         ${tag(s, k)}
         ${sceneHTML(a)}
         ${gest(a)}
-        ${arHTML(s, a, k, { blur })}
+        ${arHTML(s, a, k, { blur, quiet: true })}
       </div>`;
       if (st.phase === 'repeat') {
         const n = st.popped.filter(Boolean).length;
@@ -2355,7 +2361,7 @@
       worn = wornOutfit(prof);
     const tabs = [...SLOTS.filter((t) => t !== 'hijab' || kidOf(prof) === 'girl'), 'stickers']
       .map((t) => {
-        const ic = t === 'stickers' ? '⭐' : SLOT_INFO[t][0];
+        const ic = t === 'stickers' ? '⭐' : t === 'stick' ? STICK_IC : SLOT_INFO[t][0];
         const nm = t === 'stickers' ? 'Stickers' : SLOT_INFO[t][1];
         const isNew = prof.fresh.some((k) => (t === 'stickers' ? k[0] === 's' : k[0] === 'i' && ITEM[k.slice(2)].slot === t));
         return `<button class="wtab ${tab === t ? 'on' : ''} ${isNew ? 'hasnew' : ''}" data-act="tab" data-t="${t}"><span>${ic}</span><small>${nm}</small>${isNew ? NEWDOT : ''}</button>`;
@@ -3520,7 +3526,9 @@
       if (m.querySelector('.dlcard.busy')) return; // downloading
       if (dlAnswer) stopAudio(); // a download question left unanswered: don't download
       pendingYes = null;
+      const gift = m.querySelector('.giftcard');
       m.classList.remove('show');
+      if (gift) render(); // a gift opened (or not): the gift buttons on the page show what's still waiting
       return;
     }
     if (document.body.classList.contains('busy') && !e.target.closest('#modal')) return; // the explorer is walking (a gift or card on top still works)
@@ -3995,6 +4003,7 @@
       case 'set': {
         const k = b.dataset.k;
         prefs[k] = k === 'speed' || k === 'chain' ? +b.dataset.v : b.dataset.v;
+        if (k === 'chain') prefs.chainSet = true;
         if (k === 'speed') player.playbackRate = prefs.speed;
         save();
         sfx.tap();
@@ -4064,6 +4073,22 @@
           break;
         }
         if (st.sel != null) {
+          const card = st.focus && !reduceMotion && document.querySelector('.mfcard');
+          if (card) {
+            // the card shrinks away the way it came, and the page unblurs, then the colors go
+            if (card._closing) break;
+            card._closing = true;
+            sfx.tap();
+            const mu = document.querySelector('.mushaf.focusing');
+            if (mu) mu.classList.remove('focusing');
+            card.animate([{ transform: 'scale(1)', opacity: 1 }, { transform: 'scale(0.2)', opacity: 0 }], { duration: 260, easing: 'cubic-bezier(.5,0,.75,0)', fill: 'forwards' }).onfinish = () => {
+              if (!card.isConnected || st.view !== 'mushaf') return; // something else happened meanwhile
+              st.sel = null;
+              st.focus = false;
+              render();
+            };
+            break;
+          }
           st.sel = null;
           st.focus = false;
           render();
@@ -4507,9 +4532,10 @@
     const ax = +a.dataset.x,
       dir = ax >= fx ? 1 : -1, // away from the noise
       far = dir * (70 + Math.random() * 40),
+      nat = ART.FACE_LEFT.includes(a.dataset.k) ? -1 : 1,
       at = (offset, x, y, face) => ({ offset, transform: `translate(${x.toFixed(1)}px, ${y}px) scaleX(${face})` });
     const run = who.animate(
-      [at(0, x0, 0, face0), at(0.03, x0 + far * 0.3, -8, dir), at(0.06, x0 + far * 0.65, 0, dir), at(0.09, x0 + far, -6, dir), at(0.12, x0 + far, 0, dir), at(0.55, x0 + far, 0, -dir), at(0.75, x0 + far * 0.5, 0, -dir), at(0.98, x0, 0, -dir), at(1, x0, 0, face0)],
+      [at(0, x0, 0, face0), at(0.03, x0 + far * 0.3, -8, dir * nat), at(0.06, x0 + far * 0.65, 0, dir * nat), at(0.09, x0 + far, -6, dir * nat), at(0.12, x0 + far, 0, dir * nat), at(0.55, x0 + far, 0, -dir * nat), at(0.75, x0 + far * 0.5, 0, -dir * nat), at(0.98, x0, 0, -dir * nat), at(1, x0, 0, face0)],
       { duration: T + 1500 },
     );
     run.onfinish = run.oncancel = () => {
@@ -4709,7 +4735,7 @@
     const cs = getComputedStyle(who).transform,
       m0 = cs && cs !== 'none' ? new DOMMatrixReadOnly(cs) : new DOMMatrixReadOnly(),
       x0 = m0.m41,
-      face0 = m0.a < 0 ? -1 : 1;
+      face0 = (m0.a < 0 ? -1 : 1) * (ART.FACE_LEFT.includes(a.dataset.k) ? -1 : 1);
     const ar = a.getBoundingClientRect(),
       fr = f.getBoundingClientRect(),
       k = ar.width / (a.offsetWidth || ar.width) || 1, // things near the horizon are drawn smaller
@@ -4717,8 +4743,10 @@
       dir = fr.left + fr.width / 2 > feet ? 1 : -1,
       x1 = (fr.left + fr.width / 2 - dir * ar.width * 0.36 - (ar.left + ar.width / 2)) / k, // beside the fruit, facing it
       y1 = (fr.bottom - ar.bottom) / k;
-    const flies = /owl/.test(a.dataset.k);
-    const pos = (x, y, face, extra) => `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) scaleX(${face})${extra || ''}`;
+    const flies = /owl/.test(a.dataset.k),
+      nat = ART.FACE_LEFT.includes(a.dataset.k) ? -1 : 1; // which way the picture faces
+    // face: +1 to look right, -1 to look left (the picture is mirrored as needed)
+    const pos = (x, y, face, extra) => `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) scaleX(${face * nat})${extra || ''}`;
     const trip = (xa, ya, xb, yb, face) => {
       const dist = Math.hypot(xb - xa, yb - ya) * k,
         steps = Math.max(2, Math.round(dist / 34)),

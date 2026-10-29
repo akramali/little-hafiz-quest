@@ -207,7 +207,7 @@
       const propHTML = (name, x, y, size, hgt, rnd, wi) => {
         const svg = ART.props[name] || '';
         // walkers stroll to and fro on the spot (css .mwalk)
-        const inner = walkers.has(name) ? `<div class="mwalk" style="animation-duration:${(7 + rnd() * 6).toFixed(1)}s;animation-delay:-${(rnd() * 8).toFixed(1)}s">${svg}</div>` : svg;
+        const inner = walkers.has(name) ? `<div class="mwalk${(ART.FACE_LEFT || []).includes(name) ? ' lf' : ''}" style="animation-duration:${(7 + rnd() * 6).toFixed(1)}s;animation-delay:-${(rnd() * 8).toFixed(1)}s">${svg}</div>` : svg;
         return `<div class="mprop${walkers.has(name) ? ' walker' : ''}" data-act="poke" data-k="${name}" data-w="${wi}" data-x="${x.toFixed(1)}" data-y="${y.toFixed(1)}" style="left:${(x - size / 2).toFixed(1)}px;top:${(y - hgt).toFixed(1)}px;width:${size}px;height:${hgt}px">${inner}</div>`;
       };
       // a picture's box (a little inside its edges, so things may just touch)

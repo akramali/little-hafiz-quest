@@ -2185,6 +2185,8 @@
     'peak-cabin': prop(100, shad(100, 44) + S(rr(16, 56, 68, 40, 2), '#a86b3c', 'M70 56L84 56L84 96L70 96Z') + L('M16 66L84 66M16 76L84 76M16 86L84 86', '#7a4a28', 2) + S('M8 60L50 26L92 60Z', '#ffffff', 'M50 26L92 60L76 60Q70 42 50 26Z') + S(rr(64, 30, 10, 18, 2), '#7a4a28') + '<g class="pr-smoke">' + CF(69, 22, 5, '#ffffff', 0.8) + CF(74, 12, 6.5, '#ffffff', 0.6) + '</g>' + glow(34, 78, 18, 14) + P(rr(26, 70, 16, 14, 2), '#ffe27a', sw(2)) + P('M56 96L56 78Q56 72 62 72Q68 72 68 78L68 96Z', '#5a3a28')),
   });
   const WALKERS = ['meadow-sheep', 'meadow-rabbit', 'forest-fox', 'forest-deer', 'forest-squirrel', 'sands-crab', 'sands-turtle', 'canyon-camel', 'canyon-lizard', 'canyon-tumbleweed', 'peak-goat', 'peak-snowman'];
+  // animals drawn facing left (their head or face on the left); the rest face right or straight ahead
+  const FACE_LEFT = ['meadow-sheep', 'meadow-rabbit', 'forest-fox', 'forest-deer', 'forest-squirrel', 'canyon-camel', 'peak-goat'];
   const LANDMARKS = ['meadow-windmill', 'forest-bigtree', 'sands-lighthouse', 'canyon-arch', 'starry-observatory', 'sky-castle', 'peak-cabin'];
   props['peak-summit'] = '<svg class="lhq-art lhq-prop" viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' + OUT(
     EF(100, 154, 90, 6, INK, 0.12) + glow(110, 34, 50, 40) + S('M4 156L70 52Q86 30 104 46L120 62Q132 50 146 66L196 156Z', '#9aa6bf', 'M104 46L120 62Q132 50 146 66L196 156L130 156Q136 100 104 46Z', 'M24 132L62 72Q50 100 34 136Z') +
@@ -2582,6 +2584,7 @@
     props,
     PROPS_BY_WORLD,
     WALKERS,
+    FACE_LEFT,
     LANDMARKS,
     FEATS,
     isGirl,
