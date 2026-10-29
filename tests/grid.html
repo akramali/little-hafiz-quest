@@ -1,0 +1,7 @@
+<!doctype html><meta charset="utf-8"><style>body{margin:0;display:grid;grid-template-columns:repeat(var(--c,4),390px);gap:4px;background:#333}iframe{width:390px;height:var(--h,420px);border:0;background:#fff}</style>
+<body><script>
+const Q = new URLSearchParams(location.search);
+document.documentElement.style.setProperty('--c', Q.get('c') || 4);
+document.documentElement.style.setProperty('--h', (Q.get('h') || 420) + 'px');
+(Q.get('v') || '').split('|').forEach((q) => { const f = document.createElement('iframe'); f.src = 'harness.html?t=view&' + q; document.body.appendChild(f); });
+</script></body>

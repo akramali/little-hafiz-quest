@@ -1,0 +1,42 @@
+<!doctype html><meta charset="utf-8"><style>html,body{margin:0;height:100%;overflow:hidden}iframe{border:0;width:390px;height:100%}pre{position:absolute;left:-9999px}</style><body><pre id="out">running</pre>
+<iframe id="f"></iframe>
+<script>
+window.OUT = [];
+window.log = (...m) => OUT.push(m.map((x) => typeof x === 'string' ? x : JSON.stringify(x)).join(' '));
+window.wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const Q = new URLSearchParams(location.search), test = Q.get('t');
+// checks: ok(label, condition, detail) records a pass or a failure; done() ends with a RESULT line
+window.CHECKS = [];
+window.ok = (label, cond, detail) => { CHECKS.push({ label, pass: !!cond, detail: detail == null ? '' : String(detail) }); return !!cond; };
+let finished = false;
+window.done = () => {
+  if (finished) return;
+  finished = true;
+  const bad = CHECKS.filter((c) => !c.pass);
+  OUT.push(`RESULT ${bad.length ? 'FAIL' : 'PASS'} ${CHECKS.length - bad.length}/${CHECKS.length}` + bad.map((c) => `\n  ✗ ${c.label}${c.detail ? ': ' + c.detail : ''}`).join(''));
+  document.getElementById('out').textContent = OUT.join('\n');
+  fetch('/__result/' + test, { method: 'POST', body: OUT.join('\n') });
+};
+// a test that throws still reports
+window.addEventListener('error', (e) => { ok('test ran without throwing', false, e.message); done(); });
+window.addEventListener('unhandledrejection', (e) => { ok('test ran without throwing', false, e.reason && e.reason.message); done(); });
+// the game's own errors, for any test: ok('no game errors', gameErrors(w).length === 0, …)
+window.watchErrors = (w) => { const list = []; w.addEventListener('error', (e) => list.push(e.message)); w.addEventListener('unhandledrejection', (e) => list.push('promise: ' + (e.reason && e.reason.message))); return list; };
+// a sample explorer: the first sūrahs done, some progress in Naba
+window.fixture = (extra) => {
+  const full = (parts) => ({ parts: Array.from({ length: parts }, () => ({ learn: 1, words: 1, order: 1, next: 1, path: 3, la: 0, wa: 0 })), all: parts > 1 ? 3 : 0 });
+  const prog = { 114: full(1), 113: full(1), 112: { parts: [{ learn: 1, words: 1, order: 0, next: 0, path: 1, la: 0, wa: 0 }], all: 0 }, 78: { parts: [{ learn: 1, words: 0, order: 0, next: 0, path: 0, la: 0, wa: 0 }], all: 0 } };
+  const p = Object.assign({ id: 'ptest1', name: 'Amina', look: { skin: 2, hair: 'ponytail', hairColor: 1, hijabColor: 0, kid: 'girl' }, outfit: {}, prog, items: [], stickers: [], pending: [], lost: [], made: true, at: 3, daily: '2099-01-01' }, extra || {});
+  localStorage.setItem('lhq2', JSON.stringify({ v: 2, cur: p.id, profiles: [p], prefs: { theme: Q.get('theme') || 'light', sfx: false, translit: !!Q.get('tl'), wordmean: !!Q.get('wm'), meaning: true } }));
+};
+// open the game; returns { w, d, L }
+window.openGame = async () => {
+  const f = document.getElementById('f');
+  f.src = '../?latest';
+  await new Promise((r) => (f.onload = r));
+  await wait(300);
+  const w = f.contentWindow;
+  return { w, d: w.document, L: w.__lhq, idx: (n) => w.LHQ_DATA.surahs.findIndex((s) => s.n === n) };
+};
+const s = document.createElement('script'); s.src = 'cases/' + test + '.js'; document.body.appendChild(s);
+</script>

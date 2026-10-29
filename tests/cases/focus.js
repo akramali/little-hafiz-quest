@@ -1,0 +1,36 @@
+(async () => { try {
+  fixture();
+  const { w, d, L, idx } = await openGame();
+  const errs = []; w.addEventListener('error', (e) => errs.push(e.message));
+  Object.assign(L.store().prefs, { translit: true, wordmean: true, meaning: true });
+  L.go('surah', { i: idx(112), p: 0 }); await wait(300);
+  d.querySelector('[data-act=mushaf]').click(); await wait(800);
+  const a = d.querySelector('.mayah[data-k="0"]'), r = a.getBoundingClientRect();
+  const opt = { bubbles: true, clientX: r.left + 10, clientY: r.top + 10, pointerId: 1 };
+  a.dispatchEvent(new w.PointerEvent('pointerdown', opt)); await wait(600);
+  a.dispatchEvent(new w.PointerEvent('pointerup', opt)); a.click(); await wait(200);
+  log('held: sel', L.st().sel, 'focus', !!L.st().focus, 'card', !!d.querySelector('.mfcard'));
+  d.querySelector('.mayah.sel').click(); await wait(300);
+  const words = [...d.querySelectorAll('.fword')];
+  log('tap again: focus', !!L.st().focus, 'blur', d.querySelector('.mushaf').classList.contains('focusing') && getComputedStyle(d.querySelector('.mtext')).filter, 'words', words.length);
+  ok('tapping the colored āyah again opens it up close, the page blurred', !!L.st().focus && d.querySelector('.mushaf').classList.contains('focusing') && words.length === 4);
+  log('word 1:', words[0] && words[0].innerText.replace(/\n/g, ' / '));
+  log('fab:', d.querySelector('.listen small').textContent, 'loop btn', !!d.querySelector('.mfloat .loopbtn'));
+  log('hint shown with translit+meanings on:', !!d.querySelector('.mfhint'));
+  d.querySelector('.mfx').click(); await wait(450);
+  log('after ✕: sel', L.st().sel, 'focus', !!L.st().focus, 'card', !!d.querySelector('.mfcard'), 'colored', d.querySelectorAll('.mayah.sel').length);
+  ok('✕ closes it', L.st().sel == null && !d.querySelector('.mfcard'));
+  // switched off: the hint and its ⚙️ shortcut, and back to the same āyah
+  Object.assign(L.store().prefs, { translit: false, wordmean: false });
+  L.go('mushaf', { i: idx(112), p: 0, sel: 2, focus: true }); await wait(300);
+  log('hint shown with both off:', !!d.querySelector('.mfhint'));
+  d.querySelector('[data-act=wordset]').click(); await wait(300);
+  const tg = d.querySelector('[data-act=tog][data-k=translit]'), r2 = tg.getBoundingClientRect();
+  log('settings open:', L.st().view, '| translit switch on screen:', r2.top >= 0 && r2.bottom <= w.innerHeight, '| flashing:', tg.classList.contains('flash'));
+  tg.click(); await wait(300);
+  d.querySelector('[data-act=back]').click(); await wait(400);
+  log('back:', L.st().view, 'sel', L.st().sel, 'focus', !!L.st().focus, '| translit now on:', L.store().prefs.translit, '| word lines:', d.querySelectorAll('.mfcard .wtl').length);
+  ok('⚙️ shortcut and back return to the same āyah', L.st().view === 'mushaf' && L.st().sel === 2 && !!L.st().focus);
+  ok('no game errors', !errs.length, errs.slice(0, 3).join('; ')); log('errors', errs);
+  done();
+} catch (e) { log("THREW", e.message, e.stack.split("\n")[1]); done(); } })();

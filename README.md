@@ -149,6 +149,7 @@ tools/art-gallery.html     every drawing on one page, for checking art changes
 tools/sound-board.html     every sound on one page, to hear them side by side
 .github/workflows/         publishing to GitHub Pages
 screenshots/               README pictures (not used by the game)
+tests/                     browser tests (not published with the game; see Tests below)
 ```
 
 **Preview locally**
@@ -173,6 +174,23 @@ Then open http://localhost:8000/. Use this rather than `python3 -m http.server`,
 
 **Deploy:** the workflow in `.github/workflows/pages.yml` publishes `main` (GitHub Pages source: *GitHub Actions*); pushing republishes the site within a few minutes. The `v1` branch keeps the retired classic version's history.
 
+### Tests
+
+Browser tests in `tests/` drive the real game in headless Chrome. They need Python 3, `curl` and Chrome or Chromium. On Linux and macOS the scripts find Chrome themselves, and under WSL they use Windows Chrome; set `CHROME=/path/to/chrome` to choose another.
+
+```sh
+tests/t.sh list            # the game areas and their tests
+tests/t.sh map gifts       # the tests for those areas, 3 at a time
+tests/t.sh all             # everything (~5 minutes), for bigger releases
+tests/run.sh chain         # one test, with its full log
+```
+
+Run the areas a change touches, and everything only for a bigger release. Each test prints `✓ name 4/4 (12s)`, or `✗` with what failed; full logs go to `tests/out/`.
+
+A test is one file in `tests/cases/`: it opens the game in a frame (`fixture()` sets up a sample explorer, `openGame()` loads it), does what a child would, and checks the result with `ok('what should happen', condition)`. Add it to an area in `tests/t.sh`.
+
+Screenshots: `tests/shot.sh view "v=map&scroll=900"` shows any screen, `tests/shot.sh readme "shot=splash"` makes the README pictures (copy them into `screenshots/`), and `tests/grid.sh name "v=splash|v=map"` puts several side by side. They are saved in `tests/out/`.
+
 ## Problems and ideas
 
 Found a mistake in the text or the recitation, a bug, or have an idea? Please [open an issue](https://github.com/akramali/little-hafiz-quest/issues). The ℹ️ in the game's Grown-up Corner links there too.
@@ -190,7 +208,7 @@ See also the warranty and liability terms in [LICENSE](LICENSE).
 
 ## Credits and licenses
 
-- **Code and drawings** (`index.html`, `css/`, `js/boot.js`, `js/game.js`, `js/map.js`, `js/art.js`, `js/sounds.js`, `js/sync.js`, `sw.js`, `tools/`, `v1/`, `manifest.webmanifest`, `icons/`): MIT, see [LICENSE](LICENSE).
+- **Code and drawings** (`index.html`, `css/`, `js/boot.js`, `js/game.js`, `js/map.js`, `js/art.js`, `js/sounds.js`, `js/sync.js`, `sw.js`, `tools/`, `tests/`, `v1/`, `manifest.webmanifest`, `icons/`): MIT, see [LICENSE](LICENSE).
 - **QR codes**: `js/qrcode.js` is [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) 1.4.4 by Kazuhiko Arase, MIT (included unchanged). "QR Code" is a registered trademark of DENSO WAVE INCORPORATED.
 - **Qur'an text** in `js/data.js`: from [quran-json](https://github.com/risan/quran-json) by Risan Bagja Pradana (Uthmani text from [The Noble Qur'an Encyclopedia](https://quranenc.com)), licensed [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). `js/data.js` adapts it (open tanwīn marks converted to standard Unicode, memory cues added) and is shared under CC BY-SA 4.0 as well.
 - **Word-by-word transliteration and meanings** in `words.json`: from the [Quranic Arabic Corpus](https://corpus.quran.com) by Kais Dukes (maintained by the Quran.com team), via the [Quran.com API](https://api-docs.quran.com), under the [GNU General Public License v3](https://www.gnu.org/licenses/gpl-3.0.html) as the corpus requires, with the corpus named as the source. Changed only in how words are grouped where the game splits an āyah differently (see `tools/build_words.py`); for this text every word lines up one to one.
