@@ -261,20 +261,33 @@
         const here = pals.filter((q) => q.wi === b.wi);
         here.forEach((q) => {
           const r2 = seeded(7 + [...q.id].reduce((t, c) => t * 31 + c.charCodeAt(0), 0) % 100000);
-          for (let t = 0; t < 120; t++) {
-            const x = 40 + r2() * (width - 80),
-              y = hi + 60 + r2() * (h - 60),
-              box = boxOf(x, y, 80, 120);
-            if (!free(x, y, 16, box)) continue;
-            placed.push({ x, y, room: 20 });
-            boxes.push({ x0: x - 48, x1: x + 48, y0: y - 120, y1: y + 10 }); // a little room around each
-            scenery.push({
-              y,
-              // the same size as the explorer by their sūrah, feet at the same point
-              html: `<div class="mpal" data-act="pal" data-id="${q.id}" data-w="${b.wi}" data-x="${x.toFixed(1)}" data-y="${y.toFixed(1)}" style="left:${(x - EX_FOOT).toFixed(1)}px;top:${(y - 108).toFixed(1)}px" aria-label="${q.name}"><div class="mpal-in">${q.svg}</div></div>`,
-            });
-            break;
+          // everyone must be in the world: a free spot if there is one, else one that may overlap the
+          // scenery (it is placed before the scenery anyway), else anywhere off the path, apart from the others
+          // crowded: closer together, but still off the path and the stops, and never over the mountain,
+          // a landmark or a sign (their boxes); explorers just need their bodies apart
+          const snug = (x, y, gap) =>
+            !L.pathXs(y).some((px) => Math.abs(px - x) < 56) &&
+            !L.nodes.some((nd) => Math.hypot(nd.x - x, nd.y - y) < 96) &&
+            !boxes.some((q) => !q.pal && hits(q, boxOf(x, y, 52, 112))) &&
+            !placed.some((p) => p.pal && Math.abs(p.x - x) < gap && Math.abs(p.y - y) < 70);
+          const tries = [(x, y) => free(x, y, 16, boxOf(x, y, 80, 120)), (x, y) => snug(x, y, 56), (x, y) => snug(x, y, 44), (x, y) => !L.pathXs(y).some((px) => Math.abs(px - x) < 50)];
+          let spot = null;
+          for (const ok of tries) {
+            for (let t = 0; t < 160 && !spot; t++) {
+              const x = 40 + r2() * (width - 80),
+                y = hi + 60 + r2() * (h - 60);
+              if (ok(x, y)) spot = { x, y };
+            }
+            if (spot) break;
           }
+          const { x, y } = spot;
+          placed.push({ x, y, room: 20, pal: true });
+          boxes.push({ x0: x - 48, x1: x + 48, y0: y - 120, y1: y + 10, pal: true }); // a little room around each
+          scenery.push({
+            y,
+            // the same size as the explorer by their sūrah, feet at the same point
+            html: `<div class="mpal" data-act="pal" data-id="${q.id}" data-w="${b.wi}" data-x="${x.toFixed(1)}" data-y="${y.toFixed(1)}" style="left:${(x - EX_FOOT).toFixed(1)}px;top:${(y - 108).toFixed(1)}px" aria-label="${q.name}"><div class="mpal-in">${q.svg}</div></div>`,
+          });
         });
         for (let t = 0, made = 0; t < count * 8 && made < count; t++) {
           const x = 10 + rnd() * (width - 20),

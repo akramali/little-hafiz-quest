@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.5.5';
+  const VERSION = '2.5.6';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -985,7 +985,14 @@
     const many = (ks, label) => ({ key: `${s.n}:${ks.join(',')}`, label, items: ks.map((k) => [s.n, k + 1]) });
     const c = ctx();
     if (v === 'surah') return multi(s) && st.p !== 'all' ? many(range(c), `Part ${st.p + 1}`) : many(range(c), 'Whole sūrah');
-    if (v === 'learn') return st.phase === 'chain' ? many(chainList(), 'The chain') : Object.assign(one(st.a), { loop: true });
+    if (v === 'learn') {
+      if (st.phase !== 'chain') return Object.assign(one(st.a), { loop: true });
+      // the chain: Listen helps from where the child is, the āyāt not tapped yet (the key stays the same while
+      // they tap along, so the recitation isn't cut off at each tap)
+      const L = chainList(),
+        rest = L.slice(Math.min(st.chain, L.length - 1));
+      return { key: `${s.n}:chain:${st.a}`, label: rest.length < L.length ? `From āyah ${rest[0] + 1}` : 'The chain', items: rest.map((k) => [s.n, k + 1]) };
+    }
     if (v === 'path') return one(c.from + st.k);
     if (v === 'order') {
       const all = st.p === 'all' ? range({ from: 0, to: s.ayat.length - 1 }) : range(c);
@@ -1392,6 +1399,7 @@
     if (mapCtl && st.view !== 'map') {
       mapCtl.destroy();
       mapCtl = null;
+      document.body.classList.remove('busy'); // a walk on the map can't finish now
     }
     document.body.className = 'v-' + st.view;
     const s = S[st.i];
@@ -1567,7 +1575,10 @@
   </div>`;
   };
   function mountMap() {
-    if (mapCtl) mapCtl.destroy(); // re-drawing the map (after a gift, a setting…) replaces the old one
+    if (mapCtl) {
+      mapCtl.destroy(); // re-drawing the map (after a gift, a setting…) replaces the old one
+      document.body.classList.remove('busy'); // and ends any walk on it
+    }
     const prof = P();
     const reached = Math.max(prof.at, ...S.map((s, i) => (surahStars(s) > 0 ? i : 0)));
     mapCtl = MAP.mount(document.getElementById('map'), {
@@ -1635,7 +1646,8 @@
     if (st.view === 'map' && mapCtl) walk();
     else {
       go('map');
-      setTimeout(walk, 450);
+      // only if the child is still on the map with nothing open on top (a gift, say)
+      setTimeout(() => st.view === 'map' && !document.getElementById('modal').classList.contains('show') && walk(), 450);
     }
   }
   function enterSurah(i, then) {
@@ -1650,10 +1662,14 @@
     const ctl = mapCtl;
     sfx.tap();
     document.body.classList.add('busy');
+    // taps wait while the explorer walks in, but never for long: if the walk is cut short (the map redrawn),
+    // the game must not stay deaf to taps
+    const guard = setTimeout(() => document.body.classList.remove('busy'), 4000);
     ctl.walkTo(i, () => {
       prof.at = i;
       save();
       ctl.zoomInto(i, () => {
+        clearTimeout(guard);
         document.body.classList.remove('busy');
         openSurah(i);
         if (then) then();
@@ -1789,7 +1805,7 @@
         cur = s.ayat[L[Math.min(st.chain, L.length - 1)]];
       body = `
       ${coach(`🔗 <b>Chain time!</b> Say from āyah ${L[0] + 1} all the way to āyah ${k + 1}.${prefs.actions ? ' Do the actions too!' : ''}`, '🦉', toyBtn(s))}
-      <div class="chain">${L.map((x, j) => `<button class="link ${j < st.chain ? 'lit' : j === st.chain ? 'cur' : ''} ${!c.all && st.p > 0 && j === 0 ? 'bridge' : ''}" data-act="chainstep"><span class="num">${x + 1}</span>${pics(s.ayat[x])}</button>`).join('')}</div>
+      <div class="chain">${L.map((x, j) => `<button class="link ${j < st.chain ? 'lit' : j === st.chain ? 'cur' : ''} ${!c.all && st.p > 0 && j === 0 ? 'bridge' : ''}" data-act="chainstep" data-j="${j}" aria-label="Āyah ${x + 1}${j < st.chain ? ', said: tap to go back to it' : ''}"><span class="num">${x + 1}</span>${pics(s.ayat[x])}</button>`).join('')}</div>
       ${prefs.actions ? `<div style="text-align:center">${gest(cur)}</div>` : ''}
       <details class="adult"><summary>👁️ Grown-up check</summary><div class="ar sm" lang="ar">${cur.ar}</div></details>
       <div class="row"><button class="btn go wide" data-act="chainstep">✅ Said it! Next</button></div>`;
@@ -3322,7 +3338,10 @@
   /* open the first waiting gift: a wobbling box, tap, it pops open */
   function showGift() {
     const g = P().pending[0];
-    if (!g) return;
+    if (!g) {
+      document.getElementById('modal').classList.remove('show');
+      return;
+    }
     const m = document.getElementById('modal');
     const n = P().pending.length;
     m.innerHTML = `<div class="card giftcard"><button class="gbox ${g.m ? 'mini' : ''}" data-act="giftpop" aria-label="Open the gift"><span class="rattle">${giftArt(g)}</span></button><p class="gtap">Tap the gift!${n > 1 ? ` <small>${n} to open</small>` : ''}</p></div>`;
@@ -3504,7 +3523,7 @@
       m.classList.remove('show');
       return;
     }
-    if (document.body.classList.contains('busy')) return; // the explorer is walking
+    if (document.body.classList.contains('busy') && !e.target.closest('#modal')) return; // the explorer is walking (a gift or card on top still works)
     const hb = e.target.closest('[data-hold]');
     if (hb) {
       if (!hb._fired) toast(hb.dataset.tip || 'Press and hold');
@@ -3826,7 +3845,12 @@
         break;
       }
       case 'giftpop':
-        popGift();
+        if (P().pending.length) popGift();
+        else {
+          // nothing left behind this box (opened elsewhere already): close it rather than sit there
+          m.classList.remove('show');
+          render();
+        }
         break;
       case 'wear': {
         const it = ITEM[b.dataset.id];
@@ -4133,6 +4157,20 @@
       case 'chainstep': {
         const L = chainList();
         if (st.chain >= L.length) break;
+        // tap a link already said: go back to it (it and the ones after it are to be said again)
+        if (b.dataset.j != null && +b.dataset.j < st.chain) {
+          sfx.boop();
+          st.chain = +b.dataset.j;
+          const wasPlaying = playing;
+          render();
+          if (wasPlaying) {
+            // Listen was helping: carry on from the āyah gone back to
+            stopAudio();
+            const t = fabTarget();
+            if (t) playList(t.items);
+          }
+          break;
+        }
         sfx.tap();
         st.chain++;
         render();
@@ -4534,6 +4572,16 @@
     a.onfinish = () => then && then(a);
     return a;
   }
+  // a wave hello (the explorer by their sūrah waves too)
+  function wave(el) {
+    const svg = el && el.querySelector('svg.ex');
+    if (!svg || reduceMotion) return;
+    Object.keys(MOVES).forEach((x) => svg.classList.remove('mv-' + x));
+    void svg.getBoundingClientRect();
+    svg.classList.add('mv-wave');
+    clearTimeout(svg._mv);
+    svg._mv = setTimeout(() => svg.classList.remove('mv-wave'), 1700);
+  }
   function palIdle() {
     if (st.view !== 'map' || document.hidden || reduceMotion || document.getElementById('modal').classList.contains('show')) return;
     const layer = document.querySelector('#map .mlayer');
@@ -4547,11 +4595,19 @@
     // someone close by? say salām (the explorer by their sūrah counts too)
     const near = [...layer.querySelectorAll('.mpal, .mex')].filter((o) => o !== el && onScreen(o) && Math.hypot(+o.dataset.x - x, +o.dataset.y - y) < 170);
     const r = Math.random();
-    if (near.length && r < 0.4 && Date.now() - (el._hi || 0) > 20000) {
+    if (near.length && r < 0.45 && Date.now() - (el._hi || 0) > 20000) {
       const o = near[(Math.random() * near.length) | 0];
       el._hi = o._hi = Date.now();
-      sayOnMap(el, 'As-salāmu ʿalaykum! 👋');
-      setTimeout(() => o.isConnected && sayOnMap(o, 'Wa ʿalaykumu s-salām! 😊'), 1300);
+      wave(el);
+      if (Math.random() < 0.5) {
+        // salām, and the answer
+        sayOnMap(el, 'As-salāmu ʿalaykum! 👋');
+        setTimeout(() => o.isConnected && (wave(o), sayOnMap(o, 'Wa ʿalaykumu s-salām! 😊')), 1300);
+      } else {
+        // or just a wave back
+        sayOnMap(el, '👋', 1600);
+        setTimeout(() => o.isConnected && (wave(o), sayOnMap(o, '👋', 1600)), 900);
+      }
       return;
     }
     if (r < 0.75) {

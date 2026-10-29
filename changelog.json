@@ -1,7 +1,12 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.5.5",
+ "latest": "2.5.6",
  "versions": [
+  { "v": "2.5.6", "notes": [
+   "Fixed: a gift that wouldn't open while the explorer was walking",
+   "Chain time: tap an āyah again to go back to it; Listen plays from where you are",
+   "Explorers wave hello when they meet"
+  ] },
   { "v": "2.5.5", "notes": [
    "Fixed: puzzle pieces stuck on the screen",
    "Small visual tweaks"
