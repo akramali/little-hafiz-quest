@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.6.1';
+  const VERSION = '2.6.2';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -848,7 +848,7 @@
   }
   function closeModal(sel) {
     const m = document.getElementById('modal');
-    if (!sel || m.querySelector(sel)) m.classList.remove('show');
+    if (!sel || m.querySelector(sel)) hideModal();
   }
   /* Phones only let a page start sound straight after a tap. Playing a moment of silence on the tap keeps
      the player allowed to start the recitation once its file is ready, even after a download. */
@@ -1117,6 +1117,27 @@
     setTimeout(() => el.classList.remove('wobble'), 500);
   }
   let toastT;
+  /* every card closes the way it opened: it shrinks and fades while the page behind clears (still "closed" at
+     once for the game: only the look lingers for a moment) */
+  function hideModal() {
+    const m = document.getElementById('modal');
+    if (!m.classList.contains('show')) return;
+    m.classList.remove('show');
+    if (reduceMotion) return;
+    m.classList.add('closing');
+    clearTimeout(m._closeT);
+    m._closeT = setTimeout(() => m.classList.remove('closing'), 220);
+  }
+  // the list of worlds folds away the way it opened
+  function closeRail(rl) {
+    rl = rl || document.querySelector('.wrail.open');
+    if (!rl) return;
+    const tg = rl.querySelector('.wr-toggle');
+    if (tg) tg.setAttribute('aria-expanded', 'false');
+    if (reduceMotion) return rl.classList.remove('open');
+    rl.classList.add('closing');
+    setTimeout(() => rl.classList.remove('open', 'closing'), 200);
+  }
   function toast(msg) {
     const t = document.getElementById('toast');
     t.textContent = msg;
@@ -1668,7 +1689,7 @@
   }
   /* go to sūrah i from anywhere: the map, the explorer walks in, then its next lesson starts */
   function jumpTo(i) {
-    document.getElementById('modal').classList.remove('show');
+    hideModal();
     const walk = () =>
       enterSurah(i, () => {
         const next = $app.querySelector('.qstep.next');
@@ -2879,7 +2900,7 @@
     incoming = null;
     sfx.win();
     // done: say so, and get out of the way
-    document.getElementById('modal').classList.remove('show');
+    hideModal();
     const nm = into.name || 'Your explorer';
     toast(`✨ ${nm} is up to date${gain.stars > 0 || gain.things > 0 ? ` · +${gain.stars} ⭐${gain.things ? ` · ${gain.things} new treasure${gain.things === 1 ? '' : 's'}` : ''}` : ''}`);
     render();
@@ -3247,7 +3268,10 @@
       // stickers the Stranger took here come back too, and he returns for a rematch
       prof.lostSt.filter((x) => x.n === s.n).forEach((x) => prof.stickers.includes(x.id) || prof.stickers.push(x.id));
       prof.lostSt = prof.lostSt.filter((x) => x.n !== s.n);
-      if (prof.rematch === s.n) prof.rematchReady = true;
+      if (prof.rematch === s.n) {
+        prof.rematchReady = true;
+        prof.strangerAt = 0; // he comes back right away
+      }
     }
     // memorized = Stepping Stones level 3 (the whole sūrah, for one with checkpoints)
     if (st.view === 'path' && (!multi(s) || st.p === 'all') && surahDone(s)) extra.memorized = true;
@@ -3615,11 +3639,9 @@
 
   document.addEventListener('click', (e) => {
     // the open list of worlds closes with a tap anywhere outside it
-    const rl = document.querySelector('.wrail.open');
+    const rl = document.querySelector('.wrail.open:not(.closing)');
     if (rl && !e.target.closest('.wrail')) {
-      rl.classList.remove('open');
-      const tg = rl.querySelector('.wr-toggle');
-      if (tg) tg.setAttribute('aria-expanded', 'false');
+      closeRail(rl);
       e.preventDefault();
       e.stopPropagation();
       return;
@@ -3627,11 +3649,12 @@
     const m = document.getElementById('modal');
     if (e.target === m) {
       if (m.querySelector('.dropcard')) return; // must press "Try again"
+      if (m.querySelector('.strmeet')) return; // the Stranger waits for an answer: I'm ready or Not now
       if (m.querySelector('.dlcard.busy')) return; // downloading
       if (dlAnswer) stopAudio(); // a download question left unanswered: don't download
       pendingYes = null;
       const gift = m.querySelector('.giftcard');
-      m.classList.remove('show');
+      hideModal();
       if (gift) render(); // a gift opened (or not): the gift buttons on the page show what's still waiting
       return;
     }
@@ -3693,7 +3716,7 @@
         sfx.tap();
         store.cur = b.dataset.id;
         save(true);
-        m.classList.remove('show');
+        hideModal();
         render();
         break;
       }
@@ -3736,7 +3759,7 @@
           toast("That doesn't look like a progress link");
           break;
         }
-        m.classList.remove('show');
+        hideModal();
         openSync(code, '');
         break;
       }
@@ -3780,7 +3803,7 @@
         store.profiles.push(p);
         store.cur = p.id;
         save();
-        m.classList.remove('show');
+        hideModal();
         go('create', { first: true });
         break;
       }
@@ -3835,17 +3858,19 @@
         break;
       case 'world': {
         if (mapCtl) mapCtl.scrollToWorld(+b.dataset.w);
-        const rl = document.querySelector('.wrail');
-        if (rl) rl.classList.remove('open');
+        closeRail();
         break;
       }
       case 'worlds': {
         // the world-map button opens (or closes) the list of worlds
         sfx.tap();
         const rl = b.closest('.wrail'),
-          open = !rl.classList.contains('open');
-        rl.classList.toggle('open', open);
-        b.setAttribute('aria-expanded', open);
+          open = !rl.classList.contains('open') || rl.classList.contains('closing');
+        if (open) {
+          rl.classList.remove('closing');
+          rl.classList.add('open');
+          b.setAttribute('aria-expanded', 'true');
+        } else closeRail(rl);
         break;
       }
       case 'bag':
@@ -3891,12 +3916,15 @@
         prof.badge = prof.badge === id && b.dataset.from !== 'gift' ? '' : id;
         save();
         if (b.dataset.from === 'gift') {
-          if (prof.pending.length) {
+          if (st.view === 'stranger') {
+            hideModal();
+            go('map');
+          } else if (prof.pending.length) {
             // more gifts: back to the screen they were opened from, to tap the next one
-            m.classList.remove('show');
+            hideModal();
             render();
           } else {
-            m.classList.remove('show');
+            hideModal();
             go('bag', { tab: 'stickers' });
             burstAt($app.querySelector('.wd-stage'), 12, ['⭐', '✨']);
           }
@@ -3966,16 +3994,18 @@
           save();
         }
         sfx.chime();
-        m.classList.remove('show');
-        if (P().pending.length) render(); // more gifts: back to where they were opened
+        hideModal();
+        if (st.view === 'stranger') go('map'); // the Stranger's gift: on to the world
+        else if (P().pending.length) render(); // more gifts: back to where they were opened
         else go('bag', { tab: it ? it.slot : 'hat' });
         break;
       }
       case 'giftok':
-        // Yay / Next gift: back to the screen the gift was opened from
+        // Yay / Next gift: back to the screen the gift was opened from (from the Stranger: on to the world)
         sfx.tap();
-        m.classList.remove('show');
-        render();
+        hideModal();
+        if (st.view === 'stranger') go('map');
+        else render();
         break;
       case 'fs':
         sfx.tap();
@@ -4072,7 +4102,7 @@
         break;
       case 'closemodal':
         sfx.chime();
-        m.classList.remove('show');
+        hideModal();
         stopAudio();
         break;
       case 'settings':
@@ -4128,13 +4158,13 @@
       case 'cyes': {
         const f = pendingYes;
         pendingYes = null;
-        m.classList.remove('show');
+        hideModal();
         if (f) f();
         break;
       }
       case 'cno':
         pendingYes = null;
-        m.classList.remove('show');
+        hideModal();
         break;
       case 'challenge':
         sfx.tap();
@@ -4147,12 +4177,12 @@
         else meetStranger(false);
         break;
       case 'strface':
-        m.classList.remove('show');
+        hideModal();
         startStranger();
         break;
       case 'strrun':
         sfx.tap();
-        m.classList.remove('show');
+        hideModal();
         break;
       case 'strgo':
         sfx.tap();
@@ -4167,7 +4197,7 @@
         go('map');
         break;
       case 'retry': {
-        m.classList.remove('show');
+        hideModal();
         const r = pendingRestart;
         pendingRestart = null;
         if (r) restartActivity(r);
@@ -4242,7 +4272,7 @@
       case 'dlno': {
         const f = dlAnswer;
         dlAnswer = null;
-        if (act === 'dlno') m.classList.remove('show');
+        if (act === 'dlno') hideModal();
         else m.querySelector('.dlcard').classList.add('busy');
         if (f) f(act === 'dlyes');
         break;
@@ -5077,7 +5107,8 @@
     const prof = P(),
       m = document.getElementById('modal');
     if (!prefs.stranger || st.view !== 'map' || m.classList.contains('show') || document.body.classList.contains('busy') || noExplorers() || !prof.made) return;
-    if (prof.rematchReady && BYN[prof.rematch]) return meetStranger(false, true);
+    // a rematch comes as soon as the things are back; after "Not now", again after the usual 5 minutes
+    if (prof.rematchReady && BYN[prof.rematch]) return Date.now() - prof.strangerAt > 5 * 60000 ? meetStranger(false, true) : undefined;
     if (!memorizedList(prof).length) return;
     if (window.__strangerNow) return meetStranger(false); // tests only: skip the waiting and the chance
     if (Date.now() - APP_OPENED < 5 * 60000 || Date.now() - prof.strangerAt < 15 * 60000) return;
@@ -5096,7 +5127,7 @@
     m.innerHTML = `<div class="card strmeet"><div class="strart">${ART.stranger(rematch ? 'happy' : '')}</div>
       <h3>${rematch ? 'The Stranger is back!' : anytime ? 'You call the Stranger…' : 'A stranger blocks the path!'}</h3>
       <p class="strsay">“${rematch ? `You found your things. Now show me <b>${s.name}</b> is truly in your heart!` : `Show me what you know of <b>${s.name}</b>. Three questions… no help!`}”</p>
-      <div class="row"><button class="btn go wide" data-act="strface">⚔️ I'm ready!</button>${rematch ? '' : '<button class="btn wide" data-act="strrun">🏃 Not now</button>'}</div></div>`;
+      <div class="row"><button class="btn go wide" data-act="strface">⚔️ I'm ready!</button><button class="btn wide" data-act="strrun">🏃 Not now</button></div></div>`;
     m.classList.add('show');
   }
   let strangerPlan = null;
@@ -5122,16 +5153,28 @@
     stopAudio();
     go('stranger', { i: p.i, p: 0, qs: strangerQuestions(S[p.i]), q: 0, marks: [], hits: 0, phase: 'intro', anytime: p.anytime, rematch: p.rematch, result: null });
   }
-  // what stops each throw
+  // what stops each throw, and how the explorer uses it
   const THROW = {
-    rock: { ic: '🪨', name: 'a rock', by: (o) => (o.shield ? o.shield : '') },
-    wind: { ic: '💨', name: 'a gust of wind', by: (o) => o.cape || (o.top && !starter(ITEM[o.top]) && /jacket|coat|hoodie|cloak|armor|suit|vest/.test(o.top) ? o.top : '') },
-    water: { ic: '💧', name: 'a splash of water', by: (o) => (o.shoes && !starter(ITEM[o.shoes]) ? o.shoes : '') },
+    rock: { ic: '🪨', name: 'a rock' },
+    wind: { ic: '💨', name: 'a gust of wind' },
+    water: { ic: '💧', name: 'a splash of water' },
   };
+  const animalBuddy = (id) => id && !ITEM[id].wgold && !/rocket|car|plane|train|boat|truck|helicopter/.test(id);
+  // → { id: the thing that blocks, move: the explorer's move } or null
   function blockerFor(kind, prof) {
     const o = wornOutfit(prof);
-    if (o.top === 'hero-armor') return 'hero-armor';
-    return THROW[kind].by(o);
+    if (o.top === 'hero-armor') return { id: 'hero-armor', move: 'jump' };
+    if (kind === 'rock') {
+      if (o.shield) return { id: o.shield, move: 'shield' };
+      if (animalBuddy(o.pet) && Math.random() < 0.5) return { id: o.pet, move: 'pethop' }; // the buddy jumps in front
+      return null;
+    }
+    if (kind === 'wind') {
+      if (o.cape) return { id: o.cape, move: 'cape' };
+      if (o.top && !starter(ITEM[o.top]) && /jacket|coat|hoodie|cloak|suit|vest/.test(o.top)) return { id: o.top, move: 'look' };
+      return null;
+    }
+    return o.shoes && !starter(ITEM[o.shoes]) ? { id: o.shoes, move: 'march' } : null;
   }
   V.stranger = () => {
     const s = S[st.i],
@@ -5146,7 +5189,8 @@
     } else if (st.phase === 'end') {
       const r = st.result;
       say = r.say;
-      panel = `<div class="strend">${r.html}</div><div class="row"><button class="btn go wide" data-act="strdone">🗺️ Back to the map</button></div>`;
+      const g = r.win && prof.pending[0];
+      panel = `<div class="strend">${r.html}${g ? `<button class="giftbtn dgift" data-act="opengift"><span class="rattle">${giftArt(g)}</span><b>A gift for you!</b><small>Tap to open</small></button>` : ''}</div><div class="row"><button class="btn ${g ? '' : 'go'} wide" data-act="strdone">🗺️ Back to the map</button></div>`;
     } else {
       const a = s.ayat[q.k],
         words = wordsOf(a.ar);
@@ -5164,7 +5208,8 @@
     return `<div class="screen strscr" style="${cv(s.color)}">
     <div class="strtop"><span class="strtitle">⚔️ The Stranger · ${s.name}</span><span class="strdots">${dots}</span></div>
     <div class="arena">
-      <div class="foe"><div class="strbubble">${say}</div><div class="strfig">${ART.stranger(st.phase === 'end' && st.result.win ? 'happy' : st.foeHit ? 'hit' : '')}</div><i class="plat"></i></div>
+      <div class="strbubble">${say}</div>
+      <div class="foe"><div class="strfig">${ART.stranger(st.phase === 'end' && st.result.win ? 'happy' : st.foeHit ? 'hit' : '')}</div><i class="plat"></i></div>
       <div class="me"><div class="mefig">${explorer({ view: 'front', mood: sad ? 'sad' : '' })}</div><i class="plat"></i></div>
     </div>
     ${panel}
@@ -5192,35 +5237,93 @@
       setTimeout(next, 1100);
       return;
     }
-    // a miss: he throws something
+    // a miss: he throws something, and the explorer defends if they can
     render();
     const prof = P(),
-      blocker = blockerFor(q.throw, prof),
+      bl = blockerFor(q.throw, prof),
       T = THROW[q.throw];
-    sfx.whoosh();
-    const foe = document.querySelector('.strfig'),
+    const arena = document.querySelector('.arena'),
+      foe = document.querySelector('.strfig'),
       me = document.querySelector('.mefig');
-    const a = foe.getBoundingClientRect(),
-      b = me.getBoundingClientRect();
-    const p = document.createElement('span');
-    p.className = 'strproj';
-    p.textContent = T.ic;
-    p.style.left = a.left + a.width * 0.3 + 'px';
-    p.style.top = a.top + a.height * 0.45 + 'px';
-    document.body.appendChild(p);
-    const dx = b.left + b.width * 0.55 - (a.left + a.width * 0.3),
-      dy = b.top + b.height * 0.4 - (a.top + a.height * 0.45);
-    const fly = p.animate(
-      [{ transform: 'translate(0,0) scale(.6) rotate(0)' }, { transform: `translate(${dx * 0.5}px, ${dy * 0.5 - 60}px) scale(1.1) rotate(200deg)` }, { transform: `translate(${dx}px, ${dy}px) scale(1) rotate(400deg)` }],
-      { duration: 700, easing: 'ease-in', fill: 'forwards' },
-    );
-    fly.onfinish = () => {
-      p.remove();
+    const A = arena.getBoundingClientRect(),
+      a = (foe.querySelector('svg') || foe).getBoundingClientRect(), // the drawings (their boxes are only wrappers)
+      b = (me.querySelector('svg') || me).getBoundingClientRect();
+    const from = { x: a.left - A.left + a.width * 0.3, y: a.top - A.top + a.height * 0.45 },
+      to = { x: b.left - A.left + b.width * 0.55, y: b.top - A.top + b.height * (q.throw === 'water' ? 0.85 : 0.45) };
+    const bit = (txt, size) => {
+      const e = document.createElement('span');
+      e.className = 'strproj';
+      e.textContent = txt;
+      e.style.fontSize = (size || 40) + 'px';
+      e.style.left = from.x + 'px';
+      e.style.top = from.y + 'px';
+      arena.appendChild(e);
+      return e;
+    };
+    const exSvg = () => me.querySelector('svg.ex');
+    const defend = () => {
+      if (!bl) return;
+      const svg = exSvg();
+      if (svg && !reduceMotion) {
+        svg.classList.add('mv-' + bl.move);
+        setTimeout(() => svg.classList.remove('mv-' + bl.move), 1700);
+      }
+    };
+    sfx.whoosh();
+    // he winds up
+    foe.classList.add('throwing');
+    setTimeout(() => foe.classList.remove('throwing'), 500);
+    const dx = to.x - from.x,
+      dy = to.y - from.y;
+    let flights = [];
+    if (q.throw === 'rock') {
+      const r = bit('🪨', 44);
+      flights.push(r.animate([{ transform: 'translate(0,0) rotate(0) scale(.7)' }, { transform: `translate(${dx * 0.5}px, ${dy * 0.5 - 90}px) rotate(360deg) scale(1.15)` }, { transform: `translate(${dx}px, ${dy}px) rotate(720deg) scale(1)` }], { duration: 1200, delay: 350, easing: 'ease-in', fill: 'both' }));
+      setTimeout(defend, 900);
+      flights[0].onfinish = () => {
+        if (bl) {
+          // clang: it bounces off and drops to the ground
+          sfx.boop();
+          burstAt(r, 8, ['✨', '💥']);
+          r.animate([{ transform: `translate(${dx}px, ${dy}px) rotate(720deg)` }, { transform: `translate(${dx - 50}px, ${dy - 60}px) rotate(820deg)` }, { transform: `translate(${dx - 80}px, ${dy + 70}px) rotate(900deg)`, opacity: 0 }], { duration: 800, easing: 'ease-out', fill: 'forwards' }).onfinish = () => r.remove();
+        } else r.remove();
+        land();
+      };
+    } else if (q.throw === 'wind') {
+      // a long gust sweeping across, leaves and all
+      setTimeout(defend, 500);
+      ['💨', '🍃', '💨', '🍂', '💨', '🍃'].forEach((t, j) => {
+        const g = bit(t, 30 + (j % 3) * 8),
+          yo = (j % 3) * 22 - 22;
+        const f = g.animate([{ transform: `translate(0, ${yo}px)`, opacity: 0 }, { transform: `translate(${dx * 0.5}px, ${dy * 0.5 + yo - 10}px)`, opacity: 1, offset: 0.4 }, { transform: `translate(${dx - 140}px, ${dy + yo + 20}px)`, opacity: 0 }], { duration: 1700, delay: j * 160, easing: 'ease-in-out', fill: 'both' });
+        f.onfinish = () => g.remove();
+        flights.push(f);
+      });
+      flights[flights.length - 1].onfinish = () => {
+        flights.forEach((f) => f.effect && f.effect.target && f.effect.target.remove());
+        land();
+      };
+      if (!bl) setTimeout(() => me.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-22px) rotate(-6deg)' }, { transform: 'translateX(0)' }], { duration: 900, delay: 0 }), 700);
+    } else {
+      // a splash of water: drops arc down at the explorer's feet
+      setTimeout(defend, 800);
+      ['💧', '💧', '🌊', '💧', '💧'].forEach((t, j) => {
+        const w0 = bit(t, t === '🌊' ? 46 : 30),
+          xo = (j - 2) * 18;
+        const f = w0.animate([{ transform: 'translate(0,0) scale(.6)', opacity: 0 }, { transform: `translate(${dx * 0.5 + xo}px, ${dy * 0.5 - 80}px) scale(1)`, opacity: 1, offset: 0.45 }, { transform: `translate(${dx + xo}px, ${dy}px) scale(1.1)`, opacity: 0.2 }], { duration: 1300, delay: 300 + j * 90, easing: 'ease-in', fill: 'both' });
+        f.onfinish = () => w0.remove();
+        flights.push(f);
+      });
+      flights[flights.length - 1].onfinish = () => {
+        burstAt(me, 6, ['💧', '💦']);
+        land();
+      };
+    }
+    function land() {
       const note = document.createElement('div');
       note.className = 'strnote';
-      if (blocker) {
-        sfx.boop();
-        note.innerHTML = `${itemPic(blocker)}<b>Blocked by your ${itemName(blocker)}!</b>`;
+      if (bl) {
+        note.innerHTML = `${itemPic(bl.id)}<b>${bl.move === 'pethop' ? `Your ${itemName(bl.id)} jumped in the way!` : `Blocked by your ${itemName(bl.id)}!`}</b>`;
         burstAt(me, 8, ['✨', '🛡️']);
       } else {
         sfx.pop();
@@ -5230,9 +5333,9 @@
         note.innerHTML = `<b>Oof! Hit by ${T.name}.</b>`;
         burstAt(me, 6, [T.ic, '💫']);
       }
-      document.querySelector('.arena').appendChild(note);
-      setTimeout(next, 1400);
-    };
+      arena.appendChild(note);
+      setTimeout(next, 1900);
+    }
   }
   function endStranger() {
     const s = S[st.i],
@@ -5253,7 +5356,7 @@
       }
       save();
       sfx.win();
-      r = { win: true, say: 'Good job! The Qur’an is safe in your heart. I’ll be on my way…', html: `<p class="memo gold">🏆 All three right!${gift ? ` He left ${gift} for you.` : ''}</p>${prof.pending.length ? `<button class="giftbtn small" data-act="opengift"><span class="rattle">${giftArt(prof.pending[0])}</span><b>Open it!</b></button>` : ''}` };
+      r = { win: true, say: 'Good job! The Qur’an is safe in your heart. I’ll be on my way…', html: `<p class="memo gold">🏆 All three right!${gift ? ` He left ${gift} for you.` : ''}</p>` };
     } else if (right > 0) {
       sfx.chime();
       if (st.rematch) prof.rematchReady = false; // he'll be back after more practice there

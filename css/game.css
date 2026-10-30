@@ -7651,9 +7651,11 @@ body {
 }
 .strbubble {
   position: absolute;
-  right: 104%;
+  left: 0;
   top: 0;
-  width: min(210px, 52vw);
+  width: 54%;
+  max-width: 260px;
+  box-sizing: border-box;
   padding: 9px 12px;
   border-radius: 16px 16px 4px 16px;
   background: var(--card);
@@ -7683,10 +7685,22 @@ body {
   animation: wob 0.5s;
 }
 .strproj {
-  position: fixed;
-  z-index: 50;
+  position: absolute;
+  z-index: 5;
   font-size: 40px;
+  line-height: 1;
+  margin: -20px 0 0 -20px;
   pointer-events: none;
+}
+/* he winds up before he throws */
+.strfig.throwing svg {
+  animation: strwind 0.5s ease-in-out;
+  transform-origin: 50% 100%;
+}
+@keyframes strwind {
+  50% {
+    transform: rotate(-8deg) translateX(8px);
+  }
 }
 .strnote {
   position: absolute;
@@ -7843,5 +7857,37 @@ body {
   .dgift .rattle svg {
     width: 64px;
     height: 64px;
+  }
+}
+
+/* ---------- v2.6.2 ---------- */
+/* cards close the way they opened */
+#modal.closing:not(.show) {
+  display: flex;
+  pointer-events: none;
+  animation: modalout 0.2s ease-in forwards;
+}
+#modal.closing:not(.show) .card {
+  animation: cardout 0.2s ease-in forwards;
+}
+@keyframes modalout {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes cardout {
+  to {
+    opacity: 0;
+    transform: translateY(14px) scale(0.92);
+  }
+}
+.wrail.closing .wr-list {
+  animation: railout 0.2s ease-in forwards;
+  pointer-events: none;
+}
+@keyframes railout {
+  to {
+    opacity: 0;
+    transform: scale(0.3);
   }
 }

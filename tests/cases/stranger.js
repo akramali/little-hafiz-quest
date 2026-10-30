@@ -8,8 +8,12 @@
   const tap = (sel) => { const b = d.querySelector(sel); if (b) b.click(); return !!b; };
   const answer = async (oks) => {
     for (const ok of oks) {
-      for (let t = 0; t < 30 && !d.querySelector('[data-act=strans]:not([disabled])'); t++) await wait(100);
-      tap(`[data-act=strans][data-ok="${ok ? 1 : 0}"]`); await wait(ok ? 1300 : 2300);
+      for (let t = 0; t < 80 && !d.querySelector('[data-act=strans]:not([disabled])'); t++) await wait(100);
+      tap(`[data-act=strans][data-ok="${ok ? 1 : 0}"]`); await wait(300);
+    }
+    // the last answer: until the result shows
+    for (let t = 0; t < 80 && L.st().view === 'stranger' && L.st().phase !== 'end'; t++) await wait(100);
+    if (false) {
     }
   };
   if (Q.get('shot') === 'result') {
@@ -23,12 +27,26 @@
   L.go('surah', { i: idx(113), p: 0 }); await wait(200);
   L.go('map'); await wait(2400);
   ok('he appears between sūrahs', !!d.querySelector('#modal.show .strmeet'));
+  m.click(); await wait(100); // a tap outside his card
+  ok('a tap outside does not send him away', !!d.querySelector('#modal.show .strmeet'));
   if (Q.get('shot') === 'meet') { await wait(1500); done(); return; }
   tap('[data-act=strface]'); await wait(300);
   ok('the challenge screen', L.st().view === 'stranger' && !!d.querySelector('.arena .strfig svg') && !!d.querySelector('.arena .mefig svg'));
+  const bub = d.querySelector('.strbubble').getBoundingClientRect();
+  ok('his speech bubble is inside the screen', bub.left >= 4 && bub.right <= w.innerWidth - 4, Math.round(bub.left) + '…' + Math.round(bub.right));
   ok('no Listen during the challenge', !d.querySelector('.listen.show'));
   tap('[data-act=strgo]'); await wait(200);
   if (Q.get('shot') === 'ask') { await wait(1000); done(); return; }
+  if (Q.get('shot') === 'rock' || Q.get('shot') === 'wind') {
+    const kind = Q.get('shot');
+    if (kind === 'rock') { prof.items.push('sturdy-shield'); prof.outfit.shield = 'sturdy-shield'; } else { prof.items.push('leaf-cape'); prof.outfit.cape = 'leaf-cape'; }
+    L.go('stranger', Object.assign({}, L.st())); await wait(200);
+    L.st().qs.forEach((q) => (q.throw = kind));
+    tap('[data-act=strans][data-ok="0"]');
+    await wait(+(Q.get('at') || 1300));
+    d.querySelector('.arena').getAnimations({ subtree: true }).forEach((x) => x.pause());
+    await wait(3000); done(); return;
+  }
   // 2. a miss with a shield on: a rock is blocked; set every throw to a rock
   prof.items.push('hero-shield'); prof.outfit.shield = 'hero-shield';
   L.st().qs.forEach((q) => (q.throw = 'rock'));
@@ -49,12 +67,24 @@
   const s = w.LHQ_DATA.surahs[i];
   for (let k = 0; k < 12 && L.st().view === 'path'; k++) { tap('.pathbtns [data-act=hop]'); await wait(900); }
   ok('a review game there gives them back', !prof.lost.length && prof.rematchReady, `lost ${prof.lost.length} ready ${prof.rematchReady}`);
+  w.__strangerNow = false;
   L.go('map'); await wait(2400);
-  ok('he comes back for a rematch', /back/.test((d.querySelector('#modal.show .strmeet h3') || {}).textContent || '') && !d.querySelector('[data-act=strrun]'));
+  ok('he comes back for a rematch, and Not now is allowed', /back/.test((d.querySelector('#modal.show .strmeet h3') || {}).textContent || '') && !!d.querySelector('[data-act=strrun]'));
+  tap('[data-act=strrun]'); await wait(200);
+  L.go('surah', { i: idx(113), p: 0 }); await wait(100); L.go('map'); await wait(2400);
+  ok('after Not now he waits (the usual timer)', !d.querySelector('#modal.show .strmeet'));
+  prof.strangerAt = 0;
+  L.go('surah', { i: idx(113), p: 0 }); await wait(100); L.go('map'); await wait(2400);
   tap('[data-act=strface]'); await wait(300); tap('[data-act=strgo]'); await wait(200);
   const before = prof.pending.length;
   await answer([true, true, true]);
   ok('rematch won: a special gift, and he is gone', L.st().result.win && prof.pending.length > before && !prof.rematch, `gifts +${prof.pending.length - before}`);
+  const gb = d.querySelector('.strend .giftbtn');
+  ok('the gift is the same square box', !!gb && gb.getBoundingClientRect().height > 120, gb && Math.round(gb.getBoundingClientRect().height));
+  gb.click(); await wait(300);
+  d.querySelector('#modal [data-act=giftok]') ? d.querySelector('#modal [data-act=giftok]').click() : d.querySelector('#modal [data-act=wear], #modal [data-act=stick]').click();
+  await wait(1200);
+  ok('after opening it, on to the world', L.st().view === 'map');
   // 4. after the summit, wins bring hero gear; with all three, a Challenge button on the map
   prof.feats.push('once');
   prof.items = prof.items.filter((x) => !/^hero-/.test(x));

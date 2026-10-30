@@ -16,7 +16,7 @@
   L.go('map'); await wait(1000);
   d.querySelector('[data-act=worlds]').click(); await wait(100);
   const open1 = !!d.querySelector('.wrail.open');
-  d.querySelector('[data-act=progress]').click(); await wait(150);
+  d.querySelector('[data-act=progress]').click(); await wait(350); // it folds away (0.2 s)
   ok('the world list closes on a tap outside', open1 && !d.querySelector('.wrail.open') && !d.getElementById('modal').classList.contains('show'));
   ok('the world sign has no extra words', [...d.querySelectorAll('.msign b')].every((b) => /^World \d$/.test(b.textContent)));
   // the temporary Stranger button

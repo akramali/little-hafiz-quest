@@ -1,7 +1,13 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.6.1",
+ "latest": "2.6.2",
  "versions": [
+  { "v": "2.6.2", "notes": [
+   "The Stranger: bigger throws, and your shield, cape, boots or buddy really block them",
+   "After winning things back, choose “I'm ready” or “Not now”",
+   "Cards and the world list close smoothly",
+   "Small visual tweaks"
+  ] },
   { "v": "2.6.1", "notes": [
    "The MāshāAllāh page fits on the screen",
    "Swipe the explorer to turn them around",
