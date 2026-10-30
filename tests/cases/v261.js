@@ -19,13 +19,7 @@
   d.querySelector('[data-act=progress]').click(); await wait(350); // it folds away (0.2 s)
   ok('the world list closes on a tap outside', open1 && !d.querySelector('.wrail.open') && !d.getElementById('modal').classList.contains('show'));
   ok('the world sign has no extra words', [...d.querySelectorAll('.msign b')].every((b) => /^World \d$/.test(b.textContent)));
-  // the temporary Stranger button
-  const tb = d.querySelector('[data-act=strtest]');
-  ok('a 🧪 Stranger button on the map (for testing)', !!tb);
-  tb.click(); await wait(300);
-  ok('it brings him, with Not now', !!d.querySelector('#modal.show .strmeet') && !!d.querySelector('[data-act=strrun]'));
-  d.querySelector('[data-act=strrun]').click(); await wait(150);
-  ok('Not now closes it', !d.getElementById('modal').classList.contains('show'));
+  ok('no 🧪 Stranger test button any more', !d.querySelector('[data-act=strtest]'));
   ok('settings say just “The Stranger”', (() => { L.go('settings'); return /The Stranger(?! \(test\))/.test(d.body.textContent) && !/Stranger \(test\)/.test(d.body.textContent); })());
   // swipe to turn the explorer
   L.go('bag', { tab: 'hat' }); await wait(300);

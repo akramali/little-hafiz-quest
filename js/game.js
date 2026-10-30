@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.6.3';
+  const VERSION = '2.6.4';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -336,8 +336,10 @@
     p.feats = uniq((Array.isArray(o.feats) ? o.feats : []).filter((k) => FEAT_ITEM[k]));
     p.fix = uniq((Array.isArray(o.fix) ? o.fix : []).filter((n) => BYN[n]));
     // (test concept, v2.6.0) the Stranger: where he took things, whether he comes back, stickers he holds
-    p.rematch = BYN[o.rematch] ? +o.rematch : 0;
-    p.rematchReady = !!o.rematchReady && !!p.rematch;
+    // sūrahs where he took things (he comes back for a rematch once they're won back), and those ready now
+    const nums = (v) => uniq((Array.isArray(v) ? v : BYN[v] ? [v] : []).map(Number).filter((n) => BYN[n]));
+    p.rematch = nums(o.rematch);
+    p.rematchReady = Array.isArray(o.rematchReady) ? nums(o.rematchReady) : o.rematchReady === true ? p.rematch.slice() : [];
     p.lostSt = (Array.isArray(o.lostSt) ? o.lostSt : []).filter((x) => x && STICKER[x.id] && BYN[x.n]).map((x) => ({ id: x.id, n: x.n }));
     p.strangerAt = typeof o.strangerAt === 'number' && isFinite(o.strangerAt) ? o.strangerAt : 0;
     p.wdone = Array.isArray(o.wdone)
@@ -1621,7 +1623,7 @@
       ${giftIcon(prof)}
       <button class="icon-btn hud-bag hud-me" data-act="bag" aria-label="My explorer: dress up, collection and achievements"><span class="phead">${explorer({ cls: 'mini' })}</span>${prof.fresh.length ? NEWDOT : ''}</button>
     </div>
-    ${heroReady(prof) ? '<button class="btn small chalbtn" data-act="challenge" aria-label="Challenge the Stranger">⚔️ Challenge</button>' : prefs.stranger && memorizedList(prof).length ? '<button class="btn small chalbtn strtest" data-act="strtest" aria-label="Meet the Stranger (for testing)">🧪 Stranger</button>' : ''}
+    ${heroReady(prof) && prefs.stranger ? '<button class="btn small chalbtn" data-act="challenge" aria-label="Challenge the Stranger">⚔️ Challenge</button>' : ''}
     <div id="map" class="mroot"></div>
   </div>`;
   };
@@ -3268,8 +3270,8 @@
       // stickers the Stranger took here come back too, and he returns for a rematch
       prof.lostSt.filter((x) => x.n === s.n).forEach((x) => prof.stickers.includes(x.id) || prof.stickers.push(x.id));
       prof.lostSt = prof.lostSt.filter((x) => x.n !== s.n);
-      if (prof.rematch === s.n) {
-        prof.rematchReady = true;
+      if (prof.rematch.includes(s.n) && !prof.rematchReady.includes(s.n)) {
+        prof.rematchReady.push(s.n);
         prof.strangerAt = 0; // he comes back right away
       }
     }
@@ -4169,12 +4171,6 @@
       case 'challenge':
         sfx.tap();
         if (heroReady(P())) meetStranger(true);
-        break;
-      case 'strtest':
-        // TEMPORARY (v2.6.1): meet him any time, to try the challenge out; to be removed
-        sfx.tap();
-        if (P().rematchReady && BYN[P().rematch]) meetStranger(false, true);
-        else meetStranger(false);
         break;
       case 'strface':
         hideModal();
@@ -5108,7 +5104,7 @@
       m = document.getElementById('modal');
     if (!prefs.stranger || st.view !== 'map' || m.classList.contains('show') || document.body.classList.contains('busy') || noExplorers() || !prof.made) return;
     // a rematch comes as soon as the things are back; after "Not now", again after the usual 5 minutes
-    if (prof.rematchReady && BYN[prof.rematch]) return Date.now() - prof.strangerAt > 5 * 60000 ? meetStranger(false, true) : undefined;
+    if (prof.rematchReady.length) return Date.now() - prof.strangerAt > 5 * 60000 ? meetStranger(false, true) : undefined;
     if (!memorizedList(prof).length) return;
     if (window.__strangerNow) return meetStranger(false); // tests only: skip the waiting and the chance
     if (Date.now() - APP_OPENED < 5 * 60000 || Date.now() - prof.strangerAt < 15 * 60000) return;
@@ -5117,7 +5113,7 @@
   function meetStranger(anytime, rematch) {
     const prof = P(),
       list = memorizedList(prof);
-    const s = rematch ? BYN[prof.rematch] : list.filter((x) => !prof.fix.includes(x.n))[(Math.random() * list.length) | 0] || list[0];
+    const s = rematch ? BYN[prof.rematchReady[0]] : list.filter((x) => !prof.fix.includes(x.n))[(Math.random() * list.length) | 0] || list[0];
     if (!s) return;
     prof.strangerAt = Date.now();
     save();
@@ -5180,7 +5176,7 @@
     const s = S[st.i],
       prof = P(),
       q = st.qs[st.q],
-      sad = st.hits > 0;
+      sad = st.hits > 0 || (st.phase === 'end' && st.result && st.result.took);
     const dots = st.qs.map((_, j) => `<span class="strdot ${st.marks[j] === true ? 'ok' : st.marks[j] === false ? 'bad' : j === st.q && st.phase === 'ask' ? 'cur' : ''}">${st.marks[j] === true ? '✓' : st.marks[j] === false ? '✗' : j + 1}</span>`).join('');
     let say, panel;
     if (st.phase === 'intro') {
@@ -5210,7 +5206,7 @@
     <div class="arena">
       <div class="strbubble">${say}</div>
       <div class="foe"><div class="strfig">${ART.stranger(st.phase === 'end' && st.result.win ? 'happy' : st.foeHit ? 'hit' : '')}</div><i class="plat"></i></div>
-      <div class="me"><div class="mefig">${explorer({ view: 'front', mood: sad ? 'sad' : '' })}</div><i class="plat"></i></div>
+      <div class="me"><div class="mefig">${explorer({ view: 'front', mood: sad ? 'sad' : undefined })}</div><i class="plat"></i></div>
     </div>
     ${panel}
   </div>`;
@@ -5351,15 +5347,15 @@
         gift = `the <b>${nextHero.name}</b>`;
       } else if (st.rematch ? giveSurprise(prof) || giveLevelGift(prof) : giveLevelGift(prof)) gift = st.rematch ? 'a special gift' : 'a little gift';
       if (st.rematch) {
-        prof.rematch = 0;
-        prof.rematchReady = false;
+        prof.rematch = prof.rematch.filter((n) => n !== s.n);
+        prof.rematchReady = prof.rematchReady.filter((n) => n !== s.n);
       }
       save();
       sfx.win();
       r = { win: true, say: 'Good job! The Qur’an is safe in your heart. I’ll be on my way…', html: `<p class="memo gold">🏆 All three right!${gift ? ` He left ${gift} for you.` : ''}</p>` };
     } else if (right > 0) {
       sfx.chime();
-      if (st.rematch) prof.rematchReady = false; // he'll be back after more practice there
+      if (st.rematch) prof.rematchReady = prof.rematchReady.filter((n) => n !== s.n); // he'll be back after more practice there
       save();
       r = { win: false, say: `${right} out of 3… not bad. Keep practicing ${s.name}!`, html: `<p class="memo">He nods and walks away. Practice <b>${s.name}</b> a little more!</p>` };
     } else {
@@ -5386,13 +5382,14 @@
       }
       if (took.length) {
         if (!prof.fix.includes(s.n)) prof.fix.push(s.n);
-        prof.rematch = s.n;
-        prof.rematchReady = false;
+        if (!prof.rematch.includes(s.n)) prof.rematch.push(s.n);
+        prof.rematchReady = prof.rematchReady.filter((n) => n !== s.n);
       }
       save();
       sfx.boop();
       r = {
         win: false,
+        took: took.length,
         say: took.length ? 'Hmm… I’ll keep these until you know it better!' : 'Hmm… practice it more, little one.',
         html: took.length
           ? `<p class="memo">💔 He took ${took.join(' and ')}. ${took.length > 1 || full ? 'They are' : 'It is'} waiting at <b>${s.name}</b>: finish a review game there to get ${took.length > 1 ? 'them' : 'it'} back. Then he'll come back for a rematch!</p>`

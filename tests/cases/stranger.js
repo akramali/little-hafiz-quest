@@ -57,8 +57,9 @@
   prof.items.push('rain-boots', 'explorer-cap'); prof.outfit.hat = 'explorer-cap';
   L.st().qs.forEach((q) => (q.throw = 'water'));
   await answer([false, false]);
-  ok('all three missed: he takes things', L.st().phase === 'end' && prof.lost.length >= 1 && prof.rematch === w.LHQ_DATA.surahs[L.st().i].n, `lost ${prof.lost.length}, rematch ${prof.rematch}`);
-  const n = prof.rematch, lostN = prof.lost.length;
+  ok('all three missed: he takes things', L.st().phase === 'end' && prof.lost.length >= 1 && prof.rematch.includes(w.LHQ_DATA.surahs[L.st().i].n), `lost ${prof.lost.length}, rematch ${prof.rematch}`);
+  ok('the explorer looks sad before going back to the world', !!d.querySelector('.mefig svg.ex-sad'));
+  const n = prof.rematch[0], lostN = prof.lost.length;
   ok('one thing per throw that got through (2 hits → 2 things)', lostN === 2, lostN);
   if (Q.get('shot') === 'end') { await wait(1000); done(); return; }
   // 3. a review game there gives them back and he returns for a rematch
@@ -66,7 +67,7 @@
   L.go('path', { i, p: 0, L: 2, k: 0, hint: 0, hints: 0, hearts: 3, maxH: 3 });
   const s = w.LHQ_DATA.surahs[i];
   for (let k = 0; k < 12 && L.st().view === 'path'; k++) { tap('.pathbtns [data-act=hop]'); await wait(900); }
-  ok('a review game there gives them back', !prof.lost.length && prof.rematchReady, `lost ${prof.lost.length} ready ${prof.rematchReady}`);
+  ok('a review game there gives them back', !prof.lost.length && prof.rematchReady.includes(n), `lost ${prof.lost.length} ready ${prof.rematchReady}`);
   w.__strangerNow = false;
   L.go('map'); await wait(2400);
   ok('he comes back for a rematch, and Not now is allowed', /back/.test((d.querySelector('#modal.show .strmeet h3') || {}).textContent || '') && !!d.querySelector('[data-act=strrun]'));
@@ -78,7 +79,7 @@
   tap('[data-act=strface]'); await wait(300); tap('[data-act=strgo]'); await wait(200);
   const before = prof.pending.length;
   await answer([true, true, true]);
-  ok('rematch won: a special gift, and he is gone', L.st().result.win && prof.pending.length > before && !prof.rematch, `gifts +${prof.pending.length - before}`);
+  ok('rematch won: a special gift, and he is gone', L.st().result.win && prof.pending.length > before && !prof.rematch.length, `gifts +${prof.pending.length - before}`);
   const gb = d.querySelector('.strend .giftbtn');
   ok('the gift is the same square box', !!gb && gb.getBoundingClientRect().height > 120, gb && Math.round(gb.getBoundingClientRect().height));
   gb.click(); await wait(300);
@@ -103,7 +104,7 @@
   // 5. wearing all the hero gear: only a sticker can be taken
   ['hero-armor', 'hero-shield', 'hero-sword'].forEach((id) => (prof.outfit[A.ITEMS.find((x) => x.id === id).slot] = id));
   prof.stickers = ['star', 'moon'];
-  prof.lost = []; prof.rematch = 0;
+  prof.lost = []; prof.rematch = [];
   L.go('stranger', { i: idx(113), p: 0, qs: [{ k: 0, kind: 'next', cut: 0, throw: 'wind' }, { k: 1, kind: 'next', cut: 0, throw: 'water' }, { k: 2, kind: 'next', cut: 0, throw: 'rock' }], q: 0, marks: [], hits: 0, phase: 'ask', anytime: true, rematch: false, result: null });
   await answer([false, false, false]);
   ok('hero armor blocks everything', L.st().hits === 0);

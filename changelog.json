@@ -1,7 +1,12 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.6.3",
+ "latest": "2.6.4",
  "versions": [
+  { "v": "2.6.4", "notes": [
+   "The Stranger is part of the game now (switch him off in the Grown-up Corner)",
+   "A beating 💔 shows where things were dropped",
+   "Small visual tweaks"
+  ] },
   { "v": "2.6.3", "notes": [
    "The Stranger turns up a little more often",
    "Small visual tweaks"
