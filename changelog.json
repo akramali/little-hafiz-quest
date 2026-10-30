@@ -1,7 +1,15 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.5.8",
+ "latest": "2.6.0",
  "versions": [
+  { "v": "2.6.0", "notes": [
+   "Make a whole world golden to win a ride: a car, a train… up to a space rocket",
+   "Golden and green worlds on the map",
+   "Speed button beside the loop button",
+   "Gifts open in one tap",
+   "New, being tried out: the Stranger asks 3 questions now and then (can be switched off)",
+   "Small visual tweaks"
+  ] },
   { "v": "2.5.8", "notes": [
    "5 cool new glasses to win as surprise gifts",
    "Big Puzzle: shorter sūrahs now have 8–12 pieces",

@@ -48,6 +48,11 @@
   --glass: rgba(255, 255, 255, 0.78);
   --line: rgba(43, 35, 64, 0.15);
   --edge: rgba(43, 35, 64, 0.2);
+  --okfg: #1e9651;
+  --spdbg: #fff1e0;
+  --spdfg: #b8560f;
+  --spdon: #ffd9a8;
+  --goldfg: #a86f00;
   --shd: rgba(43, 35, 64, 0.14);
   --slot: rgba(255, 255, 255, 0.5);
   --stone: #d8d2c4;
@@ -91,6 +96,19 @@
     --glass: rgba(37, 33, 73, 0.82);
     --line: rgba(255, 255, 255, 0.16);
     --edge: rgba(255, 255, 255, 0.22);
+  --okfg: #6ff0a4;
+  --spdbg: #3d2c3a;
+  --spdfg: #ffb26b;
+  --spdon: #5a3a2a;
+  --goldfg: #ffd45e;
+    --okfg: #6ff0a4;
+  --spdbg: #3d2c3a;
+  --spdfg: #ffb26b;
+  --spdon: #5a3a2a;
+    --spdbg: #3d2c3a;
+    --spdfg: #ffb26b;
+    --spdon: #5a3a2a;
+    --goldfg: #ffd45e;
     --shd: rgba(0, 0, 0, 0.38);
     --slot: rgba(255, 255, 255, 0.05);
     --stone: #4a4472;
@@ -125,6 +143,11 @@
   --glass: rgba(37, 33, 73, 0.82);
   --line: rgba(255, 255, 255, 0.16);
   --edge: rgba(255, 255, 255, 0.22);
+  --okfg: #6ff0a4;
+  --spdbg: #3d2c3a;
+  --spdfg: #ffb26b;
+  --spdon: #5a3a2a;
+  --goldfg: #ffd45e;
   --shd: rgba(0, 0, 0, 0.38);
   --slot: rgba(255, 255, 255, 0.05);
   --stone: #4a4472;
@@ -158,6 +181,11 @@
   --glass: rgba(37, 33, 73, 0.82);
   --line: rgba(255, 255, 255, 0.16);
   --edge: rgba(255, 255, 255, 0.22);
+  --okfg: #6ff0a4;
+  --spdbg: #3d2c3a;
+  --spdfg: #ffb26b;
+  --spdon: #5a3a2a;
+  --goldfg: #ffd45e;
   --shd: rgba(0, 0, 0, 0.38);
   --slot: rgba(255, 255, 255, 0.05);
   --stone: #4a4472;
@@ -6280,7 +6308,7 @@ body {
   padding-bottom: 40px;
 }
 .mushafscr .mtools {
-  padding-right: 70px; /* clear of the loop button */
+  padding-right: 158px; /* clear of the speed and loop buttons */
 }
 /* colored words: tidy boxes that neither overlap nor push the lines apart */
 .mw {
@@ -7349,4 +7377,345 @@ body {
   display: block;
   text-align: center;
   line-height: 1.35;
+}
+
+/* ---------- v2.6.0 ---------- */
+/* worlds: green once every sūrah is memorized, golden once every star is won; readable in both themes */
+.wr.done .wr-tx b,
+.wr-mark {
+  color: var(--okfg);
+  font-style: normal;
+}
+.wr.gold .wr-tx b,
+.wr.gold .wr-mark {
+  color: var(--goldfg);
+}
+.wr.done .wr-dot {
+  background: conic-gradient(var(--okfg) 100%, transparent 0);
+}
+.wr.gold .wr-dot {
+  background: conic-gradient(#ffe27a, #ffb300, #fff3b0, #ffb300, #ffe27a);
+  box-shadow: 0 0 12px rgba(255, 200, 61, 0.7);
+}
+.wr-list .wr.gold {
+  background: linear-gradient(90deg, rgba(255, 207, 63, 0.22), rgba(255, 207, 63, 0.06));
+}
+.wr-toggle.done::after,
+.wr-toggle.gold::after {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: 0 0 0 2px var(--card);
+}
+.wr-toggle.done::after {
+  content: '✓';
+  background: var(--go);
+  color: #fff;
+}
+.wr-toggle.gold::after {
+  content: '⭐';
+  background: #ffcf3f;
+}
+/* the world sign on the map */
+.msign.done {
+  border-color: #3fbf6f;
+}
+.msign.done b {
+  color: #b6ffd0;
+  opacity: 1;
+}
+.msign.gold {
+  background: linear-gradient(180deg, #ffe27a, #f2b31a);
+  border-color: #fff1b0;
+  color: #4a3000;
+  box-shadow:
+    0 4px 0 #a86f00,
+    0 0 18px rgba(255, 200, 61, 0.7);
+}
+.msign.gold b {
+  opacity: 1;
+}
+/* Look & Repeat: the āyah tag, its twin badge and the loop button share one row (nothing under the button) */
+.lchead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.lctags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  text-align: left;
+}
+.lctags .twin {
+  margin-left: 0;
+}
+.lchead .loopbtn {
+  position: static;
+  flex: none;
+}
+.setrow.flash {
+  animation: togflash 1.6s ease-in-out 2;
+}
+.mfbtns {
+  display: flex;
+  gap: 8px;
+}
+
+/* an opened gift: the prize rises out of its box, and the box sinks and fades out of the way */
+.giftcard.open .gopen {
+  position: absolute;
+  left: 50%;
+  top: 92px;
+  margin-left: -60px;
+  pointer-events: none;
+  animation: boxaway 1.3s ease-in forwards;
+}
+.giftcard.open .gitem {
+  margin: 8px auto 4px;
+  z-index: 1;
+}
+@keyframes boxaway {
+  0%,
+  35% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(40px) scale(0.55);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .giftcard.open .gopen {
+    display: none;
+  }
+}
+/* the speed button beside the loop button, and its quick picker */
+.lcbtns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.speedchip {
+  /* a pill (the loop button is a circle): speedometer and speed side by side, a warm tint like Listen */
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 42px;
+  padding: 0 11px 0 9px;
+  border-radius: 14px;
+  background: var(--spdbg);
+  color: var(--spdfg);
+  box-shadow: 0 3px 0 rgba(201, 83, 0, 0.35);
+  outline: 2px solid rgba(201, 83, 0, 0.45);
+  outline-offset: -2px;
+}
+.speedchip svg {
+  width: 22px;
+  height: 15px;
+  display: block;
+}
+.speedchip b {
+  font-size: 14px;
+  font-weight: 800;
+}
+.speedchip.on {
+  background: var(--spdon);
+}
+.mfloat .speedchip {
+  position: fixed;
+  /* beside the loop button, to its left */
+  top: calc(env(safe-area-inset-top, 0px) + 95px);
+  right: calc(max(16px, env(safe-area-inset-right, 0px)) + 70px);
+  z-index: 30;
+}
+.speedcard {
+  text-align: left;
+}
+.speedcard h3 {
+  margin: 2px 44px 6px 0;
+}
+
+
+/* ---------- (test concept, v2.6.0) the Stranger's challenge ---------- */
+.chalbtn {
+  position: fixed;
+  left: max(16px, env(safe-area-inset-left, 0px));
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  z-index: 14;
+}
+.strmeet {
+  text-align: center;
+}
+.strmeet .strart svg {
+  display: block;
+  margin: 0 auto;
+  width: 130px;
+  height: 195px;
+  animation: popin 0.4s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+.strsay {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 6px 0 10px;
+  line-height: 1.35;
+}
+.strtop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 0 2px;
+}
+.strtitle {
+  font-weight: 800;
+  font-size: 17px;
+}
+.strdots {
+  display: flex;
+  gap: 6px;
+}
+.strdot {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  font-size: 14px;
+  background: var(--card);
+  color: var(--soft);
+  outline: 2px solid var(--edge);
+  outline-offset: -2px;
+}
+.strdot.cur {
+  background: var(--gold);
+  color: #2b2340;
+}
+.strdot.ok {
+  background: var(--go);
+  color: #fff;
+}
+.strdot.bad {
+  background: #e8414f;
+  color: #fff;
+}
+/* the arena: the Stranger up on the right, the explorer down on the left, each on a platform */
+.arena {
+  position: relative;
+  height: 330px;
+  margin: 6px 0 10px;
+}
+.arena .plat {
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  width: 150px;
+  height: 30px;
+  margin-left: -75px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(43, 35, 64, 0.28), rgba(43, 35, 64, 0.08) 70%, transparent);
+  z-index: -1;
+}
+.foe {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 46%;
+  height: 210px;
+}
+.strfig svg {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  width: 110px;
+  height: 165px;
+  margin-left: -55px;
+}
+.strfig .stranger.hit {
+  animation: wob 0.6s;
+}
+.strbubble {
+  position: absolute;
+  right: 104%;
+  top: 0;
+  width: min(210px, 52vw);
+  padding: 9px 12px;
+  border-radius: 16px 16px 4px 16px;
+  background: var(--card);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.3;
+  box-shadow: 0 0 0 2px var(--edge), 0 4px 10px var(--shd);
+  z-index: 2;
+}
+.me {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 50%;
+  height: 190px;
+}
+.mefig svg {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  width: 116px;
+  height: 174px;
+  margin-left: -58px;
+}
+.mefig.ouch {
+  animation: wob 0.5s;
+}
+.strproj {
+  position: fixed;
+  z-index: 50;
+  font-size: 40px;
+  pointer-events: none;
+}
+.strnote {
+  position: absolute;
+  left: 4%;
+  bottom: 186px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--ink);
+  font-size: 14px;
+  box-shadow: 0 0 0 2px var(--edge);
+  animation: popin 0.3s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+.strnote svg {
+  width: 30px;
+  height: 30px;
+}
+.strq {
+  text-align: center;
+  padding: 10px 12px 12px;
+}
+.strpics {
+  font-size: 30px;
+  margin: 4px 0;
+}
+.strend {
+  text-align: center;
+}
+.strend .giftbtn {
+  margin-top: 10px;
 }

@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.5.8';
+  const VERSION = '2.6.0';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -74,7 +74,7 @@
   ITEMS.forEach((it) => {
     if (it.from) (it.gold ? GOLD_ITEM : SURAH_ITEM)[it.from] = it;
   });
-  const starter = (it) => !it.from && !it.feat && !it.track && !it.drop; // the comfy clothes everyone starts with
+  const starter = (it) => !it.from && !it.feat && !it.track && !it.drop && !it.wgold && !it.quest; // the comfy clothes everyone starts with
   const DROPS = ITEMS.filter((it) => it.drop); // everyday accessories that come as surprise gifts (art.js)
   const wornByDefault = (it) => starter(it) && ART.DEFAULTS[it.slot] === it.id; // the everyday glasses are owned, not worn
   const TRACK = ITEMS.filter((it) => it.track).sort((a, b) => a.track - b.track); // a prize every few stars
@@ -189,6 +189,7 @@
     audio: true,
     chain: 3, // Look & Repeat: chain after every 3 new āyāt (or every 1, 4, 5)
     chainSet: false, // chosen by a grown-up (v2.5.7: until then, the default of 3)
+    stranger: true, // (test concept, v2.6.0) the Stranger's challenge on the map
     speed: 1, // recitation speed (v2.5.2; replaces "slower" and "repeat each āyah": the loop button repeats)
     reciter: 'alafasy',
     hearts: true,
@@ -334,6 +335,11 @@
     p.cpg = uniq((Array.isArray(o.cpg) ? o.cpg : []).filter((k) => typeof k === 'string' && /^\d{2,3}:\d$/.test(k))).slice(0, 200);
     p.feats = uniq((Array.isArray(o.feats) ? o.feats : []).filter((k) => FEAT_ITEM[k]));
     p.fix = uniq((Array.isArray(o.fix) ? o.fix : []).filter((n) => BYN[n]));
+    // (test concept, v2.6.0) the Stranger: where he took things, whether he comes back, stickers he holds
+    p.rematch = BYN[o.rematch] ? +o.rematch : 0;
+    p.rematchReady = !!o.rematchReady && !!p.rematch;
+    p.lostSt = (Array.isArray(o.lostSt) ? o.lostSt : []).filter((x) => x && STICKER[x.id] && BYN[x.n]).map((x) => ({ id: x.id, n: x.n }));
+    p.strangerAt = typeof o.strangerAt === 'number' && isFinite(o.strangerAt) ? o.strangerAt : 0;
     p.wdone = Array.isArray(o.wdone)
       ? uniq(o.wdone.filter((w) => Number.isInteger(w) && w >= 0 && w < WORLDS.length))
       : WORLDS.map((_, wi) => wi).filter((wi) => worldDone(wi, p)); // no party for worlds finished before v2.1
@@ -349,7 +355,7 @@
   function cleanPrefs(o) {
     const out = Object.assign({}, DEFAULT_PREFS);
     if (!o || typeof o !== 'object') return out;
-    ['meaning', 'translit', 'sfx', 'audio', 'hearts', 'actions', 'fullscreen', 'pzrtl', 'wordmean'].forEach((k) => {
+    ['meaning', 'translit', 'sfx', 'audio', 'hearts', 'actions', 'fullscreen', 'pzrtl', 'wordmean', 'stranger'].forEach((k) => {
       if (typeof o[k] === 'boolean') out[k] = o[k];
     });
     if (['auto', 'light', 'dim'].includes(o.theme)) out.theme = o.theme;
@@ -495,6 +501,7 @@
       S.forEach((s) => giveSurahGift(s, prof));
       giveTrackPrizes(prof);
       giveStarBadges(prof);
+      giveWorldRides(prof);
     });
     prefs = store.prefs;
   }
@@ -1026,6 +1033,21 @@
   }
 
   /* the loop button: how many times Listen plays, as a ring that empties as the plays go by */
+  // beside the loop button: the recitation speed; a tap opens a quick picker right there
+  const speedChip = () => {
+    // a little speedometer: the needle points left when slow, right when fast
+    const ang = -80 + (SPEEDS.indexOf(prefs.speed) / (SPEEDS.length - 1)) * 160,
+      r = (ang * Math.PI) / 180,
+      nx = (12 + 8 * Math.sin(r)).toFixed(1),
+      ny = (14 - 8 * Math.cos(r)).toFixed(1);
+    return `<button class="speedchip ${prefs.speed !== 1 ? 'on' : ''}" data-act="speedpop" aria-label="Recitation speed ${prefs.speed} times. Tap to change"><svg viewBox="0 0 24 16" aria-hidden="true"><path d="M3 14A9 9 0 0 1 21 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M12 14L${nx} ${ny}" stroke="#ff7a1a" stroke-width="2.6" stroke-linecap="round"/><circle cx="12" cy="14" r="2" fill="currentColor"/></svg><b>${speedLabel(prefs.speed)}</b></button>`;
+  };
+  function showSpeed() {
+    const m = document.getElementById('modal');
+    m.innerHTML = `<div class="card speedcard"><button class="cardx" data-act="cno" aria-label="Close">✕</button><h3>🔊 Recitation speed</h3>
+      <p class="saveinfo">Slower helps with a new āyah. It changes right away, even while Listen plays.</p>${speedSlider()}</div>`;
+    m.classList.add('show');
+  }
   function loopBtn() {
     return `<button class="loopbtn ${loopN > 1 ? 'on' : ''}" data-act="loop" aria-label="Listen plays ${loopN === 99 ? 'again and again' : loopN === 1 ? 'once' : loopN + ' times'}. Tap to change">${loopRing()}</button>`;
   }
@@ -1299,6 +1321,7 @@
   let st = { view: 'splash' };
   let mapCtl = null;
   function go(view, params = {}) {
+    if (view === 'map' && ['surah', 'done', 'learn', 'words', 'path', 'order', 'mushaf'].includes(st.view)) setTimeout(maybeStranger, 1400);
     // leaving My Explorer: everything new there has been seen
     if (st.view === 'bag' && view !== 'bag' && P().fresh.length) {
       P().fresh = [];
@@ -1577,6 +1600,7 @@
       ${giftIcon(prof)}
       <button class="icon-btn hud-bag hud-me" data-act="bag" aria-label="My explorer: dress up, collection and achievements"><span class="phead">${explorer({ cls: 'mini' })}</span>${prof.fresh.length ? NEWDOT : ''}</button>
     </div>
+    ${heroReady(prof) ? '<button class="btn small chalbtn" data-act="challenge" aria-label="Challenge the Stranger">⚔️ Challenge</button>' : ''}
     <div id="map" class="mroot"></div>
   </div>`;
   };
@@ -1609,7 +1633,8 @@
       worldProgress: (wi) => {
         const list = S.filter((s) => worldOf(s) === wi);
         const done = list.filter((s) => surahDone(s)).length;
-        return { frac: done / list.length, done: done === list.length };
+        // green: every sūrah memorized; golden: every star in every sūrah
+        return { frac: done / list.length, done: done === list.length, gold: list.every((s) => surahStars(s) >= surahMax(s)) };
       },
     });
   }
@@ -1819,8 +1844,7 @@
       const blur = st.phase === 'alone' && !st.peek;
       body = `
       <div class="card lcard">
-        ${loopBtn()}
-        ${tag(s, k)}
+        <div class="lchead"><span class="lctags">${tag(s, k)}</span><span class="lcbtns">${speedChip()}${loopBtn()}</span></div>
         ${sceneHTML(a)}
         ${gest(a)}
         ${arHTML(s, a, k, { blur, quiet: true })}
@@ -1871,7 +1895,7 @@
     </div>
     ${focus}
   </div>
-  <div class="mfloat">${loopBtn()}</div>`;
+  <div class="mfloat">${loopBtn()}${speedChip()}</div>`;
   };
   /* one āyah up close: its colored words, with the transliteration over each and the meaning under each
      (as the settings say), and the simple meaning of the whole āyah */
@@ -1884,7 +1908,7 @@
       })
       .join('');
     return `<div class="mfocus" role="dialog" aria-label="Āyah ${k + 1}"><div class="mfcard">
-      <div class="mfhead"><span class="ayah-tag"><span class="num">${k + 1}</span>Āyah ${k + 1}</span><button class="mfx" data-act="mclear" aria-label="Close">✕</button></div>
+      <div class="mfhead"><span class="ayah-tag"><span class="num">${k + 1}</span>Āyah ${k + 1}</span><span class="mfbtns">${prefs.translit || prefs.wordmean ? '<button class="mfx" data-act="wordset" aria-label="Word meaning and transliteration settings">⚙️</button>' : ''}<button class="mfx" data-act="mclear" aria-label="Close">✕</button></span></div>
       <div class="mfwords" dir="rtl">${words}</div>
       ${prefs.meaning ? `<div class="mean">💬 ${a.kid}</div>` : ''}
       ${!prefs.translit && !prefs.wordmean ? '<div class="mfhint"><span>See how each word sounds and what it means: switch on transliteration and word meanings.</span><button class="icon-btn sm" data-act="wordset" aria-label="Open the word settings">⚙️</button></div>' : ''}
@@ -2346,6 +2370,7 @@
     ${st.cpGift ? `<div class="memo">🚩 Checkpoint crossed! A little gift for you.</div>` : ''}
     ${st.prizes ? `<div class="memo">⭐ ${totalStars()} stars! ${st.prizes > 1 ? st.prizes + ' prizes' : 'A prize'} for you.</div>` : ''}
     ${st.badge ? `<div class="memo gold">🏅 ${st.badge}! A special badge for you.</div>` : ''}
+    ${st.rides ? `<div class="memo gold">🚀 A whole world all golden! A special ride is waiting for you.</div>` : ''}
     ${st.levelGift ? `<div class="memo">🎁 ${st.firstTime ? 'Your first Big Puzzle' : 'A new star'}! A little gift for you.</div>` : ''}
     ${nextPrizeNote(prof)}
     ${g ? `<button class="giftbtn" data-act="opengift"><span class="rattle">${giftArt(g)}</span>${prof.pending.length > 1 ? `<span class="badge">${prof.pending.length}</span>` : ''}<b>${prof.pending.length > 1 ? prof.pending.length + ' gifts' : 'A gift'} for you!</b><small>Tap to open${prof.pending.length > 1 ? ' one at a time' : ''}</small></button>` : ''}
@@ -2368,7 +2393,7 @@
       return `<button class="icell lost" data-act="goto" data-i="${BYN[lost.n].idx}"><span class="iart">${itemPic(it.id)}</span><span class="lostbadge">${ART.lostMarker()}</span><small>Lost at ${BYN[lost.n].name}!</small></button>`;
     if (owned)
       return `<button class="icell t${it.tier || 0} ${it.gold ? 'gold' : ''} ${on ? 'on' : ''}" data-act="equip" data-id="${it.id}" aria-pressed="${on}"><span class="iart">${itemPic(it.id)}</span><small>${itemName(it.id)}</small>${prof.fresh.includes('i:' + it.id) ? NEWDOT : ''}</button>`;
-    return `<div class="icell locked ${it.gold ? 'goldlock' : ''}"><span class="iart">${ART.silhouette(it.id, P().look)}</span><small>${it.feat ? FEAT_HINT[it.feat] : it.drop ? 'A surprise gift' : it.track ? `At ${it.track} ⭐` : it.gold ? `Every star in ${BYN[it.from].name}` : `A star in ${BYN[it.from].name}`}</small></div>`;
+    return `<div class="icell locked ${it.gold || it.wgold ? 'goldlock' : ''}"><span class="iart">${ART.silhouette(it.id, P().look)}</span><small>${it.wgold ? `World ${it.wgold} all golden` : it.quest ? 'Stand up to the Stranger' : it.feat ? FEAT_HINT[it.feat] : it.drop ? 'A surprise gift' : it.track ? `At ${it.track} ⭐` : it.gold ? `Every star in ${BYN[it.from].name}` : `A star in ${BYN[it.from].name}`}</small></div>`;
   }
   function stickerCell(id, prof) {
     const on = prof.badge === id;
@@ -2791,6 +2816,7 @@
     S.forEach((s) => giveSurahGift(s, into));
     giveTrackPrizes(into);
     giveStarBadges(into);
+    giveWorldRides(into);
   }
   function doSync() {
     const from = incoming.from;
@@ -2803,6 +2829,7 @@
       S.forEach((s) => giveSurahGift(s, into));
       giveTrackPrizes(into);
       giveStarBadges(into);
+      giveWorldRides(into);
     } else {
       into = store.profiles.find((p) => p.id === incoming.target);
       const before = { stars: totalStars(into), things: thingsOf(into) };
@@ -2991,6 +3018,7 @@
     player.playbackRate = prefs.speed;
     e.target.setAttribute('aria-valuetext', prefs.speed + ' times');
     document.querySelectorAll('.speedticks button').forEach((b) => b.classList.toggle('on', +b.dataset.v === prefs.speed));
+    document.querySelectorAll('.speedchip').forEach((c) => (c.outerHTML = speedChip()));
     save();
   });
   V.settings = () => {
@@ -3022,7 +3050,7 @@
       <h3>🔊 Sounds</h3>
       ${tg('audio', 'Listen button', 'The orange button at the top plays the reciter')}
       <div class="setrow col"><span>Reciter<small>Tap ▶ to hear a sample</small></span><div class="recs">${recs}</div></div>
-      <div class="setrow col"><span>Recitation speed<small>Slower helps with a new āyah; the loop button repeats it</small></span>${speedSlider()}</div>
+      <div class="setrow col ${st.flash && st.flash.includes('speed') ? 'flash' : ''}"><span>Recitation speed<small>Slower helps with a new āyah; the loop button repeats it</small></span>${speedSlider()}</div>
       ${tg('sfx', 'Nature sounds', 'Soft water drops, birdsong and a breeze as you play. Quieter while the reciter plays')}
     </div>
     <div class="sheet">
@@ -3034,6 +3062,7 @@
         [4, '4'],
         [5, '5'],
       ])}</div>
+      ${tg('stranger', 'The Stranger (test)', 'Now and then, between sūrahs, a stranger on the map asks 3 questions from a memorized sūrah')}
       ${tg('pzrtl', 'Puzzle from right to left', 'The Picture Puzzle fills from the right, like reading Arabic. Off: left to right, row by row')}
     </div>
     ${offlineSheet()}
@@ -3184,6 +3213,10 @@
         prof.lost = prof.lost.filter((x) => x.n !== s.n);
         extra.found = back;
       }
+      // stickers the Stranger took here come back too, and he returns for a rematch
+      prof.lostSt.filter((x) => x.n === s.n).forEach((x) => prof.stickers.includes(x.id) || prof.stickers.push(x.id));
+      prof.lostSt = prof.lostSt.filter((x) => x.n !== s.n);
+      if (prof.rematch === s.n) prof.rematchReady = true;
     }
     // memorized = Stepping Stones level 3 (the whole sūrah, for one with checkpoints)
     if (st.view === 'path' && (!multi(s) || st.p === 'all') && surahDone(s)) extra.memorized = true;
@@ -3201,6 +3234,7 @@
     giveDailyGift();
     extra.prizes = giveTrackPrizes(prof);
     extra.badge = giveStarBadges(prof);
+    extra.rides = giveWorldRides(prof);
     if ((newStar || extra.firstTime) && prof.pending.length === giftsBefore && giveLevelGift(prof)) extra.levelGift = true;
     // the summit milestones for the whole Juz
     const feats = Object.keys(FEAT_TEST).filter((f) => !prof.feats.includes(f) && FEAT_TEST[f](prof));
@@ -3247,6 +3281,18 @@
     let n = 0;
     TRACK.forEach((it) => {
       if (it.track > t || !forKid(it, prof) || prof.items.includes(it.id) || prof.pending.some((g) => g.id === it.id)) return;
+      prof.pending.push({ k: 'i', id: it.id });
+      n++;
+    });
+    return n;
+  }
+  /* a toy ride for each world made fully golden (every star in every sūrah of it), grander further up */
+  const RIDES = ITEMS.filter((it) => it.wgold).sort((a, b) => a.wgold - b.wgold);
+  const worldGold = (wi, prof) => worldSurahs(wi).every((s) => surahStars(s, prof) >= surahMax(s));
+  function giveWorldRides(prof) {
+    let n = 0;
+    RIDES.forEach((it) => {
+      if (!worldGold(it.wgold - 1, prof) || hasOrWaits(it, prof)) return;
       prof.pending.push({ k: 'i', id: it.id });
       n++;
     });
@@ -3364,17 +3410,6 @@
     m.classList.add('show');
   }
   /* open the first waiting gift: a wobbling box, tap, it pops open */
-  function showGift() {
-    const g = P().pending[0];
-    if (!g) {
-      document.getElementById('modal').classList.remove('show');
-      return;
-    }
-    const m = document.getElementById('modal');
-    const n = P().pending.length;
-    m.innerHTML = `<div class="card giftcard"><button class="gbox ${g.m ? 'mini' : ''}" data-act="giftpop" aria-label="Open the gift"><span class="rattle">${giftArt(g)}</span></button><p class="gtap">Tap the gift!${n > 1 ? ` <small>${n} to open</small>` : ''}</p></div>`;
-    m.classList.add('show');
-  }
   function popGift() {
     const prof = P(),
       g = prof.pending.shift();
@@ -3386,7 +3421,11 @@
       gotIt(prof, 'i:' + g.id);
       art = itemPic(g.id);
       name = itemName(g.id);
-      sub = it.feat
+      sub = it.wgold
+        ? `For making World ${it.wgold}, ${WORLDS[it.wgold - 1].name}, all golden: every star in every sūrah! Climb aboard!`
+        : it.quest
+          ? 'For standing up to the Stranger with the Qur’an in your heart. A true hero!'
+          : it.feat
         ? FEAT_WHY[it.feat]
         : it.drop
           ? 'A surprise for all your hard work!'
@@ -3407,6 +3446,7 @@
     save();
     sfx.open();
     const m = document.getElementById('modal');
+    m.classList.add('show');
     const more = prof.pending.length;
     m.innerHTML = `<div class="card giftcard open"><div class="grays"></div><div class="gopen">${ART.gift({ tier: giftTier(g), open: true, kind: g.k === 'i' ? 'item' : 'sticker' })}</div>
       <div class="gitem">${art}</div><h3>${name}</h3><p class="saveinfo">${sub}</p>
@@ -3480,6 +3520,7 @@
           S.forEach((s) => giveSurahGift(s, prof));
           giveTrackPrizes(prof);
           giveStarBadges(prof);
+          giveWorldRides(prof);
         });
         prefs = store.prefs;
         nobody = null;
@@ -3809,8 +3850,11 @@
         prof.badge = prof.badge === id && b.dataset.from !== 'gift' ? '' : id;
         save();
         if (b.dataset.from === 'gift') {
-          if (prof.pending.length) showGift();
-          else {
+          if (prof.pending.length) {
+            // more gifts: back to the screen they were opened from, to tap the next one
+            m.classList.remove('show');
+            render();
+          } else {
             m.classList.remove('show');
             go('bag', { tab: 'stickers' });
             burstAt($app.querySelector('.wd-stage'), 12, ['⭐', '✨']);
@@ -3842,8 +3886,8 @@
         break;
       }
       case 'opengift':
-        sfx.tap();
-        showGift();
+        // one tap: the gift opens and shows what's inside
+        if (P().pending.length) popGift();
         break;
       case 'progress':
         sfx.tap();
@@ -3871,17 +3915,8 @@
         const after = st.after;
         go('done', after);
         bigParty();
-        setTimeout(showGift, 600);
         break;
       }
-      case 'giftpop':
-        if (P().pending.length) popGift();
-        else {
-          // nothing left behind this box (opened elsewhere already): close it rather than sit there
-          m.classList.remove('show');
-          render();
-        }
-        break;
       case 'wear': {
         const it = ITEM[b.dataset.id];
         if (it) {
@@ -3889,20 +3924,16 @@
           save();
         }
         sfx.chime();
-        if (P().pending.length) showGift();
-        else {
-          m.classList.remove('show');
-          go('bag', { tab: it ? it.slot : 'hat' });
-        }
+        m.classList.remove('show');
+        if (P().pending.length) render(); // more gifts: back to where they were opened
+        else go('bag', { tab: it ? it.slot : 'hat' });
         break;
       }
       case 'giftok':
+        // Yay / Next gift: back to the screen the gift was opened from
         sfx.tap();
-        if (P().pending.length) showGift();
-        else {
-          m.classList.remove('show');
-          render();
-        }
+        m.classList.remove('show');
+        render();
         break;
       case 'fs':
         sfx.tap();
@@ -4006,6 +4037,10 @@
         sfx.tap();
         go('settings');
         break;
+      case 'speedpop':
+        sfx.tap();
+        showSpeed();
+        break;
       case 'wordset': {
         // from the Read focus card: straight to the word switches, and back to the same āyah after
         sfx.tap();
@@ -4031,6 +4066,7 @@
         sfx.tap();
         if (k === 'theme') applyTheme();
         render();
+        if (k === 'speed' && document.querySelector('#modal.show .speedcard')) showSpeed(); // the quick picker stays open
         break;
       }
       case 'reciter':
@@ -4057,6 +4093,30 @@
       case 'cno':
         pendingYes = null;
         m.classList.remove('show');
+        break;
+      case 'challenge':
+        sfx.tap();
+        if (heroReady(P())) meetStranger(true);
+        break;
+      case 'strface':
+        m.classList.remove('show');
+        startStranger();
+        break;
+      case 'strrun':
+        sfx.tap();
+        m.classList.remove('show');
+        break;
+      case 'strgo':
+        sfx.tap();
+        st.phase = 'ask';
+        render();
+        break;
+      case 'strans':
+        strangerAnswer(b.dataset.ok === '1');
+        break;
+      case 'strdone':
+        sfx.tap();
+        go('map');
         break;
       case 'retry': {
         m.classList.remove('show');
@@ -4947,6 +5007,248 @@
       if (!turn) burst(target.left + target.width / 2, target.top + target.height / 2, 8, ['💦', '💧', '✨']);
       advance();
     };
+  }
+
+  /* ================= THE STRANGER (test concept, v2.6.0: keep or remove in v2.6.1) =================
+     Now and then, back on the map between sūrahs (after 5 minutes in the game, a 1 in 5 chance, at most
+     every 15 minutes), a hooded stranger asks 3 questions from one memorized sūrah: what comes after an āyah,
+     or finish an āyah. No Listen, no hints. A grown-up taps "Said it!" or "Not quite". Each miss, he throws a
+     rock, a gust of wind or a splash of water: a shield stops rocks, a cape or jacket the wind, boots the
+     water (hero armor stops everything). Miss all three and he takes something, left at that sūrah: one thing
+     for each throw that got through (one at most when wearing something golden; only a sticker when wearing
+     all the hero gear). Get it back with a review game there, and he comes back for a rematch: answer all
+     three and he leaves a special gift. After the summit, wins earn the hero armor, shield and sword; with
+     all three, the map has a ⚔️ Challenge button to face him any time. */
+  const APP_OPENED = Date.now();
+  const HERO = ['hero-armor', 'hero-shield', 'hero-sword'];
+  const heroReady = (prof) => HERO.every((id) => prof.items.includes(id));
+  const memorizedList = (prof) => S.filter((s) => surahDone(s, prof));
+  function maybeStranger() {
+    const prof = P(),
+      m = document.getElementById('modal');
+    if (!prefs.stranger || st.view !== 'map' || m.classList.contains('show') || document.body.classList.contains('busy') || noExplorers() || !prof.made) return;
+    if (prof.rematchReady && BYN[prof.rematch]) return meetStranger(false, true);
+    if (!memorizedList(prof).length) return;
+    if (window.__strangerNow) return meetStranger(false); // tests only: skip the waiting and the chance
+    if (Date.now() - APP_OPENED < 5 * 60000 || Date.now() - prof.strangerAt < 15 * 60000) return;
+    if (Math.random() < 0.2) meetStranger(false);
+  }
+  function meetStranger(anytime, rematch) {
+    const prof = P(),
+      list = memorizedList(prof);
+    const s = rematch ? BYN[prof.rematch] : list.filter((x) => !prof.fix.includes(x.n))[(Math.random() * list.length) | 0] || list[0];
+    if (!s) return;
+    prof.strangerAt = Date.now();
+    save();
+    strangerPlan = { i: S.indexOf(s), anytime: !!anytime, rematch: !!rematch };
+    sfx.whoosh();
+    const m = document.getElementById('modal');
+    m.innerHTML = `<div class="card strmeet"><div class="strart">${ART.stranger(rematch ? 'happy' : '')}</div>
+      <h3>${rematch ? 'The Stranger is back!' : anytime ? 'You call the Stranger…' : 'A stranger blocks the path!'}</h3>
+      <p class="strsay">“${rematch ? `You found your things. Now show me <b>${s.name}</b> is truly in your heart!` : `Show me what you know of <b>${s.name}</b>. Three questions… no help!`}”</p>
+      <div class="row"><button class="btn go wide" data-act="strface">⚔️ I'm ready!</button>${rematch ? '' : '<button class="btn wide" data-act="strrun">🏃 Not now</button>'}</div></div>`;
+    m.classList.add('show');
+  }
+  let strangerPlan = null;
+  function strangerQuestions(s) {
+    const A = s.ayat.length,
+      ks = shuffle(range({ from: 0, to: A - 1 })),
+      qs = [];
+    for (const k of ks) {
+      if (qs.length === 3) break;
+      const words = wordsOf(s.ayat[k].ar);
+      const canNext = k < A - 1,
+        canFinish = words.length >= 4;
+      if (!canNext && !canFinish) continue;
+      const kind = canNext && (!canFinish || Math.random() < 0.5) ? 'next' : 'finish';
+      qs.push({ k, kind, cut: kind === 'finish' ? Math.ceil(words.length / 2) : 0, throw: ['rock', 'wind', 'water'][(Math.random() * 3) | 0] });
+    }
+    while (qs.length < 3) qs.push(Object.assign({}, qs[qs.length % Math.max(1, qs.length)] || { k: 0, kind: 'finish', cut: 1, throw: 'rock' }));
+    return qs;
+  }
+  function startStranger() {
+    const p = strangerPlan;
+    if (!p) return;
+    stopAudio();
+    go('stranger', { i: p.i, p: 0, qs: strangerQuestions(S[p.i]), q: 0, marks: [], hits: 0, phase: 'intro', anytime: p.anytime, rematch: p.rematch, result: null });
+  }
+  // what stops each throw
+  const THROW = {
+    rock: { ic: '🪨', name: 'a rock', by: (o) => (o.shield ? o.shield : '') },
+    wind: { ic: '💨', name: 'a gust of wind', by: (o) => o.cape || (o.top && !starter(ITEM[o.top]) && /jacket|coat|hoodie|cloak|armor|suit|vest/.test(o.top) ? o.top : '') },
+    water: { ic: '💧', name: 'a splash of water', by: (o) => (o.shoes && !starter(ITEM[o.shoes]) ? o.shoes : '') },
+  };
+  function blockerFor(kind, prof) {
+    const o = wornOutfit(prof);
+    if (o.top === 'hero-armor') return 'hero-armor';
+    return THROW[kind].by(o);
+  }
+  V.stranger = () => {
+    const s = S[st.i],
+      prof = P(),
+      q = st.qs[st.q],
+      sad = st.hits > 0;
+    const dots = st.qs.map((_, j) => `<span class="strdot ${st.marks[j] === true ? 'ok' : st.marks[j] === false ? 'bad' : j === st.q && st.phase === 'ask' ? 'cur' : ''}">${st.marks[j] === true ? '✓' : st.marks[j] === false ? '✗' : j + 1}</span>`).join('');
+    let say, panel;
+    if (st.phase === 'intro') {
+      say = `I'll ask you three things about <b>${s.name}</b>. Get them right, and I'll be on my way!`;
+      panel = `<div class="row"><button class="btn go wide" data-act="strgo">Ask me! ⚔️</button></div>`;
+    } else if (st.phase === 'end') {
+      const r = st.result;
+      say = r.say;
+      panel = `<div class="strend">${r.html}</div><div class="row"><button class="btn go wide" data-act="strdone">🗺️ Back to the map</button></div>`;
+    } else {
+      const a = s.ayat[q.k],
+        words = wordsOf(a.ar);
+      const shown = q.kind === 'finish' ? words.slice(0, q.cut).join(' ') + ' …' : a.ar;
+      const answer = q.kind === 'finish' ? a.ar : s.ayat[q.k + 1].ar;
+      say = q.kind === 'next' ? `Āyah ${q.k + 1} of ${s.name}… <b>what comes after it?</b>` : `<b>Finish this āyah</b> of ${s.name}!`;
+      panel = `<div class="card strq">
+        <div class="ar-label">📖 Grown-up reads the question</div>
+        <div class="ar sm" lang="ar">${shown}</div>
+        ${q.kind === 'next' ? `<div class="strpics">${a.scene.join(' ')}</div>` : ''}
+        <details class="adult"><summary>👁️ Grown-up check (the answer)</summary><div class="ar sm" lang="ar">${answer}</div></details>
+      </div>
+      <div class="row"><button class="btn wide" data-act="strans" data-ok="0" ${st.phase !== 'ask' ? 'disabled' : ''}>🙈 Not quite</button><button class="btn go wide" data-act="strans" data-ok="1" ${st.phase !== 'ask' ? 'disabled' : ''}>✅ Said it!</button></div>`;
+    }
+    return `<div class="screen strscr" style="${cv(s.color)}">
+    <div class="strtop"><span class="strtitle">⚔️ The Stranger · ${s.name}</span><span class="strdots">${dots}</span></div>
+    <div class="arena">
+      <div class="foe"><div class="strbubble">${say}</div><div class="strfig">${ART.stranger(st.phase === 'end' && st.result.win ? 'happy' : st.foeHit ? 'hit' : '')}</div><i class="plat"></i></div>
+      <div class="me"><div class="mefig">${explorer({ view: 'front', mood: sad ? 'sad' : '' })}</div><i class="plat"></i></div>
+    </div>
+    ${panel}
+  </div>`;
+  };
+  function strangerAnswer(right) {
+    if (st.view !== 'stranger' || st.phase !== 'ask') return;
+    const q = st.qs[st.q];
+    st.marks[st.q] = right;
+    st.phase = 'anim';
+    const next = () => {
+      if (st.view !== 'stranger') return;
+      st.foeHit = false;
+      if (st.q < 2) {
+        st.q++;
+        st.phase = 'ask';
+        render();
+      } else endStranger();
+    };
+    if (right) {
+      sfx.chime();
+      st.foeHit = true;
+      render();
+      burstAt(document.querySelector('.strfig'), 10, ['✨', '⭐']);
+      setTimeout(next, 1100);
+      return;
+    }
+    // a miss: he throws something
+    render();
+    const prof = P(),
+      blocker = blockerFor(q.throw, prof),
+      T = THROW[q.throw];
+    sfx.whoosh();
+    const foe = document.querySelector('.strfig'),
+      me = document.querySelector('.mefig');
+    const a = foe.getBoundingClientRect(),
+      b = me.getBoundingClientRect();
+    const p = document.createElement('span');
+    p.className = 'strproj';
+    p.textContent = T.ic;
+    p.style.left = a.left + a.width * 0.3 + 'px';
+    p.style.top = a.top + a.height * 0.45 + 'px';
+    document.body.appendChild(p);
+    const dx = b.left + b.width * 0.55 - (a.left + a.width * 0.3),
+      dy = b.top + b.height * 0.4 - (a.top + a.height * 0.45);
+    const fly = p.animate(
+      [{ transform: 'translate(0,0) scale(.6) rotate(0)' }, { transform: `translate(${dx * 0.5}px, ${dy * 0.5 - 60}px) scale(1.1) rotate(200deg)` }, { transform: `translate(${dx}px, ${dy}px) scale(1) rotate(400deg)` }],
+      { duration: 700, easing: 'ease-in', fill: 'forwards' },
+    );
+    fly.onfinish = () => {
+      p.remove();
+      const note = document.createElement('div');
+      note.className = 'strnote';
+      if (blocker) {
+        sfx.boop();
+        note.innerHTML = `${itemPic(blocker)}<b>Blocked by your ${itemName(blocker)}!</b>`;
+        burstAt(me, 8, ['✨', '🛡️']);
+      } else {
+        sfx.pop();
+        st.hits++;
+        me.classList.add('ouch');
+        me.innerHTML = explorer({ view: 'front', mood: 'sad' });
+        note.innerHTML = `<b>Oof! Hit by ${T.name}.</b>`;
+        burstAt(me, 6, [T.ic, '💫']);
+      }
+      document.querySelector('.arena').appendChild(note);
+      setTimeout(next, 1400);
+    };
+  }
+  function endStranger() {
+    const s = S[st.i],
+      prof = P(),
+      right = st.marks.filter(Boolean).length;
+    let r;
+    if (right === 3) {
+      // all three: he leaves a gift (a rematch or a hero win: a special one)
+      let gift = '';
+      const nextHero = prof.feats.includes('once') ? HERO.map((id) => ITEM[id]).find((it) => !hasOrWaits(it, prof)) : null;
+      if (nextHero) {
+        prof.pending.push({ k: 'i', id: nextHero.id });
+        gift = `the <b>${nextHero.name}</b>`;
+      } else if (st.rematch ? giveSurprise(prof) || giveLevelGift(prof) : giveLevelGift(prof)) gift = st.rematch ? 'a special gift' : 'a little gift';
+      if (st.rematch) {
+        prof.rematch = 0;
+        prof.rematchReady = false;
+      }
+      save();
+      sfx.win();
+      r = { win: true, say: 'Good job! The Qur’an is safe in your heart. I’ll be on my way…', html: `<p class="memo gold">🏆 All three right!${gift ? ` He left ${gift} for you.` : ''}</p>${prof.pending.length ? `<button class="giftbtn small" data-act="opengift"><span class="rattle">${giftArt(prof.pending[0])}</span><b>Open it!</b></button>` : ''}` };
+    } else if (right > 0) {
+      sfx.chime();
+      if (st.rematch) prof.rematchReady = false; // he'll be back after more practice there
+      save();
+      r = { win: false, say: `${right} out of 3… not bad. Keep practicing ${s.name}!`, html: `<p class="memo">He nods and walks away. Practice <b>${s.name}</b> a little more!</p>` };
+    } else {
+      // all three missed: he takes something, left at this sūrah
+      const o = wornOutfit(prof),
+        full = HERO.every((id) => Object.values(o).includes(id)),
+        golden = Object.values(o).some((id) => ITEM[id] && (ITEM[id].gold || ITEM[id].tier >= 4));
+      let took = [];
+      if (full) {
+        const stk = prof.stickers.filter((id) => !STICKER[id].stars).slice(-1)[0];
+        if (stk) {
+          prof.stickers = prof.stickers.filter((id) => id !== stk);
+          if (prof.badge === stk) prof.badge = '';
+          prof.lostSt.push({ id: stk, n: s.n });
+          took = [`the ${STICKER[stk].name} sticker`];
+        }
+      } else {
+        const n = golden ? 1 : Math.max(1, st.hits);
+        const pool = [...Object.values(o).filter((id) => !starter(ITEM[id])), ...prof.items.slice().reverse()].filter((id, j, a) => a.indexOf(id) === j && !isLost(id, prof) && !HERO.includes(id));
+        pool.slice(0, n).forEach((id) => {
+          prof.lost.push({ id, n: s.n });
+          took.push('your ' + itemName(id));
+        });
+      }
+      if (took.length) {
+        if (!prof.fix.includes(s.n)) prof.fix.push(s.n);
+        prof.rematch = s.n;
+        prof.rematchReady = false;
+      }
+      save();
+      sfx.boop();
+      r = {
+        win: false,
+        say: took.length ? 'Hmm… I’ll keep these until you know it better!' : 'Hmm… practice it more, little one.',
+        html: took.length
+          ? `<p class="memo">💔 He took ${took.join(' and ')}. ${took.length > 1 || full ? 'They are' : 'It is'} waiting at <b>${s.name}</b>: finish a review game there to get ${took.length > 1 ? 'them' : 'it'} back. Then he'll come back for a rematch!</p>`
+          : `<p class="memo">He shakes his head and walks away. Practice <b>${s.name}</b> again!</p>`,
+      };
+    }
+    st.phase = 'end';
+    st.result = r;
+    render();
   }
 
   /* puzzle: drag & drop (plus tap a piece, then tap its place) */

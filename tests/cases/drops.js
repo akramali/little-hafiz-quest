@@ -25,7 +25,6 @@
   for (let n = 0; n < 40 && prof().pending.length; n++) {
     d.querySelector('[data-act=opengift]').click(); await wait(120);
     const g = prof().pending[0];
-    d.querySelector('#modal [data-act=giftpop]').click(); await wait(150);
     if (g && dropIds.has(g.id) && !sawDropCard) sawDropCard = d.querySelector('#modal .giftcard h3').textContent + ' / ' + d.querySelector('#modal .giftcard .saveinfo').textContent;
     (d.querySelector('#modal [data-act=wear]') || d.querySelector('#modal [data-act=giftok]')).click(); await wait(250);
   }

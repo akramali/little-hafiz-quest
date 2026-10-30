@@ -27,7 +27,6 @@
   w.LHQ_ART.ITEMS.filter((it) => it.track && it.track <= 30).forEach((it) => keep.push(it.id)); prof().items = keep;
   await run(3, 'level 3, all stickers owned');
   d.querySelector('[data-act=opengift]') && d.querySelector('[data-act=opengift]').click(); await wait(300);
-  d.querySelector('[data-act=giftpop]') && d.querySelector('[data-act=giftpop]').click(); await wait(300);
   log('gift card:', (d.querySelector('#modal .giftcard h3') || {}).textContent, '/', (d.querySelector('#modal .giftcard .saveinfo') || {}).textContent);
   ok('a gift card opens', !!d.querySelector('#modal .giftcard h3'));
   ok('no game errors', !errs.length, errs.slice(0, 3).join('; ')); log('errors', errs);

@@ -307,9 +307,10 @@
       // world signs
       L.bands.forEach((b) => {
         const w = cfg.worlds[b.wi],
-          { x, y } = signs[b.wi];
+          { x, y } = signs[b.wi],
+          pr = cfg.worldProgress ? cfg.worldProgress(b.wi) : {};
         html.push(
-          `<div class="msign" data-x="${x.toFixed(1)}" data-y="${y.toFixed(1)}" style="left:${(x - 70).toFixed(1)}px;top:${(y - 50).toFixed(1)}px"><b>World ${b.wi + 1}</b><span>${w.name}</span></div>`,
+          `<div class="msign ${pr.gold ? 'gold' : pr.done ? 'done' : ''}" data-x="${x.toFixed(1)}" data-y="${y.toFixed(1)}" style="left:${(x - 70).toFixed(1)}px;top:${(y - 50).toFixed(1)}px"><b>World ${b.wi + 1}${pr.gold ? ' · ⭐ Golden' : pr.done ? ' · ✓ Done' : ''}</b><span>${w.name}</span></div>`,
         );
       });
       // start and summit
@@ -451,7 +452,7 @@
     function drawRail() {
       const cur = Math.max(0, railW);
       railEl.innerHTML =
-        `<button class="wr-toggle" data-act="worlds" aria-expanded="false" aria-label="Worlds: jump to another world">${MAP_ICON}<span class="wr-cur">World ${cur + 1}</span></button><div class="wr-list">` +
+        `<button class="wr-toggle ${cfg.worldProgress(cur).gold ? 'gold' : cfg.worldProgress(cur).done ? 'done' : ''}" data-act="worlds" aria-expanded="false" aria-label="Worlds: jump to another world">${MAP_ICON}<span class="wr-cur">World ${cur + 1}</span></button><div class="wr-list">` +
         cfg.worlds
           .map((w, wi) => {
             const pr = cfg.worldProgress(wi),
@@ -459,7 +460,8 @@
             const names = ART.PROPS_BY_WORLD[wi] || [];
             const ic = ART.props[cfg.worldIcon ? cfg.worldIcon(wi) : names[0]] || '';
             const land = `background:linear-gradient(180deg,${pl.sky[0]},${pl.sky[1]} 58%,${pl.ground[0]} 58%,${pl.ground[1]})`;
-            return `<button class="wr ${pr.done ? 'done' : ''} ${wi === cur ? 'on' : ''}" data-act="world" data-w="${wi}" style="--wc:${pl.accent};--p:${Math.round(pr.frac * 100)}" aria-label="World ${wi + 1}: ${w.name}"><span class="wr-dot"><span class="wr-ic" style="${land}">${ic}</span></span><span class="wr-tx"><b>World ${wi + 1}${pr.done ? ' ✓' : ''}</b><small>${w.name}</small></span></button>`;
+            const mark = pr.gold ? ' <i class="wr-mark">⭐</i>' : pr.done ? ' <i class="wr-mark">✓</i>' : '';
+            return `<button class="wr ${pr.done ? 'done' : ''} ${pr.gold ? 'gold' : ''} ${wi === cur ? 'on' : ''}" data-act="world" data-w="${wi}" style="--wc:${pl.accent};--p:${Math.round(pr.frac * 100)}" aria-label="World ${wi + 1}: ${w.name}${pr.gold ? ', golden' : pr.done ? ', done' : ''}"><span class="wr-dot"><span class="wr-ic" style="${land}">${ic}</span></span><span class="wr-tx"><b>World ${wi + 1}${mark}</b><small>${w.name}</small></span></button>`;
           })
           .reverse()
           .join('') +
@@ -477,6 +479,12 @@
       railEl.querySelectorAll('.wr').forEach((el) => el.classList.toggle('on', +el.dataset.w === b.wi));
       const cur = railEl.querySelector('.wr-cur');
       if (cur) cur.textContent = 'World ' + (b.wi + 1);
+      const tg = railEl.querySelector('.wr-toggle'),
+        pr = cfg.worldProgress ? cfg.worldProgress(b.wi) : {};
+      if (tg) {
+        tg.classList.toggle('gold', !!pr.gold);
+        tg.classList.toggle('done', !!pr.done && !pr.gold);
+      }
       if (cfg.onWorld) cfg.onWorld(b.wi);
     }
 

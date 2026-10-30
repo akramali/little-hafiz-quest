@@ -7,13 +7,11 @@
   // 1. a gift opened, then a tap outside the card
   prof.pending = [{ k: 's', id: A.STICKERS[2].id }, { k: 's', id: A.STICKERS[4].id }];
   L.go('done', { i: idx(107), p: 0, msg: 'x' }); await wait(200);
-  d.querySelector('.giftbtn').click(); await wait(100);
-  d.querySelector('#modal.show .gbox').click(); await wait(150);
+  d.querySelector('.giftbtn').click(); await wait(150); // one tap opens it
   m.click(); await wait(200); // the backdrop
   log('gift opened, tapped outside: card closed', !m.classList.contains('show'), '| page says', (d.querySelector('.giftbtn b') || {}).textContent);
-  d.querySelector('.giftbtn').click(); await wait(100);
-  log('  the next gift opens from the page:', !!d.querySelector('#modal.show .gbox'));
-  d.querySelector('#modal.show .gbox').click(); await wait(150);
+  d.querySelector('.giftbtn').click(); await wait(150);
+  log('  the next gift opens from the page:', !!d.querySelector('#modal.show .giftcard.open'));
   m.click(); await wait(200);
   log('  last one, tapped outside: closed', !m.classList.contains('show'), '| gift button left', !!d.querySelector('.giftbtn'), '| buttons work:', (() => { d.querySelector('[data-act=back]').click(); return L.st().view; })());
   ok('tapping outside an opened gift closes it and the page updates', !m.classList.contains('show') && !d.querySelector('.giftbtn'));

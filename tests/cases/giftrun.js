@@ -17,14 +17,13 @@
     await wait(where === 'map' ? 900 : 300);
     const opener = d.querySelector('[data-act=opengift]');
     if (!opener) { log2.push(where + ': no gift button'); fails++; continue; }
-    opener.click(); await wait(150);
     for (let n = 0; n < 6; n++) {
-      const box = d.querySelector('#modal.show .gbox');
-      if (!box) break;
+      const op = d.querySelector('[data-act=opengift]');
+      if (!op) break;
       const before = prof().pending.length;
-      box.click(); await wait(120);
+      op.click(); await wait(150); // one tap opens it
       const open = d.querySelector('#modal.show .giftcard.open');
-      if (!open) { fails++; log2.push(`${where} gift ${n + 1}: box tap did nothing (pending ${before} → ${prof().pending.length})`); break; }
+      if (!open) { fails++; log2.push(`${where} gift ${n + 1}: tap did nothing (pending ${before} → ${prof().pending.length})`); break; }
       opened++;
       // the child picks one of the two buttons
       const btns = [...open.querySelectorAll('button')];

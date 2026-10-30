@@ -611,6 +611,22 @@
   ];
   const ITEMS = CATALOG.map((r) => ({ id: r[0], slot: r[1], name: r[2], tier: r[3], from: r[4] }));
   FEATS.forEach((r) => ITEMS.push({ id: r[0], slot: r[1], name: r[2], tier: 4, from: null, feat: r[3] }));
+  // A toy vehicle for each world made fully golden (every star in every sūrah of it): the further the world,
+  // the grander the ride (v2.6.0). wgold = the world's index.
+  const WORLD_RIDES = [
+    ['toy-car', 'Little red car', 3],
+    ['toy-train', 'Steam train', 3],
+    ['speed-boat', 'Speedboat', 3],
+    ['monster-truck', 'Monster truck', 3],
+    ['toy-helicopter', 'Helicopter', 4],
+    ['toy-plane', 'Propeller plane', 4],
+    ['space-rocket', 'Space rocket', 4],
+  ];
+  WORLD_RIDES.forEach((r, wi) => ITEMS.push({ id: r[0], slot: 'pet', name: r[1], tier: r[2], from: null, wgold: wi + 1 }));
+  /* (test concept, v2.6.0) the Stranger's challenge: hero gear won by standing up to him (quest: 'hero') */
+  [['hero-armor', 'top', 'Hero armor'], ['hero-shield', 'shield', 'Hero shield'], ['hero-sword', 'stick', 'Wooden hero sword']].forEach((r) =>
+    ITEMS.push({ id: r[0], slot: r[1], name: r[2], tier: 4, from: null, quest: 'hero' }),
+  );
   // names shown to girls, where the drawing changes too
   const GIRL_NAME = { 'summit-crown': 'Summit tiara', 'hafiz-crown': 'Hafiz tiara' };
   // Golden editions: the special reward for every star in a sūrah (id 'gold-<item>', drawn by goldEdition below).
@@ -1003,6 +1019,21 @@
     bk() {
       const j = '#e8843f';
       return P('M72 154Q92 166 112 154L113 161Q92 173 71 161Z', '#fff1d6', sw(2.4)) + L('M62 180Q92 186 122 180', dk(j, 0.3), 2) + P(rr(80, 192, 24, 18, 5), '#2fa8a0', sw(2)) + F('M84 207L90 198L94 203L97 199L101 207Z', '#fff');
+    },
+  };
+  // (test concept, v2.6.0) won from the Stranger: shining hero armor
+  TOP['hero-armor'] = {
+    c: '#8fa3c9',
+    sl: '#6f84ad',
+    cf: GOLD,
+    aura: [92, 196, 62, 52],
+    fx: [[70, 176], [114, 206]],
+    fr() {
+      return P('M66 162Q92 150 118 162L114 196Q92 206 70 196Z', '#c9d4ea', sw(2.4)) + P('M92 162L92 202', 'none', ' stroke="' + dk('#8fa3c9', 0.35) + '" stroke-width="2"') +
+        P(star5(92, 180, 9, 4), GOLD, sw(2)) + L('M70 214Q92 220 114 214', GOLD, 3) + F('M72 166Q80 160 88 162Q80 168 74 176Z', '#fff', 0.55);
+    },
+    bk() {
+      return P('M66 162Q92 150 118 162L114 200Q92 208 70 200Z', '#c9d4ea', sw(2.4)) + L('M70 214Q92 220 114 214', GOLD, 3);
     },
   };
   TOP['fig-jacket'] = {
@@ -1479,6 +1510,18 @@
         S('M43 154Q42 150 46 149Q50 150 49.5 154L49.6 287Q47 290 43.6 287Z', w, 'M47 152Q50 150 49.5 154L49.6 287Q48.4 288.4 47 288.6Z') + L('M43.6 184Q47 186 49 183M43.6 238Q46 240 49.4 237', dk(w, 0.4), 1.8);
     },
   };
+  // a wooden practice sword, held by its grip (the hand is at 47, 211): the blade points up from the guard
+  ART['hero-sword'] = {
+    box: [26, 98, 64, 240],
+    rot: 42,
+    fs: 108,
+    aura: [46, 160, 22, 60],
+    ex() {
+      const wd = '#e0b47a';
+      return S('M42 194L42 118L46.5 106L51 118L51 194Z', wd, 'M47 110L51 118L51 194L47 194Z') + L('M46.5 116L46.5 188', dk(wd, 0.3), 1.6) +
+        S(rr(34, 193, 25, 7, 3), GOLD) + S(rr(43, 200, 7, 25, 3), '#7a4a2a') + ball(46.5, 229, 5, 5, GOLD);
+    },
+  };
   ART['crystal-staff'] = {
     box: [30, 150, 62, 292],
     rot: 42,
@@ -1574,6 +1617,15 @@
     sh() {
       return S(KITE, '#d5dceb', KITE_SH) + S(KITE_IN, '#3f7fe0', 'M0 -19.5Q12 -19.5 17.5 -15Q17.5 4.5 0 20.5Q9 4 7.5 -18Z') + P('M-11 -7L0 3L11 -7L11 1L0 11L-11 1Z', '#fff', sw(2)) +
         [[-17, -20], [17, -20], [0, 22.5]].map((p) => CF(p[0], p[1], 1.8, '#8d97b0')).join('') + F('M-14 -14Q-12 -17 -8 -17Q-12 -10 -13 -2Z', '#fff', 0.6);
+    },
+  };
+  ART['hero-shield'] = {
+    box: [-26, -29, 26, 30],
+    fx: [[-10, -14], [12, 8]],
+    aura: [0, 0, 34, 36],
+    sh() {
+      return S(KITE, GOLD, KITE_SH) + S(KITE_IN, '#7a5cff', 'M0 -19.5Q12 -19.5 17.5 -15Q17.5 4.5 0 20.5Q9 4 7.5 -18Z') + P(star5(0, -1, 9.5, 4.2), GOLD, sw(2)) +
+        F('M-14 -14Q-12 -17 -8 -17Q-12 -10 -13 -2Z', '#fff', 0.6);
     },
   };
   ART['sun-shield'] = {
@@ -1752,6 +1804,67 @@
         S('M-6.6 -70Q0 -86 6.6 -70Z', r) + C(0, -50, 6, '#7fd6ff', sw(2.2)) + CF(-2, -52, 1.8, '#fff', 0.8) + S(rr(-9, -28, 18, 5, 2), '#c9d2e3') + '</g>';
     },
   };
+  /* ---------- the world rides (ground at y 0, about 80 wide) ---------- */
+  const wheel = (x, r) => ball(x, -r, r, r, '#3a2f45', { hl: false }) + C(x, -r, r * 0.42, '#c9d2e3', sw(2));
+  const shadow = (w) => EF(0, 0, w, 3.6, INK, 0.14);
+  PET['toy-car'] = {
+    box: [-42, -54, 42, 2],
+    d: () =>
+      shadow(36) + S('M-20 -30Q-15 -48 -2 -48L12 -48Q22 -48 27 -30Z', '#ef4b4b', 'M14 -48Q22 -48 27 -30L18 -30Q18 -42 14 -48Z') +
+      F('M-14 -32Q-11 -44 -3 -44L3 -44L3 -32Z', '#bfe8ff') + F('M7 -44L12 -44Q18 -44 21 -32L7 -32Z', '#bfe8ff') +
+      S(rr(-38, -32, 76, 20, 8), '#ef4b4b', rr(14, -32, 24, 20, 8)) + F(rr(-34, -28, 10, 5, 2.5), '#fff', 0.55) + C(33, -24, 3, '#ffe066', sw(1.6)) + wheel(-22, 10) + wheel(22, 10),
+  };
+  PET['toy-train'] = {
+    box: [-44, -78, 44, 2],
+    d: () =>
+      shadow(40) + G(ball(-27, -66, 7, 6, '#ffffff', { hl: false }) + ball(-20, -74, 9, 7, '#ffffff', { hl: false }), cls('pr-bob')) +
+      S(rr(-31, -56, 10, 20, 2), '#3a2f45') + S(rr(-38, -40, 46, 24, 11), '#3d7be0', rr(-38, -28, 46, 12, 6)) + S(rr(6, -58, 30, 44, 4), '#ef4b4b', rr(26, -58, 10, 44, 3)) +
+      S(rr(2, -62, 38, 6, 3), '#3a2f45') + F(rr(12, -52, 16, 12, 3), '#bfe8ff') + S('M-38 -16L-44 -6L-30 -16Z', '#3a2f45') + C(-10, -28, 3, GOLD, sw(1.6)) +
+      wheel(-28, 9) + wheel(-6, 9) + wheel(22, 11),
+  };
+  PET['speed-boat'] = {
+    box: [-44, -64, 44, 4],
+    d: () =>
+      F('M-44 -2Q-30 -8 -16 -2T12 -2T44 -2V4H-44Z', '#5fc9e8', 0.85) + L('M-36 -4Q-28 -9 -20 -4M10 -4Q18 -9 26 -4', '#fff', 2) +
+      S('M-40 -20L38 -20Q32 0 -28 0Z', '#ffffff', 'M8 -20L38 -20Q32 0 6 0Z') + S('M-40 -20L38 -20L34 -13L-38 -13Z', '#ff8a3d') +
+      S('M-12 -20L-4 -36L14 -36L18 -20Z', '#bfe8ff') + L('M-16 -20L-16 -60', INK, 3) + S('M-16 -60L4 -54L-16 -48Z', '#ef4b4b') + C(24, -10, 3, '#3d7be0', sw(1.6)),
+  };
+  PET['monster-truck'] = {
+    box: [-46, -70, 46, 2],
+    d: () =>
+      shadow(42) + S(rr(-30, -54, 50, 16, 5), '#4fb36b', rr(4, -54, 16, 16, 4)) + F(rr(-26, -51, 18, 10, 3), '#bfe8ff') + F(rr(-4, -51, 16, 10, 3), '#bfe8ff') +
+      S(rr(-40, -40, 80, 16, 6), '#4fb36b', rr(18, -40, 22, 16, 6)) + L('M-28 -54L-20 -66L10 -66L18 -54', '#3a2f45', 3.4) + C(36, -32, 3, '#ffe066', sw(1.6)) +
+      F(rr(-36, -36, 14, 4, 2), '#ffe066') + wheel(-24, 15) + wheel(24, 15),
+  };
+  PET['toy-helicopter'] = {
+    box: [-46, -78, 46, 2],
+    aura: [0, -40, 52, 44],
+    d: () =>
+      shadow(30) + L('M-22 -4L22 -4M-14 -4L-12 -14M14 -4L12 -14', '#3a2f45', 3.4) +
+      S('M14 -40L42 -46L44 -38L16 -30Z', '#ffcf3f') + S('M38 -54L46 -54L44 -36L38 -38Z', '#ff8a3d') +
+      ball(-4, -34, 26, 19, '#ffcf3f') + S('M-28 -38Q-24 -52 -8 -52L-6 -32L-26 -30Z', '#bfe8ff') + L('M-4 -53L-4 -62', INK, 3.4) +
+      G(L('M-40 -63L32 -63', '#3a2f45', 3.6), ' class="pr-spin" style="animation-duration:.6s"') + CF(-4, -63, 3.4, INK),
+  };
+  PET['toy-plane'] = {
+    box: [-46, -66, 46, 2],
+    aura: [0, -36, 52, 40],
+    d: () =>
+      shadow(34) + L('M-8 -10L-10 -2M12 -10L14 -2', '#3a2f45', 3) + C(-10, -3, 3.4, '#3a2f45') + C(14, -3, 3.4, '#3a2f45') +
+      S('M14 -36L40 -46L42 -40L18 -30Z', '#3d7be0') + S('M30 -44L38 -60L44 -58L40 -42Z', '#3d7be0') +
+      S('M-36 -30Q-36 -44 -18 -44L22 -40Q30 -36 22 -30Q0 -22 -24 -22Q-36 -22 -36 -30Z', '#ffffff', 'M22 -40Q30 -36 22 -30Q8 -25 -6 -23Q14 -30 22 -40Z') +
+      S('M-14 -32L8 -32L26 -14L18 -12Z', '#ef4b4b') + [-22, -14, -6].map((x) => C(x, -36, 2.4, '#7fd6ff', sw(1.4))).join('') +
+      CF(-38, -33, 3, INK) + G(L('M-39 -48L-39 -18', '#3a2f45', 3), ' class="pr-spin" style="animation-duration:.5s"'),
+  };
+  PET['space-rocket'] = {
+    box: [-34, -104, 34, 4],
+    aura: [0, -52, 44, 60],
+    d: () =>
+      EF(0, 0, 20, 3.6, INK, 0.14) + '<g class="pr-bob">' + '<g class="pr-flame">' + F('M-9 -24Q0 6 9 -24Z', '#ffb347') + F('M-5 -24Q0 -6 5 -24Z', '#fff3b0') + '</g>' +
+      S('M-13 -30L-28 -14L-13 -44Z', '#7a5cff') + S('M13 -30L28 -14L13 -44Z', '#7a5cff') +
+      S('M-14 -26Q-17 -74 0 -102Q17 -74 14 -26Z', '#f4f6fb', 'M6 -96Q17 -74 14 -26L6 -26Q11 -66 6 -96Z') + S('M-9 -84Q0 -104 9 -84Z', GOLD) +
+      C(0, -62, 7.5, '#7fd6ff', ' stroke="' + GOLD + '" stroke-width="3"') + CF(-2.6, -64.6, 2.2, '#fff', 0.8) + S(rr(-14, -32, 28, 6, 3), GOLD) +
+      P(star5(0, -44, 4.6), GOLD, sw(1.6)) + tw(-24, -78, 6, 0) + tw(24, -60, 5, 1) + '</g>',
+  };
   Object.keys(PET).forEach((id) => (ART[id] = { pet: PET[id], box: PET[id].box, aura: PET[id].aura }));
 
   /* ---------- tier effects on the explorer ---------- */
@@ -1904,6 +2017,24 @@
     const mood = opts.mood === 'sad' || opts.mood === 'shine' ? opts.mood : '';
     return '<svg class="ex lhq-art ex-' + (back ? 'back' : 'front') + (opts.walk ? ' walk' : '') + (mood ? ' ex-' + mood : '') + (extra ? ' ' + extra : '') + '" viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' +
       explorerInner(look, outfit, back, mood) + '</svg>';
+  }
+
+  /* (test concept, v2.6.0) The Stranger: a hooded traveller who tests what you know (viewBox 0 0 200 300,
+     feet at the bottom like the explorer). mood: '' | 'hit' (staggers) | 'happy' (nods, smiles). */
+  function stranger(mood) {
+    const cloak = '#4b3a7a',
+      dkc = dk(cloak, 0.35);
+    const eyes = mood === 'happy' ? L('M78 108Q84 103 90 108M110 108Q116 103 122 108', '#ffe27a', 3.6) : CF(84, 107, 5, '#ffe27a') + CF(116, 107, 5, '#ffe27a') + CF(85.5, 105.5, 1.6, '#fff');
+    const mouth = mood === 'happy' ? L('M90 124Q100 132 110 124', '#ffe27a', 3) : mood === 'hit' ? P('M93 124Q100 119 107 124Q100 129 93 124Z', '#ffe27a', sw(1.6)) : L('M92 125L108 125', '#ffe27a', 2.6);
+    const g =
+      EF(100, 292, 46, 6, INK, 0.16) +
+      DL('M150 292L150 70', '#8a5a35', 4) + G(ball(150, 64, 9, 9, '#7fd6ff') + CF(147, 61, 3, '#fff', 0.8), cls('lhq-pulse')) +
+      S('M62 288Q54 200 66 150Q78 120 100 118Q122 120 134 150Q146 200 138 288Z', cloak, 'M118 124Q146 160 138 288L114 288Q128 200 118 124Z') +
+      P(star5(80, 236, 5), '#ffe27a', sw(1.4)) + P(star5(118, 260, 4), '#ffe27a', sw(1.4)) + P(star5(96, 196, 3.6), '#ffe27a', sw(1.2)) +
+      S('M130 170Q146 186 150 200L144 206Q132 192 122 182Z', cloak) + ball(147, 203, 8, 8, '#8d7a6a', { hl: false }) +
+      S('M58 120Q56 64 100 58Q144 64 142 120Q134 150 100 150Q66 150 58 120Z', cloak, 'M118 64Q144 74 142 120Q136 140 118 147Q132 110 118 64Z') +
+      F('M72 118Q72 86 100 84Q128 86 128 118Q122 140 100 140Q78 140 72 118Z', '#241c3a') + eyes + mouth;
+    return '<svg class="lhq-art stranger ' + (mood || '') + '" viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' + OUT(g) + '</svg>';
   }
 
   /* =================================================================================================
@@ -2638,6 +2769,7 @@
     BORDER_H,
     bridge,
     fruit,
+    stranger,
     horizon,
     splash,
   };

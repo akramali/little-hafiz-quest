@@ -13,12 +13,10 @@
     prof.items = prof.items.filter((id) => !batch.some((g) => g.id === id));
     prof.stickers = prof.stickers.filter((id) => !batch.some((g) => g.id === id));
     d.getElementById('modal').classList.remove('show');
-    const ob = d.createElement('button'); ob.dataset.act = 'opengift'; d.getElementById('app').appendChild(ob); ob.click(); ob.remove();
     for (const g of batch) {
-      const box = d.querySelector('#modal.show .gbox');
-      if (!box) { bad.push(g.id + ': no box'); break; }
       const e0 = errs.length;
-      box.click(); await wait(20);
+      // one tap on a gift opens it
+      const ob = d.createElement('button'); ob.dataset.act = 'opengift'; d.getElementById('app').appendChild(ob); ob.click(); ob.remove(); await wait(20);
       const open = d.querySelector('#modal.show .giftcard.open');
       if (!open || errs.length > e0) { bad.push(`${g.k}:${g.id}${g.m ? ' (mini)' : ''} → ${errs.slice(e0).join('; ') || 'did not open'}`); break; }
       const got = g.k === 'i' ? prof.items.includes(g.id) : prof.stickers.includes(g.id);

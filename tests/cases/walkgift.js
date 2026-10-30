@@ -14,8 +14,7 @@
   // (open it directly: the HUD is rightly ignored during the walk)
   w.__lhq && 0;
   d.getElementById('modal').classList.add('show'); ob.click(); await wait(100);
-  const box = d.querySelector('#modal.show .gbox');
-  box && box.click(); await wait(150);
+  await wait(150);
   log('box tapped mid-walk opened:', !!d.querySelector('#modal.show .giftcard.open'), '| sticker added', prof.stickers.includes(w.LHQ_ART.STICKERS[3].id));
   ok('a gift box tapped mid-walk opens', !!d.querySelector('#modal.show .giftcard.open') && prof.stickers.includes(w.LHQ_ART.STICKERS[3].id));
   await wait(2500);

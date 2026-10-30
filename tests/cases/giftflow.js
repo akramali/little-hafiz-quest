@@ -19,16 +19,16 @@
       else if (start === 'done') L.go('done', { i: idx(113), p: 0, msg: 'Well done', stars: 1 });
       else L.go('bag', { tab: 'hat' });
       await wait(200);
-      d.querySelector('[data-act=opengift]').click(); await wait(150);
-      for (let n = 0; n < 8 && d.querySelector('#modal [data-act=giftpop]'); n++) {
-        d.querySelector('#modal [data-act=giftpop]').click(); await wait(200);
+      for (let n = 0; n < 8 && prof().pending.length; n++) {
+        const op = d.querySelector('[data-act=opengift]');
+        if (!op) break;
+        op.click(); await wait(200); // one tap opens the gift
         const btn = way === 'giftok' ? d.querySelector('#modal [data-act=giftok]')
           : way === 'wear' ? (d.querySelector('#modal [data-act=wear]') || d.querySelector('#modal [data-act=stick]'))
           : way === 'stick' ? (d.querySelector('#modal [data-act=stick]') || d.querySelector('#modal [data-act=giftok]'))
           : null;
         if (btn) btn.click(); else d.getElementById('modal').click(); // tap outside the card
         await wait(400);
-        if (way === 'backdrop' && !d.getElementById('modal').classList.contains('show') && prof().pending.length) { d.querySelector('[data-act=opengift]') && d.querySelector('[data-act=opengift]').click(); await wait(150); }
       }
       await wait(300);
       state(`${start} / ${way}`);

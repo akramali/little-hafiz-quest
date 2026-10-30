@@ -4,6 +4,16 @@
   if (Q.get('oldver')) localStorage.setItem('lhq_ver', Q.get('oldver'));
   const { w, d, L, idx } = await openGame();
   if (Q.get('dressed')) { const p = L.store().profiles[0]; p.items = w.LHQ_ART.ITEMS.map((it) => it.id); p.outfit = {}; ['hat', 'watch', 'stick', 'shield', 'cape', 'glasses', 'pet'].forEach((sl) => (p.outfit[sl] = w.LHQ_ART.ITEMS.find((it) => it.slot === sl && it.from && !it.gold).id)); }
+  // worlds=gold:0,done:1 — every star in world 1's sūrahs, every sūrah of world 2 memorized (not every star)
+  if (Q.get('worlds')) {
+    const pr = L.store().profiles[0], W = [[114, 109], [108, 103], [102, 97], [96, 91], [90, 86], [85, 82], [81, 78]].map(([from, to]) => ({ from, to }));
+    Q.get('worlds').split(',').forEach((x) => {
+      const [kind, wi] = x.split(':'), wd = W[+wi];
+      w.LHQ_DATA.surahs.filter((s) => s.n <= wd.from && s.n >= wd.to).forEach((s) => {
+        pr.prog[s.n] = { parts: s.parts.map(() => ({ learn: 1, words: 1, order: kind === 'gold' ? 1 : 0, next: 1, path: 3, la: 0, wa: 0 })), all: s.parts.length > 1 ? 3 : 0, big: kind === 'gold' ? 1 : 0 };
+      });
+    });
+  }
   // wear=<item>,<item>: the explorer owns and wears those
   if (Q.get('wear')) { const pr = L.store().profiles[0]; Q.get('wear').split(',').forEach((id) => { const it = w.LHQ_ART.ITEMS.find((x) => x.id === id); if (it) { pr.items.push(id); pr.outfit[it.slot] = id; } }); }
   const v = Q.get('v'), n = +(Q.get('n') || 114), i = idx(n), p = Q.get('p') == null ? 0 : Q.get('p') === 'all' ? 'all' : +Q.get('p');
