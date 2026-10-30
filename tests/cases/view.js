@@ -4,6 +4,8 @@
   if (Q.get('oldver')) localStorage.setItem('lhq_ver', Q.get('oldver'));
   const { w, d, L, idx } = await openGame();
   if (Q.get('dressed')) { const p = L.store().profiles[0]; p.items = w.LHQ_ART.ITEMS.map((it) => it.id); p.outfit = {}; ['hat', 'watch', 'stick', 'shield', 'cape', 'glasses', 'pet'].forEach((sl) => (p.outfit[sl] = w.LHQ_ART.ITEMS.find((it) => it.slot === sl && it.from && !it.gold).id)); }
+  // wear=<item>,<item>: the explorer owns and wears those
+  if (Q.get('wear')) { const pr = L.store().profiles[0]; Q.get('wear').split(',').forEach((id) => { const it = w.LHQ_ART.ITEMS.find((x) => x.id === id); if (it) { pr.items.push(id); pr.outfit[it.slot] = id; } }); }
   const v = Q.get('v'), n = +(Q.get('n') || 114), i = idx(n), p = Q.get('p') == null ? 0 : Q.get('p') === 'all' ? 'all' : +Q.get('p');
   const a = +(Q.get('a') || 0);
   if (v === 'map') L.go('map');
@@ -23,6 +25,7 @@
   else if (v === 'syncshare') { L.go('explorers'); await wait(100); d.querySelector('[data-act=syncshare]').click(); await wait(1200); }
   else if (v === 'splash') { L.go('splash'); await wait(1500); if (Q.get('whatsnew')) { const dt = d.querySelector('.updnote details'); if (dt) dt.open = true; } }
   else if (v === 'bag') L.go('bag', { tab: Q.get('tab') || 'look' });
+  else if (v === 'done') L.go('done', { i, p, msg: Q.get('msg') || 'You put all of it in order!', stars: 1, allStars: !!Q.get('all'), memorized: !!Q.get('memo') });
   else if (v) L.go(v, { i, p, sel: Q.get('sel') != null ? +Q.get('sel') : null, focus: !!Q.get('focus') });
   if (Q.get('click')) { await wait(200); d.querySelector(Q.get('click')).click(); }
   if (Q.get('open')) { await wait(400); d.querySelectorAll('details').forEach((x) => (x.open = true)); }

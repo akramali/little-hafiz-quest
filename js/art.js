@@ -692,6 +692,8 @@
     ['sandals', 'shoes', 'Summer sandals'], ['frog-boots', 'shoes', 'Froggy rain boots'],
     ['band-watch', 'watch', 'Simple watch'], ['star-buckler', 'shield', 'Star buckler'], ['scarf-cape', 'cape', 'Scarf cape'],
     ['polo-shirt', 'top', 'Polo shirt'], ['square-specs', 'glasses', 'Square glasses'],
+    ['pixel-shades', 'glasses', 'Pixel shades'], ['aviator-shades', 'glasses', 'Aviator shades'], ['visor-shades', 'glasses', 'Sport visor'],
+    ['star-shades', 'glasses', 'Star shades'], ['heart-shades', 'glasses', 'Heart shades'],
   ];
   const DROP_COLORS = [
     ['red', 'basic-shirt', 153], ['teal', 'basic-shirt', 330], ['olive', 'basic-pants', 199], ['purple', 'basic-shoes', 252], ['green', 'hoodie', 229],
@@ -922,6 +924,49 @@
   ART['everyday-glasses'] = { box: [44, 102, 140, 134], ex: (v) => (v === 'back' ? '' : thinGlasses('#3d3a5c')) };
   ART['round-specs'] = { box: [44, 102, 140, 134], ex: (v) => (v === 'back' ? '' : glassesBase('#c99a3a', '#e8f6ff', 0.25)) };
   ART['square-specs'] = { box: [44, 102, 140, 134], ex: (v) => (v === 'back' ? '' : glassesBase('#34406b', '#e8f6ff', 0.22, 'sq')) };
+  /* cool glasses (surprise gifts, v2.5.8); the eyes are at x 75 and 109, y 118 */
+  const temples = (c) => DL('M62 114L50 110', c, 3.6) + DL('M122 114L134 110', c, 3.6);
+  const shine = (x) => L('M' + (x - 8) + ' 113Q' + (x - 6) + ' 109.5 ' + (x - 2) + ' 108.5', '#fff', 2.2, ' opacity=".8"');
+  ART['pixel-shades'] = {
+    box: [44, 102, 140, 134],
+    ex(v) {
+      if (v === 'back') return '';
+      const lens = (x0) => 'M' + x0 + ' 108H' + (x0 + 30) + 'V120H' + (x0 + 26) + 'V124H' + (x0 + 4) + 'V120H' + x0 + 'Z';
+      return temples('#22202e') + P('M56 106H128V111H56Z', '#22202e') + P(lens(59), '#22202e') + P(lens(95), '#22202e') +
+        F('M64 110H68V114H64ZM68 114H72V118H68Z', '#fff', 0.9) + F('M100 110H104V114H100ZM104 114H108V118H104Z', '#fff', 0.9);
+    },
+  };
+  ART['aviator-shades'] = {
+    box: [44, 102, 140, 134],
+    ex(v) {
+      if (v === 'back') return '';
+      // teardrop lenses, a little wider at the outer bottom
+      const lens = (x, d) => 'M' + (x - 13) + ' 109Q' + x + ' 104 ' + (x + 13) + ' 109Q' + (x + 13 + d * 3) + ' 124 ' + (x + d * 4) + ' 128Q' + (x - d * 9) + ' 129 ' + (x - 13) + ' 109Z';
+      return temples('#d9a520') + P(lens(75, -1), '#3a4a6e', ' stroke="#d9a520" stroke-width="3"') + P(lens(109, 1), '#3a4a6e', ' stroke="#d9a520" stroke-width="3"') +
+        L('M88 109Q92 106 96 109M88 113L96 113', '#d9a520', 2.4) + F('M66 120L76 110L80 110L70 120Z', '#9fd3ff', 0.55) + F('M100 120L110 110L114 110L104 120Z', '#9fd3ff', 0.55);
+    },
+  };
+  ART['visor-shades'] = {
+    box: [44, 100, 140, 134],
+    ex(v) {
+      if (v === 'back') return DL('M46 113Q92 121 138 113', '#2d3a66', 4);
+      return DL('M46 113L58 112M126 112L138 113', '#2d3a66', 4) + S('M56 110Q92 102 128 110L126 123Q109 128 92 121Q75 128 58 123Z', '#2d3a66') +
+        F('M60 113Q92 106 124 113L123 116Q92 110 61 116Z', '#5fd6ff', 0.75) + F('M64 120Q75 123 86 119L87 121Q75 126 63 122Z', '#ff8ad8', 0.5);
+    },
+  };
+  ART['star-shades'] = {
+    box: [42, 98, 142, 136],
+    fx: [[56, 104], [128, 104]],
+    ex: (v) => (v === 'back' ? '' : temples('#ffb31a') + DL('M88 116Q92 112 96 116', '#ffb31a', 3.2) + P(star5(75, 118, 15.5), '#ff5d9e', ' fill-opacity=".75" stroke="#ffb31a" stroke-width="3"') + P(star5(109, 118, 15.5), '#ff5d9e', ' fill-opacity=".75" stroke="#ffb31a" stroke-width="3"') + shine(76) + shine(110)),
+  };
+  ART['heart-shades'] = {
+    box: [44, 100, 140, 134],
+    ex(v) {
+      if (v === 'back') return '';
+      const heart = (x) => 'M' + x + ' 129C' + (x - 18) + ' 119 ' + (x - 13) + ' 103 ' + x + ' 111C' + (x + 13) + ' 103 ' + (x + 18) + ' 119 ' + x + ' 129Z';
+      return temples('#e8414f') + DL('M86 115Q92 111 98 115', '#e8414f', 3.2) + P(heart(75), '#ff6b8a', ' fill-opacity=".8" stroke="#e8414f" stroke-width="3"') + P(heart(109), '#ff6b8a', ' fill-opacity=".8" stroke="#e8414f" stroke-width="3"') + shine(74) + shine(108);
+    },
+  };
   ART['goggles'] = {
     box: [42, 100, 142, 136],
     ex(v) {

@@ -1,7 +1,12 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.5.7",
+ "latest": "2.5.8",
  "versions": [
+  { "v": "2.5.8", "notes": [
+   "5 cool new glasses to win as surprise gifts",
+   "Big Puzzle: shorter sūrahs now have 8–12 pieces",
+   "Small visual tweaks"
+  ] },
   { "v": "2.5.7", "notes": [
    "Tap outside a gift to close it",
    "Chain time comes every 3 āyāt at first",

@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.5.7';
+  const VERSION = '2.5.8';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -2212,16 +2212,36 @@
   const pieceSVG = (path, fill) =>
     `<svg class="pz-svg" viewBox="${-PZ_M} ${-PZ_M} ${100 + 2 * PZ_M} ${100 + 2 * PZ_M}" aria-hidden="true"><path d="${path}" fill="${fill}"/></svg>`;
   /* what the puzzle is made of: āyāt (a checkpoint, or a short sūrah) or, for the Big Puzzle, checkpoints */
+  /* The Big Puzzle is the biggest puzzle of the sūrah: a long one (6 checkpoints or more) has a piece for
+     each checkpoint; a shorter one is cut into about 8–12 even pieces of 1–3 āyāt (a sūrah of 9 āyāt: 9 pieces),
+     so it is never just two or three pieces. */
+  function bigGroups(s) {
+    if (s.P.length >= 6) return s.P.map((P) => range(P));
+    const N = s.ayat.length,
+      n = Math.ceil(N / Math.ceil(N / 12)),
+      out = [];
+    for (let j = 0, k = 0; j < n; j++) {
+      const size = Math.floor(N / n) + (j < N % n ? 1 : 0);
+      out.push(range({ from: k, to: k + size - 1 }));
+      k += size;
+    }
+    return out;
+  }
+  const groupLabel = (ks) => (ks.length === 1 ? String(ks[0] + 1) : `${ks[0] + 1}–${ks[ks.length - 1] + 1}`);
   function puzzleItems() {
     const s = S[st.i];
-    if (st.p === 'all')
-      return s.P.map((P, p) => ({
-        html: `<span class="pzgroup"><span class="gm">${range(P).map((k) => s.ayat[k].scene[0]).join('')}</span><b>${P.from + 1}–${P.to + 1}</b></span>`,
-        say: range(P),
-        label: `āyāt ${P.from + 1}–${P.to + 1}`,
-      }));
     // the pictures sit in the middle of the piece, clear of the holes (a third picture goes on a second row)
     const fit = (a) => `<span class="pics pzpics n${a.scene.length}">${a.scene.map((e) => `<span class="e">${e}</span>`).join('')}</span>`;
+    if (st.p === 'all')
+      return bigGroups(s).map((ks) =>
+        ks.length === 1
+          ? { html: fit(s.ayat[ks[0]]), say: ks, label: `āyah ${ks[0] + 1}` }
+          : {
+              html: `<span class="pzgroup"><span class="gm">${ks.map((k) => s.ayat[k].scene[0]).join('')}</span><b>${groupLabel(ks)}</b></span>`,
+              say: ks,
+              label: `āyāt ${groupLabel(ks)}`,
+            },
+      );
     return range(ctx()).map((k) => ({ html: fit(s.ayat[k]), say: [k], label: `āyah ${k + 1}`, ar: s.ayat[k].ar }));
   }
   V.order = () => {
@@ -2233,7 +2253,7 @@
     const pct = (v, of) => ((v / of) * 100).toFixed(3) + '%';
     const box = (c, r, pad) => `left:${pct(c * 100 + pad, J.W)};top:${pct(r * 100 + pad, J.H)};width:${pct(100 + 2 * (PZ_M - pad), J.W)};height:${pct(100 + 2 * (PZ_M - pad), J.H)}`;
     const outlines = J.cells
-      .map((cl, j) => (st.placed[j] ? '' : `<g data-j="${j}" transform="translate(${cl.c * 100} ${cl.r * 100})"><path class="pz-hole" d="${cl.path}"/><text x="50" y="62" text-anchor="middle">${big ? j + 1 : range(ctx())[j] + 1}</text></g>`))
+      .map((cl, j) => (st.placed[j] ? '' : `<g data-j="${j}" transform="translate(${cl.c * 100} ${cl.r * 100})"><path class="pz-hole" d="${cl.path}"/><text x="50" y="62" text-anchor="middle">${big ? groupLabel(items[j].say) : range(ctx())[j] + 1}</text></g>`))
       .join('');
     const saying = st.say != null ? items[st.say] : null;
     const slots = J.cells
@@ -2256,7 +2276,9 @@
           : saying
             ? `🗣️ <b>Say ${saying.label}!</b>${!big && prefs.actions ? ` ${s.ayat[saying.say[0]].gesture}` : ''} Then the next piece.`
             : big
-              ? 'Each checkpoint is a big piece. <b>Drag</b> them together in order!'
+              ? s.P.length >= 6
+                ? 'Each checkpoint is a big piece. <b>Drag</b> them together in order!'
+                : 'The whole sūrah in one puzzle. <b>Drag</b> every piece into its place!'
               : '<b>Drag</b> each piece to where it fits, and say that āyah! Each piece fits in only one place.',
       '🧩',
     )}
@@ -3406,7 +3428,7 @@
     const s = S[st.i];
     const p = st.p === 'all' && multi(s) ? 'all' : pnum(st.p);
     st.p = p;
-    const n = p === 'all' ? s.P.length : range(ctx()).length;
+    const n = p === 'all' ? bigGroups(s).length : range(ctx()).length;
     const order = range({ from: 0, to: n - 1 });
     let deck = shuffle(order);
     while (n > 1 && deck.every((v, j) => v === order[j])) deck = shuffle(order);
@@ -4695,7 +4717,12 @@
     f.style.left = (fx - 12).toFixed(1) + 'px';
     f.style.top = (fy - 24).toFixed(1) + 'px';
     f.innerHTML = `<div class="mf-in">${ART.fruit(FRUIT_OF[tree.dataset.k])}</div>`;
-    layer.appendChild(f);
+    // at its depth among the scenery (drawn back to front): what stands in front of it is drawn over it
+    const scene = [...layer.querySelectorAll('.mprop, .mpal')],
+      front = scene.find((el) => +el.dataset.y > fy);
+    if (front) layer.insertBefore(f, front);
+    else if (scene.length) scene[scene.length - 1].after(f);
+    else layer.appendChild(f);
     mapCtl.track(f);
     const ctl = mapCtl,
       gone = () => {
@@ -4728,7 +4755,6 @@
   function comeEat(a, f, gone) {
     const who = a.firstElementChild; // the map moves the prop itself while scrolling, so animate what's inside
     a._busy = true;
-    a.style.zIndex = 2;
     // a walker may be mid-stroll: pause its stroll and start from where it is
     const strolls = who.getAnimations().filter((x) => x instanceof CSSAnimation);
     strolls.forEach((x) => x.pause());
@@ -4763,7 +4789,6 @@
       anims.forEach((x) => x.cancel());
       strolls.forEach((x) => x.play());
       a._busy = false;
-      a.style.zIndex = '';
     };
     sfx.whoosh();
     const go1 = trip(x0, 0, x1, y1, dir);

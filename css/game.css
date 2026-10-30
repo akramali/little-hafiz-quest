@@ -7199,7 +7199,6 @@ body {
   height: 24px;
   transform-origin: 50% 100%;
   pointer-events: none;
-  z-index: 1;
 }
 .mf-in,
 .mf-in svg {
@@ -7342,4 +7341,12 @@ body {
   width: 100%;
   height: 100%;
   display: block;
+}
+
+/* ---------- v2.5.8 ---------- */
+/* done-page messages are one centered sentence (a flex row split "Every star in <b>…</b>!" into columns) */
+.memo {
+  display: block;
+  text-align: center;
+  line-height: 1.35;
 }
