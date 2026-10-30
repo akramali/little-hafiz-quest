@@ -14,6 +14,8 @@
       });
     });
   }
+  // lost=<item>@<sūrah>: that thing dropped at that sūrah (shown on the map)
+  if (Q.get('lost')) { const pr = L.store().profiles[0]; const [id, n] = Q.get('lost').split('@'); pr.items.push(id); pr.lost.push({ id, n: +n }); pr.fix.push(+n); }
   // wear=<item>,<item>: the explorer owns and wears those
   if (Q.get('wear')) { const pr = L.store().profiles[0]; Q.get('wear').split(',').forEach((id) => { const it = w.LHQ_ART.ITEMS.find((x) => x.id === id); if (it) { pr.items.push(id); pr.outfit[it.slot] = id; } }); }
   const v = Q.get('v'), n = +(Q.get('n') || 114), i = idx(n), p = Q.get('p') == null ? 0 : Q.get('p') === 'all' ? 'all' : +Q.get('p');

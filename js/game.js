@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.6.2';
+  const VERSION = '2.6.3';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -5088,7 +5088,7 @@
   }
 
   /* ================= THE STRANGER (test concept, v2.6.0: keep or remove in v2.6.1) =================
-     Now and then, back on the map between sūrahs (after 5 minutes in the game, a 1 in 5 chance, at most
+     Now and then, back on the map between sūrahs (after 5 minutes in the game, a 1 in 3 chance, at most
      every 15 minutes), a hooded stranger asks 3 questions from one memorized sūrah: what comes after an āyah,
      or finish an āyah. No Listen, no hints. A grown-up taps "Said it!" or "Not quite". Each miss, he throws a
      rock, a gust of wind or a splash of water: a shield stops rocks, a cape or jacket the wind, boots the
@@ -5112,7 +5112,7 @@
     if (!memorizedList(prof).length) return;
     if (window.__strangerNow) return meetStranger(false); // tests only: skip the waiting and the chance
     if (Date.now() - APP_OPENED < 5 * 60000 || Date.now() - prof.strangerAt < 15 * 60000) return;
-    if (Math.random() < 0.2) meetStranger(false);
+    if (Math.random() < 1 / 3) meetStranger(false);
   }
   function meetStranger(anytime, rematch) {
     const prof = P(),

@@ -342,7 +342,7 @@
           const lx = nd.x + (nd.x > L.cx ? 64 : -64) + j * 12,
             ly = nd.y + 40;
           html.push(
-            `<button class="mlost" data-act="surah" data-i="${nd.i}" data-x="${lx.toFixed(1)}" data-y="${ly.toFixed(1)}" style="left:${(lx - 26).toFixed(1)}px;top:${(ly - 52).toFixed(1)}px" aria-label="A lost item is waiting here">${ART.lostMarker()}<span class="mlost-it">${ART.item(id)}</span></button>`,
+            `<button class="mlost" data-act="surah" data-i="${nd.i}" data-x="${lx.toFixed(1)}" data-y="${ly.toFixed(1)}" style="left:${(lx - 26).toFixed(1)}px;top:${(ly - 52).toFixed(1)}px" aria-label="A lost item is waiting here"><span class="mlost-it">${ART.item(id)}</span></button>`,
           );
         });
       });
