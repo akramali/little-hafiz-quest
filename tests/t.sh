@@ -9,8 +9,8 @@
 J=${J:-3}
 declare -A AREA=(
   [core]="smoke"
-  [map]="fruit face pals tag excite props walkgift v258 v260"
-  [gifts]="gifts giftflow giftrun walkgift drops v257 v260"
+  [map]="fruit face pals tag excite props walkgift v258 v260 v261"
+  [gifts]="gifts giftflow giftrun walkgift drops v257 v260 v261"
   [learn]="chain chain2 loop v257 v260"
   [words]="v242 smoke"
   [stones]="stones"
@@ -18,7 +18,7 @@ declare -A AREA=(
   [read]="mushaf focus v257 v260"
   [explorers]="hold sync sync1 pals"
   [sync]="sync sync1"
-  [bag]="v241 v242 drops v258"
+  [bag]="v241 v242 drops v258 v261"
   [settings]="speed v257"
   [audio]="loop speed dl v260"
   [updates]="update"
@@ -27,7 +27,7 @@ declare -A AREA=(
   [art]="allgifts face props"
   [layout]="hit contrast"
   [buttons]="buttons"
-  [stranger]="stranger"
+  [stranger]="stranger v261"
 )
 declare -A SECS=([dl]=280 [buttons]=500 [allgifts]=150 [face]=240 [contrast]=150 [pals]=90)
 if [ -z "$1" ] || [ "$1" = list ]; then for a in "${!AREA[@]}"; do printf '  %-10s %s\n' "$a" "${AREA[$a]}"; done | sort; exit; fi

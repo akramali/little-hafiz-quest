@@ -310,7 +310,7 @@
           { x, y } = signs[b.wi],
           pr = cfg.worldProgress ? cfg.worldProgress(b.wi) : {};
         html.push(
-          `<div class="msign ${pr.gold ? 'gold' : pr.done ? 'done' : ''}" data-x="${x.toFixed(1)}" data-y="${y.toFixed(1)}" style="left:${(x - 70).toFixed(1)}px;top:${(y - 50).toFixed(1)}px"><b>World ${b.wi + 1}${pr.gold ? ' · ⭐ Golden' : pr.done ? ' · ✓ Done' : ''}</b><span>${w.name}</span></div>`,
+          `<div class="msign ${pr.gold ? 'gold' : pr.done ? 'done' : ''}" data-x="${x.toFixed(1)}" data-y="${y.toFixed(1)}" style="left:${(x - 70).toFixed(1)}px;top:${(y - 50).toFixed(1)}px"><b>World ${b.wi + 1}</b><span>${w.name}</span></div>`,
         );
       });
       // start and summit

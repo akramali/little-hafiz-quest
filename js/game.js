@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.6.0';
+  const VERSION = '2.6.1';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -1600,7 +1600,7 @@
       ${giftIcon(prof)}
       <button class="icon-btn hud-bag hud-me" data-act="bag" aria-label="My explorer: dress up, collection and achievements"><span class="phead">${explorer({ cls: 'mini' })}</span>${prof.fresh.length ? NEWDOT : ''}</button>
     </div>
-    ${heroReady(prof) ? '<button class="btn small chalbtn" data-act="challenge" aria-label="Challenge the Stranger">⚔️ Challenge</button>' : ''}
+    ${heroReady(prof) ? '<button class="btn small chalbtn" data-act="challenge" aria-label="Challenge the Stranger">⚔️ Challenge</button>' : prefs.stranger && memorizedList(prof).length ? '<button class="btn small chalbtn strtest" data-act="strtest" aria-label="Meet the Stranger (for testing)">🧪 Stranger</button>' : ''}
     <div id="map" class="mroot"></div>
   </div>`;
   };
@@ -2359,11 +2359,13 @@
       : '';
     const g = prof.pending[0];
     return `<div class="screen donescr" style="${cv(s.color)}">
+    <div class="dtop">
     ${plain ? `<div class="medal"><span>★</span></div>` : `<div class="big">${st.big || '🎉'}</div>`}
     <h2>MāshāAllāh!</h2>
     <p>${st.msg}</p>
     <div class="trophy-stars">${stars}</div>
-    ${st.memorized ? `<div class="memo">🏆 You memorized <b>${s.name}</b>!</div>` : ''}
+    </div>
+    <div class="dbody">
     ${st.allStars ? `<div class="memo gold">🌟 Every star in <b>${s.name}</b>! A golden treasure is waiting for you.</div>` : ''}
     ${found}
     ${world}
@@ -2371,14 +2373,14 @@
     ${st.prizes ? `<div class="memo">⭐ ${totalStars()} stars! ${st.prizes > 1 ? st.prizes + ' prizes' : 'A prize'} for you.</div>` : ''}
     ${st.badge ? `<div class="memo gold">🏅 ${st.badge}! A special badge for you.</div>` : ''}
     ${st.rides ? `<div class="memo gold">🚀 A whole world all golden! A special ride is waiting for you.</div>` : ''}
-    ${st.levelGift ? `<div class="memo">🎁 ${st.firstTime ? 'Your first Big Puzzle' : 'A new star'}! A little gift for you.</div>` : ''}
     ${nextPrizeNote(prof)}
-    ${g ? `<button class="giftbtn" data-act="opengift"><span class="rattle">${giftArt(g)}</span>${prof.pending.length > 1 ? `<span class="badge">${prof.pending.length}</span>` : ''}<b>${prof.pending.length > 1 ? prof.pending.length + ' gifts' : 'A gift'} for you!</b><small>Tap to open${prof.pending.length > 1 ? ' one at a time' : ''}</small></button>` : ''}
-    <div class="row" style="margin-top:22px">
+    ${g ? `<button class="giftbtn dgift" data-act="opengift"><span class="rattle">${giftArt(g)}</span>${prof.pending.length > 1 ? `<span class="badge">${prof.pending.length}</span>` : ''}<b>${prof.pending.length > 1 ? prof.pending.length + ' gifts' : 'A gift'} for you!</b><small>Tap to open</small></button>` : ''}
+    <div class="row drow">
       ${st.nextAct ? `<button class="btn go wide" data-act="${st.nextAct}" ${st.nextP != null ? `data-p="${st.nextP}"` : ''}>${st.nextLabel}</button>` : ''}
       <button class="btn wide" data-act="back" data-to="surah">🧭 Back to ${s.name}</button>
     </div>
     <div class="row"><button class="btn small" data-act="back" data-to="map">🗺️ Map</button>${g ? '<button class="btn small" data-act="savefile">💾 Save progress</button>' : ''}</div>
+    </div>
   </div>`;
   };
 
@@ -2441,6 +2443,35 @@
     <div class="wbody">${body}</div>
   </div>`;
   };
+
+  // My Explorer: swipe left or right on the explorer to turn them around
+  let swipe = null;
+  document.addEventListener(
+    'pointerdown',
+    (e) => {
+      if (st.view !== 'bag' || !e.target.closest || !e.target.closest('.wd-stage')) return;
+      swipe = { x: e.clientX, y: e.clientY, t: Date.now() };
+    },
+    { passive: true },
+  );
+  document.addEventListener(
+    'pointerup',
+    (e) => {
+      const sw0 = swipe;
+      swipe = null;
+      if (!sw0 || st.view !== 'bag') return;
+      const dx = e.clientX - sw0.x,
+        dy = e.clientY - sw0.y;
+      if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5 && Date.now() - sw0.t < 800) {
+        sfx.whoosh();
+        st.backView = !st.backView;
+        swiped = Date.now();
+        render();
+      }
+    },
+    { passive: true },
+  );
+  let swiped = 0;
 
   /* ---------- MY ACHIEVEMENTS: the explorer in their world, with what they've done ---------- */
   function achievements(prof) {
@@ -3062,7 +3093,7 @@
         [4, '4'],
         [5, '5'],
       ])}</div>
-      ${tg('stranger', 'The Stranger (test)', 'Now and then, between sūrahs, a stranger on the map asks 3 questions from a memorized sūrah')}
+      ${tg('stranger', 'The Stranger', 'Now and then, between sūrahs, a stranger on the map asks 3 questions from a memorized sūrah')}
       ${tg('pzrtl', 'Puzzle from right to left', 'The Picture Puzzle fills from the right, like reading Arabic. Off: left to right, row by row')}
     </div>
     ${offlineSheet()}
@@ -3583,6 +3614,16 @@
   });
 
   document.addEventListener('click', (e) => {
+    // the open list of worlds closes with a tap anywhere outside it
+    const rl = document.querySelector('.wrail.open');
+    if (rl && !e.target.closest('.wrail')) {
+      rl.classList.remove('open');
+      const tg = rl.querySelector('.wr-toggle');
+      if (tg) tg.setAttribute('aria-expanded', 'false');
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
     const m = document.getElementById('modal');
     if (e.target === m) {
       if (m.querySelector('.dropcard')) return; // must press "Try again"
@@ -3909,6 +3950,7 @@
         break;
       }
       case 'exmove':
+        if (Date.now() - swiped < 400) break; // that was a swipe, not a tap
         explorerMove(b.querySelector('svg.ex'));
         break;
       case 'summitok': {
@@ -4097,6 +4139,12 @@
       case 'challenge':
         sfx.tap();
         if (heroReady(P())) meetStranger(true);
+        break;
+      case 'strtest':
+        // TEMPORARY (v2.6.1): meet him any time, to try the challenge out; to be removed
+        sfx.tap();
+        if (P().rematchReady && BYN[P().rematch]) meetStranger(false, true);
+        else meetStranger(false);
         break;
       case 'strface':
         m.classList.remove('show');
@@ -5020,6 +5068,8 @@
      three and he leaves a special gift. After the summit, wins earn the hero armor, shield and sword; with
      all three, the map has a ⚔️ Challenge button to face him any time. */
   const APP_OPENED = Date.now();
+  // he can also turn up while you stay on the map (the 5 minutes count from opening the game, wherever you are)
+  setInterval(() => !document.hidden && st.view === 'map' && maybeStranger(), 30000);
   const HERO = ['hero-armor', 'hero-shield', 'hero-sword'];
   const heroReady = (prof) => HERO.every((id) => prof.items.includes(id));
   const memorizedList = (prof) => S.filter((s) => surahDone(s, prof));

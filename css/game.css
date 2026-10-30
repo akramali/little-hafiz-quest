@@ -6255,6 +6255,8 @@ body {
 .mtools,
 .donescr > h2,
 .donescr > p,
+.donescr .dtop > h2,
+.donescr .dtop > p,
 .screen > .saveinfo {
   color: var(--on, var(--ink));
   text-shadow:
@@ -7718,4 +7720,128 @@ body {
 }
 .strend .giftbtn {
   margin-top: 10px;
+}
+
+/* ---------- v2.6.1 ---------- */
+/* the MāshāAllāh page fits on one screen: a smaller picture, tighter lines, a one-line gift button */
+.donescr {
+  padding-top: clamp(8px, 2.5vh, 24px);
+}
+.donescr .big {
+  font-size: clamp(54px, 10vh, 92px);
+}
+.donescr .medal {
+  transform: scale(0.8);
+}
+.donescr h2 {
+  font-size: clamp(26px, 4.2vh, 34px);
+  margin-top: 4px;
+}
+.donescr p {
+  font-size: 17px;
+  margin-top: 4px;
+  line-height: 1.35;
+}
+.donescr .trophy-stars {
+  font-size: clamp(30px, 5vh, 42px);
+  margin-top: 4px;
+}
+.donescr .memo,
+.donescr .found {
+  font-size: 15.5px;
+  margin-top: 8px;
+  padding: 7px 12px;
+}
+.donescr .nextprize,
+.donescr .prizenote {
+  margin-top: 8px;
+}
+.dgift {
+  /* the square, rattling gift box, a little smaller */
+  margin: 10px auto 0;
+  padding: 10px 26px 12px;
+}
+.dgift .rattle svg {
+  width: 88px;
+  height: 88px;
+}
+.dgift b {
+  font-size: 18px;
+}
+.dgift small {
+  font-size: 14px;
+}
+/* the prize bar, smaller */
+.donescr .nextprize {
+  padding: 4px 12px 6px 6px;
+  font-size: 14px;
+}
+.donescr .nextprize .np-sil svg {
+  width: 34px;
+  height: 34px;
+}
+.donescr .np-bar {
+  height: 8px;
+}
+.drow {
+  margin-top: 12px;
+}
+.donescr .drow .btn {
+  min-height: 52px;
+  font-size: 18px;
+}
+/* wide and short screens (phones held sideways, tablets, computers): celebration on the left, the rest on the right */
+@media (min-aspect-ratio: 4/3) and (min-width: 560px) {
+  .donescr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: center;
+    max-width: 1000px;
+    margin: 0 auto;
+    min-height: calc(100dvh - 40px);
+  }
+  .donescr .dbody .row {
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+@media (min-width: 700px) and (max-aspect-ratio: 4/3) {
+  .donescr {
+    max-width: 560px;
+    margin: 0 auto;
+  }
+}
+/* My Explorer: a sideways swipe on the explorer turns them around (the page still scrolls up and down) */
+.bagscr .wd-stage {
+  touch-action: pan-y;
+}
+/* phones held sideways: the celebration stays put on the left, the rest is tight on the right */
+@media (min-aspect-ratio: 4/3) and (min-width: 560px) and (max-height: 520px) {
+  .donescr {
+    align-items: start;
+    min-height: 0;
+    gap: 16px;
+  }
+  .donescr .dtop {
+    position: sticky;
+    top: 12px;
+  }
+  .donescr .big {
+    font-size: 54px;
+  }
+  .donescr .memo,
+  .donescr .found {
+    font-size: 14px;
+    margin-top: 6px;
+    padding: 5px 10px;
+  }
+  .donescr .drow .btn {
+    min-height: 46px;
+    font-size: 16px;
+  }
+  .dgift .rattle svg {
+    width: 64px;
+    height: 64px;
+  }
 }

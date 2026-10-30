@@ -5,6 +5,8 @@ window.OUT = [];
 window.log = (...m) => OUT.push(m.map((x) => typeof x === 'string' ? x : JSON.stringify(x)).join(' '));
 window.wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const Q = new URLSearchParams(location.search), test = Q.get('t');
+// full=1: the game fills the whole window (tablets, computers, phones held sideways)
+if (Q.get('full')) document.getElementById('f').style.width = '100%';
 // checks: ok(label, condition, detail) records a pass or a failure; done() ends with a RESULT line
 window.CHECKS = [];
 window.ok = (label, cond, detail) => { CHECKS.push({ label, pass: !!cond, detail: detail == null ? '' : String(detail) }); return !!cond; };
