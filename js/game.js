@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.7.10';
+  const VERSION = '2.7.11';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -5800,7 +5800,14 @@
   const INTRO = [
     (nm) => [`<div class="eldart">${elderArt('happy')}</div>`, `As-salāmu ʿalaykum, ${nm}!`, 'I’m your Teacher. I know the whole Qur’an by heart, and I’ll walk with you.'],
     () => [`<div class="intart worlds">${WORLD_ICON.map((k) => ART.props[k] || '').join('')}</div>`, 'Seven worlds to climb', 'From An-Nās to the mountain top, one sūrah at a time.'],
-    () => [`<div class="intart">${ART.gift({ tier: 3 })}</div>`, 'Gifts at every step', 'Treasures, golden things, stickers and rides are waiting for you!'],
+    () => [
+      `<div class="intart steps">${[['👀', 'Look &amp; Repeat'], [`<svg viewBox="0 0 48 16" width="48" height="16" aria-hidden="true"><path d="M4 8H44" stroke="#c9c2d9" stroke-width="2"/>${WCOL.slice(0, 4).map((c, j) => `<circle cx="${6 + j * 12}" cy="8" r="5" fill="${c}"/>`).join('')}</svg>`, 'Word Steps'], ['🐸', 'Stepping Stones'], ['🧩', 'Picture Puzzle']].map(([ic, t]) => `<span><i>${ic}</i><small>${t}</small></span>`).join('')}</div>`,
+      'Four steps for each sūrah',
+      'Two to learn it, then two games to remember it.',
+    ],
+    () => [`<div class="intart gifts">${ART.gift({ tier: 3 })}${['explorer-cap', 'leaf-cape', 'ladybug-buddy'].map((id) => (ITEM[id] ? `<span>${itemPic(id)}</span>` : '')).join('')}</div>`, 'Gifts at every step', 'Win treasures, then dress up your explorer in My Explorer!'],
+    () => [`<div class="intart">${ART.campfire(3)}</div>`, 'Keep the campfires burning', 'Every sūrah you learn gets one. Practise it now and then so it never goes out.'],
+    () => [`<div class="intart">${BOOK_IC}</div>`, 'Fill your journal', 'Tap animals and things on the map and in the pictures to collect them.'],
     () => [`<div class="intart">${itemPic('twig')}</div>`, 'Your walking stick', 'Every explorer needs one. Here is yours. Bismillāh!'],
   ];
   function maybeIntro() {

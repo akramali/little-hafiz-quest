@@ -23,7 +23,10 @@
   ok('a new explorer: Begin the quest', /Begin the quest/.test(d.querySelector('.sp-begin').textContent));
   tap('.sp-begin'); await wait(2600);
   ok('on the map, the Wise Elder welcomes them', !!d.querySelector('#modal.show .intro') && /Zaid/.test(m.textContent));
-  for (let k = 0; k < 3; k++) { tap('[data-act=intro]'); await wait(250); }
+  const cards = [];
+  for (let k = 0; k < 10 && !/Take it/.test(m.textContent); k++) { cards.push(m.querySelector('.intro').textContent); tap('[data-act=intro]'); await wait(250); }
+  const all = cards.join(' | ').toLowerCase();
+  ok('the welcome covers the quest steps, gifts and dressing up, campfires and the journal', ['four steps', 'dress up', 'campfire', 'journal'].every((t) => all.includes(t)), cards.map((c) => c.slice(0, 40)).join(' | '));
   ok('…ends with their walking stick', /walking stick/i.test(m.textContent) && /Take it/.test(m.textContent));
   tap('[data-act=intro]'); await wait(400);
   ok('taking it begins the quest', p.greeted && !m.classList.contains('show'));
