@@ -17,7 +17,7 @@
  */
 'use strict';
 
-const VERSION = '2.6.6';
+const VERSION = '2.6.7';
 const SHELL_CACHE = `lhq2-shell-${VERSION}`;
 const AUDIO_CACHE = 'lhq2-audio'; // keep across app updates; change only if the audio files change
 const DATA_CACHE = 'lhq2-data'; // small lists that can change between versions (reciters, versions)

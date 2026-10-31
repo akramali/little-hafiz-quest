@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.6.6';
+  const VERSION = '2.6.7';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -1006,14 +1006,14 @@
         rest = L.slice(Math.min(st.chain, L.length - 1));
       return { key: `${s.n}:chain:${st.a}`, label: rest.length < L.length ? `From āyah ${rest[0] + 1}` : 'The chain', items: rest.map((k) => [s.n, k + 1]) };
     }
-    if (v === 'path') return one(c.from + st.k);
+    if (v === 'path') return Object.assign(one(c.from + st.k), { loop: true });
     if (v === 'order') {
       const all = st.p === 'all' ? range({ from: 0, to: s.ayat.length - 1 }) : range(c);
       if (st.say == null) return many(all, st.p === 'all' ? 'Whole sūrah' : 'In order');
       const ks = puzzleItems()[st.say].say;
       return ks.length > 1 ? many(ks, `Āyāt ${ks[0] + 1}–${ks[ks.length - 1] + 1}`) : one(ks[0]);
     }
-    if (v === 'words') return one(st.a);
+    if (v === 'words') return Object.assign(one(st.a), { loop: true });
     if (v === 'mushaf') return Object.assign(st.sel != null ? one(st.sel) : many(range({ from: 0, to: s.ayat.length - 1 }), 'Whole sūrah'), { loop: true });
     return null;
   }
@@ -2057,7 +2057,7 @@
     ${track}
     <div class="wlabel" style="margin-top:6px">Word order</div>
     ${beads}
-    <div class="wstage"><div class="wpic"><span class="num">${k + 1}</span>${pics(a)}<b>${a.hook}</b></div>${stage}
+    <div class="wstage"><div class="lchead"><div class="wpic"><span class="num">${k + 1}</span>${pics(a)}<b>${a.hook}</b></div><span class="lcbtns">${speedChip()}${loopBtn()}</span></div>${stage}
       <div class="wcount">${st.phase === 'build' ? `Word ${st.w} of ${n}` : `${st.shown.length} of ${n} words`}</div></div>
     <div class="wnote">${note}</div>
     <div class="row">${controls}</div>
@@ -2179,7 +2179,7 @@
       <button class="btn go wide" data-act="hop">✅ Said it!</button>
     </div>
     <div class="card">
-      ${cl.pic ? tag(s, k) : `<span class="ayah-tag"><span class="num">${k + 1}</span>Āyah ${k + 1}</span>`}
+      <div class="lchead"><span class="lctags">${cl.pic ? tag(s, k) : `<span class="ayah-tag"><span class="num">${k + 1}</span>Āyah ${k + 1}</span>`}</span><span class="lcbtns">${speedChip()}${loopBtn()}</span></div>
       ${cl.pic ? sceneHTML(a) : `<div class="mystery-q">?</div>`}
       ${cl.pic ? gest(a) : ''}
       ${shown}
@@ -5086,7 +5086,7 @@
   }
 
   /* ================= THE STRANGER =================
-     Once the game has been open 5 minutes, every 5 minutes there is a 1 in 3 chance that, on the map, a hooded
+     Once the game has been open 10 minutes, every 10 minutes there is a 1 in 3 chance that, on the map, a hooded
      stranger blocks the path and asks 3 questions from one memorized sūrah: what comes after an āyah, or
      finish an āyah. No Listen, no hints: a grown-up taps "Said it!" or "Not quite".
      Every miss costs something. He throws what his world has (two kinds per world, shown on its sign), and
@@ -5101,8 +5101,9 @@
      After the summit, wins earn the hero armor, shield and sword; with all three, the map has a ⚔️ Challenge
      button to face him any time. The Grown-up Corner can switch him off. */
   const APP_OPENED = Date.now();
-  let strangerRoll = APP_OPENED; // one roll in each 5-minute window
-  // he can also turn up while you stay on the map (the 5 minutes count from opening the game, wherever you are)
+  const STRANGER_EVERY = 10 * 60000; // one chance in each 10 minutes
+  let strangerRoll = APP_OPENED; // one roll in each 10-minute window
+  // he can also turn up while you stay on the map (the 10 minutes count from opening the game, wherever you are)
   setInterval(() => !document.hidden && st.view === 'map' && maybeStranger(), 30000);
   const HERO = ['hero-armor', 'hero-shield', 'hero-sword'];
   const heroReady = (prof) => HERO.every((id) => prof.items.includes(id));
@@ -5111,11 +5112,11 @@
     const prof = P(),
       m = document.getElementById('modal');
     if (!prefs.stranger || st.view !== 'map' || m.classList.contains('show') || document.body.classList.contains('busy') || noExplorers() || !prof.made) return;
-    // a rematch comes as soon as the things are back; after "Not now", again after the usual 5 minutes
-    if (prof.rematchReady.length) return Date.now() - prof.strangerAt > 5 * 60000 ? meetStranger(false, true) : undefined;
+    // a rematch comes as soon as the things are back; after "Not now", again after the usual 10 minutes
+    if (prof.rematchReady.length) return Date.now() - prof.strangerAt > STRANGER_EVERY ? meetStranger(false, true) : undefined;
     if (!memorizedList(prof).length) return;
     if (window.__strangerNow) return meetStranger(false); // tests only: skip the waiting and the chance
-    if (Date.now() - strangerRoll < 5 * 60000) return;
+    if (Date.now() - strangerRoll < STRANGER_EVERY) return;
     strangerRoll = Date.now();
     if (Math.random() < 1 / 3) meetStranger(false);
   }

@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is the player- and developer-facing description; this file is the working state.
 
-**Current version:** v2.6.6 (2026-10-31) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.6.7 (2026-10-31) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -51,7 +51,7 @@ Testing hook: `window.__lhq = { st, store, go, player, stranger: { strikeFor, bl
 - **Worlds:** green when every sūrah is memorized (Stepping Stones done), gold when every star is won. A golden
   world wins its ride (`WORLD_RIDES`, `wgold`).
 - **The Stranger** (`THE STRANGER` section; Grown-up Corner switch `prefs.stranger`):
-  - after 5 min open, one 1-in-3 roll per 5-minute window, on the map; skips sūrahs with things waiting;
+  - after 10 min open, one 1-in-3 roll per 10-minute window (`STRANGER_EVERY`), on the map; skips sūrahs with things waiting;
     rematch per sūrah (`prof.rematch`, `prof.rematchReady`) once its things are won back.
   - 3 questions (what comes after / finish the āyah), no Listen. Right → he staggers and acknowledges.
   - **Every miss costs something.** Throws per world: `WORLD_THROWS` (🪨💨💧🌰✨🌿), shown on world signs, the world
@@ -86,7 +86,7 @@ Testing hook: `window.__lhq = { st, store, go, player, stranger: { strikeFor, bl
   from family, iOS update timing, 0.25× playback on iPhone Safari (if muted, make 0.5× the slowest), the Stranger's
   defend/hurt animations and swipe-to-turn on touch.
 - Not done (offered): a random starting face for new explorers, so no skin tone is "the default".
-- The Stranger was a test concept in v2.6.0–2.6.3 and is now part of the game; tune `1 / 3`, the 5-minute window,
+- The Stranger was a test concept in v2.6.0–2.6.3 and is now part of the game; tune `1 / 3`, `STRANGER_EVERY` (10 min),
   `WORLD_THROWS`, `EXTRA_BLOCKS` if play-testing says so.
 - Known, accepted test oddities: some buttons covered while a page scrolls, three captions on bright scenery
   (whitelisted in `tests/cases/hit.js` and `contrast.js`).
@@ -97,4 +97,4 @@ v2.3–2.4: nature sounds, jigsaw, Read view, awards, files. v2.5.0: family sync
 classic v1 retired, word meanings. v2.5.1–2.5.8: buttons, speed, info/how-to, fruit and animals, all explorers on
 the map, chain setting, gift fixes, faces, glasses, Big Puzzle. v2.6.0: golden/green worlds, world rides, speed
 button, one-tap gifts, the Stranger. v2.6.1–2.6.6: Stranger polish, closing animations, stakes (every miss costs,
-world throws, protection), battle ground in the world's colors. Full detail: `git log` and `changelog.json`.
+world throws, protection), battle ground in the world's colors. v2.6.7: the Stranger every 10 minutes; speed and loop in Word Steps and Stepping Stones. Full detail: `git log` and `changelog.json`.

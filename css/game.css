@@ -8028,3 +8028,11 @@ body {
     radial-gradient(closest-side, var(--pg0), var(--pg1) 78%, transparent);
 }
 
+/* Word Steps: the āyah's pill and the speed and loop buttons share a row */
+.wstage .lchead {
+  margin-bottom: 6px;
+}
+.wstage .lchead .wpic {
+  margin: 0;
+  min-width: 0;
+}

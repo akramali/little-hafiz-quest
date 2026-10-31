@@ -1,7 +1,11 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.6.6",
+ "latest": "2.6.7",
  "versions": [
+  { "v": "2.6.7", "notes": [
+   "The Stranger comes less often (a chance every 10 minutes)",
+   "Speed and loop buttons in Word Steps and Stepping Stones too"
+  ] },
   { "v": "2.6.6", "notes": [
    "Small visual tweaks"
   ] },
