@@ -8882,3 +8882,49 @@ body:has(.wrail.open) .jbtn {
   font-size: 64px;
   line-height: 1.1;
 }
+
+/* ---------- v2.7.17: arriving and leaving ---------- */
+/* Home from the world: the map fades, then the start screen's picture zooms back out (the reverse of Continue) */
+.mapscr.leaving {
+  transition: opacity 0.32s ease-in;
+  opacity: 0;
+}
+.mapscr.arrive {
+  animation: spFade 0.35s ease-out;
+}
+.splash.returning .sp-art {
+  animation: spReturn 0.7s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.splash.returning .sp-top,
+.splash.returning .sp-bottom {
+  animation: spFade 0.45s 0.3s both;
+}
+.splash.arrive {
+  animation: spFade 0.35s ease-out;
+}
+@keyframes spReturn {
+  from {
+    transform: scale(1.7) translateY(-8%);
+    opacity: 0.15;
+  }
+}
+@keyframes spFade {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .splash.returning .sp-art,
+  .splash.returning .sp-top,
+  .splash.returning .sp-bottom,
+  .splash.arrive,
+  .mapscr.arrive {
+    animation: none;
+  }
+}
+/* My Explorer: the pencil (as on the Explorers page) */
+.bar .editme {
+  font-size: 22px;
+  padding: 0 14px;
+  height: 52px;
+}

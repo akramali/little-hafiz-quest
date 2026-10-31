@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.7.16';
+  const VERSION = '2.7.17';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -1542,6 +1542,7 @@
   const $app = document.getElementById('app');
   const $bg = document.getElementById('bg');
   let st = { view: 'splash' };
+  let arriving = ''; // the screen just left, while the new one is drawn
   let mapCtl = null;
   function go(view, params = {}) {
     if (view === 'map' && ['surah', 'done', 'learn', 'words', 'path', 'order', 'mushaf'].includes(st.view)) setTimeout(maybeElder, 1400);
@@ -1553,9 +1554,11 @@
       save();
     }
     document.querySelectorAll('.drag-ghost').forEach((g) => g.remove()); // a piece being dragged never follows to a new screen
+    arriving = st.view !== view ? st.view : ''; // (the start screen and the map arrive with their own animation)
     st = Object.assign({ view }, params);
     if (GAMES.includes(view)) st.starsBefore = totalStars(); // a first finish (a new star) always brings a gift
     render(true);
+    arriving = '';
     if (view === 'splash' || view === 'map') maybeForce();
     if (view !== 'splash' && justUpdated) {
       justUpdated = false; // the "Updated to …" note has been seen
@@ -1695,11 +1698,12 @@
     const prof = P(),
       started = !noExplorers() && prof.made && begun(prof),
       days = streakNow(prof);
-    return `<div class="splash">
+    // back from the world: the picture zooms back out (the reverse of Continue); from elsewhere, a fade
+    return `<div class="splash ${arriving === 'map' ? 'returning' : arriving ? 'arrive' : ''}">
     <div class="sp-art">${ART.splash(prof.look, Object.assign(drawnOutfit(prof), { sticker: prof.badge }), { night: isNight(), mood: prof.lost.length ? 'sad' : '' })}</div>
     <div class="sp-top">
       <button class="verchip ${upd.available ? 'ready' : ''}" data-act="updates" aria-label="Version and updates">v${VERSION}${upd.available ? ' · Update ✨' : ''}</button>
-      <span class="sp-tr">${days >= 1 ? `<button class="icon-btn streakbtn" data-act="streak" aria-label="${days} ${days === 1 ? 'day' : 'days'} on the trail">👣<b>${days}</b></button>` : ''}${FS_OK && !STANDALONE ? `<button class="icon-btn" data-act="fs" aria-label="${fsNow() ? 'Exit fullscreen' : 'Fullscreen'}">${fsNow() ? ICON.fsOut : ICON.fsIn}</button>` : ''}<button class="icon-btn" data-act="settings" aria-label="Grown-up corner">${ICON.gear}</button></span>
+      <span class="sp-tr">${days >= 1 ? `<button class="icon-btn streakbtn" data-act="streak" aria-label="${days} ${days === 1 ? 'day' : 'days'} on the trail">🏃<b>${days}</b></button>` : ''}${FS_OK && !STANDALONE ? `<button class="icon-btn" data-act="fs" aria-label="${fsNow() ? 'Exit fullscreen' : 'Fullscreen'}">${fsNow() ? ICON.fsOut : ICON.fsIn}</button>` : ''}<button class="icon-btn" data-act="settings" aria-label="Grown-up corner">${ICON.gear}</button></span>
     </div>
     <div class="sp-bottom">
       <h1 class="sp-title">Little Hafiz Quest</h1>
@@ -1834,7 +1838,7 @@
   }
   V.map = () => {
     const prof = P();
-    return `<div class="mapscr">
+    return `<div class="mapscr ${arriving && arriving !== 'splash' ? 'arrive' : ''}">
     <div class="hud">
       <button class="icon-btn" data-act="home" aria-label="Back to the start">${ICON.home}</button>
       <button class="hud-stars hud-sur" data-act="progress" data-t="surahs" aria-label="Sūrahs done: ${doneSurahs()} of ${S.length}">📖 <b>${doneSurahs()}</b><small>/${S.length}</small></button>
@@ -2716,7 +2720,7 @@
       ? `<button class="wd-side wd-comfy on" data-act="comfy" aria-label="Put my things back on">✨<small>Back</small></button>`
       : `<button class="wd-side wd-comfy" data-act="comfy" ${fancy ? '' : 'disabled'} aria-label="Just comfy clothes">👕<small>Comfy</small></button>`;
     return `<div class="screen bagscr">
-    ${bar(whoBtn(prof, 'My Explorer'), prof.name || store.profiles.filter((p) => p.made).length > 1 ? 'My Explorer' : '', 'map', giftIcon(prof, 'inbar') + `<button class="mebtn ${tab === 'look' ? 'on' : ''}" data-act="tab" data-t="${tab === 'look' ? 'hat' : 'look'}" aria-label="Change my name and how I look" aria-pressed="${tab === 'look'}">${tab === 'look' ? '✓ Done' : '✏️ My look'}</button>`)}
+    ${bar(whoBtn(prof, 'My Explorer'), prof.name || store.profiles.filter((p) => p.made).length > 1 ? 'My Explorer' : '', 'map', giftIcon(prof, 'inbar') + `<button class="btn small editme" data-act="editme" aria-label="Change your explorer: name and look">✏️</button>`)}
     <div class="wd-stage"><button class="wd-ex" data-act="exmove" aria-label="Tap your explorer">${explorer({ view: st.backView && tab !== 'look' ? 'back' : 'front' })}</button>${tab === 'look' ? '' : `${comfy}<button class="wd-side wd-turn" data-act="turn" aria-label="Turn around">↻<small>Turn</small></button><button class="wd-side wd-show" data-act="show" aria-label="My achievements">🏆<small>Awards</small></button>`}</div>
     ${tab === 'look' ? '' : `<div class="wtwrap"><div class="wtabs" id="wtabs">${tabs}</div><button class="cpmore cpless" data-act="wtscroll" data-d="-1" aria-label="Earlier categories">‹</button><button class="cpmore" data-act="wtscroll" data-d="1" aria-label="More categories">›</button></div>`}
     <div class="wbody">${body}</div>
@@ -2792,7 +2796,7 @@
     ['🎁', `${a.items}`, 'treasures found'],
     ['🏅', `${a.badges}`, a.badges === 1 ? 'star badge' : 'star badges'],
     ['⏱️', fmtTime(a.time), 'spent learning'],
-    ['👣', `${a.streak} ${a.streak === 1 ? 'day' : 'days'}`, `in a row · best ${a.best}`],
+    ['🏃', `${a.streak} ${a.streak === 1 ? 'day' : 'days'}`, `in a row · best ${a.best}`],
   ];
   V.show = () => {
     const prof = P(),
@@ -3223,6 +3227,13 @@
     if (justUpdated) updatedFrom = seenV;
     if (!seenV) localStorage.setItem(VER_SEEN, VERSION);
   } catch (e) {}
+  function dismissUpdNote() {
+    justUpdated = false;
+    try {
+      localStorage.setItem(VER_SEEN, VERSION);
+    } catch (e) {}
+    render();
+  }
   function loadChangelog() {
     return fetch('changelog.json', { cache: 'no-cache' })
       .then((r) => (r.ok ? r.json() : null))
@@ -3892,10 +3903,10 @@
     // every 7 days in a row on the trail: a little gift
     if (prof.streak[1] % 7 === 0 && (giveSurprise(prof) || giveLevelGift(prof))) {
       save();
-      toast(`👣 ${prof.streak[1]} days in a row on the trail! A gift is waiting for you 🎁`);
+      toast(`🏃 ${prof.streak[1]} days in a row on the trail! A gift is waiting for you 🎁`);
     }
   }
-  // the streak, from the 👣 on the start screen
+  // the streak, from the 🏃 on the start screen
   function showStreak() {
     const prof = P(),
       now = streakNow(prof),
@@ -3903,7 +3914,7 @@
       days = (n) => `${n} ${n === 1 ? 'day' : 'days'}`;
     const m = document.getElementById('modal');
     m.innerHTML = `<div class="card streakcard"><button class="cardx" data-act="cno" aria-label="Close">✕</button>
-      <div class="streakart">👣</div><h3>${days(now)} on the trail!</h3>
+      <div class="streakart">🏃</div><h3>${days(now)} on the trail!</h3>
       <p class="eldsay">Your best so far: <b>${days(Math.max(prof.best, now))}</b> in a row.</p>
       <p class="saveinfo center">🎁 ${next === 7 && now ? 'A gift for every 7 days in a row. Keep going!' : `${days(next)} more for a gift. Learn a little every day!`}</p></div>`;
     m.classList.add('show');
@@ -3953,6 +3964,11 @@
       closeRail(rl);
       e.preventDefault();
       e.stopPropagation();
+      return;
+    }
+    // the "Updated to …" note on the start screen: a tap anywhere else closes it
+    if (justUpdated && st.view === 'splash' && !e.target.closest('.updnote, [data-act], #modal.show')) {
+      dismissUpdNote();
       return;
     }
     const m = document.getElementById('modal');
@@ -4016,10 +4032,16 @@
         } else go('map');
         break;
       }
-      case 'home':
+      case 'home': {
+        // out of the world: the map fades, then the start screen zooms back out
         sfx.tap();
-        go('splash');
+        const ms = $app.querySelector('.mapscr');
+        if (ms && !reduceMotion) {
+          ms.classList.add('leaving');
+          setTimeout(() => go('splash'), 320);
+        } else go('splash');
         break;
+      }
       case 'explorers':
         sfx.tap();
         go('explorers');
@@ -4035,6 +4057,10 @@
       case 'streak':
         sfx.tap();
         showStreak();
+        break;
+      case 'editme':
+        sfx.tap();
+        go('create', { back: 'bag' });
         break;
       case 'whopick':
         sfx.tap();
@@ -4117,11 +4143,7 @@
         break;
       case 'updok':
         sfx.tap();
-        justUpdated = false;
-        try {
-          localStorage.setItem(VER_SEEN, VERSION);
-        } catch (e) {}
-        render();
+        dismissUpdNote();
         break;
       case 'newprof': {
         sfx.tap();
@@ -4163,7 +4185,7 @@
         P().made = true;
         save();
         if (st.back === 'explorers') go('explorers');
-        else go(st.first ? 'map' : 'bag', st.first ? {} : { tab: 'look' });
+        else go(st.first ? 'map' : 'bag', st.first ? {} : { tab: 'hat' });
         break;
       }
       case 'surah':

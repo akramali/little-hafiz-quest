@@ -1,7 +1,13 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.7.16",
+ "latest": "2.7.17",
  "versions": [
+  { "v": "2.7.17", "notes": [
+   "Home zooms back out of the world to the start screen",
+   "In My Explorer, the ✏️ changes your explorer",
+   "Days in a row show as 🏃",
+   "Small visual tweaks"
+  ] },
   { "v": "2.7.16", "notes": [
    "Swiping works on phones: How to play, Look & Repeat, Word Steps and the journal",
    "Every shirt, pants and shoe color for every explorer",
