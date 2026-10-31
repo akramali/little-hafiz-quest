@@ -52,8 +52,10 @@
   L.go('map'); await wait(1500);
   const boxes = [...d.querySelectorAll('.mlost')].map((b) => b.getBoundingClientRect());
   const off = boxes.filter((q) => q.left < 0 || q.right > w.innerWidth);
-  const lap = boxes.some((a, i) => boxes.some((b, j) => j > i && a.left < b.right - 6 && b.left < a.right - 6 && a.top < b.bottom - 6 && b.top < a.bottom - 6));
-  ok('lost things are on the screen and never on top of each other', boxes.length === 4 && !off.length && !lap, `${boxes.length} · off ${off.length} · overlap ${lap}`);
+  // (a sūrah's lost things make a little heap: a bit over each other, but each still showing)
+  const lap = boxes.some((a, i) => boxes.some((b, j) => j > i && Math.abs(a.left - b.left) < 20 && Math.abs(a.top - b.top) < 20));
+  const heap = boxes.slice(0, 3), spread = Math.max(...heap.map((q) => q.right)) - Math.min(...heap.map((q) => q.left));
+  ok('lost things are on the screen, in a tight heap, each still showing', boxes.length === 4 && !off.length && !lap && spread < 140, `${boxes.length} · off ${off.length} · hidden ${lap} · heap ${Math.round(spread)} px`);
   ok('no errors', !errs.length, errs.join(' | '));
   done();
 })();

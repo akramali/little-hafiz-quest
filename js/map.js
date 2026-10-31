@@ -350,29 +350,31 @@
             <span class="nlab"><b>${s.name}</b><small>${st.done ? `✓ ⭐ ${st.stars}/${st.max}` : `⭐ ${st.stars}/${st.max}`}</small></span>
           </button>`,
         );
-        // lost things: each on the nearest free spot beside its stop (never on a stop, its name or campfire, the
-        // explorer, or another lost thing), the side away from the explorer first; kept 50 px in from the sides,
-        // as the curved-world effect pushes things near the edges outward a little
+        // lost things: a little heap beside its stop (each a bit over the one before, so they read as one group
+        // that belongs to it), on the nearest free spot: never on a stop, its name or campfire, the explorer or
+        // another heap; the side away from the explorer first; kept 50 px in from the sides, as the curved-world
+        // effect pushes things near the edges outward a little
         const lost = st.lost || [],
           side = nd.x > L.cx ? 1 : -1,
+          step = 32,
           ex = nd.i === cfg.current ? { x: nd.x - side * 52, y: nd.y + 30 } : null;
         const freeAt = (x, y) =>
           x >= 50 &&
           x <= width - 50 &&
-          !L.nodes.some((m) => Math.abs(m.x - x) < 106 && y > m.y - 50 && y - 52 < m.y + 90) &&
+          // (a stop with its name, and its campfire on the outer side; this stop's other side has no campfire)
+          !L.nodes.some((m) => Math.abs(m.x - x) < (m === nd && (x - nd.x) * side < 0 ? 76 : 106) && y > m.y - 50 && y - 52 < m.y + 90) &&
           !lostSpots.some((q) => Math.abs(q.x - x) < 56 && Math.abs(q.y - y) < 56) &&
           !(ex && Math.abs(ex.x - x) < 70 && Math.abs(ex.y - y) < 80);
-        const spots = [];
-        [40, -10, 90, 140].forEach((dy) => [0, 1, 2, 3, 4].forEach((k) => [side, -side].forEach((sd) => spots.push({ x: nd.x + sd * (106 + k * 56), y: nd.y + dy, d: k + Math.abs(dy - 40) / 50 + (sd === side ? 0 : 0.5) }))));
-        spots.sort((a, b) => a.d - b.d);
-        const xs = [],
-          ys = [];
-        lost.forEach((_, j) => {
-          const p = spots.find((q) => freeAt(q.x, q.y)) || { x: Math.max(50, Math.min(width - 50, nd.x + side * (106 + j * 56))), y: nd.y + 40 };
-          lostSpots.push(p);
-          xs.push(p.x);
-          ys.push(p.y);
-        });
+        // the heap starts at x0 and grows away from the stop (dir)
+        const heap = (x0, y, dir) => lost.map((_, j) => ({ x: x0 + dir * j * step, y: y + (j % 2 ? -5 : 0) }));
+        const tries = [];
+        [40, -10, 90, 140].forEach((dy) => [0, 1, 2, 3].forEach((k) => [side, -side].forEach((sd) => tries.push({ x0: nd.x + sd * ((sd === side ? 106 : 76) + k * 40), y: nd.y + dy, dir: sd, d: k + Math.abs(dy - 40) / 50 + (sd === side ? 0 : 0.5) }))));
+        tries.sort((a, b) => a.d - b.d);
+        const t = tries.find((q) => heap(q.x0, q.y, q.dir).every((p) => freeAt(p.x, p.y)));
+        const pile = t ? heap(t.x0, t.y, t.dir) : heap(Math.max(50, Math.min(width - 50, nd.x + side * 106)), nd.y + 40, -side);
+        pile.forEach((p) => lostSpots.push(p));
+        const xs = pile.map((p) => p.x),
+          ys = pile.map((p) => p.y);
         lost.forEach((id, j) => {
           const lx = xs[j],
             ly = ys[j];
