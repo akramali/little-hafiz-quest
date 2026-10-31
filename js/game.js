@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.7.17';
+  const VERSION = '2.7.18';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -1708,6 +1708,7 @@
     <div class="sp-bottom">
       <h1 class="sp-title">Little Hafiz Quest</h1>
       <p class="sp-sub">Juz ‘Amma by heart · 37 sūrahs to the summit</p>
+      ${installBar()}
       <button class="btn gold sp-begin" data-act="begin">${started ? 'Continue the quest ▶' : 'Begin the quest ▶'}</button>
       ${
         noExplorers()
@@ -3518,6 +3519,54 @@
   const fsNow = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
   const FS_OK = !!(docEl.requestFullscreen || docEl.webkitRequestFullscreen) && document.fullscreenEnabled !== false && document.webkitFullscreenEnabled !== false;
   const STANDALONE = (window.matchMedia && matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches) || navigator.standalone === true;
+  /* Install it like an app: a small banner on the start screen, only in a browser (never in the installed game).
+     Chrome, Edge and Samsung Internet (phones and computers) give a real one-tap Install (beforeinstallprompt);
+     iPhone/iPad, Safari on a Mac and Firefox on Android can't, so the banner shows their steps instead. ✕ hides it
+     for 30 days. */
+  const INSTALL_NO = 'lhq_install_no';
+  let installEvt = null;
+  addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault(); // our own banner instead of the browser's
+    installEvt = e;
+    if (st.view === 'splash') render();
+  });
+  addEventListener('appinstalled', () => {
+    installEvt = null;
+    if (st.view === 'splash') render();
+  });
+  const UA = navigator.userAgent || '';
+  const IOS = /iPhone|iPad|iPod/.test(UA) || (/Macintosh/.test(UA) && navigator.maxTouchPoints > 1);
+  // 'prompt' (one tap), 'ios', 'mac' (Safari: File → Add to Dock), 'firefox' (Android), or '' (nothing to offer)
+  function installKind() {
+    if (STANDALONE) return '';
+    try {
+      if (Date.now() - (+localStorage.getItem(INSTALL_NO) || 0) < 30 * 864e5) return '';
+    } catch (e) {}
+    if (installEvt) return 'prompt';
+    if (IOS) return 'ios';
+    if (/Macintosh/.test(UA) && /Version\/1[7-9]|Version\/[2-9]\d/.test(UA) && /Safari/.test(UA) && !/Chrome|Firefox|Edg/.test(UA)) return 'mac';
+    if (/Android/.test(UA) && /Firefox/.test(UA)) return 'firefox';
+    return '';
+  }
+  const installBar = () => {
+    const k = installKind();
+    return k ? `<div class="installbar"><span class="ib-ic">📲</span><span class="ib-tx"><b>Play it like an app</b><small>${k === 'mac' ? 'Keep it in your Dock' : 'One tap from your home screen, works offline'}</small></span><button class="btn small go" data-act="install">${k === 'prompt' ? 'Install' : 'How?'}</button><button class="ib-x" data-act="installno" aria-label="Not now">✕</button></div>` : '';
+  };
+  function showInstallSteps(k) {
+    const step = (t) => `<li>${t}</li>`;
+    const has = store.profiles.some((p) => totalStars(p) > 0);
+    const steps =
+      k === 'ios'
+        ? step('Tap <b>⋯</b> beside the address bar (or the <b>Share</b> button at the bottom).') + step('Tap <b>Share</b>, then <b>Add to Home Screen</b> (under <b>View More</b> if it isn’t there).') + step('Leave <b>Open as Web App</b> on, and tap <b>Add</b>.')
+        : k === 'mac'
+          ? step('In the menu bar, choose <b>File</b> → <b>Add to Dock</b>.') + step('Tap <b>Add</b>.')
+          : step('Tap <b>⋮</b> at the top right.') + step('Tap <b>Add app to Home screen</b>.');
+    const m = document.getElementById('modal');
+    m.innerHTML = `<div class="card installcard"><button class="cardx" data-act="cno" aria-label="Close">✕</button><h3>📲 Play it like an app</h3>
+      <ol class="installsteps">${steps}</ol>
+      <p class="saveinfo">Then open the game from its new icon.${k === 'ios' && has ? ' On iPhone the icon keeps its own progress: to bring your explorers along, use <b>Explorers → Share progress</b> here, then <b>Paste from family</b> in the app.' : ''}</p></div>`;
+    m.classList.add('show');
+  }
   let fsLeaving = false;
   function enterFs() {
     if (!FS_OK || fsNow()) return;
@@ -4061,6 +4110,29 @@
       case 'editme':
         sfx.tap();
         go('create', { back: 'bag' });
+        break;
+      case 'install': {
+        sfx.tap();
+        const k = installKind();
+        if (k === 'prompt' && installEvt) {
+          const e = installEvt;
+          installEvt = null;
+          e.prompt();
+          (e.userChoice || Promise.resolve({}))
+            .then((c) => {
+              if (c && c.outcome === 'accepted') toast('📲 Installed! Open it from your home screen');
+              if (st.view === 'splash') render();
+            })
+            .catch(() => {});
+        } else if (k) showInstallSteps(k);
+        break;
+      }
+      case 'installno':
+        sfx.tap();
+        try {
+          localStorage.setItem(INSTALL_NO, String(Date.now()));
+        } catch (e) {}
+        render();
         break;
       case 'whopick':
         sfx.tap();
@@ -6524,5 +6596,5 @@
   registerOffline();
   if (linkCode) setTimeout(() => openSync(linkCode, `${appURL()}#sync=${linkCode}`), 400);
   if (justUpdated) loadChangelog().then(() => st.view === 'splash' && render());
-  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder, world: elderWorld }, sunDown, journal: JKEYS, countDay, cleanStore, cleanProfile, syncCtx, markNow, fabTarget }; // for testing in the browser console
+  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder, world: elderWorld }, sunDown, journal: JKEYS, countDay, installSteps: showInstallSteps, cleanStore, cleanProfile, syncCtx, markNow, fabTarget }; // for testing in the browser console
 })();

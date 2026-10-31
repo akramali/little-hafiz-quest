@@ -78,6 +78,8 @@ Five to ten minutes a day is plenty. Stop while it's still fun.
   **Open as Web App** on → **Add**. Play from the new icon from then on: it keeps its own progress, separate from Safari.
 - **Android:** open the link in **Chrome** → **⋮** (top right) → **Add to home screen** (or **Install app**) →
   **Install**. Play from the new icon.
+- **One tap:** in Chrome, Edge or Samsung Internet (phones and computers), the start screen offers **Install**; on
+  iPhone and iPad it shows the steps above.
 - **Offline:** in the game you'll play from, ⚙️ Grown-up Corner → Download recitations → **Save all recitations**.
 
 Updates download by themselves; the start screen offers them with a short note of what's new.

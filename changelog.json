@@ -1,7 +1,10 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.7.17",
+ "latest": "2.7.18",
  "versions": [
+  { "v": "2.7.18", "notes": [
+   "Install the game like an app from the start screen (one tap where the browser allows, the steps on iPhone)"
+  ] },
   { "v": "2.7.17", "notes": [
    "Home zooms back out of the world to the start screen",
    "In My Explorer, the ✏️ changes your explorer",

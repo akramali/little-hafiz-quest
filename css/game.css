@@ -8928,3 +8928,49 @@ body:has(.wrail.open) .jbtn {
   padding: 0 14px;
   height: 52px;
 }
+/* the start screen: install it like an app (only in a browser) */
+.installbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 420px;
+  box-sizing: border-box;
+  padding: 8px 8px 8px 12px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #2b2340;
+  text-align: left;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  animation: enter 0.4s 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+.ib-ic {
+  font-size: 26px;
+}
+.ib-tx {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.15;
+}
+.ib-tx small {
+  display: block;
+  font-size: 12px;
+  color: #6b6385;
+}
+.ib-x {
+  border: 0;
+  background: none;
+  font-size: 16px;
+  color: #6b6385;
+  padding: 6px;
+  cursor: pointer;
+}
+.installsteps {
+  text-align: left;
+  margin: 6px 0 8px 20px;
+  padding: 0;
+  line-height: 1.4;
+}
+.installsteps li {
+  margin: 4px 0;
+}
