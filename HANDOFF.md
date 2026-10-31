@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is a short public overview (highlights, install, privacy, credits); this file holds the detail.
 
-**Current version:** v2.6.13 (2026-10-31) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.6.14 (2026-10-31) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -53,8 +53,16 @@ Testing hook: `window.__lhq = { st, store, go, player, elder: { strikeFor, block
 - **Worlds:** green when every sūrah is memorized (Stepping Stones done), gold when every star is won. A golden
   world wins its ride (`WORLD_RIDES`, `wgold`).
 - **The Wise Elder** (`THE WISE ELDER` section; Grown-up Corner switch `prefs.elder`; called the Stranger, `prefs.stranger`, before v2.6.11, migrated in `cleanPrefs`):
-  - after 7 min open, one 1-in-3 roll per 7-minute window (`ELDER_EVERY`), on the map; skips sūrahs with things waiting;
-    rematch per sūrah (`prof.rematch`, `prof.rematchReady`) once its things are won back.
+  - after 7 min open, one 1-in-3 roll per 7-minute window (`ELDER_EVERY`, and not within 7 min of his last visit,
+    `prof.elderAt`), on the map; skips sūrahs with things waiting; rematch per sūrah (`prof.rematch`,
+    `prof.rematchReady`) once its things are won back, and it too waits for that roll (never straight after revising).
+  - **He roams the map** (v2.6.14) as a pal (`cfg.others` entry `id: 'elder'`, `.mpal.melder`, 84×126): 4 minutes per
+    world, up the mountain and back (`elderWorld`, `ELDER_STAY`); walks slowly (`palPace`), says salām to explorers,
+    pats animals, strolls; when his time is up he walks off (back in his new world on the next map draw). Tapping
+    him (`tapElder`) offers his test any time (`meetElder(true)`, or the rematch if one is ready).
+  - **Gift economy:** tests the explorer asks for (tapping him, or the Test button) give one gift a day
+    (`prof.elderGift` = the day); later wins that day say "His gift comes once a day". Random visits and rematches
+    keep their gifts (the timer and losses limit those).
   - **He walks with you (v2.6.12, "option B"):** he stands beside the explorer (taller), both in the world
     (`eldWorld`: hills, a path running ahead to the right, the world's props; the scenery shifts left a little per
     question, `--walk`). What comes at the explorer comes from the world ahead, not from him. Neutral words: no ⚔️,
@@ -75,6 +83,10 @@ Testing hook: `window.__lhq = { st, store, go, player, elder: { strikeFor, block
 - **Recitation:** `playList` / `stopAudio` hold a screen Wake Lock while playing (`keepAwake`); Read's Listen plays
   `[[1, 1], …]` (the Basmalah file, then the sūrah; each queued item plays from its own sūrah's file, `fileUrls`,
   so a list can span files) and `markNow` scrolls the recited āyah into view.
+- **Theme:** "Auto" follows the sun, not the phone's dark mode: `sunDown()` works out today's sunrise/sunset from
+  a place guessed from the time zone (`TZ_AT` table of cities, else the clock offset; no location permission, no
+  network). JS always sets `data-mode` to `dim` or `light`; re-checked every minute.
+- **Stickers are still** (`stillArt` strips the motion classes); buddies drawn from sticker art keep moving.
 - **App feel:** `user-select: none` on `html` and a global `contextmenu` block (except inputs and `.shareimg`); the
   viewport keeps pinch-zoom on purpose (the user finds it handy).
 - **Starter look:** the face (skin) picker draws faces like the hair picker; comfy shirt/pants come in 4 colors each.
@@ -115,4 +127,4 @@ v2.3–2.4: nature sounds, jigsaw, Read view, awards, files. v2.5.0: family sync
 classic v1 retired, word meanings. v2.5.1–2.5.8: buttons, speed, info/how-to, fruit and animals, all explorers on
 the map, chain setting, gift fixes, faces, glasses, Big Puzzle. v2.6.0: golden/green worlds, world rides, speed
 button, one-tap gifts, the Wise Elder. v2.6.1–2.6.6: Wise Elder polish, closing animations, stakes (every miss costs,
-world throws, protection), battle ground in the world's colors. v2.6.7: the Wise Elder every 10 minutes; speed and loop in Word Steps and Stepping Stones. v2.6.8: Read starts with the Bismillah (āyah -1, word data in `BISM_WORDS`) and follows the recited āyah; the screen stays on while reciting (`keepAwake`, Wake Lock; 99× loops let go after 15 min); full world names in the list. v2.6.9: no text selection or long-press menus (text boxes and the share picture excepted); zoom kept. v2.6.10: My Achievements fits on one screen. v2.6.11: the Stranger becomes the Wise Elder (a kind old man, star staff, woven belt, swaying robe), renamed everywhere. v2.6.12: the Wise Elder walks with you through the world (taller, comforting, soft hurt, neutral "Test" wording), gives his staff at the summit; Read with the Bismillah plays the whole sūrah again. v2.6.13: the Wise Elder every 7 minutes, gentler robe sway, simpler praise; the temporary Elder test button removed. Full detail: `git log` and `changelog.json`.
+world throws, protection), battle ground in the world's colors. v2.6.7: the Wise Elder every 10 minutes; speed and loop in Word Steps and Stepping Stones. v2.6.8: Read starts with the Bismillah (āyah -1, word data in `BISM_WORDS`) and follows the recited āyah; the screen stays on while reciting (`keepAwake`, Wake Lock; 99× loops let go after 15 min); full world names in the list. v2.6.9: no text selection or long-press menus (text boxes and the share picture excepted); zoom kept. v2.6.10: My Achievements fits on one screen. v2.6.11: the Stranger becomes the Wise Elder (a kind old man, star staff, woven belt, swaying robe), renamed everywhere. v2.6.12: the Wise Elder walks with you through the world (taller, comforting, soft hurt, neutral "Test" wording), gives his staff at the summit; Read with the Bismillah plays the whole sūrah again. v2.6.13: the Wise Elder every 7 minutes, gentler robe sway, simpler praise; the temporary Elder test button removed. v2.6.14: the Wise Elder roams the map (tap for a test, one gift a day), rematches wait for his timer, Auto theme by sunrise/sunset, still stickers, a new bee, the Version card updates in place. Full detail: `git log` and `changelog.json`.

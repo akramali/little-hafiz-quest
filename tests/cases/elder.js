@@ -66,11 +66,15 @@
   ok('a review game there gives them back', !prof.lost.length && prof.rematchReady.includes(n), `lost ${prof.lost.length} ready ${prof.rematchReady}`);
   w.__elderNow = false;
   L.go('map'); await wait(2400);
-  ok('he comes back for a rematch, and Not now is allowed', /back/.test((d.querySelector('#modal.show .eldmeet h3') || {}).textContent || '') && !!d.querySelector('[data-act=eldrun]'));
+  ok('after revising he does not pop up at once (the usual timer)', !d.querySelector('#modal.show .eldmeet'));
+  w.__elderNow = true;
+  L.go('surah', { i: idx(113), p: 0 }); await wait(100); L.go('map'); await wait(2400);
+  ok('on his timer he comes back for a rematch, and Not now is allowed', /back/.test((d.querySelector('#modal.show .eldmeet h3') || {}).textContent || '') && !!d.querySelector('[data-act=eldrun]'));
   tap('[data-act=eldrun]'); await wait(200);
+  w.__elderNow = false;
   L.go('surah', { i: idx(113), p: 0 }); await wait(100); L.go('map'); await wait(2400);
   ok('after Not now he waits (the usual timer)', !d.querySelector('#modal.show .eldmeet'));
-  prof.elderAt = 0;
+  w.__elderNow = true;
   L.go('surah', { i: idx(113), p: 0 }); await wait(100); L.go('map'); await wait(2400);
   tap('[data-act=eldface]'); await wait(300); tap('[data-act=eldgo]'); await wait(200);
   const before = prof.pending.length;

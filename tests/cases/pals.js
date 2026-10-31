@@ -11,7 +11,7 @@
   const st = L.store();
   log('explorers', st.profiles.length, '| colors', st.profiles.map((p) => `${p.look.tee}/${p.look.legs}`).join(' '));
   L.go('map'); await wait(1500);
-  const pals = [...d.querySelectorAll('.mpal')];
+  const pals = [...d.querySelectorAll('.mpal:not(.melder)')];
   log('on the map: others', pals.length, '| worlds', pals.map((p) => p.dataset.w).join(','), '| current', !!d.querySelector('.mex'));
   ok('every other explorer is on the map', pals.length === st.profiles.length - 1, pals.length + ' of ' + (st.profiles.length - 1));
   // overlaps between explorers

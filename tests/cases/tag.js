@@ -6,7 +6,7 @@
   const { w, d, L } = await openGame();
   const errs = []; w.addEventListener('error', (e) => errs.push(e.message));
   L.go('map'); await wait(1200);
-  const pal = d.querySelector('.mpal'), mex = d.querySelector('.mex');
+  const pal = d.querySelector('.mpal:not(.melder)'), mex = d.querySelector('.mex');
   w.scrollTo(0, pal.getBoundingClientRect().top + w.scrollY - w.innerHeight / 2); await wait(500);
   const rp = pal.getBoundingClientRect(), rm = mex.getBoundingClientRect();
   log('sizes: other', Math.round(rp.width / (pal.getBoundingClientRect().width / pal.offsetWidth)), 'x', pal.offsetHeight, '| chosen', mex.offsetWidth, 'x', mex.offsetHeight);

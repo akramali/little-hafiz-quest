@@ -286,7 +286,8 @@
           scenery.push({
             y,
             // the same size as the explorer by their sūrah, feet at the same point
-            html: `<div class="mpal" data-act="pal" data-id="${q.id}" data-w="${b.wi}" data-x="${x.toFixed(1)}" data-y="${y.toFixed(1)}" style="left:${(x - EX_FOOT).toFixed(1)}px;top:${(y - 108).toFixed(1)}px" aria-label="${q.name}"><div class="mpal-in">${q.svg}</div></div>`,
+            // (the Wise Elder is taller: 84×126, his feet at the middle of the bottom)
+            html: `<div class="mpal${q.elder ? ' melder' : ''}" data-act="pal" data-id="${q.id}" data-w="${b.wi}" data-x="${x.toFixed(1)}" data-y="${y.toFixed(1)}" style="left:${(x - (q.elder ? 42 : EX_FOOT)).toFixed(1)}px;top:${(y - (q.elder ? 123 : 108)).toFixed(1)}px" aria-label="${q.name}"><div class="mpal-in">${q.svg}</div></div>`,
           });
         });
         for (let t = 0, made = 0; t < count * 8 && made < count; t++) {

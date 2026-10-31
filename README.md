@@ -62,7 +62,7 @@ recite on their own.
 - **Four reciters**, adjustable speed (0.25×–2×) and loops; tap any word to hear it alone.
 - **200+ things to win and wear:** treasures, golden editions, stickers, buddies, toy rides for golden worlds and
   summit awards.
-- **The Wise Elder:** a kind old man who now and then walks with the explorer and tests a memorized sūrah, with no help.
+- **The Wise Elder:** a kind old man who roams the map; tap him, or he finds you, to walk together and test a memorized sūrah, with no help.
 - **Family friendly:** up to 10 explorers on one phone, family sync between phones by link or QR code, backups to a file.
 
 Five to ten minutes a day is plenty. Stop while it's still fun.

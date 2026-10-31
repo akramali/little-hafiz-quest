@@ -305,7 +305,7 @@
   function badge(id) {
     const f = STKBY[id];
     if (!f) return '';
-    const art = OUT(f());
+    const art = stillArt(OUT(f()));
     return '<svg x="64" y="163" width="27" height="27" viewBox="0 0 100 100" overflow="visible"><g transform="rotate(-10 50 50)">' + flat(art, '#ffffff', 14) + art + '</g></svg>';
   }
   const HAIR = {
@@ -2171,11 +2171,20 @@
     ['boat', 'Little boat', () => L('M48 14L48 66', INK, 3) + S('M50 16L80 58L50 58Z', '#ffffff', 'M64 36L80 58L60 58Z') + S('M46 22L46 58L22 58Z', '#ffd23f') + S('M14 62L86 62Q80 80 64 80L36 80Q20 80 14 62Z', '#ff6b6b', 'M86 62Q80 80 64 80L54 80Q72 76 86 62Z') + C(36, 70, 3, '#fff', sw(1.8)) + C(50, 70, 3, '#fff', sw(1.8)) + C(64, 70, 3, '#fff', sw(1.8)) + P('M8 86Q18 80 28 86Q38 92 50 86Q62 80 72 86Q82 92 92 86L92 92L8 92Z', '#5fc9e8')],
     ['fish', 'Fish', () => { const c = '#ff9f3d'; return S('M70 50L92 32Q96 50 92 68Z', dk(c, 0.1)) + S('M10 50Q24 20 54 22Q76 26 78 50Q76 74 54 78Q24 80 10 50Z', c, 'M74 40Q78 50 76 60Q70 76 50 78Q66 66 74 40Z', 'M22 40Q30 28 44 26Q32 32 26 44Z') + S('M40 26Q50 10 62 24Z', dk(c, 0.1)) + L('M50 34Q56 50 50 66M60 36Q66 50 60 64', '#ffd08a', 2.4) + G(eye1(28, 46, 4), cls('lhq-blink')) + EF(26, 58, 4, 2.4, '#ff8fa3', 0.7) + L('M14 54Q18 58 22 56', INK, 2.2) + C(86, 18, 4, '#cfeeff', sw(1.8)) + C(78, 8, 2.6, '#cfeeff', sw(1.6)); }],
     ['turtle', 'Turtle', () => { const c = '#8ad16b', sh = '#3f9a52'; return S(limb(28, 72, 24, 86, 6, 5), c) + S(limb(68, 72, 74, 86, 6, 5), c) + S('M82 62Q96 58 94 46Q90 38 82 44Z', c) + S('M14 72Q14 34 50 32Q86 34 86 72Z', sh, 'M64 36Q86 44 86 72L72 72Q74 50 64 36Z', 'M24 56Q26 42 38 38Q30 46 28 58Z') + L('M38 36L32 72M62 36L68 72M22 54L78 54', dk(sh, 0.25), 2.2) + S(rr(10, 68, 80, 8, 4), '#c9a25a') + G(eye1(88, 50, 2.6), cls('lhq-blink')) + L('M86 56Q89 58 92 56', INK, 1.8); }],
-    ['bee', 'Bee', () => { const y = '#ffd23f'; return S('M30 22Q36 6 50 16Q50 30 38 34Z', '#e8f6ff') + S('M70 22Q64 6 50 16Q50 30 62 34Z', '#e8f6ff') + S('M14 58Q14 34 50 32Q86 34 86 58Q86 82 50 84Q14 82 14 58Z', y, 'M76 40Q86 48 86 58Q86 82 50 84Q76 74 76 40Z') + F('M38 33L50 32L50 84L38 83Z', INK, 0.85) + F('M62 33L70 35L70 82L62 83Z', INK, 0.85) + P('M14 58Q14 34 50 32Q86 34 86 58Q86 82 50 84Q14 82 14 58Z', 'none') + L('M86 58L94 58', INK, 3) + ball(26, 56, 11, 11, y, { sh: false }) + cuteEyes(22, 54, 30, 54, 2.4) + smile(26, 60, 2.6, 1.8); }],
+    ['bee', 'Bee', () => {
+      const y = '#ffd23f',
+        body = 'M34 62Q34 38 62 38Q90 40 90 62Q90 84 62 86Q34 86 34 62Z';
+      return S('M52 40Q42 12 60 12Q70 16 62 40Z', '#e8f6ff', null, 'M54 34Q50 20 58 16Z') + S('M66 42Q70 12 86 18Q92 30 72 44Z', '#e8f6ff') +
+        S(body, y, 'M80 44Q90 52 90 62Q90 84 62 86Q82 74 80 44Z') + F('M54 39.6L64 38.2L64 85.8L54 85.2Z', INK, 0.85) + F('M74 40.4L82 44L82 80.6L74 83.6Z', INK, 0.85) + P(body, 'none') + L('M90 62L97 62', INK, 3) +
+        L('M20 42Q16 30 10 28M30 40Q32 28 40 24', INK, 2.4) + CF(10, 28, 3, INK) + CF(40, 24, 3, INK) +
+        ball(26, 58, 18, 18, y) + cuteEyes(20, 56, 32, 56, 2.6) + smile(26, 64, 3, 1.8) + cheeks(15, 63, 37, 63, 3);
+    }],
     ['apple', 'Apple', () => L('M50 26Q50 16 56 10', '#8a5a35', 3.6) + S('M54 20Q62 8 76 12Q68 24 54 20Z', '#5fd27a') + S('M50 26Q30 16 18 32Q8 52 22 74Q34 92 50 84Q66 92 78 74Q92 52 82 32Q70 16 50 26Z', '#ff5d5d', 'M78 34Q90 54 78 74Q66 90 50 84Q72 76 78 34Z', 'M24 40Q28 30 38 28Q30 36 28 46Z') + face2(50, 54, 3)],
     ['heart', 'Heart', () => S('M50 86C34 74 10 60 10 38C10 22 22 12 34 12C42 12 48 18 50 24C52 18 58 12 66 12C78 12 90 22 90 38C90 60 66 74 50 86Z', '#ff5d8f', 'M70 14C82 18 90 26 90 38C90 60 66 74 50 86C64 70 76 50 70 14Z', 'M18 34Q20 22 30 20Q24 28 24 38Z') + face2(50, 46, 3)],
   ];
   const STICKERS = STK.map((s) => ({ id: s[0], name: s[1] }));
+  // stickers stay still (only buddies move): drop the flapping, blinking and swaying from their art
+  const stillArt = (m) => m.replace(/ class="(lhq-(blink|flap|wave|wing-l|bounce|hover|wobble|frog-b)|pr-(bob|flap|sway|ripple))"/g, '');
   /* Star badges: one for every 100 stars, each its own color. Earned, never given at random. */
   const BADGE_C = ['#d9905a', '#b9c6d8', '#ffc83d', '#5fd27a', '#5fb2ff']; // 100 … 500 (the Juz has 505 stars)
   const badgeArt = (m, c) =>
@@ -2190,7 +2199,7 @@
   function sticker(id) {
     const f = STKBY[id];
     if (!f) return '';
-    const art = OUT(f());
+    const art = stillArt(OUT(f()));
     return svg100('lhq-sticker', G(flat(art, INK, 12), ' opacity=".16" transform="translate(1.5 3)"') + flat(art, '#ffffff', 11) + art, (STICKERS.find((s) => s.id === id) || BADGES.find((s) => s.id === id) || {}).name);
   }
 

@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.6.13';
+  const VERSION = '2.6.14';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -235,6 +235,7 @@
       feats: [], // summit milestones reached: 'once', 'three', 'all'
       fix: [], // sūrahs where all the hearts ran out in a review game (a broken heart on the map until fixed)
       daily: '',
+      elderGift: '', // the day a test the explorer asked the Wise Elder for last brought a gift (one a day)
       at: 0,
       made: false,
       time: 0, // seconds spent learning (for grown-ups)
@@ -343,6 +344,7 @@
     p.lostSt = (Array.isArray(o.lostSt) ? o.lostSt : []).filter((x) => x && STICKER[x.id] && BYN[x.n]).map((x) => ({ id: x.id, n: x.n }));
     const at0 = o.elderAt != null ? o.elderAt : o.strangerAt;
     p.elderAt = typeof at0 === 'number' && isFinite(at0) ? at0 : 0;
+    if (typeof o.elderGift === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(o.elderGift)) p.elderGift = o.elderGift;
     p.wdone = Array.isArray(o.wdone)
       ? uniq(o.wdone.filter((w) => Number.isInteger(w) && w >= 0 && w < WORLDS.length))
       : WORLDS.map((_, wi) => wi).filter((wi) => worldDone(wi, p)); // no party for worlds finished before v2.1
@@ -659,10 +661,69 @@
   const itemName = (id) => (ART.isGirl(P().look) && ITEM[id].girl) || ITEM[id].name;
 
   /* ================= theme ================= */
-  const darkMQ = window.matchMedia ? matchMedia('(prefers-color-scheme: dark)') : null;
-  const isNight = () => prefs.theme === 'dim' || (prefs.theme === 'auto' && !!(darkMQ && darkMQ.matches));
+  /* "Auto" follows the sun: dim from sunset to sunrise. Where the phone is comes only from its time zone (no
+     location permission, nothing sent anywhere): a known city's place, or else a guess from the clock offset. */
+  const TZ_AT = {
+    'America/New_York': [40.7, -74], 'America/Toronto': [43.7, -79.4], 'America/Chicago': [41.9, -87.6], 'America/Denver': [39.7, -105],
+    'America/Phoenix': [33.4, -112], 'America/Los_Angeles': [34, -118.2], 'America/Vancouver': [49.3, -123.1], 'America/Edmonton': [53.5, -113.5],
+    'America/Winnipeg': [49.9, -97.1], 'America/Halifax': [44.6, -63.6], 'America/Anchorage': [61.2, -149.9], 'Pacific/Honolulu': [21.3, -157.9],
+    'America/Detroit': [42.3, -83], 'America/Mexico_City': [19.4, -99.1], 'America/Bogota': [4.7, -74.1], 'America/Lima': [-12, -77],
+    'America/Sao_Paulo': [-23.5, -46.6], 'America/Argentina/Buenos_Aires': [-34.6, -58.4], 'America/Santiago': [-33.4, -70.7],
+    'Europe/London': [51.5, -0.1], 'Europe/Dublin': [53.3, -6.3], 'Europe/Paris': [48.9, 2.4], 'Europe/Brussels': [50.8, 4.4],
+    'Europe/Amsterdam': [52.4, 4.9], 'Europe/Berlin': [52.5, 13.4], 'Europe/Madrid': [40.4, -3.7], 'Europe/Rome': [41.9, 12.5],
+    'Europe/Stockholm': [59.3, 18.1], 'Europe/Oslo': [59.9, 10.8], 'Europe/Copenhagen': [55.7, 12.6], 'Europe/Vienna': [48.2, 16.4],
+    'Europe/Zurich': [47.4, 8.5], 'Europe/Warsaw': [52.2, 21], 'Europe/Athens': [38, 23.7], 'Europe/Istanbul': [41, 29],
+    'Europe/Moscow': [55.8, 37.6], 'Europe/Sarajevo': [43.9, 18.4], 'Africa/Cairo': [30, 31.2], 'Africa/Casablanca': [33.6, -7.6],
+    'Africa/Algiers': [36.8, 3.1], 'Africa/Tunis': [36.8, 10.2], 'Africa/Lagos': [6.5, 3.4], 'Africa/Nairobi': [-1.3, 36.8],
+    'Africa/Johannesburg': [-26.2, 28], 'Africa/Khartoum': [15.6, 32.5], 'Africa/Mogadishu': [2, 45.3], 'Africa/Addis_Ababa': [9, 38.7],
+    'Africa/Dakar': [14.7, -17.4], 'Africa/Accra': [5.6, -0.2], 'Asia/Riyadh': [24.7, 46.7], 'Asia/Dubai': [25.2, 55.3],
+    'Asia/Qatar': [25.3, 51.5], 'Asia/Kuwait': [29.4, 48], 'Asia/Bahrain': [26.2, 50.6], 'Asia/Muscat': [23.6, 58.4],
+    'Asia/Baghdad': [33.3, 44.4], 'Asia/Tehran': [35.7, 51.4], 'Asia/Amman': [31.9, 35.9], 'Asia/Beirut': [33.9, 35.5],
+    'Asia/Damascus': [33.5, 36.3], 'Asia/Jerusalem': [31.8, 35.2], 'Asia/Gaza': [31.5, 34.5], 'Asia/Hebron': [31.5, 35.1],
+    'Asia/Aden': [12.8, 45], 'Asia/Karachi': [24.9, 67], 'Asia/Kolkata': [22.6, 88.4], 'Asia/Calcutta': [22.6, 88.4],
+    'Asia/Dhaka': [23.8, 90.4], 'Asia/Kabul': [34.5, 69.2], 'Asia/Tashkent': [41.3, 69.3], 'Asia/Almaty': [43.2, 76.9],
+    'Asia/Jakarta': [-6.2, 106.8], 'Asia/Kuala_Lumpur': [3.1, 101.7], 'Asia/Singapore': [1.35, 103.8], 'Asia/Manila': [14.6, 121],
+    'Asia/Bangkok': [13.8, 100.5], 'Asia/Shanghai': [31.2, 121.5], 'Asia/Hong_Kong': [22.3, 114.2], 'Asia/Tokyo': [35.7, 139.7],
+    'Asia/Seoul': [37.6, 127], 'Australia/Sydney': [-33.9, 151.2], 'Australia/Melbourne': [-37.8, 145], 'Australia/Brisbane': [-27.5, 153],
+    'Australia/Perth': [-31.95, 115.9], 'Australia/Adelaide': [-34.9, 138.6], 'Pacific/Auckland': [-36.8, 174.8],
+  };
+  function placeGuess() {
+    let tz = '';
+    try {
+      tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    } catch (e) {}
+    if (TZ_AT[tz]) return TZ_AT[tz];
+    // the clock's standard offset gives the longitude (15° an hour); the region a rough latitude
+    const y = new Date().getFullYear(),
+      std = Math.max(new Date(y, 0, 1).getTimezoneOffset(), new Date(y, 6, 1).getTimezoneOffset());
+    const lat = /^(Australia|Antarctica)|America\/(Argentina|Sao_Paulo|Santiago|Lima|Montevideo|Asuncion|La_Paz)|Pacific\/(Auckland|Fiji)|Africa\/(Johannesburg|Maputo|Harare|Lusaka|Windhoek)/.test(tz)
+      ? -30
+      : /^Europe/.test(tz) ? 50 : /^Africa|^Indian|^Pacific/.test(tz) ? 10 : 35;
+    return [lat, -std / 4];
+  }
+  const PLACE = placeGuess();
+  // is the sun down here now? (sunrise and sunset worked out for today, good to a few minutes)
+  function sunDown(now) {
+    now = now || new Date();
+    const lat = (PLACE[0] * Math.PI) / 180,
+      start = Date.UTC(now.getUTCFullYear(), 0, 0),
+      day = (now.getTime() - start) / 864e5,
+      g = (2 * Math.PI * (day - 1)) / 365;
+    const decl = 0.006918 - 0.399912 * Math.cos(g) + 0.070257 * Math.sin(g) - 0.006758 * Math.cos(2 * g) + 0.000907 * Math.sin(2 * g) - 0.002697 * Math.cos(3 * g) + 0.00148 * Math.sin(3 * g);
+    const eot = 229.18 * (0.000075 + 0.001868 * Math.cos(g) - 0.032077 * Math.sin(g) - 0.014615 * Math.cos(2 * g) - 0.040849 * Math.sin(2 * g));
+    const c = (Math.cos((90.833 * Math.PI) / 180) - Math.sin(lat) * Math.sin(decl)) / (Math.cos(lat) * Math.cos(decl));
+    if (c >= 1) return true; // polar night
+    if (c <= -1) return false; // midnight sun
+    const half = (Math.acos(c) * 180) / Math.PI * 4, // minutes from noon to sunset
+      noon = 720 - 4 * PLACE[1] - eot, // solar noon, minutes after midnight UTC
+      t = now.getUTCHours() * 60 + now.getUTCMinutes();
+    const d = (((t - noon) % 1440) + 2160) % 1440 - 720; // minutes from solar noon, -720…720
+    return Math.abs(d) > half;
+  }
+  const isNight = () => prefs.theme === 'dim' || (prefs.theme === 'auto' && sunDown());
+  // the page is dim or light as decided here ("Auto" never follows the phone's own dark mode)
   function applyTheme() {
-    document.documentElement.setAttribute('data-mode', prefs.theme);
+    document.documentElement.setAttribute('data-mode', isNight() ? 'dim' : 'light');
   }
 
   /* ================= sounds: soft nature sounds (js/sounds.js), quieter while the reciter plays ================= */
@@ -1726,7 +1787,8 @@
       // everyone else on this phone, standing in the world of the sūrah they're on
       others: store.profiles
         .filter((p) => p.id !== store.cur && p.made)
-        .map((p) => ({ id: p.id, name: p.name ? esc(p.name) : 'Explorer', svg: explorer({ view: 'front' }, p), wi: Math.max(0, worldOf(S[p.at] || S[0])) })),
+        .map((p) => ({ id: p.id, name: p.name ? esc(p.name) : 'Explorer', svg: explorer({ view: 'front' }, p), wi: Math.max(0, worldOf(S[p.at] || S[0])) }))
+        .concat(prefs.elder ? [{ id: 'elder', name: 'The Wise Elder', svg: elderArt(''), wi: elderWorld(), elder: true }] : []),
       worldIcon: (wi) => WORLD_ICON[wi],
       // what the Wise Elder throws in each world (so the explorer can dress for it)
       worldThrows: (wi) => (prefs.elder ? worldThrowIcons(wi) : ''),
@@ -3065,10 +3127,17 @@
     m.innerHTML = `<div class="card updcard"><button class="cardx" data-act="cno" aria-label="Close">✕</button><h3>🧭 Version</h3>${updatesHTML()}</div>`;
     m.classList.add('show');
   }
+  // an open Version card changes in place (no second pop-in), and only when something it says changed
   function refreshUpdateUI() {
     if (st.view === 'splash' || st.view === 'settings') render();
-    const card = document.querySelector('#modal.show .updcard');
-    if (card) showUpdates();
+    const box = document.querySelector('#modal.show .updcard .updbox');
+    if (!box) return;
+    const t = document.createElement('div');
+    t.innerHTML = updatesHTML();
+    const nb = t.firstElementChild,
+      open = box.querySelector('details[open]');
+    if (open && nb.querySelector('details')) nb.querySelector('details').open = true;
+    if (nb.outerHTML !== box.outerHTML) morph(box, nb);
   }
   function checkUpdates(manual) {
     lastCheck = Date.now();
@@ -3174,7 +3243,7 @@
     <div class="sheet">
       <h3>🎨 Look</h3>
       ${fsSheet()}
-      <div class="setrow"><span>Theme<small>Dim is gentle for bedtime</small></span>${seg('theme', [
+      <div class="setrow"><span>Theme<small>Auto turns dim after sunset</small></span>${seg('theme', [
         ['auto', 'Auto'],
         ['light', 'Light'],
         ['dim', 'Dim'],
@@ -4059,6 +4128,10 @@
         poke(b);
         break;
       case 'pal': {
+        if (b.dataset.id === 'elder') {
+          tapElder(b);
+          break;
+        }
         // another explorer on this phone: they do a move and say who they are
         const p = palOf(b);
         if (!p) break;
@@ -4832,12 +4905,14 @@
   const palOf = (el) => store.profiles.find((p) => p.id === el.dataset.id);
   const palsBusy = new WeakSet();
   // walk a little way (inside .mpal-in, as the map moves the outer element), then call back
+  const palPace = (el) => (el.dataset.id === 'elder' ? 34 : 14); // ms per px: the Wise Elder walks slowly
   function palWalk(el, dx, dy, then) {
     const who = el.firstElementChild,
       steps = Math.max(2, Math.round(Math.hypot(dx, dy) / 22)),
+      bob = el.dataset.id === 'elder' ? 2 : 4,
       frames = [];
-    for (let i = 0; i <= steps; i++) frames.push({ transform: `translate(${((dx * i) / steps).toFixed(1)}px, ${((dy * i) / steps + (i % 2 ? -4 : 0)).toFixed(1)}px)` });
-    const a = who.animate(frames, { duration: Math.max(600, Math.hypot(dx, dy) * 14), fill: 'forwards' });
+    for (let i = 0; i <= steps; i++) frames.push({ transform: `translate(${((dx * i) / steps).toFixed(1)}px, ${((dy * i) / steps + (i % 2 ? -bob : 0)).toFixed(1)}px)` });
+    const a = who.animate(frames, { duration: Math.max(600, Math.hypot(dx, dy) * palPace(el)), fill: 'forwards' });
     a.onfinish = () => then && then(a);
     return a;
   }
@@ -4868,7 +4943,7 @@
       const o = near[(Math.random() * near.length) | 0];
       el._hi = o._hi = Date.now();
       wave(el);
-      if (Math.random() < 0.5) {
+      if (el.dataset.id === 'elder' || o.dataset.id === 'elder' || Math.random() < 0.5) {
         // salām, and the answer
         sayOnMap(el, 'As-salāmu ʿalaykum! 👋');
         setTimeout(() => o.isConnected && (wave(o), sayOnMap(o, 'Wa ʿalaykumu s-salām! 😊')), 1300);
@@ -4879,9 +4954,11 @@
       }
       return;
     }
+    const elder = el.dataset.id === 'elder';
     if (r < 0.75) {
       // go and play with something nearby in the same world: shake a tree, pat an animal, poke a thing
-      const things = [...layer.querySelectorAll('.mprop')].filter((t) => t.dataset.w === w && !t._away && !t._busy && Math.hypot(+t.dataset.x - x, +t.dataset.y - y) < 150);
+      // (the Wise Elder goes to the animals, and a little further)
+      const things = [...layer.querySelectorAll('.mprop')].filter((t) => t.dataset.w === w && !t._away && !t._busy && (!elder || EATER.test(t.dataset.k)) && Math.hypot(+t.dataset.x - x, +t.dataset.y - y) < (elder ? 220 : 150));
       const t = things[(Math.random() * things.length) | 0];
       if (t) {
         palsBusy.add(el);
@@ -4890,8 +4967,9 @@
           dy = +t.dataset.y - y;
         const go1 = palWalk(el, dx, dy, () => {
           poke(t);
+          if (elder) sayOnMap(el, ['🤍', 'MāshāAllāh! 🤍', 'Bismillāh 🌿'][(Math.random() * 3) | 0], 1800);
           setTimeout(() => {
-            const back = el.firstElementChild.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0, 0)' }], { duration: Math.max(600, Math.hypot(dx, dy) * 14) });
+            const back = el.firstElementChild.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0, 0)' }], { duration: Math.max(600, Math.hypot(dx, dy) * palPace(el)) });
             go1.cancel();
             back.onfinish = () => palsBusy.delete(el);
           }, 1600);
@@ -4899,9 +4977,32 @@
         return;
       }
     }
+    if (elder) {
+      // or a slow stroll, and back
+      palsBusy.add(el);
+      const dx = (Math.random() < 0.5 ? -1 : 1) * (30 + Math.random() * 50),
+        s1 = palWalk(el, dx, 0, () =>
+          setTimeout(() => {
+            const back = el.firstElementChild.animate([{ transform: `translate(${dx}px, 0)` }, { transform: 'translate(0, 0)' }], { duration: Math.abs(dx) * palPace(el) });
+            s1.cancel();
+            back.onfinish = () => palsBusy.delete(el);
+          }, 1500),
+        );
+      return;
+    }
     explorerMove(el.querySelector('svg.ex'), palOf(el), true);
   }
   setInterval(palIdle, 3200);
+  // when his time in a world is up, the Wise Elder walks on (he is in the next world the next time the map opens)
+  setInterval(() => {
+    const el = st.view === 'map' && document.querySelector('#map .mpal[data-id="elder"]');
+    if (!el || el._leaving || +el.dataset.w === elderWorld()) return;
+    el._leaving = true;
+    const up = elderWorld() > +el.dataset.w ? -1 : 1;
+    palsBusy.add(el);
+    const a = el.firstElementChild.animate([{ transform: 'translate(0, 0)', opacity: 1 }, { transform: `translate(0, ${up * 60}px)`, opacity: 0 }], { duration: reduceMotion ? 300 : 3000, fill: 'forwards' });
+    a.onfinish = () => (el.style.visibility = 'hidden');
+  }, 20000);
 
   /* Tap a fruit tree, a berry bush, a pine or a cactus on the map: a fruit drops beside it, and the nearest
      animal runs over, eats it in three bites, and goes back to where it was. */
@@ -5201,19 +5302,19 @@
     const prof = P(),
       m = document.getElementById('modal');
     if (!prefs.elder || st.view !== 'map' || m.classList.contains('show') || document.body.classList.contains('busy') || noExplorers() || !prof.made) return;
-    // a rematch comes as soon as the things are back; after "Not now", again after the usual 7 minutes
-    if (prof.rematchReady.length) return Date.now() - prof.elderAt > ELDER_EVERY ? meetElder(false, true) : undefined;
-    if (!memorizedList(prof).length) return;
-    if (window.__elderNow) return meetElder(false); // tests only: skip the waiting and the chance
-    if (Date.now() - elderRoll < ELDER_EVERY) return;
+    // a rematch (once the things are back) comes on the usual timer too, not straight after revising
+    const re = prof.rematchReady.length > 0;
+    if (!re && !memorizedList(prof).length) return;
+    if (window.__elderNow) return meetElder(false, re); // tests only: skip the waiting and the chance
+    if (Date.now() - elderRoll < ELDER_EVERY || Date.now() - prof.elderAt < ELDER_EVERY) return;
     elderRoll = Date.now();
-    if (Math.random() < 1 / 3) meetElder(false);
+    if (Math.random() < 1 / 3) meetElder(false, re);
   }
   function meetElder(anytime, rematch) {
     const prof = P(),
       free = memorizedList(prof).filter((x) => !prof.fix.includes(x.n)); // not where things are already waiting
     const s = rematch ? BYN[prof.rematchReady[0]] : free[(Math.random() * free.length) | 0];
-    if (!s) return;
+    if (!s) return false;
     prof.elderAt = Date.now();
     save();
     elderPlan = { i: S.indexOf(s), anytime: !!anytime, rematch: !!rematch };
@@ -5224,6 +5325,23 @@
       <p class="eldsay">“${rematch ? `You found your things! Shall we walk the <b>${s.name}</b> path again?` : `Let’s walk this stretch together. Show me <b>${s.name}</b>: three questions, no help!`}”</p>
       <div class="row"><button class="btn go wide" data-act="eldface">✅ I'm ready!</button><button class="btn wide" data-act="eldrun">🏃 Not now</button></div></div>`;
     m.classList.add('show');
+    return true;
+  }
+  /* He also roams the map: a few minutes in each world, up the mountain and back down, greeting the explorers
+     and patting the animals. Tap him to take his test any time (its gift comes once a day). */
+  const ELDER_STAY = 4 * 60000;
+  function elderWorld() {
+    const k = Math.floor(Date.now() / ELDER_STAY) % 12;
+    return k <= 6 ? k : 12 - k;
+  }
+  function tapElder(el) {
+    const prof = P();
+    sfx.tap();
+    if (!memorizedList(prof).length && !prof.rematchReady.length) return sayOnMap(el, 'As-salāmu ʿalaykum! Learn a sūrah by heart, then show me 😊', 3600);
+    sayOnMap(el, 'As-salāmu ʿalaykum! 😊', 1400);
+    setTimeout(() => {
+      if (st.view === 'map' && !meetElder(true, prof.rematchReady.length > 0)) sayOnMap(el, 'Win back your things first, then show me!', 3200);
+    }, 700);
   }
   let elderPlan = null;
 
@@ -5601,8 +5719,13 @@
     if (right === 3) {
       // all three: safe, and a gift (a rematch or a hero win: a special one)
       let gift = '';
-      const nextHero = prof.feats.includes('once') ? HERO.map((id) => ITEM[id]).find((it) => !hasOrWaits(it, prof)) : null;
-      if (nextHero) {
+      // a test he was asked for (tapped on the map, or the Test button) brings one gift a day
+      const asked = st.anytime && !st.rematch,
+        noGift = asked && prof.elderGift === today();
+      if (asked && !noGift) prof.elderGift = today();
+      const nextHero = !noGift && prof.feats.includes('once') ? HERO.map((id) => ITEM[id]).find((it) => !hasOrWaits(it, prof)) : null;
+      if (noGift) gift = '';
+      else if (nextHero) {
         prof.pending.push({ k: 'i', id: nextHero.id });
         gift = `the <b>${nextHero.name}</b>`;
       } else if (st.rematch ? giveSurprise(prof) || giveLevelGift(prof) : giveLevelGift(prof)) gift = st.rematch ? 'a special gift' : 'a little gift';
@@ -5612,7 +5735,7 @@
       }
       save();
       sfx.win();
-      r = { win: true, say: 'You know it well. The Qur’an is safe in your heart. Walk on!', html: `<p class="memo gold">🏆 All three right!${gift ? ` He left ${gift} for you.` : ''}</p>` };
+      r = { win: true, say: 'You know it well. The Qur’an is safe in your heart. Walk on!', html: `<p class="memo gold">🏆 All three right!${gift ? ` He left ${gift} for you.` : noGift ? ' (His gift comes once a day.)' : ''}</p>` };
     } else {
       const fell = st.fallen;
       sfx.boop();
@@ -5748,11 +5871,14 @@
   addEventListener('blur', () => endDrag(null, true));
   document.addEventListener('visibilitychange', () => document.hidden && endDrag(null, true));
 
-  /* follow the device's light/dark setting while on "Auto" */
-  if (darkMQ && darkMQ.addEventListener)
-    darkMQ.addEventListener('change', () => {
-      if (prefs.theme === 'auto' && st.view !== 'map') render();
-    });
+  /* on "Auto", turn dim at sunset and light at sunrise (checked every minute) */
+  let nightNow = isNight();
+  setInterval(() => {
+    if (isNight() === nightNow) return;
+    nightNow = isNight();
+    applyTheme();
+    if (st.view !== 'map') render();
+  }, 60000);
 
   // a long press opens no menu (images, links, text), except in a text box and on the share picture
   document.addEventListener('contextmenu', (e) => {
@@ -5776,5 +5902,5 @@
   registerOffline();
   if (linkCode) setTimeout(() => openSync(linkCode, `${appURL()}#sync=${linkCode}`), 400);
   if (justUpdated) loadChangelog().then(() => st.view === 'splash' && render());
-  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder }, markNow, fabTarget }; // for testing in the browser console
+  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder, world: elderWorld }, sunDown, markNow, fabTarget }; // for testing in the browser console
 })();
