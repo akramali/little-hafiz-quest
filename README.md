@@ -4,7 +4,7 @@ A fun, picture-and-gesture adventure that helps young children (around age 4–7
 
 A grown-up who reads Arabic recites each āyah; the child listens, repeats and does a hand action. Every āyah has its own picture and movement, so the picture brings back the words. Step by step, the clues fade until the child recites with no help at all.
 
-Your child's own little explorer starts in a meadow at An-Nās and climbs, sūrah by sūrah, through a forest, a beach, a desert canyon, starry hills and cloud cliffs to the top of the mountain at An-Naba’. Along the way there are over 150 things to win and wear: caps and kufis or hijabs, boots, capes, walking sticks, buddies, an astronaut suit with a toy rocket, and golden editions for the hardest-working explorers.
+Your child's own little explorer starts in a meadow at An-Nās and climbs, sūrah by sūrah, through a forest, a beach, a desert canyon, starry hills and cloud cliffs to the top of the mountain at An-Naba’. Along the way there are over 200 things to win and wear (caps and kufis or hijabs, boots, capes, walking sticks, buddies, an astronaut suit, a toy ride for every golden world, and golden editions for the hardest-working explorers) and 24 stickers. Now and then a hooded Stranger blocks the path to test a memorized sūrah, with no help: dress for his world, and know your sūrahs well.
 
 **Play it:** https://akramali.github.io/little-hafiz-quest/
 
@@ -13,7 +13,7 @@ Free, no ads, no accounts, no tracking. It works on iPhone, iPad, Android, and c
 <table>
   <tr>
     <td align="center"><img src="screenshots/splash.png" width="200" alt="Start screen: the explorer, in a kufi and backpack with a ladybug buddy, looks up the winding trail to the mountain top"></td>
-    <td align="center"><img src="screenshots/map.png" width="200" alt="The quest map: sūrah stops along a forest path with their stars, a ✓ on finished ones, animals and trees"></td>
+    <td align="center"><img src="screenshots/map.png" width="200" alt="The quest map: sūrah stops along the path with their stars, a ✓ on finished ones, the world's sign with its throws, animals and trees"></td>
     <td align="center"><img src="screenshots/surah.png" width="200" alt="Inside a sūrah: its Arabic name, the Read button, the checkpoints, and the quest steps beside the Bismillah moon"></td>
   </tr>
   <tr>
@@ -23,7 +23,7 @@ Free, no ads, no accounts, no tracking. It works on iPhone, iPad, Android, and c
   </tr>
   <tr>
     <td align="center"><img src="screenshots/puzzle.png" width="200" alt="The Picture Puzzle: jigsaw pieces with the āyāt’s pictures, each fitting only its own place"></td>
-    <td align="center"><img src="screenshots/mushaf.png" width="200" alt="Read, looking closer at one āyah: each word colored like Word Steps with its transliteration and meaning, the āyah’s simple meaning, and the loop button under Listen"></td>
+    <td align="center"><img src="screenshots/mushaf.png" width="200" alt="Read, looking closer at one āyah: each word colored like Word Steps with its transliteration and meaning, and the āyah’s simple meaning"></td>
     <td align="center"><img src="screenshots/explorer.png" width="200" alt="My Explorer: the explorer in a kufi, vest and glasses with a ladybug buddy, and the hats to choose from"></td>
   </tr>
   <tr>
@@ -41,6 +41,16 @@ Free, no ads, no accounts, no tracking. It works on iPhone, iPad, Android, and c
     <td align="center">See the progress</td>
     <td align="center">Reach the summit</td>
   </tr>
+  <tr>
+    <td align="center"><img src="screenshots/learn.png" width="200" alt="Look & Repeat: the āyah's pictures, the Arabic for the grown-up to read, the speed and loop buttons, and three bubbles to pop"></td>
+    <td align="center"><img src="screenshots/words.png" width="200" alt="Word Steps: the āyah built word by word in colored boxes, with each word's transliteration and meaning"></td>
+    <td align="center"><img src="screenshots/stranger.png" width="200" alt="The Stranger: the hooded stranger and the explorer face each other in the sands world, each on a patch of sand, with a question to answer"></td>
+  </tr>
+  <tr>
+    <td align="center">Look &amp; repeat</td>
+    <td align="center">Build it word by word</td>
+    <td align="center">Face the Stranger</td>
+  </tr>
 </table>
 
 > [!IMPORTANT]
@@ -51,9 +61,9 @@ Free, no ads, no accounts, no tracking. It works on iPhone, iPad, Android, and c
 ## How to play (for the grown-up)
 
 1. **Make an explorer.** Tap **Begin**, pick a name, boy or girl, a face, a hair style (boys and girls each have seven, bald included) and a hair color (girls can also choose a hijab and its color). Girls wear the crowns as tiaras, and the comfy starter shirt and pants come in a few everyday colors. Each child (or grown-up) can have their own explorer (up to 10 on a phone), with their own stars and treasures. Everyone is in the world at once: the explorer playing now stands by their sūrah, and the others stand in the world they've reached, doing their own thing, playing with the trees and animals, and waving and saying salām when they meet. Tap one to see who it is. The **Explorers** button under *Continue the quest* switches between them, adds and removes them (Remove needs a press and hold), changes their look, shares progress with family, backs everyone up to a file, and starts a sūrah or a whole explorer again.
-2. **Walk the map.** Start at 🚩 An-Nās at the bottom and climb. Tap a sūrah: the explorer pops up beside it, walks in, and the lesson opens. Each sūrah's page has a 🌙 **Bismillah** button that gently breathes when you arrive, a reminder to say Bismillah first, and a 📖 **Read** button for children who can read the muṣḥaf: the whole sūrah in Arabic. There, hold an āyah to color its words in the same order as Word Steps; tap it again to look at it up close (the rest blurs), with each word's transliteration and meaning and the āyah's simple meaning when they're switched on. Listen plays the whole sūrah or just that āyah, and the loop button under it repeats it. Each world has its own border to cross (a river, the sea, a gorge, a gate, the clouds, a frozen river), and the scenery on the horizon changes as you climb. Tap the scenery too: animals hop (tap one a few times and it runs off, then peeks back), and fruit trees, berry bushes, oaks, pines, palms and cacti drop a fruit that the nearest animal in that world runs over to eat. Tap a windmill, a cottage, the lighthouse or a flag a few times and it gets going (the sails spin, the chimney puffs): the animals nearby scurry off and creep back as it calms down. The little map button under the settings button shows which world you're in; tap it for the list of worlds and jump to any of them. You can go back to any sūrah at any time to revise.
+2. **Walk the map.** Start at 🚩 An-Nās at the bottom and climb. Tap a sūrah: the explorer pops up beside it, walks in, and the lesson opens. Each sūrah's page has a 🌙 **Bismillah** button that gently breathes when you arrive, a reminder to say Bismillah first, and a 📖 **Read** button for children who can read the muṣḥaf: the whole sūrah in Arabic. There, hold an āyah to color its words in the same order as Word Steps; tap it again to look at it up close (the rest blurs), with each word's transliteration and meaning and the āyah's simple meaning when they're switched on. Listen plays the whole sūrah or just that āyah; the speed and loop buttons under it, side by side, set how fast and how many times. Each world has its own border to cross (a river, the sea, a gorge, a gate, the clouds, a frozen river), and the scenery on the horizon changes as you climb. Tap the scenery too: animals hop (tap one a few times and it runs off, then peeks back), and fruit trees, berry bushes, oaks, pines, palms and cacti drop a fruit that the nearest animal in that world runs over to eat. Tap a windmill, a cottage, the lighthouse or a flag a few times and it gets going (the sails spin, the chimney puffs): the animals nearby scurry off and creep back as it calms down. The little map button at the top right shows which world you're in; tap it for the list of worlds and jump to any of them (tap anywhere else to close it). A world turns green once every sūrah in it is memorized, and gold once every star in it is won. Each world's sign, and its row in the list, shows what the Stranger throws there. You can go back to any sūrah at any time to revise.
 3. **Pick a step** in each sūrah. The quest comes first (Look & Repeat, then Word Steps), then the review games (Stepping Stones, then the Picture Puzzle). Each checkpoint has 4 stars, one for each:
-   1. **👀 Look & Repeat.** Read the āyah. Your child repeats it three times while doing the action (pop a bubble each time), then says it with only the picture showing. The loop button at the top of the āyah sets how many times Listen plays it: once, 3, 10 or 99 times (until Stop); its ring empties and the number counts down as the plays go by. Every 3 new āyāt, chain from the first āyah up to the new one (or after each new āyah, or every 4 or 5, in the Grown-up Corner). Tap each āyah as it's said; tap one again to go back to it. (Tapping the āyah itself doesn't play it in Look & Repeat: the Listen button does.) Listen then plays from the first āyah not yet said, to help where the child is stuck. Tap the numbered dots at the top to practice any āyah in that part. The “Do it” actions (a hand movement for each āyah) start switched off; switch them on in the Grown-up Corner. Progress is saved āyah by āyah, so you can stop and carry on later.
+   1. **👀 Look & Repeat.** Read the āyah. Your child repeats it three times while doing the action (pop a bubble each time), then says it with only the picture showing. The loop button at the top of the āyah sets how many times Listen plays it: once, 3, 10 or 99 times (until Stop); its ring empties and the number counts down as the plays go by. Beside it, the speedometer button changes the recitation speed (0.25× to 2×) right there. Every 3 new āyāt, chain from the first āyah up to the new one (or after each new āyah, or every 4 or 5, in the Grown-up Corner). Tap each āyah as it's said; tap one again to go back to it. Listen then plays from the first āyah not yet said, to help where the child is stuck. (Tapping the āyah's text doesn't play it in Look & Repeat: Listen does.) Tap the numbered dots at the top to practice any āyah in that part. The “Do it” actions (a hand movement for each āyah) start switched off; switch them on in the Grown-up Corner. Progress is saved āyah by āyah, so you can stop and carry on later.
    2. **Word Steps.** Build the āyah one word at a time, always going back to the first word, with the āyah's picture at the top. Tap any word to hear just that word. With transliteration or word meanings switched on, each word shows them as it appears. Then your child says it all while you reveal each word; every colored box stays exactly where it was while practicing.
    3. **🐸 Stepping Stones** (review game). Your child says each āyah from its picture and taps the frog to hop. The 💡 Hint button under the āyah shows one more word at each tap, then the whole āyah to hear. Finishing it means the sūrah (or, for a long one, its 🏁 whole-sūrah Stepping Stones) is memorized. The stones lie in each world's own scenery (lily pads on a pond, ice floes between snowbanks…). Long runs show ten stones at a time; swipe to see the others, and the frog hops on to the next set by itself.
    4. **🧩 Picture Puzzle** (review game): a jigsaw where each āyah is a piece that fits in only one place (left to right, or right to left in the Grown-up Corner). In a long sūrah, once every checkpoint's puzzle is done, the 🏁 whole sūrah has a **Big Puzzle**, its biggest one: a piece for each checkpoint in a long sūrah, or the whole sūrah cut into 8–12 even pieces of 1–3 āyāt in a shorter one.
@@ -80,7 +90,7 @@ Longer sūrahs are split into checkpoints of a few āyāt; finish the checkpoint
 
 Five to ten minutes a day is plenty. Stop while it's still fun.
 
-The orange **Listen** button at the top plays the recitation of what's on screen; it turns golden while playing. In the Grown-up Corner (⚙️ on the start screen, so it stays out of the quest) you can choose the reciter (Mishary Alafasy, Al-Husary's slow teaching recitation, Al-Minshawi or Abdul Basit), turn the nature sounds on or off (soft water drops, birdsong and a breeze as you play, quieter while the reciter plays), hearts, the “Do it” actions (off at first), fullscreen (hides the browser's address bar where the browser allows it; on iPhone, use Add to Home Screen instead), a dim night theme, simple meanings, word meanings and transliteration (the last two off at first), the recitation speed (0.25× to 2×; also the speedometer button beside the loop button in Look & Repeat and Read), how often Look & Repeat chains the āyāt (every 3 new āyāt at first, or after each, or every 4 or 5), the Picture Puzzle's direction, and check for updates. **📘 How to use it** at the top has these tips, one by one. The ℹ️ button at its top right has the disclaimer, every source, and links to the code and for reporting problems.
+The orange **Listen** button at the top plays the recitation of what's on screen; it turns golden while playing. In the Grown-up Corner (⚙️ on the start screen, so it stays out of the quest) you can choose the reciter (Mishary Alafasy, Al-Husary's slow teaching recitation, Al-Minshawi or Abdul Basit), turn the nature sounds on or off (soft water drops, birdsong and a breeze as you play, quieter while the reciter plays), hearts, the “Do it” actions (off at first), fullscreen (hides the browser's address bar where the browser allows it; on iPhone, use Add to Home Screen instead), a dim night theme, simple meanings, word meanings and transliteration (the last two off at first), the recitation speed (0.25× to 2×; also the speedometer button beside the loop button in Look & Repeat and Read), how often Look & Repeat chains the āyāt (every 3 new āyāt at first, or after each, or every 4 or 5), the Picture Puzzle's direction, the Stranger (on or off), and check for updates. **📘 How to use it** at the top has these tips, one by one. The ℹ️ button at its top right has the disclaimer, every source, and links to the code and for reporting problems.
 
 A sūrah's recitation downloads the first time it plays and is then kept on the device; long sūrahs (about 1–3 MB) ask first. Tapping a word in Word Steps plays just that word: the cut between words sits at the quietest moment between them.
 
@@ -130,7 +140,7 @@ No build step and no dependencies: plain HTML, CSS and JavaScript.
 index.html                 page shell, security policy, Home Screen metadata
 css/game.css               styles (light and dim themes, screens, animations)
 css/art.css                animations for the drawings (explorer walk, sparkles, swaying grass…)
-js/boot.js                 opens the version a family chose (runs first)
+js/boot.js                 runs first: clears the retired classic version's saved choice
 js/data.js                 all content: Arabic text, memory cues and tips, checkpoints
 js/art.js                  every drawing, as SVG: explorer, outfits, gifts, stickers, worlds, splash
 js/map.js                  the quest map: winding path, worlds, curved-world scrolling, walking
@@ -138,8 +148,8 @@ js/sounds.js               soft nature sounds for taps and play, made with Web A
 js/sync.js                 family sync: one explorer packed into a short code for a link or QR code
 js/qrcode.js               QR code drawing (qrcode-generator by Kazuhiko Arase, MIT)
 words.json                 each word's transliteration and English meaning (Quranic Arabic Corpus, GPL v3)
-changelog.json             what changed in each version (the game shows the newest)
-js/game.js                 game logic: screens, explorers, gifts, hearts, recitation player
+changelog.json             what changed in each version (the game shows what's new since the last one played)
+js/game.js                 game logic: screens, explorers, gifts, hearts, the Stranger, recitation player
 sw.js                      service worker: offline support
 manifest.webmanifest       Home Screen app details
 v1/                        the retired classic version's address: sends visitors here, clears its offline copy
