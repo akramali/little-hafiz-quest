@@ -34,7 +34,7 @@
   ok('the challenge screen', L.st().view === 'elder' && !!d.querySelector('.arena .eldfig svg') && !!d.querySelector('.arena .mefig svg'));
   const bub = d.querySelector('.eldbubble').getBoundingClientRect();
   ok('his speech bubble is inside the screen', bub.left >= 4 && bub.right <= w.innerWidth - 4, Math.round(bub.left) + '…' + Math.round(bub.right));
-  ok('no Listen during the challenge', !d.querySelector('.listen.show'));
+  ok('no Listen before the questions', !d.querySelector('.listen.show'));
   tap('[data-act=eldgo]'); await wait(200);
   if (Q.get('shot') === 'ask') { await wait(1000); done(); return; }
   if (Q.get('shot') === 'rock' || Q.get('shot') === 'wind') {

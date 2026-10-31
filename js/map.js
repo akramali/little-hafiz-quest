@@ -350,9 +350,15 @@
           </button>`,
         );
         (st.lost || []).forEach((id, j) => {
-          // on the other side of the stop from where the explorer stands
-          const lx = nd.x + (nd.x > L.cx ? 1 : -1) * (st.fire >= 0 ? 90 : 64) + j * 12,
+          // on the other side of the stop from where the explorer stands (past its campfire); when that would
+          // be off the screen, under the stop's name instead
+          const side = nd.x > L.cx ? 1 : -1;
+          let lx = nd.x + side * ((st.fire >= 0 ? 90 : 64) + j * 26),
             ly = nd.y + 40;
+          if (lx < 30 || lx > width - 30) {
+            lx = Math.max(30, Math.min(width - 30, nd.x + side * 40 + j * 30 * side));
+            ly = nd.y + 140;
+          }
           html.push(
             `<button class="mlost" data-act="surah" data-i="${nd.i}" data-x="${lx.toFixed(1)}" data-y="${ly.toFixed(1)}" style="left:${(lx - 26).toFixed(1)}px;top:${(ly - 52).toFixed(1)}px" aria-label="A lost item is waiting here"><span class="mlost-it">${ART.item(id)}</span></button>`,
           );

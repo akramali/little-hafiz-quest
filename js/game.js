@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.7.4';
+  const VERSION = '2.7.5';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -1007,16 +1007,19 @@
       }
       let seg;
       if (it.length > 2) {
-        const w = ay[2] && ay[2][it[2]];
-        if (!w) {
+        // one word [n, k, w], or a run of words [n, k, from, to] (the start of an āyah, in the Teacher's test)
+        const wz = it.length > 3 ? it[3] : it[2],
+          w = ay[2] && ay[2][it[2]],
+          we = ay[2] && ay[2][wz];
+        if (!w || !we) {
           stopAudio();
           return;
         }
         // The word timings are cut at the quietest moment between two words (tools/build_audio.py,
         // snap_words), so a word plays from its start to its end and no further. The last word fades out
         // after its stated end, so it plays to the end of the āyah.
-        const lastW = it[2] === ay[2].length - 1;
-        seg = { start: Math.max(0, w[0] - (it[2] === 0 ? 0.03 : 0)), end: lastW ? ay[1] + 0.06 : w[1], word: !lastW };
+        const lastW = wz === ay[2].length - 1;
+        seg = { start: Math.max(0, w[0] - (it[2] === 0 ? 0.03 : 0)), end: lastW ? ay[1] + 0.06 : we[1], word: !lastW };
       } else seg = { start: Math.max(0, ay[0] - 0.05), end: ay[1] + 0.15 };
       curSeg = seg;
       markNow(it);
@@ -1157,7 +1160,7 @@
   function fabTarget() {
     const v = st.view,
       s = S[st.i];
-    if (!s || !['surah', 'learn', 'path', 'order', 'words', 'mushaf'].includes(v)) return null;
+    if (!s || !['surah', 'learn', 'path', 'order', 'words', 'mushaf', 'elder'].includes(v)) return null;
     const one = (k) => ({ key: `${s.n}:${k}`, label: `Āyah ${k + 1}`, items: [[s.n, k + 1]] });
     const many = (ks, label) => ({ key: `${s.n}:${ks.join(',')}`, label, items: ks.map((k) => [s.n, k + 1]) });
     const c = ctx();
@@ -1180,6 +1183,12 @@
       return ks.length > 1 ? many(ks, `Next: āyāt ${ks[0] + 1}–${ks[ks.length - 1] + 1}`) : Object.assign(one(ks[0]), { label: `Next: āyah ${ks[0] + 1}` });
     }
     if (v === 'words') return Object.assign(one(st.a), { loop: true });
+    if (v === 'elder') {
+      // the Teacher's test: only what the question shows (the āyah given, or the start of the āyah to finish)
+      if (st.phase !== 'ask') return null;
+      const q = st.qs[st.q];
+      return q.kind === 'finish' ? { key: `${s.n}:eld:${st.q}`, label: 'Question', items: [[s.n, q.k + 1, 0, q.cut - 1]] } : Object.assign(one(q.k), { key: `${s.n}:eld:${st.q}` });
+    }
     if (v === 'mushaf') {
       // the whole sūrah starts with the Basmalah ([1, 1]); it can also be chosen on its own (sel -1)
       if (st.sel === -1) return { key: `${s.n}:bism`, label: 'Bismillah', items: [[1, 1]], loop: true };
@@ -1386,10 +1395,11 @@
       .join('')}</div></div>`;
     m.classList.add('show');
   }
+  const LISTEN = `<button class="listen" data-act="fab" aria-label="Listen to the recitation"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="#fff"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18.3 6.5a7.5 7.5 0 0 1 0 11"/></svg><span class="stop"></span></span><span><b>Listen</b><small></small></span></button>`;
   function bar(title, sub, to, extra) {
     return `<div class="bar"><button class="icon-btn" data-act="back" data-to="${to}" aria-label="Back">${ICON.back}</button>
     <div class="bar-title">${title}${sub ? `<small>${sub}</small>` : ''}</div>${extra || ''}
-    <button class="listen" data-act="fab" aria-label="Listen to the recitation"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="#fff"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18.3 6.5a7.5 7.5 0 0 1 0 11"/></svg><span class="stop"></span></span><span><b>Listen</b><small></small></span></button>${extra ? '' : '<span class="bar-sp" aria-hidden="true"></span>'}</div>`;
+    ${LISTEN}${extra ? '' : '<span class="bar-sp" aria-hidden="true"></span>'}</div>`;
   }
   function coach(html, icon = '🦉', extra = '') {
     return `<div class="coach"><span class="owl">${icon}</span><div>${html}</div>${extra}</div>`;
@@ -2032,7 +2042,7 @@
     });
     return `<div class="screen ${st.enter ? 'zoomin' : ''}" style="${cv(s.color)}">
     ${bar(`${s.n}. ${s.name}`, `World ${wi + 1} · ${WORLDS[wi].name}`, 'map')}
-    <div class="hero"><button class="bookbtn" data-act="mushaf" aria-label="Read the whole sūrah">📖<small>Read</small></button><div class="hero-icon bob">${s.icon}</div><div class="hero-ar">سُورَةُ ${s.ar}</div>
+    <div class="hero"><button class="bookbtn" data-act="mushaf" aria-label="Read the whole sūrah">📖<small>Read</small></button>${fireChip(s)}<div class="hero-icon bob">${s.icon}</div><div class="hero-ar">سُورَةُ ${s.ar}</div>
       <div class="hero-en">${s.meaning} · ${s.ayat.length} āyāt${multi(s) ? ` · ${s.P.length} checkpoints` : ''}</div>
       <div class="hero-st ${done ? 'done' : ''}">${done ? '✓ Memorized! MāshāAllāh' : `⭐ ${surahStars(s)} / ${surahMax(s)} stars`}</div></div>
     ${lostAt(s.n).length ? `<div class="lostnote">${lostAt(s.n).map((x) => `<span class="lostit">${itemPic(x.id)}</span>`).join('')}<span>Your <b>${lostAt(s.n).map((x) => itemName(x.id)).join(', ')}</b> fell off here! Finish a review game to get it back.</span></div>` : ''}
@@ -2043,6 +2053,13 @@
     <div class="tip"><div class="tip-h">💡 Tip for grown-ups</div><div class="tip-b">${s.pattern}</div>${s.toy ? `<div class="tip-toy">${toyBtn(s)}<span>Tap the ${s.toy[0]} together with your child each time you hear it.</span></div>` : ''}</div>
   </div>`;
   };
+
+  // the sūrah's campfire, beside its name: how strong it is (tap for what to do)
+  const FIRE_WORD = ['Out', 'Low', 'Burning', 'Strong'];
+  function fireChip(s) {
+    const lvl = fireOf(s);
+    return lvl < 0 ? '' : `<button class="herofire f${lvl}" data-act="fireinfo" data-l="${lvl}" aria-label="Campfire: ${FIRE_WORD[lvl]}">${ART.campfire(lvl)}<small>${FIRE_WORD[lvl]}</small></button>`;
+  }
 
   /* ---------- LOOK & REPEAT ---------- */
   V.learn = () => {
@@ -3972,6 +3989,12 @@
         sfx.tap();
         go('explorers');
         break;
+      case 'fireinfo': {
+        sfx.tap();
+        const l = +b.dataset.l;
+        toast(l >= 2 ? '🔥 Your campfire is burning well. Revise now and then to keep it going!' : l === 1 ? '🔥 Your campfire is low: play a game here to relight it!' : '🔥 Your campfire went out: play a game here to relight it!');
+        break;
+      }
       case 'whopick':
         sfx.tap();
         showWho();
@@ -5457,6 +5480,13 @@
     const r = (Date.now() - f[0]) / (FIRE_DAYS[f[1]] * 864e5);
     return r < 0.5 ? 3 : r < 1 ? 2 : r < 2 ? 1 : 0;
   }
+  // a miss in the Teacher's test: the fire burns down one step (big → smaller → embers → out)
+  function dimFire(s, prof) {
+    const f = prof.fire[s.n],
+      lvl = fireOf(s, prof);
+    if (!f || lvl <= 0) return;
+    f[0] = Math.min(f[0], Date.now() - [0.5, 1, 2][3 - lvl] * FIRE_DAYS[f[1]] * 864e5 - 1000); // just past the next step down
+  }
   // feed the fire; true when it had burned low (so the explorer relit it)
   function stokeFire(s, prof) {
     const f = prof.fire[s.n],
@@ -5632,6 +5662,28 @@
     const pg = document.querySelector('.jpage');
     if (pg && !reduceMotion) pg.animate([{ transform: `translateX(${dir * 60}px) rotateY(${dir * 12}deg)`, opacity: 0.2 }, { transform: 'none', opacity: 1 }], { duration: 320, easing: 'ease-out' });
   }
+  // Look & Repeat: swipe the āyah card left or right for the next or the one before (like tapping the numbers)
+  let lSwipe = null;
+  document.addEventListener('pointerdown', (e) => (lSwipe = st.view === 'learn' && st.phase !== 'chain' && e.target.closest && e.target.closest('.lcard') ? { x: e.clientX, y: e.clientY } : null), true);
+  document.addEventListener(
+    'pointerup',
+    (e) => {
+      if (!lSwipe || st.view !== 'learn' || st.phase === 'chain') return;
+      const dx = e.clientX - lSwipe.x,
+        dy = e.clientY - lSwipe.y;
+      lSwipe = null;
+      if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+      const c = ctx(),
+        k = st.a + (dx < 0 ? 1 : -1);
+      if (k < c.from || k > c.to) return;
+      sfx.tap();
+      Object.assign(st, { a: k, phase: 'repeat', popped: [false, false, false], peek: false, chain: 0 });
+      render(true);
+      const card = document.querySelector('.lcard');
+      if (card && !reduceMotion) card.animate([{ transform: `translateX(${dx < 0 ? 60 : -60}px)`, opacity: 0.3 }, { transform: 'none', opacity: 1 }], { duration: 260, easing: 'ease-out' });
+    },
+    true,
+  );
   let jSwipe = null;
   document.addEventListener('pointerdown', (e) => (jSwipe = st.view === 'journal' && e.target.closest && e.target.closest('.jbook') ? { x: e.clientX, y: e.clientY } : null), true);
   document.addEventListener(
@@ -5871,6 +5923,7 @@
         <div class="ar-label">📖 Grown-up reads the question</div>
         <div class="ar sm" lang="ar">${shown}</div>
         ${q.kind === 'next' ? `<div class="eldpics">${a.scene.join(' ')}</div>` : ''}
+        <div class="eldlisten">${LISTEN}</div>
         <details class="adult"><summary>👁️ Grown-up check (the answer)</summary><div class="ar sm" lang="ar">${answer}</div></details>
       </div>
       <div class="row"><button class="btn wide" data-act="eldans" data-ok="0" ${st.phase !== 'ask' ? 'disabled' : ''}>🙈 Not quite</button><button class="btn go wide" data-act="eldans" data-ok="1" ${st.phase !== 'ask' ? 'disabled' : ''}>✅ Said it!</button></div>`;
@@ -6059,6 +6112,8 @@
         if (!reduceMotion) meBox.animate([{ transform: 'rotate(0)' }, { transform: 'rotate(-4deg)' }, { transform: 'rotate(3deg)' }, { transform: 'rotate(0)' }], { duration: 600, easing: 'ease-in-out' });
       }
       if (f) dropThing(prof, f, s.n);
+      dimFire(s, prof);
+      save();
       const name = f ? thingName(f) : '';
       const ran = f && f.k === 'i' && animalBuddy(f.id) && f.id === strike.blocker;
       note.innerHTML = !f

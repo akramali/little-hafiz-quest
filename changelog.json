@@ -1,7 +1,14 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.7.4",
+ "latest": "2.7.5",
  "versions": [
+  { "v": "2.7.5", "notes": [
+   "Your Teacher's test has Listen, for just the part in the question",
+   "Each wrong answer in the test lets that sūrah's campfire burn down",
+   "See a sūrah's campfire when you open it",
+   "Swipe between āyāt in Look & Repeat",
+   "Small visual tweaks"
+  ] },
   { "v": "2.7.4", "notes": [
    "Chain time has the speed and loop buttons too"
   ] },
