@@ -72,9 +72,12 @@ Five to ten minutes a day is plenty. Stop while it's still fun.
 
 ## Put it on a phone
 
-- **iPhone / iPad:** open the link in Safari → Share → **Add to Home Screen**, and play from there.
-- **Android:** open the link in Chrome → ⋮ → **Add to Home screen**.
-- **Offline:** ⚙️ Grown-up Corner → Download recitations → **Save all recitations**.
+- **iPhone / iPad:** open the link in **Safari** → tap **⋯** beside the address bar → **Share** → **Add to Home Screen**
+  (tap **View More** if it isn't listed; on iOS 18 or earlier, tap the Share button at the bottom instead) → leave
+  **Open as Web App** on → **Add**. Play from the new icon from then on: it keeps its own progress, separate from Safari.
+- **Android:** open the link in **Chrome** → **⋮** (top right) → **Add to home screen** (or **Install app**) →
+  **Install**. Play from the new icon.
+- **Offline:** in the game you'll play from, ⚙️ Grown-up Corner → Download recitations → **Save all recitations**.
 
 Updates download by themselves; the start screen offers them with a short note of what's new.
 
