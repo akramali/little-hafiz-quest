@@ -1,7 +1,10 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.7.3",
+ "latest": "2.7.4",
  "versions": [
+  { "v": "2.7.4", "notes": [
+   "Chain time has the speed and loop buttons too"
+  ] },
   { "v": "2.7.3", "notes": [
    "Look & Repeat chain: Listen plays just the āyah you're on",
    "Picture Puzzle: Listen plays the next piece to place, right up to the last",

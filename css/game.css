@@ -8647,3 +8647,7 @@ body:has(.wrail.open) .jbtn {
   font-size: 18px;
   padding: 0 8px;
 }
+/* chain time: the lit āyah's tag with the speed and loop buttons, above the chain */
+.chainhead {
+  margin: 6px 0 4px;
+}

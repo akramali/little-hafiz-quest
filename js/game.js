@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.7.3';
+  const VERSION = '2.7.4';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -2053,9 +2053,11 @@
     let body = '';
     if (st.phase === 'chain') {
       const L = chainList(),
-        cur = s.ayat[L[Math.min(st.chain, L.length - 1)]];
+        ck = L[Math.min(st.chain, L.length - 1)],
+        cur = s.ayat[ck];
       body = `
       ${coach(`🔗 <b>Chain time!</b> Say from āyah ${L[0] + 1} all the way to āyah ${k + 1}.${prefs.actions ? ' Do the actions too!' : ''}`, '🦉', toyBtn(s))}
+      <div class="lchead chainhead"><span class="lctags">${tag(s, ck)}</span><span class="lcbtns">${speedChip()}${loopBtn()}</span></div>
       <div class="chain">${L.map((x, j) => `<button class="link ${j < st.chain ? 'lit' : j === st.chain ? 'cur' : ''} ${!c.all && st.p > 0 && j === 0 ? 'bridge' : ''}" data-act="chainstep" data-j="${j}" aria-label="Āyah ${x + 1}${j < st.chain ? ', said: tap to go back to it' : ''}"><span class="num">${x + 1}</span>${pics(s.ayat[x])}</button>`).join('')}</div>
       ${prefs.actions ? `<div style="text-align:center">${gest(cur)}</div>` : ''}
       <details class="adult"><summary>👁️ Grown-up check</summary><div class="ar sm" lang="ar">${cur.ar}</div></details>
