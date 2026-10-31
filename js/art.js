@@ -627,6 +627,8 @@
   [['hero-armor', 'top', 'Hero armor'], ['hero-shield', 'shield', 'Hero shield'], ['hero-sword', 'stick', 'Wooden hero sword']].forEach((r) =>
     ITEMS.push({ id: r[0], slot: r[1], name: r[2], tier: 4, from: null, quest: 'hero' }),
   );
+  // the Wise Elder's own staff: he hands it over at the summit (the explorer is the master now)
+  ITEMS.push({ id: 'elder-staff', slot: 'stick', name: 'Wise Elder’s staff', tier: 4, from: null, quest: 'staff' });
   // names shown to girls, where the drawing changes too
   const GIRL_NAME = { 'summit-crown': 'Summit tiara', 'hafiz-crown': 'Hafiz tiara' };
   // Golden editions: the special reward for every star in a sūrah (id 'gold-<item>', drawn by goldEdition below).
@@ -1565,6 +1567,20 @@
         S('M39.6 152Q38.6 136 46 132Q53.4 136 52.4 152Z', '#a86b3c', 'M46 132Q53.4 136 52.4 152L47 152Q49 140 46 132Z') + EF(46, 288, 2.6, 1.6, INK);
     },
   };
+  // the Wise Elder's staff: a dark wooden shaft topped by his eight-pointed gold star with a green gem
+  const star8At = (cx, cy, R, r) => 'M' + [...Array(16).keys()].map((i) => { const a = ((i * 22.5 - 90) * Math.PI) / 180, q = i % 2 ? r : R; return n(cx + q * Math.cos(a)) + ' ' + n(cy + q * Math.sin(a)); }).join('L') + 'Z';
+  ART['elder-staff'] = {
+    box: [26, 106, 66, 292],
+    rot: 42,
+    fs: 108,
+    fx: [[46, 126], [28, 112], [64, 140]],
+    aura: [46, 126, 26, 26],
+    ex() {
+      const gold = '#ffcf3f';
+      return S(limb(46, 142, 46, 287, 4.4, 3.6), '#b07a43', limb(48, 144, 48, 285, 1.4, 1.2)) + L('M41.8 200Q46 203 50.2 200M41.8 206Q46 209 50.2 206', gold, 1.8) +
+        P(star8At(46, 126, 19, 12.5), gold, sw(2.2)) + P(star8At(46, 126, 12, 8), '#ffe48a', sw(1.2)) + ball(46, 126, 5, 5, '#3fbf7f') + EF(46, 288, 2.6, 1.6, INK);
+    },
+  };
   /* everyday sticks (surprise gifts) */
   // a bumpy branch with knots, a cut top and a side shoot with two leaves
   ART['knobbly-branch'] = {
@@ -2022,8 +2038,8 @@
   /* The Wise Elder: a kind elder who knows the whole Qur'an by heart (viewBox 0 0 200 300, feet at the bottom like
      the explorer): a white kufi and beard, a midnight-blue robe with a gold trim and a woven belt, and a staff
      topped by an eight-pointed star (as marks the quarters in a muṣḥaf) with a green gem. His robe sways gently.
-     mood: '' | 'hit' (surprised, he staggers) | 'happy' (eyes smiling). */
-  function elder(mood) {
+     mood: '' | 'hit' (surprised, he staggers) | 'happy' (eyes smiling). noStaff: he gave it away (hands tucked in his sleeves). */
+  function elder(mood, noStaff) {
     const skin = '#f6c49c',
       robeC = '#2c3f7a',
       gold = '#ffcf3f',
@@ -2039,9 +2055,15 @@
       [70, 82, 94, 106, 118, 130].map((x) => P('M' + x + ' ' + (189 + (x - 100) * (x - 100) * -0.0016 + 8) + 'l3 -3l3 3l-3 3Z', gold, sw(0.8))).join('') +
       P('M92 192l8 -8l8 8l-8 8Z', gold, sw(1.6)) + P('M94 186h12v12h-12Z', gold, sw(1.6)) + CF(100, 192, 2.6, '#3fbf7f');
     const g =
-      EF(100, 292, 46, 6, INK, 0.16) + staff + G(robe, cls('robe-sway')) +
+      EF(100, 292, 46, 6, INK, 0.16) + (noStaff ? '' : staff) + G(robe, cls('robe-sway')) +
       S('M58 152Q58 128 100 126Q142 128 142 152Q122 142 100 142Q78 142 58 152Z', robeC, 'M120 132Q142 138 142 152Q132 146 120 144Z') +
-      S('M130 170Q146 186 150 200L144 206Q132 192 122 182Z', robeC) + ball(147, 203, 8, 8, skin, { hl: false }) +
+      (noStaff
+        ? // both hands tucked into his sleeves, in front: the sleeves fold across and their gold cuffs meet
+          S('M60 150Q50 176 62 186Q80 184 100 182L100 164Q86 166 78 150Z', robeC, 'M60 168Q58 182 64 186L72 185Q62 178 60 168Z') +
+          S('M140 150Q150 176 138 186Q120 184 100 182L100 164Q114 166 122 150Z', robeC, 'M140 168Q142 182 136 186L128 185Q138 178 140 168Z') +
+          S('M88 165Q94 164 100 164L100 182Q94 183 88 184Z', gold) + S('M112 165Q106 164 100 164L100 182Q106 183 112 184Z', gold) +
+          L('M100 164L100 182', dk(gold, 0.35), 1.6)
+        : S('M130 170Q146 186 150 200L144 206Q132 192 122 182Z', robeC) + ball(147, 203, 8, 8, skin, { hl: false })) +
       ball(73, 104, 7, 10, '#eeeae0', { hl: false }) + ball(127, 104, 7, 10, '#eeeae0', { hl: false }) + ball(100, 98, 30, 31, skin) +
       S('M70 88Q70 64 100 62Q130 64 130 88Q100 78 70 88Z', '#f4f1ea', 'M112 64Q130 70 130 88Q122 84 114 82Z') + L('M76 80Q100 72 124 80', '#d8d2c2', 1.6) +
       S('M74 104Q74 150 100 156Q126 150 126 104Q114 120 100 120Q86 120 74 104Z', '#f4f1ea', 'M112 116Q126 112 126 104Q126 146 104 155Q122 136 112 116Z') +

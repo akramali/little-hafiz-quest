@@ -1,7 +1,12 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.6.11",
+ "latest": "2.6.12",
  "versions": [
+  { "v": "2.6.12", "notes": [
+   "The Wise Elder now walks with you through the world: its weather and nature test you, and he cheers you on",
+   "Reach the summit and he gives you his staff",
+   "Fixed: Read played only the Bismillah"
+  ] },
   { "v": "2.6.11", "notes": [
    "The Stranger is now the Wise Elder: a kind old man who knows the whole Qur'an"
   ] },

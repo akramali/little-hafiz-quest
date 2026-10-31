@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is the player- and developer-facing description; this file is the working state.
 
-**Current version:** v2.6.11 (2026-10-31) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.6.12 (2026-10-31) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -15,7 +15,7 @@ an **explorer** who climbs a map of 7 worlds (Meadow → Forest → Sands → Ca
 Each sūrah has two **quests** (👀 Look & Repeat, Word Steps) and two **review games** (🐸 Stepping Stones,
 🧩 Picture Puzzle, plus a Big Puzzle for the whole sūrah), 4 stars per checkpoint. Stars win treasures, golden
 editions, star-track prizes, star badges, world rides and surprise gifts to dress the explorer in.
-**The Wise Elder** tests memorized sūrahs on the map with no help; every miss costs something (rules below).
+**The Wise Elder** walks with the explorer and tests memorized sūrahs with no help; every miss costs something (rules below).
 
 ## Where things are
 
@@ -53,15 +53,28 @@ Testing hook: `window.__lhq = { st, store, go, player, elder: { strikeFor, block
 - **The Wise Elder** (`THE WISE ELDER` section; Grown-up Corner switch `prefs.elder`; called the Stranger, `prefs.stranger`, before v2.6.11, migrated in `cleanPrefs`):
   - after 10 min open, one 1-in-3 roll per 10-minute window (`ELDER_EVERY`), on the map; skips sūrahs with things waiting;
     rematch per sūrah (`prof.rematch`, `prof.rematchReady`) once its things are won back.
-  - 3 questions (what comes after / finish the āyah), no Listen. Right → he staggers and acknowledges.
+  - **He walks with you (v2.6.12, "option B"):** he stands beside the explorer (taller), both in the world
+    (`eldWorld`: hills, a path running ahead to the right, the world's props; the scenery shifts left a little per
+    question, `--walk`). What comes at the explorer comes from the world ahead, not from him. Neutral words: no ⚔️,
+    no "Challenge" (the map button says **Test**).
+  - 3 questions (what comes after / finish the āyah), no Listen. Right → he smiles (`st.glad`), says one of `ACKS`,
+    and they step forward. After a miss his bubble comforts ("Don't worry… it'll wait for you at S").
+  - **Soft hurt:** with nothing protecting, the explorer just wobbles and looks sad (no plaster, dizzy or knock-back).
+  - **His staff:** at the summit (`'once'`) he gives the explorer his staff (`elder-staff`, stick, tier 4,
+    `quest: 'staff'`, `giveStaff`; earlier summit reachers get it on load). From then on `elderArt()` draws him
+    without it, hands tucked in his sleeves (`ART.elder(mood, noStaff)`). The all-golden special award stays the
+    Golden hoopoe.
+  - **TEMPORARY:** a map button (`eldtest`, an Elder icon + "Elder") calls him any time for play-testing; remove it
+    (and `.eldtest` CSS except what the Test button uses) once the user is done testing.
   - **Every miss costs something.** Throws per world: `WORLD_THROWS` (🪨💨💧🌰✨🌿), shown on world signs, the world
     list and item cards. What blocks what: `blocksOf(id)` (by slot + `EXTRA_BLOCKS`: hero sword also 🪨, hero armor all,
     Hafiz crown also ✨). Matching ordinary gear takes the hit and falls; an animal buddy runs off; golden/hero gear
-    holds (something lesser falls) except in an all-golden sūrah. Unprotected: hurt (plaster, dizzy) + best thing falls.
+    holds (something lesser falls) except in an all-golden sūrah. Unprotected: a wobble + best thing falls.
     Order: worn non-golden → owned non-golden → a sticker → golden. Star badges and comfy starter clothes are never lost.
-  - All three right: safe + small gift (special in a rematch; hero gear after the summit, then ⚔️ Challenge).
+  - All three right: safe + small gift (special in a rematch; hero gear after the summit, then the **Test** button).
 - **Recitation:** `playList` / `stopAudio` hold a screen Wake Lock while playing (`keepAwake`); Read's Listen plays
-  `[[1, 1], …]` (the Basmalah file, then the sūrah) and `markNow` scrolls the recited āyah into view.
+  `[[1, 1], …]` (the Basmalah file, then the sūrah; each queued item plays from its own sūrah's file, `fileUrls`,
+  so a list can span files) and `markNow` scrolls the recited āyah into view.
 - **App feel:** `user-select: none` on `html` and a global `contextmenu` block (except inputs and `.shareimg`); the
   viewport keeps pinch-zoom on purpose (the user finds it handy).
 - **Starter look:** the face (skin) picker draws faces like the hair picker; comfy shirt/pants come in 4 colors each.
@@ -101,4 +114,4 @@ v2.3–2.4: nature sounds, jigsaw, Read view, awards, files. v2.5.0: family sync
 classic v1 retired, word meanings. v2.5.1–2.5.8: buttons, speed, info/how-to, fruit and animals, all explorers on
 the map, chain setting, gift fixes, faces, glasses, Big Puzzle. v2.6.0: golden/green worlds, world rides, speed
 button, one-tap gifts, the Wise Elder. v2.6.1–2.6.6: Wise Elder polish, closing animations, stakes (every miss costs,
-world throws, protection), battle ground in the world's colors. v2.6.7: the Wise Elder every 10 minutes; speed and loop in Word Steps and Stepping Stones. v2.6.8: Read starts with the Bismillah (āyah -1, word data in `BISM_WORDS`) and follows the recited āyah; the screen stays on while reciting (`keepAwake`, Wake Lock; 99× loops let go after 15 min); full world names in the list. v2.6.9: no text selection or long-press menus (text boxes and the share picture excepted); zoom kept. v2.6.10: My Achievements fits on one screen. v2.6.11: the Stranger becomes the Wise Elder (a kind old man, star staff, woven belt, swaying robe), renamed everywhere. Full detail: `git log` and `changelog.json`.
+world throws, protection), battle ground in the world's colors. v2.6.7: the Wise Elder every 10 minutes; speed and loop in Word Steps and Stepping Stones. v2.6.8: Read starts with the Bismillah (āyah -1, word data in `BISM_WORDS`) and follows the recited āyah; the screen stays on while reciting (`keepAwake`, Wake Lock; 99× loops let go after 15 min); full world names in the list. v2.6.9: no text selection or long-press menus (text boxes and the share picture excepted); zoom kept. v2.6.10: My Achievements fits on one screen. v2.6.11: the Stranger becomes the Wise Elder (a kind old man, star staff, woven belt, swaying robe), renamed everywhere. v2.6.12: the Wise Elder walks with you through the world (taller, comforting, soft hurt, neutral "Test" wording), gives his staff at the summit; Read with the Bismillah plays the whole sūrah again. Full detail: `git log` and `changelog.json`.

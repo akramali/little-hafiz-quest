@@ -55,10 +55,10 @@
   L.go('elder', { i: idx(113), p: 0, qs: [{ k: 0, kind: 'next', cut: 0, throw: 'rock' }, { k: 1, kind: 'next', cut: 0, throw: 'rock' }, { k: 2, kind: 'next', cut: 0, throw: 'water' }], q: 0, marks: [], hurt: false, fallen: [], phase: 'ask', anytime: false, rematch: false, result: null, ack: '' });
   await wait(200);
   d.querySelector('[data-act=eldans][data-ok="1"]').click(); await wait(300);
-  ok('a right answer: he acknowledges it', d.querySelector('.eldbubble.ack') && /right|know|remembered|impressive/i.test(d.querySelector('.eldbubble').textContent));
+  ok('a right answer: he is glad and says so', !!d.querySelector('.eldbubble.ack') && d.querySelector('.eldbubble').textContent.trim().length > 3 && !!d.querySelector('.eldfig svg.happy'));
   await wait(1400);
   d.querySelector('[data-act=eldans][data-ok="0"]').click(); await wait(2200);
-  ok('a miss with nothing to block: hurt (plaster), something falls', !!d.querySelector('.me .plaster') && prof.lost.length === 1, prof.lost.map((x) => x.id).join());
+  ok('a miss with nothing to block: no plaster (soft), something falls, he comforts', !d.querySelector('.me .plaster') && prof.lost.length === 1 && /worry|wait|find/i.test(d.querySelector('.eldbubble').textContent), prof.lost.map((x) => x.id).join());
   await wait(1500);
   ok('it lies on the ground in the arena', d.querySelectorAll('.eldground .eldfallen').length === 1);
   for (let t = 0; t < 40 && !d.querySelector('[data-act=eldans]:not([disabled])'); t++) await wait(100);

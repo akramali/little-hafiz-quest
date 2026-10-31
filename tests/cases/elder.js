@@ -82,7 +82,7 @@
   d.querySelector('#modal [data-act=giftok]') ? d.querySelector('#modal [data-act=giftok]').click() : d.querySelector('#modal [data-act=wear], #modal [data-act=stick]').click();
   await wait(1200);
   ok('after opening it, on to the world', L.st().view === 'map');
-  // 4. after the summit, wins bring hero gear; with all three, a Challenge button on the map
+  // 4. after the summit, wins bring hero gear; with all three, a Test button on the map
   prof.feats.push('once');
   prof.items = prof.items.filter((x) => !/^hero-/.test(x));
   for (let r = 0; r < 3; r++) {
@@ -96,7 +96,7 @@
   }
   ok('three wins after the summit: armor, shield and sword', ['hero-armor', 'hero-shield', 'hero-sword'].every((id) => prof.items.includes(id)), prof.items.filter((x) => /^hero/.test(x)).join(','));
   L.go('map'); await wait(600);
-  ok('⚔️ Challenge on the map', !!d.querySelector('[data-act=challenge]'));
+  ok('a Test button on the map (neutral words)', !!d.querySelector('[data-act=challenge]') && /Test/.test(d.querySelector('[data-act=challenge]').textContent) && !/Challenge|⚔/.test(d.querySelector('[data-act=challenge]').textContent));
   // 5. (Al-Ikhlāṣ is green here, not golden) wearing all the hero gear (golden), with only golden things and stickers: never hurt, stickers fall first
   prof.outfit = {};
   ['hero-armor', 'hero-shield', 'hero-sword'].forEach((id) => (prof.outfit[A.ITEMS.find((x) => x.id === id).slot] = id));

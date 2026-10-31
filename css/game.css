@@ -8094,3 +8094,111 @@ svg {
 .showscr .ach-ic {
   font-size: 23px;
 }
+
+/* ---------- v2.6.12: the Wise Elder walks with you ---------- */
+/* he stands beside the explorer on the left, both facing the world ahead (on the right) */
+.eldscr .arena .foe {
+  left: -2%;
+  right: auto;
+  top: auto;
+  bottom: 0;
+  width: 42%;
+  height: 210px;
+}
+.eldscr .arena .me {
+  left: 32%;
+  width: 42%;
+}
+.eldscr .arena .eldbubble {
+  left: 0;
+  top: 0;
+  width: 70%;
+  max-width: 300px;
+  border-radius: 16px 16px 16px 4px;
+}
+.eldscr .eldfallen {
+  left: calc(72% + var(--j) * 30px);
+}
+.eldscr .eldnote {
+  left: auto;
+  right: 0;
+  max-width: 62%;
+}
+/* TEMPORARY: the map's button to meet him any time */
+.eldtest {
+  gap: 4px;
+  padding-left: 4px;
+}
+.eldtest-ic svg {
+  width: 26px;
+  height: 39px;
+  display: block;
+}
+/* he is taller than the explorer; no platforms: they stand on the world's ground */
+.eldscr .arena .foe {
+  height: 240px;
+}
+.eldscr .eldfig svg {
+  width: 140px;
+  height: 210px;
+  margin-left: -70px;
+  bottom: 4px;
+}
+.eldscr .mefig svg {
+  bottom: 4px;
+}
+.eldscr .arena .foe,
+.eldscr .arena .me {
+  z-index: 1;
+}
+.eldscr .arena .eldbubble {
+  z-index: 3;
+}
+/* the world they walk through, edge to edge and down to the bottom of the screen: hills, a path running
+   ahead, the world's things (the drawing is 284px tall, starting 64px into the arena; plain ground below it) */
+.v-elder #app {
+  min-height: 100vh;
+  min-height: 100dvh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+.v-elder .eldscr {
+  flex: 1;
+  position: relative;
+}
+.eldworld {
+  position: absolute;
+  z-index: -1;
+  top: 108px;
+  bottom: calc(-48px - env(safe-area-inset-bottom, 0px));
+  left: calc(-1 * var(--gutl));
+  right: calc(-1 * var(--gutr));
+  overflow: hidden;
+  pointer-events: none;
+}
+.eldland,
+.eldprops {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 284px;
+}
+.eldland {
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 14%);
+  mask-image: linear-gradient(to bottom, transparent, #000 14%);
+}
+.eldprops {
+  transform: translateX(var(--walk, 0));
+  transition: transform 1.1s ease-in-out;
+}
+.eldprop {
+  position: absolute;
+  transform: translateX(-50%);
+}
+.eldprop svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}

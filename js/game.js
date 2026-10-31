@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.6.11';
+  const VERSION = '2.6.12';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -353,6 +353,7 @@
     p.time = secs(o.time);
     p.touched = typeof o.touched === 'number' && isFinite(o.touched) && o.touched > 0 ? Math.round(o.touched) : 0;
     if (o.stime && typeof o.stime === 'object') for (const n in o.stime) if (BYN[n] && secs(o.stime[n])) p.stime[BYN[n].n] = secs(o.stime[n]);
+    if (p.feats.includes('once')) giveStaff(p); // explorers who reached the summit before v2.6.12
     return p;
   }
   function cleanPrefs(o) {
@@ -574,6 +575,10 @@
     three: (prof) => S.every((s) => surahStars(s, prof) >= Math.min(3, surahMax(s))),
     all: (prof) => S.every((s) => surahStars(s, prof) >= surahMax(s)),
   };
+  const STAFF = 'elder-staff'; // the Wise Elder's own staff, a summit reward with the Summit cloak
+  function giveStaff(prof) {
+    if (!prof.items.includes(STAFF) && !prof.pending.some((g) => g.id === STAFF)) prof.pending.push({ k: 'i', id: STAFF });
+  }
   const FEAT_HINT = { once: 'A star in every sūrah', three: '3 stars in every sūrah', all: 'Every star in the Juz' };
   const FEAT_WHY = {
     once: 'For reaching the summit: a star in every sūrah! Every sticker is yours too.',
@@ -737,9 +742,8 @@
         throw new Error(navigator.onLine === false ? 'This reciter is not saved for offline use yet.' : 'The recitation could not load. Try again in a moment.');
       })
       .then(() => prepFile(id, items[0][0], tok))
-      .then((url) => {
+      .then(() => {
         if (!playing || tok !== playTok) return;
-        fileSrc = url;
         playNext();
       })
       .catch((e) => {
@@ -756,10 +760,10 @@
   const BIG_FILE = 700 * 1024;
   const FETCH_OK = /^https?:$/.test(location.protocol);
   const audioHref = (id, n) => new URL(`audio/${id}/${pad(n)}.mp3`, location.href).href;
-  let fileKey = '',
-    fileSrc = '',
-    blobUrl = '',
-    dlPct = null; // download progress shown on the Listen button
+  // the files ready to play (one per sūrah: a list can mix the Basmalah's file with the sūrah's), the last two kept
+  const fileUrls = new Map(),
+    fileKey = (id, n) => id + '/' + n;
+  let dlPct = null; // download progress shown on the Listen button
   async function storedAudio(href) {
     if (!OFFLINE_OK) return null;
     try {
@@ -770,16 +774,22 @@
     }
   }
   async function prepFile(id, n, tok) {
-    const key = id + '/' + n;
-    if (key === fileKey) return blobUrl;
+    const key = fileKey(id, n);
+    if (fileUrls.has(key)) return fileUrls.get(key);
     const href = audioHref(id, n);
     if (!FETCH_OK) return href; // opened from a file: play it straight from there
     let blob = await storedAudio(href);
     if (!blob) blob = await downloadAudio(id, n, href, tok);
-    if (blobUrl) URL.revokeObjectURL(blobUrl);
-    blobUrl = URL.createObjectURL(new Blob([blob], { type: 'audio/mpeg' }));
-    fileKey = key;
-    return blobUrl;
+    const url = URL.createObjectURL(new Blob([blob], { type: 'audio/mpeg' }));
+    fileUrls.set(key, url);
+    for (const [k, u] of fileUrls) {
+      if (fileUrls.size <= 2) break;
+      if (k !== key && player.getAttribute('src') !== u) {
+        URL.revokeObjectURL(u);
+        fileUrls.delete(k);
+      }
+    }
+    return url;
   }
   async function downloadAudio(id, n, href, tok) {
     const offlineMsg = 'This recitation is not saved for offline use yet. Connect to the internet once to hear it.';
@@ -879,6 +889,22 @@
       stopAudio();
       return;
     }
+    // each item plays from its own sūrah's file: get it ready first if it isn't (the Basmalah, then the sūrah)
+    if (FETCH_OK && !fileUrls.has(fileKey(playRec, it[0]))) {
+      const tok = playTok;
+      prepFile(playRec, it[0], tok)
+        .then(() => {
+          if (!playing || tok !== playTok) return;
+          queue.unshift(it);
+          playNext();
+        })
+        .catch((e) => {
+          if (tok !== playTok) return;
+          stopAudio();
+          if (e && e.message !== 'cancel') toast(e.message || 'The recitation could not play. Try again in a moment.');
+        });
+      return;
+    }
     try {
       const id = playRec,
         T = TIM[id] && TIM[id][it[0]];
@@ -902,7 +928,7 @@
       } else seg = { start: Math.max(0, ay[0] - 0.05), end: ay[1] + 0.15 };
       curSeg = seg;
       markNow(it);
-      const url = fileSrc || `audio/${id}/${pad(it[0])}.mp3`;
+      const url = fileUrls.get(fileKey(id, it[0])) || `audio/${id}/${pad(it[0])}.mp3`;
       if (player.getAttribute('src') !== url) player.src = url;
       player.defaultPlaybackRate = player.playbackRate = prefs.speed;
       const seek = () => {
@@ -1575,7 +1601,8 @@
       three: 'You climbed the whole mountain with three stars in every sūrah. MāshāAllāh!',
       all: 'You collected every star in Juz ‘Amma. That is truly amazing. MāshāAllāh!',
     }[best];
-    const gifts = f.map((k) => `<span class="sgift">${itemPic(FEAT_ITEM[k].id)}<small>${itemName(FEAT_ITEM[k].id)}</small></span>`).join('');
+    const gifts = f.map((k) => `<span class="sgift">${itemPic(FEAT_ITEM[k].id)}<small>${itemName(FEAT_ITEM[k].id)}</small></span>`).join('') +
+      (f.includes('once') ? `<span class="sgift">${itemPic(STAFF)}<small>${itemName(STAFF)}</small></span>` : '');
     return `<div class="splash summit">
     <div class="sp-art">${ART.splash(prof.look, Object.assign(wornOutfit(prof), { sticker: prof.badge }), { night: isNight(), climb: true, still: reduceMotion })}</div>
     <div class="sm-card ${reduceMotion ? 'now' : ''}">
@@ -1675,7 +1702,7 @@
       ${giftIcon(prof)}
       <button class="icon-btn hud-bag hud-me" data-act="bag" aria-label="My explorer: dress up, collection and achievements"><span class="phead">${explorer({ cls: 'mini' })}</span>${prof.fresh.length ? NEWDOT : ''}</button>
     </div>
-    ${heroReady(prof) && prefs.elder ? '<button class="btn small chalbtn" data-act="challenge" aria-label="Challenge the Wise Elder">⚔️ Challenge</button>' : ''}
+    ${heroReady(prof) && prefs.elder ? `<button class="btn small chalbtn eldtest" data-act="challenge" aria-label="Take the Wise Elder’s test"><span class="eldtest-ic">${elderArt('')}</span>Test</button>` : prefs.elder && memorizedList(prof).length ? `<button class="btn small chalbtn eldtest" data-act="eldtest" aria-label="Meet the Wise Elder (for testing)"><span class="eldtest-ic">${elderArt('')}</span>Elder</button>` : ''}
     <div id="map" class="mroot"></div>
   </div>`;
   };
@@ -2475,7 +2502,7 @@
       return `<button class="icell lost" data-act="goto" data-i="${BYN[lost.n].idx}"><span class="iart">${itemPic(it.id)}</span><span class="lostbadge">${ART.lostMarker()}</span><small>Lost at ${BYN[lost.n].name}!</small></button>`;
     if (owned)
       return `<button class="icell t${it.tier || 0} ${it.gold ? 'gold' : ''} ${on ? 'on' : ''}" data-act="equip" data-id="${it.id}" aria-pressed="${on}"><span class="iart">${itemPic(it.id)}</span><small>${itemName(it.id)}</small>${prefs.elder && blocksOf(it.id).length ? `<span class="iblk" aria-label="Blocks ${blocksOf(it.id).map((k) => THROW[k].name).join(', ')}">${blocksOf(it.id).map((k) => THROW[k].ic).join('')}</span>` : ''}${prof.fresh.includes('i:' + it.id) ? NEWDOT : ''}</button>`;
-    return `<div class="icell locked ${it.gold || it.wgold ? 'goldlock' : ''}"><span class="iart">${ART.silhouette(it.id, P().look)}</span><small>${it.wgold ? `World ${it.wgold} all golden` : it.quest ? 'Pass the Wise Elder’s test' : it.feat ? FEAT_HINT[it.feat] : it.drop ? 'A surprise gift' : it.track ? `At ${it.track} ⭐` : it.gold ? `Every star in ${BYN[it.from].name}` : `A star in ${BYN[it.from].name}`}</small></div>`;
+    return `<div class="icell locked ${it.gold || it.wgold ? 'goldlock' : ''}"><span class="iart">${ART.silhouette(it.id, P().look)}</span><small>${it.wgold ? `World ${it.wgold} all golden` : it.quest === 'staff' ? 'At the summit' : it.quest ? 'Pass the Wise Elder’s test' : it.feat ? FEAT_HINT[it.feat] : it.drop ? 'A surprise gift' : it.track ? `At ${it.track} ⭐` : it.gold ? `Every star in ${BYN[it.from].name}` : `A star in ${BYN[it.from].name}`}</small></div>`;
   }
   function stickerCell(id, prof) {
     const on = prof.badge === id;
@@ -3372,6 +3399,7 @@
       }
       const it = FEAT_ITEM[f];
       if (!prof.items.includes(it.id) && !prof.pending.some((g) => g.id === it.id)) prof.pending.push({ k: 'i', id: it.id });
+      if (f === 'once') giveStaff(prof);
     });
     if (feats.length) prof.pending = prof.pending.filter((g) => g.k !== 's' || !prof.stickers.includes(g.id));
     // a checkpoint of a long sūrah: on to the next checkpoint (or the whole sūrah), not the next game
@@ -3537,7 +3565,9 @@
       name = itemName(g.id);
       sub = it.wgold
         ? `For making World ${it.wgold}, ${WORLDS[it.wgold - 1].name}, all golden: every star in every sūrah! Climb aboard!`
-        : it.quest
+        : it.quest === 'staff'
+          ? 'The Wise Elder gives you his staff. You are the master now!'
+          : it.quest
           ? 'For passing the Wise Elder’s test with the Qur’an in your heart. A true hero!'
           : it.feat
         ? FEAT_WHY[it.feat]
@@ -4224,6 +4254,12 @@
       case 'cno':
         pendingYes = null;
         hideModal();
+        break;
+      case 'eldtest':
+        // TEMPORARY (testing the walk-with-you version): meet him any time
+        sfx.tap();
+        if (P().rematchReady.length) meetElder(false, true);
+        else meetElder(false);
         break;
       case 'challenge':
         sfx.tap();
@@ -5142,19 +5178,20 @@
 
   /* ================= THE WISE ELDER =================
      Once the game has been open 10 minutes, every 10 minutes there is a 1 in 3 chance that, on the map, the Wise
-     Elder (a kind old man who knows the whole Qur'an by heart) blocks the path and asks 3 questions from one memorized sūrah: what comes after an āyah, or
-     finish an āyah. No Listen, no hints: a grown-up taps "Said it!" or "Not quite".
-     Every miss costs something. He throws what his world has (two kinds per world, shown on its sign), and
-     what the explorer wears decides what happens:
+     Elder (a kind old man who knows the whole Qur'an by heart) joins the explorer on the path and asks 3 questions from one memorized sūrah: what comes after an āyah, or
+     finish an āyah. No Listen, no hints: a grown-up taps "Said it!" or "Not quite". He is glad at a right answer and comforts after a miss.
+     Every miss costs something. The world sends what it has (two kinds per world, shown on its sign: a rolling rock, rain,
+     acorns, wind, sand, vines), and what the explorer wears decides what happens:
        - something worn that blocks that throw takes the hit: ordinary gear falls itself; golden or hero gear
          holds (the next thing on the list falls instead), except in a golden sūrah, where it falls too;
-       - nothing that blocks it: the explorer is hurt, and the next thing on the list falls.
+       - nothing that blocks it: the explorer wobbles (no hurting), and the next thing on the list falls.
      The list: worn things (not golden) best first, then other things owned, then one sticker, then golden
      things only when nothing else is left (golden ones too, in a golden sūrah). Star badges and the comfy
      starter clothes are never taken. Everything falls at that sūrah, until a review game there wins it all back;
      then he comes back for a rematch. All three right: safe, and a small gift (a special one in a rematch).
-     After the summit, wins earn the hero armor, shield and sword; with all three, the map has a ⚔️ Challenge
-     button to face him any time. The Grown-up Corner can switch him off. */
+     After the summit, wins earn the hero armor, shield and sword; with all three, the map has a Test button to
+     take his test any time. At the summit he gives the explorer his staff and walks without it from then on.
+     The Grown-up Corner can switch him off. */
   const APP_OPENED = Date.now();
   const ELDER_EVERY = 10 * 60000; // one chance in each 10 minutes
   let elderRoll = APP_OPENED; // one roll in each 10-minute window
@@ -5162,6 +5199,9 @@
   setInterval(() => !document.hidden && st.view === 'map' && maybeElder(), 30000);
   const HERO = ['hero-armor', 'hero-shield', 'hero-sword'];
   const heroReady = (prof) => HERO.every((id) => prof.items.includes(id));
+  // at the summit he hands the explorer his staff; from then on he walks without it
+  const hasStaff = (prof) => prof.items.includes(STAFF) || prof.pending.some((g) => g.id === STAFF);
+  const elderArt = (mood) => ART.elder(mood, hasStaff(P()));
   const memorizedList = (prof) => S.filter((s) => surahDone(s, prof));
   function maybeElder() {
     const prof = P(),
@@ -5185,10 +5225,10 @@
     elderPlan = { i: S.indexOf(s), anytime: !!anytime, rematch: !!rematch };
     sfx.whoosh();
     const m = document.getElementById('modal');
-    m.innerHTML = `<div class="card eldmeet"><div class="eldart">${ART.elder(rematch ? 'happy' : '')}</div>
-      <h3>${rematch ? 'The Wise Elder is back!' : anytime ? 'You call the Wise Elder…' : 'The Wise Elder blocks the path!'}</h3>
-      <p class="eldsay">“${rematch ? `You found your things. Now show me <b>${s.name}</b> is truly in your heart!` : `Show me what you know of <b>${s.name}</b>. Three questions… no help!`}”</p>
-      <div class="row"><button class="btn go wide" data-act="eldface">⚔️ I'm ready!</button><button class="btn wide" data-act="eldrun">🏃 Not now</button></div></div>`;
+    m.innerHTML = `<div class="card eldmeet"><div class="eldart">${elderArt(rematch ? 'happy' : '')}</div>
+      <h3>${rematch ? 'The Wise Elder is back!' : anytime ? 'You call the Wise Elder…' : 'The Wise Elder joins you on the path!'}</h3>
+      <p class="eldsay">“${rematch ? `You found your things! Shall we walk the <b>${s.name}</b> path again?` : `Let’s walk this stretch together. Show me <b>${s.name}</b>: three questions, no help!`}”</p>
+      <div class="row"><button class="btn go wide" data-act="eldface">✅ I'm ready!</button><button class="btn wide" data-act="eldrun">🏃 Not now</button></div></div>`;
     m.classList.add('show');
   }
   let elderPlan = null;
@@ -5289,7 +5329,8 @@
     stopAudio();
     go('elder', { i: p.i, p: 0, qs: elderQuestions(S[p.i]), q: 0, marks: [], hurt: false, fallen: [], phase: 'intro', anytime: p.anytime, rematch: p.rematch, result: null, ack: '' });
   }
-  const ACKS = ['Hmm… right!', 'Well remembered!', 'You know it!', 'Correct… impressive!', 'Right again!'];
+  // he walks with you: glad when you know it, comforting when the path is rough
+  const ACKS = ['Well remembered!', 'MāshāAllāh, that’s right!', 'You know it! Let’s walk on.', 'Yes! Step forward.', 'Beautiful!'];
   V.elder = () => {
     const s = S[st.i],
       prof = P(),
@@ -5298,8 +5339,8 @@
     const dots = st.qs.map((_, j) => `<span class="elddot ${st.marks[j] === true ? 'ok' : st.marks[j] === false ? 'bad' : j === st.q && st.phase === 'ask' ? 'cur' : ''}">${st.marks[j] === true ? '✓' : st.marks[j] === false ? '✗' : j + 1}</span>`).join('');
     let say, panel;
     if (st.phase === 'intro') {
-      say = `I'll ask you three things about <b>${s.name}</b>. Get them right, and I'll be on my way!`;
-      panel = `<div class="row"><button class="btn go wide" data-act="eldgo">Ask me! ⚔️</button></div>`;
+      say = `Let’s cross this stretch together. Show me <b>${s.name}</b>, and the path stays kind!`;
+      panel = `<div class="row"><button class="btn go wide" data-act="eldgo">Ask me!</button></div>`;
     } else if (st.phase === 'end') {
       const r = st.result,
         g = r.win && prof.pending[0];
@@ -5323,20 +5364,48 @@
       .filter((f) => !f.ran)
       .map((f, j) => `<span class="eldfallen" style="--j:${j}">${thingPic(f)}</span>`)
       .join('');
-    // they stand on a patch of the world's own ground
-    const W0 = ART.WORLDS[worldOf(s)],
-      gr = (isNight() && W0.dim ? W0.dim : W0).ground;
-    return `<div class="screen eldscr" style="${cv(s.color)};--pg0:${gr[0]};--pg1:${gr[1]}">
-    <div class="eldtop"><span class="eldtitle">⚔️ The Wise Elder · ${s.name}</span><span class="elddots">${dots}</span></div>
+    return `<div class="screen eldscr" style="${cv(s.color)}">
+    <div class="eldtop"><span class="eldtitle">The Wise Elder · ${s.name}</span><span class="elddots">${dots}</span></div>
+    ${eldWorld(s)}
     <div class="arena">
       <div class="eldbubble ${st.ack ? 'ack' : ''}">${say}</div>
-      <div class="foe"><div class="eldfig">${ART.elder(st.phase === 'end' && st.result.win ? 'happy' : st.foeHit ? 'hit' : '')}</div><i class="plat"></i></div>
-      <div class="me"><div class="mefig">${explorer({ view: 'front', mood: sad ? 'sad' : undefined })}</div>${st.hurt ? '<i class="plaster"></i>' : ''}<i class="plat"></i></div>
+      <div class="foe"><div class="eldfig">${elderArt((st.phase === 'end' && st.result.win) || st.glad ? 'happy' : '')}</div></div>
+      <div class="me"><div class="mefig">${explorer({ view: 'front', mood: sad ? 'sad' : undefined })}</div></div>
       <div class="eldground">${ground}</div>
     </div>
     ${panel}
   </div>`;
   };
+  /* the world they walk through: hills, a path running ahead to the right, the world's own things beside it.
+     The scenery slides back a little with each question, as they walk on together. */
+  function eldWorld(s) {
+    const wi = worldOf(s),
+      w = ART.WORLDS[wi],
+      pl = isNight() && w.dim ? Object.assign({}, w, w.dim) : w;
+    const names = (ART.PROPS_BY_WORLD[wi] || []).filter((nm) => nm !== 'peak-summit');
+    // [left %, bottom %, size px]: far ones small on the hill above their heads, bigger ones ahead on the right
+    const spots = [[6, 68, 30], [30, 70, 26], [52, 68, 30], [74, 69, 28], [96, 68, 30], [118, 69, 28], [92, 44, 44], [84, 14, 64], [130, 20, 60]];
+    const props = spots
+      .map((p, j) => {
+        const name = names[(s.n + j * 5) % names.length],
+          svg = (name && ART.props[name]) || '',
+          h = /viewBox="0 0 100 150"/.test(svg) ? p[2] * 1.5 : p[2];
+        return svg ? `<div class="eldprop" style="left:${p[0]}%;bottom:${p[1]}%;width:${p[2]}px;height:${h}px;z-index:${p[1] < 40 ? 2 : 0}">${svg}</div>` : '';
+      })
+      .join('');
+    // and a few close by, at the bottom of the screen
+    const near = [[10, 58], [50, 44], [88, 62]]
+      .map((p, j) => {
+        const svg = ART.props[names[(s.n + j * 3 + 1) % names.length]] || '',
+          h = /viewBox="0 0 100 150"/.test(svg) ? p[1] * 1.5 : p[1];
+        return svg ? `<div class="eldprop" style="left:${p[0]}%;bottom:calc(14px + env(safe-area-inset-bottom, 0px));width:${p[1]}px;height:${h}px">${svg}</div>` : '';
+      })
+      .join('');
+    return `<div class="eldworld" style="background:linear-gradient(transparent 250px, ${pl.ground[1]} 250px);--walk:${-(st.q + (st.phase === 'end' ? 1 : 0)) * 4}%">
+      <svg class="eldland" viewBox="0 0 400 240" preserveAspectRatio="none" aria-hidden="true"><path d="M0 70 C70 40 140 46 210 64 S330 84 400 52 V240 H0Z" fill="${mixHex(pl.ground[0], pl.sky[1], 0.35)}"/><path d="M0 112 C90 92 170 98 250 110 S350 120 400 100 V240 H0Z" fill="${pl.ground[0]}"/><path d="M0 170 C100 150 200 158 300 166 S370 168 400 156 V240 H0Z" fill="${pl.ground[1]}"/><path d="M-10 200 C120 186 260 168 410 128 L410 138 C330 170 160 214 -10 238Z" fill="${pl.path[0]}" stroke="${pl.path[1]}" stroke-width="2"/></svg>
+      <div class="eldprops">${props}</div>${near}
+    </div>`;
+  }
   function elderAnswer(right) {
     if (st.view !== 'elder' || st.phase !== 'ask') return;
     const q = st.qs[st.q],
@@ -5345,7 +5414,7 @@
     st.phase = 'anim';
     const next = () => {
       if (st.view !== 'elder') return;
-      st.foeHit = false;
+      st.glad = false;
       st.ack = '';
       if (st.q < 2) {
         st.q++;
@@ -5354,13 +5423,17 @@
       } else endElder();
     };
     if (right) {
-      // he staggers, and says so
+      // he smiles and says so, and they take a step forward together
       sfx.chime();
-      st.foeHit = true;
+      st.glad = true;
       st.ack = ACKS[(Math.random() * ACKS.length) | 0];
       render();
-      burstAt(document.querySelector('.eldfig'), 10, ['✨', '⭐']);
-      setTimeout(next, 1500);
+      burstAt(document.querySelector('.mefig'), 10, ['✨', '⭐']);
+      if (!reduceMotion)
+        document.querySelectorAll('.arena .foe, .arena .me').forEach((el) =>
+          el.animate([{ transform: 'translate(0,0)' }, { transform: 'translate(10px,-8px)', offset: 0.3 }, { transform: 'translate(18px,0)', offset: 0.55 }, { transform: 'translate(0,0)' }], { duration: 1100, easing: 'ease-in-out' }),
+        );
+      setTimeout(next, 1600);
       return;
     }
     render();
@@ -5374,10 +5447,12 @@
     const A = arena.getBoundingClientRect(),
       a = (foe.querySelector('svg') || foe).getBoundingClientRect(), // the drawings (their boxes are only wrappers)
       b = (me.querySelector('svg') || me).getBoundingClientRect();
-    const P0 = { x: a.left - A.left + a.width * 0.3, y: a.top - A.top + a.height * 0.45 }, // his hand
+    // what comes, comes from the world ahead (the right of the screen), not from the Elder
+    const W = A.width,
       head = { x: b.left - A.left + b.width * 0.5, y: b.top - A.top + b.height * 0.22 },
       chest = { x: b.left - A.left + b.width * 0.55, y: b.top - A.top + b.height * 0.45 },
       feet = { x: b.left - A.left + b.width * 0.5, y: b.top - A.top + b.height * 0.9 };
+    const P0 = { rock: { x: W - 12, y: 30 }, wind: { x: W + 10, y: chest.y - 10 }, water: { x: chest.x + 40, y: -30 }, acorn: { x: head.x, y: -40 }, sand: { x: W + 6, y: head.y }, vines: { x: W - 6, y: feet.y } }[q.throw];
     const bit = (txt, at, size) => {
       const e = document.createElement('span');
       e.className = 'eldproj';
@@ -5394,14 +5469,13 @@
       return f;
     };
     const tr = (from, to, dx, dy, extra) => `translate(${(to.x - from.x) + (dx || 0)}px, ${(to.y - from.y) + (dy || 0)}px)${extra || ''}`;
-    foe.classList.add('throwing');
-    setTimeout(() => foe.classList.remove('throwing'), 500);
     sfx.whoosh();
     // the throw: returns how long until it lands
     let ms;
     if (q.throw === 'rock') {
       const r = bit('🪨', P0, 44);
-      fly(r, [{ transform: 'translate(0,0) rotate(0) scale(.7)' }, { transform: tr(P0, chest, -(chest.x - P0.x) / 2, -(chest.y - P0.y) / 2 - 90, ' rotate(360deg) scale(1.15)') }, { transform: tr(P0, chest, 0, 0, ' rotate(720deg)') }], 1200, 350);
+      // pebbles tumble down the slope ahead
+      fly(r, [{ transform: 'translate(0,0) rotate(0) scale(.7)' }, { transform: tr(P0, chest, -(chest.x - P0.x) / 3, -20, ' rotate(-300deg) scale(1)') }, { transform: tr(P0, chest, 0, 0, ' rotate(-640deg)') }], 1200, 350, 'ease-in');
       ms = 1550;
     } else if (q.throw === 'wind') {
       ['💨', '🍃', '💨', '🍂', '💨', '🍃'].forEach((t, j) => {
@@ -5410,19 +5484,21 @@
       });
       ms = 1500;
     } else if (q.throw === 'water') {
-      ['💧', '💧', '🌊', '💧', '💧'].forEach((t, j) => {
-        const xo = (j - 2) * 18;
-        fly(bit(t, P0, t === '🌊' ? 46 : 30), [{ transform: 'translate(0,0) scale(.6)', opacity: 0 }, { transform: tr(P0, feet, xo - (feet.x - P0.x) / 2, -(feet.y - P0.y) / 2 - 80, ' scale(1)'), opacity: 1, offset: 0.45 }, { transform: tr(P0, feet, xo, 0, ' scale(1.1)'), opacity: 0.2 }], 1300, 300 + j * 90);
+      // a raincloud drifts over and splashes down at the explorer's feet
+      fly(bit('🌧️', { x: W + 20, y: 20 }, 48), [{ transform: 'translate(0,0)', opacity: 0 }, { transform: `translate(${chest.x - W - 30}px, 0)`, opacity: 1, offset: 0.35 }, { transform: `translate(${chest.x - W - 40}px, 0)`, opacity: 1, offset: 0.85 }, { transform: `translate(${chest.x - W - 60}px, -10px)`, opacity: 0 }], 2000, 0, 'ease-out');
+      ['💧', '💧', '💦', '💧', '💧'].forEach((t, j) => {
+        const xo = (j - 2) * 16,
+          from = { x: chest.x - 10 + xo, y: 50 };
+        fly(bit(t, from, 26), [{ transform: 'translate(0,0)', opacity: 0 }, { transform: `translate(0, ${feet.y - 50}px)`, opacity: 1 }], 700, 700 + j * 110);
       });
-      ms = 1700;
+      ms = 1600;
     } else if (q.throw === 'acorn') {
-      // tossed up high, they rain down on the explorer's head
-      fly(bit('🌰', P0, 30), [{ transform: 'translate(0,0)' }, { transform: 'translate(-10px,-220px)', opacity: 0 }], 500, 0, 'ease-out');
+      // a shower of acorns (or hail) drops from above onto the explorer's head
       [-34, -10, 14, 36, 0].forEach((xo, j) => {
         const top = { x: head.x + xo, y: -40 };
-        fly(bit('🌰', top, 28), [{ transform: 'translate(0,0) rotate(0)', opacity: 0 }, { transform: `translate(0, ${head.y + 40}px) rotate(200deg)`, opacity: 1 }], 900, 500 + j * 120);
+        fly(bit('🌰', top, 28), [{ transform: 'translate(0,0) rotate(0)', opacity: 0 }, { transform: `translate(0, ${head.y + 40}px) rotate(200deg)`, opacity: 1 }], 900, 300 + j * 120);
       });
-      ms = 1700;
+      ms = 1500;
     } else if (q.throw === 'sand') {
       // a glittering swirl that blows at the eyes
       [0, 1, 2, 3, 4, 5, 6].forEach((j) => {
@@ -5462,30 +5538,35 @@
         sfx.boop();
         burstAt(me, 8, ['✨', '💥']);
       } else {
-        // hurt: knocked back, dizzy, a plaster
+        // nothing to block it: a little wobble, a sad face (no hurting)
         sfx.pop();
         st.hurt = true;
-        meBox.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-26px) rotate(-8deg)' }, { transform: 'translateX(0)' }], { duration: 700, easing: 'ease-out' });
-        if (!meBox.querySelector('.plaster')) meBox.insertAdjacentHTML('beforeend', '<i class="plaster"></i>');
-        const dz = document.createElement('span');
-        dz.className = 'dizzy';
-        dz.textContent = '💫';
-        meBox.appendChild(dz);
-        setTimeout(() => dz.remove(), 1800);
+        if (!reduceMotion) meBox.animate([{ transform: 'rotate(0)' }, { transform: 'rotate(-4deg)' }, { transform: 'rotate(3deg)' }, { transform: 'rotate(0)' }], { duration: 600, easing: 'ease-in-out' });
       }
       if (f) dropThing(prof, f, s.n);
       const name = f ? thingName(f) : '';
       const ran = f && f.k === 'i' && animalBuddy(f.id) && f.id === strike.blocker;
       note.innerHTML = !f
-        ? `<b>Ouch! ${throwName(q.throw, wi)}! There's nothing left for him to knock off.</b>`
+        ? `<b>Oh! ${throwName(q.throw, wi)}! Nothing fell this time.</b>`
         : ran
           ? `${thingPic(f)}<b>Your ${name} jumped in the way, and ran off!</b>`
           : strike.blocker && !held
             ? `${thingPic(f)}<b>Your ${name} took the hit, and fell!</b>`
             : held
               ? `${thingPic(f)}<b>Your ${itemName(strike.blocker)} held! But your ${name} fell.</b>`
-              : `${thingPic(f)}<b>Ouch! Hit by ${throwName(q.throw, wi)}. Your ${name} fell!</b>`;
+              : `${thingPic(f)}<b>Oh! ${throwName(q.throw, wi).replace(/^a /, 'A ')}. Your ${name} fell!</b>`;
       arena.appendChild(note);
+      const bub = arena.querySelector('.eldbubble');
+      if (bub)
+        bub.innerHTML = !f
+          ? 'Don’t worry. Let’s keep going.'
+          : ran
+            ? `Your ${name} ran off to <b>${s.name}</b>. We’ll find it when you practise!`
+            : strike.blocker && !held
+              ? `Don’t worry: your ${name} protected you. It’ll wait for you at <b>${s.name}</b>.`
+              : held
+                ? `Your ${itemName(strike.blocker)} kept you safe! Your ${name} will wait at <b>${s.name}</b>.`
+                : `Oh dear! Don’t worry, your ${name} will wait for you at <b>${s.name}</b>.`;
       me.innerHTML = explorer({ view: 'front', mood: 'sad' }); // without what fell
       if (f) {
         // what fell flies off: a buddy runs away, anything else tumbles to the ground between them
@@ -5496,11 +5577,11 @@
         it.style.top = chest.y - 20 + 'px';
         arena.appendChild(it);
         const j = st.fallen.filter((x) => !x.ran).length,
-          gx = A.width * 0.38 + j * 34,
+          gx = A.width * 0.72 + j * 30,
           gy = A.height - 40;
         st.fallen.push(Object.assign({ ran }, f)); // recorded now; the picture lands when the tumble ends
         const anim = ran
-          ? it.animate([0, 1, 2, 3, 4, 5, 6].map((i) => ({ transform: `translate(${-i * 40}px, ${i % 2 ? -14 : 0}px) scaleX(-1)` })), { duration: 1100, fill: 'forwards' })
+          ? it.animate([0, 1, 2, 3, 4, 5, 6].map((i) => ({ transform: `translate(${i * 40}px, ${i % 2 ? -14 : 0}px)` })), { duration: 1100, fill: 'forwards' })
           : it.animate([{ transform: 'translate(0,0) rotate(0)' }, { transform: `translate(${(gx - chest.x) / 2}px, -70px) rotate(220deg)` }, { transform: `translate(${gx - chest.x + 20}px, ${gy - chest.y + 20}px) rotate(380deg)` }], { duration: 900, easing: 'ease-in', fill: 'forwards' });
         anim.onfinish = () => {
           it.remove();
@@ -5537,17 +5618,17 @@
       }
       save();
       sfx.win();
-      r = { win: true, say: 'Good job! The Qur’an is safe in your heart. I’ll be on my way…', html: `<p class="memo gold">🏆 All three right!${gift ? ` He left ${gift} for you.` : ''}</p>` };
+      r = { win: true, say: 'You know it well. The Qur’an is safe in your heart. Walk on!', html: `<p class="memo gold">🏆 All three right!${gift ? ` He left ${gift} for you.` : ''}</p>` };
     } else {
       const fell = st.fallen;
       sfx.boop();
       r = {
         win: false,
         took: fell.length,
-        say: right ? `${right} out of 3… Practice ${s.name} some more!` : 'Hmm… you need to practice this one!',
+        say: right ? `${right} out of 3. Let’s practise <b>${s.name}</b> together, then walk this path again!` : `Let’s practise <b>${s.name}</b> together. You’ll get it!`,
         html: fell.length
-          ? `<p class="memo">💔 ${elderLoss(fell)} ${fell.length > 1 ? 'They are' : 'It is'} waiting at <b>${s.name}</b>: finish a review game there to win ${fell.length > 1 ? 'them' : 'it'} back. Then he'll come back for a rematch!</p>`
-          : `<p class="memo">He walks away. There was nothing left for him to knock off, but practice <b>${s.name}</b> again!</p>`,
+          ? `<p class="memo">💔 ${elderLoss(fell)} ${fell.length > 1 ? 'They are' : 'It is'} waiting at <b>${s.name}</b>: finish a review game there to win ${fell.length > 1 ? 'them' : 'it'} back. Then you can walk this path with him again!</p>`
+          : `<p class="memo">Nothing was lost this time. Practise <b>${s.name}</b> again!</p>`,
       };
     }
     st.phase = 'end';
