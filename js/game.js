@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.7.19';
+  const VERSION = '2.7.20';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -1703,7 +1703,7 @@
     <div class="sp-art">${ART.splash(prof.look, Object.assign(drawnOutfit(prof), { sticker: prof.badge }), { night: isNight(), mood: prof.lost.length ? 'sad' : '' })}</div>
     <div class="sp-top">
       <button class="verchip ${upd.available ? 'ready' : ''}" data-act="updates" aria-label="Version and updates">v${VERSION}${upd.available ? ' · Update ✨' : ''}</button>
-      <span class="sp-tr">${days >= 1 ? `<button class="icon-btn streakbtn" data-act="streak" aria-label="${days} ${days === 1 ? 'day' : 'days'} on the trail">🏃<b>${days}</b></button>` : ''}${FS_OK && !STANDALONE ? `<button class="icon-btn" data-act="fs" aria-label="${fsNow() ? 'Exit fullscreen' : 'Fullscreen'}">${fsNow() ? ICON.fsOut : ICON.fsIn}</button>` : ''}<button class="icon-btn" data-act="settings" aria-label="Grown-up corner">${ICON.gear}</button></span>
+      <span class="sp-tr">${days >= 1 ? `<button class="icon-btn streakbtn" data-act="streak" aria-label="${days} ${days === 1 ? 'day' : 'days'} on the trail">🏃<b>${days}<small>${days === 1 ? 'day' : 'days'}</small></b></button>` : ''}${FS_OK && !STANDALONE ? `<button class="icon-btn" data-act="fs" aria-label="${fsNow() ? 'Exit fullscreen' : 'Fullscreen'}">${fsNow() ? ICON.fsOut : ICON.fsIn}</button>` : ''}<button class="icon-btn" data-act="settings" aria-label="Grown-up corner">${ICON.gear}</button></span>
     </div>
     ${installBar()}
     <div class="sp-bottom">
