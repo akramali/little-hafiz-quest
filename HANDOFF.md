@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is a short public overview (highlights, install, privacy, credits); this file holds the detail.
 
-**Current version:** v2.7.1 (2026-10-31) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.7.2 (2026-10-31) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -15,7 +15,7 @@ an **explorer** who climbs a map of 7 worlds (Meadow → Forest → Sands → Ca
 Each sūrah has two **quests** (👀 Look & Repeat, Word Steps) and two **review games** (🐸 Stepping Stones,
 🧩 Picture Puzzle, plus a Big Puzzle for the whole sūrah), 4 stars per checkpoint. Stars win treasures, golden
 editions, star-track prizes, star badges, world rides and surprise gifts to dress the explorer in.
-**The Wise Elder** walks with the explorer and tests memorized sūrahs with no help; every miss costs something (rules below).
+**Your Teacher** (called the Wise Elder in code: `elder`, `prefs.elder`, `.eld*`; shown to players as "Your Teacher" since v2.7.2, simpler for a 5-year-old) walks with the explorer and tests memorized sūrahs with no help; every miss costs something (rules below).
 
 ## Where things are
 
@@ -52,7 +52,7 @@ Testing hook: `window.__lhq = { st, store, go, player, elder: { strikeFor, block
   carries every field too: the basics (format 2), then an **extras block** (marker `0xA5`, version 1: place on the map,
   greeted, gifts waiting, won order + new dots, comfy-clothes stash, daily/Elder-gift dates, streak, best, today's
   seconds, Elder timer, rematches, stickers he holds, campfires, journal bitmap with its own checksum, completed pages,
-  parts' `next`). Phones before v2.7.1 stop reading before it. **A new field = add it to the extras block (bump its
+  parts' `next`; version 2 (v2.7.2) adds `look.feet`). Phones before v2.7.1 stop reading before it. **A new field = add it to the extras block (bump its
   version) and to `mergeInto`.** `tests/cases/v271.js` round-trips every field through both and fails on any
   difference.
 - **Up to 10 explorers**, all shown on the map in the world of the sūrah they're on (`cfg.others` → `js/map.js`).
@@ -100,12 +100,14 @@ Testing hook: `window.__lhq = { st, store, go, player, elder: { strikeFor, block
   1 embers (due), 0 out (2× overdue); drawn by `ART.campfire` in each memorized node (`.nfire`). `stokeFire` on any
   game finished in a memorized sūrah or an Elder win: on time → longer next interval, 3× late → shorter. Sūrahs
   memorized before v2.7.0 start lit at level 2.
-- **The journal** (v2.7.0, `V.journal`, map button `.jbtn` in `.mapfoot` with the Test button): one page per world =
+- **The journal** (v2.7.0; v2.7.2: a book look, `.jbook`/`.jpage`, swipe or tap the tabs to turn pages `turnPage`;
+  the map button `.jbtn` sits under the worlds button, the same size; **a tap** on a thing not yet found pops an
+  "Add to journal" button `.jchip` for 5 s, which replaced tap-and-hold): one page per world =
   its map things (`PROP_NAME`, every kind is now placed at least once per world by js/map.js; the sea's sailboat is
   its own tappable `.mprop`) + the āyah-picture emoji of its sūrahs (`JOURNAL_EMOJI`: no people, hands, faces, signs or
-  square scenes; each listed once under the first sūrah of the journey that has it). Tap and hold (650 ms, a ring
-  fills; moving, lifting or scrolling cancels; the click after a hold is swallowed) a `.mprop` on the map or an `.e`
-  picture in a sūrah → `jot`. Not in `JKEYS` → nothing happens. A full page → a surprise gift (`prof.jdone`).
+  square scenes; each listed once under the first sūrah of the journey that has it). Not in `JKEYS`, or already
+  found → no button. Not offered in the Teacher's test or the Picture Puzzle. A full page → a surprise gift
+  (`prof.jdone`). My Achievements shows journal finds (replacing "sūrahs started").
 - **Streak** (v2.7.0): a day counts after a minute of learning in a sūrah (`countDay`, `prof.dayT`); `prof.streak` =
   [last day, days in a row], `prof.best`. Shown in My Achievements (8th box) and on the start screen (2+ days).
 - **Map things react:** `poke` → `STONE` things thud (rocks don't move), `BURST` picks what each gives off, `DRIFT`
@@ -116,7 +118,11 @@ Testing hook: `window.__lhq = { st, store, go, player, elder: { strikeFor, block
 - **Stickers are still** (`stillArt` strips the motion classes); buddies drawn from sticker art keep moving.
 - **App feel:** `user-select: none` on `html` and a global `contextmenu` block (except inputs and `.shareimg`); the
   viewport keeps pinch-zoom on purpose (the user finds it handy).
-- **Starter look:** the face (skin) picker draws faces like the hair picker; comfy shirt/pants come in 4 colors each.
+- **Starter look:** the face (skin) picker draws faces like the hair picker; comfy shirt/pants come in 4 colors each,
+  shoes in 3 (`look.feet`, v2.7.2); girls also get pastel picks (`ART.GIRL_COLORS`: pink shirt, lavender and mint
+  pants, pink and lilac shoes). New explorers are given only the classic colors (`starterColors`).
+- **Switching explorer:** with more than one, the name under My Explorer and My Achievements is a button
+  (`whoBtn` → `showWho`, "Who's playing?") that switches and stays on the page.
 
 ## Release flow (do this every time)
 
@@ -156,4 +162,4 @@ v2.3–2.4: nature sounds, jigsaw, Read view, awards, files. v2.5.0: family sync
 classic v1 retired, word meanings. v2.5.1–2.5.8: buttons, speed, info/how-to, fruit and animals, all explorers on
 the map, chain setting, gift fixes, faces, glasses, Big Puzzle. v2.6.0: golden/green worlds, world rides, speed
 button, one-tap gifts, the Wise Elder. v2.6.1–2.6.6: Wise Elder polish, closing animations, stakes (every miss costs,
-world throws, protection), battle ground in the world's colors. v2.6.7: the Wise Elder every 10 minutes; speed and loop in Word Steps and Stepping Stones. v2.6.8: Read starts with the Bismillah (āyah -1, word data in `BISM_WORDS`) and follows the recited āyah; the screen stays on while reciting (`keepAwake`, Wake Lock; 99× loops let go after 15 min); full world names in the list. v2.6.9: no text selection or long-press menus (text boxes and the share picture excepted); zoom kept. v2.6.10: My Achievements fits on one screen. v2.6.11: the Stranger becomes the Wise Elder (a kind old man, star staff, woven belt, swaying robe), renamed everywhere. v2.6.12: the Wise Elder walks with you through the world (taller, comforting, soft hurt, neutral "Test" wording), gives his staff at the summit; Read with the Bismillah plays the whole sūrah again. v2.6.13: the Wise Elder every 7 minutes, gentler robe sway, simpler praise; the temporary Elder test button removed. v2.7.1: family links carry every field (extras block); backups verified field by field. v2.7.0: campfires, the journal hunt, streaks, the Wise Elder's welcome and walking stick, Begin the quest, things on the map react (the boat sails off), the Elder's timer after 3 memorized sūrahs. v2.6.14: the Wise Elder roams the map (tap for a test, one gift a day), rematches wait for his timer, Auto theme by sunrise/sunset, still stickers, a new bee, the Version card updates in place. Full detail: `git log` and `changelog.json`.
+world throws, protection), battle ground in the world's colors. v2.6.7: the Wise Elder every 10 minutes; speed and loop in Word Steps and Stepping Stones. v2.6.8: Read starts with the Bismillah (āyah -1, word data in `BISM_WORDS`) and follows the recited āyah; the screen stays on while reciting (`keepAwake`, Wake Lock; 99× loops let go after 15 min); full world names in the list. v2.6.9: no text selection or long-press menus (text boxes and the share picture excepted); zoom kept. v2.6.10: My Achievements fits on one screen. v2.6.11: the Stranger becomes the Wise Elder (a kind old man, star staff, woven belt, swaying robe), renamed everywhere. v2.6.12: the Wise Elder walks with you through the world (taller, comforting, soft hurt, neutral "Test" wording), gives his staff at the summit; Read with the Bismillah plays the whole sūrah again. v2.6.13: the Wise Elder every 7 minutes, gentler robe sway, simpler praise; the temporary Elder test button removed. v2.7.2: "Your Teacher", tap to add to the journal, the journal as a book (swipe pages), its button under the worlds button, pastel comfy colors and shoe colors, switch explorer by the name, journal finds in Achievements. v2.7.1: family links carry every field (extras block); backups verified field by field. v2.7.0: campfires, the journal hunt, streaks, the Wise Elder's welcome and walking stick, Begin the quest, things on the map react (the boat sails off), the Elder's timer after 3 memorized sūrahs. v2.6.14: the Wise Elder roams the map (tap for a test, one gift a day), rematches wait for his timer, Auto theme by sunrise/sunset, still stickers, a new bee, the Version card updates in place. Full detail: `git log` and `changelog.json`.

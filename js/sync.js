@@ -185,7 +185,7 @@
     ctx.surahs.forEach((s) => w.big((p.stime && p.stime[s.n]) || 0));
     // the extras block (v2.7.1): everything else, so the other phone shows the explorer exactly as they are
     w.num(EXTRAS, 8);
-    w.num(1, 8); // its version
+    w.num(2, 8); // its version (2: v2.7.2 adds the comfy shoes' color)
     w.num(Math.max(0, p.at || 0), 6);
     w.bit(!!p.greeted);
     const kOf = (g) => (g.k === 'i' ? 'i:' : 's:') + g.id;
@@ -233,6 +233,7 @@
     jl.list.forEach((k) => w.bit((p.found || []).includes(k)));
     for (let wi = 0; wi < 7; wi++) w.bit((p.jdone || []).includes(wi));
     ctx.surahs.forEach((s) => s.P.forEach((_, q) => w.bit(p.prog[s.n] && p.prog[s.n].parts[q] && p.prog[s.n].parts[q].next)));
+    w.num(p.look.feet || 0, 3);
     const body = w.done();
     const zip = CAN_ZIP ? await pipe(body, new CompressionStream('deflate-raw')) : body;
     return b64(new Uint8Array([FORMAT, CAN_ZIP ? 1 : 0, ...zip]));
@@ -301,7 +302,7 @@
     });
     // the extras block (v2.7.1), when the code has one
     if (r.left() >= 16 && r.num(8) === EXTRAS) {
-      r.num(8); // its version (1)
+      const xv = r.num(8); // its version
       p.at = r.num(6);
       p.greeted = !!r.bit();
       p.pending = [];
@@ -355,6 +356,7 @@
       for (let j = 0; j < jn; j++) if (r.bit() && jsame) p.found.push(jl.list[j]);
       p.jdone = [0, 1, 2, 3, 4, 5, 6].filter(() => r.bit());
       ctx.surahs.forEach((s) => s.P.forEach((_, q) => r.bit() && p.prog[s.n] && (p.prog[s.n].parts[q].next = 1)));
+      if (xv >= 2) p.look.feet = r.num(3);
     }
     p.made = true;
     p.sameThings = same;

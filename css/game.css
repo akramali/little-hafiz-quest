@@ -8509,3 +8509,169 @@ svg {
     transform: translateX(-1px);
   }
 }
+
+/* ---------- v2.7.2 ---------- */
+/* the journal button: under the worlds button, the same size */
+.jbtn {
+  position: fixed;
+  right: max(10px, env(safe-area-inset-right, 0px));
+  top: calc(max(10px, env(safe-area-inset-top, 0px)) + 66px + 74px);
+  z-index: 10;
+  font-size: inherit;
+}
+.wrail.open ~ .jbtn,
+body:has(.wrail.open) .jbtn {
+  visibility: hidden;
+}
+/* tap a thing: "Add to journal" pops up beside it */
+.jchip {
+  position: fixed;
+  z-index: 60;
+  translate: -50% -100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px 6px 8px;
+  border: 0;
+  border-radius: 99px;
+  background: #fff;
+  color: #2b2340;
+  font: inherit;
+  font-weight: 800;
+  font-size: 15px;
+  box-shadow: 0 0 0 2.5px #ffc83d, 0 6px 14px rgba(43, 35, 64, 0.25);
+  cursor: pointer;
+  animation: popin 0.25s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+.jchip svg {
+  width: 30px;
+  height: 26px;
+}
+/* a picture inside a button (the walking stick on "Take it!") */
+.btnic {
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+.btnic svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+/* the name under My Explorer and My Achievements: tap to switch explorer */
+.whobtn {
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  padding: 0 4px;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.whocard h3 {
+  margin: 0 0 8px;
+  text-align: center;
+}
+.wholist {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.whorow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--card);
+  box-shadow: 0 0 0 2px var(--edge);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.whorow.on {
+  box-shadow: 0 0 0 3px var(--gold);
+}
+.whorow small {
+  display: block;
+  color: var(--soft);
+  font-size: 12px;
+}
+.whorow .phead svg {
+  width: 40px;
+  height: 60px;
+}
+/* the journal looks like a book: a leather cover, a cream page with ruled lines, a spine, a ribbon, page edges */
+.jtabs {
+  margin: 4px 0 -6px;
+  position: relative;
+  z-index: 1;
+  gap: 4px;
+}
+.jtab {
+  border-radius: 12px 12px 4px 4px;
+  background: #fffaf0;
+  background: color-mix(in srgb, var(--tc) 22%, #fffaf0);
+  box-shadow: inset 0 -4px 0 var(--tc), 0 0 0 2px rgba(43, 35, 64, 0.15);
+  transform: translateY(4px);
+  transition: transform 0.15s;
+}
+.jtab.on {
+  transform: translateY(-2px);
+  box-shadow: inset 0 -5px 0 var(--tc), 0 0 0 3px var(--gold);
+}
+.jbook {
+  padding: 10px 12px 12px 18px;
+  border-radius: 10px 18px 18px 10px;
+  background: linear-gradient(90deg, #6e4224, #9b6234 6%, #8a5530 50%, #7a4a2a);
+  box-shadow: 0 8px 18px rgba(43, 35, 64, 0.3), inset 0 0 0 2px rgba(255, 220, 160, 0.25);
+  perspective: 900px;
+  touch-action: pan-y;
+}
+.jbook .jpage {
+  position: relative;
+  padding: 12px 14px 10px 22px;
+  border-radius: 4px 10px 10px 4px;
+  background:
+    linear-gradient(90deg, rgba(110, 66, 36, 0.28), rgba(110, 66, 36, 0) 18px),
+    repeating-linear-gradient(transparent 0 27px, rgba(95, 140, 200, 0.16) 27px 28px),
+    #fffaf0;
+  box-shadow: 2px 0 0 #f1e6cc, 4px 0 0 #e8dbbd, 6px 0 0 #dfd0ae; /* the page edges */
+  color: #2b2340;
+  transform-origin: 0 50%;
+}
+.jribbon {
+  position: absolute;
+  top: -12px;
+  right: 22px;
+  width: 14px;
+  height: 46px;
+  background: #e8414f;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 82%, 0 100%);
+}
+.jhead b small {
+  display: block;
+  font-size: 13px;
+  color: #6b6385;
+}
+.jhead {
+  padding-right: 34px;
+  border-bottom: 2px solid rgba(43, 35, 64, 0.12);
+  padding-bottom: 4px;
+}
+.jfoot {
+  margin-top: 8px;
+  text-align: center;
+  font-weight: 800;
+  font-size: 13px;
+  color: #8a7f9c;
+}
+.jfoot span {
+  font-size: 18px;
+  padding: 0 8px;
+}

@@ -20,7 +20,7 @@
   ok('the world list closes on a tap outside', open1 && !d.querySelector('.wrail.open') && !d.getElementById('modal').classList.contains('show'));
   ok('the world sign has no extra words', [...d.querySelectorAll('.msign b')].every((b) => /^World \d$/.test(b.textContent)));
   ok('no 🧪 Wise Elder test button any more', !d.querySelector('[data-act=strtest]'));
-  ok('settings say just “The Wise Elder”', (() => { L.go('settings'); return /The Wise Elder(?! \(test\))/.test(d.body.textContent) && !/Wise Elder \(test\)/.test(d.body.textContent); })());
+  ok('settings say just “Your Teacher”', (() => { L.go('settings'); return /Your Teacher/.test(d.body.textContent) && !/\(test\)/.test(d.body.textContent); })());
   // swipe to turn the explorer
   L.go('bag', { tab: 'hat' }); await wait(300);
   const st0 = d.querySelector('.wd-stage'), r = st0.getBoundingClientRect();

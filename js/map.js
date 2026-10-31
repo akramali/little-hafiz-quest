@@ -247,7 +247,7 @@
           !L.pathXs(y).some((px) => Math.abs(px - x) < 70 + room) &&
           !L.nodes.some((nd) => Math.hypot(nd.x - x, nd.y - y) < 92 + room) &&
           !placed.some((q) => Math.hypot(q.x - x, q.y - y) < 48 + room + q.room) &&
-          !(width < 700 && x > width - 58 - room) && // leave the world rail clear on phones
+          !(width < 700 && x > width - 80 - room) && // leave the worlds and journal buttons clear on phones
           !(box && boxes.some((q) => hits(q, box)));
         const lm = ART.LANDMARKS && ART.LANDMARKS[b.wi];
         if (lm && ART.props[lm]) {

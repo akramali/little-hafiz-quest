@@ -628,7 +628,7 @@
     ITEMS.push({ id: r[0], slot: r[1], name: r[2], tier: 4, from: null, quest: 'hero' }),
   );
   // the Wise Elder's own staff: he hands it over at the summit (the explorer is the master now)
-  ITEMS.push({ id: 'elder-staff', slot: 'stick', name: 'Wise Elder’s staff', tier: 4, from: null, quest: 'staff' });
+  ITEMS.push({ id: 'elder-staff', slot: 'stick', name: 'Teacher’s staff', tier: 4, from: null, quest: 'staff' });
   // names shown to girls, where the drawing changes too
   const GIRL_NAME = { 'summit-crown': 'Summit tiara', 'hafiz-crown': 'Hafiz tiara' };
   // Golden editions: the special reward for every star in a sūrah (id 'gold-<item>', drawn by goldEdition below).
@@ -1156,8 +1156,11 @@
   ART['astro-pants'] = { pants: '#e6ebf3', box: [44, 202, 140, 286] };
   /* Starter colors: the comfy shirt and pants come in a few soft everyday colors (look.tee, look.legs), so no
      two explorers start out the same. None of them is a prize color: the prizes are bright hue turns. */
-  const TEES = ['#7cc8f5', '#f3e6cc', '#c3c8d4', '#a9c79f'];
-  const LEGS = ['#3d5a99', '#ae9466', '#55566a', '#7d9fd4'];
+  const TEES = ['#7cc8f5', '#f3e6cc', '#c3c8d4', '#a9c79f', '#f7b2cf'];
+  const LEGS = ['#3d5a99', '#ae9466', '#55566a', '#7d9fd4', '#c6b4ea', '#9fd8c4'];
+  const FEET = ['#8f5b3a', '#f4a3c0', '#c6b4ea']; // the comfy shoes (look.feet, v2.7.2)
+  // pastel extras offered to girls (a pink shirt, lavender and mint pants, pink and lilac shoes)
+  const GIRL_COLORS = { tee: [4], legs: [4, 5], feet: [1, 2] };
   TEES.forEach((c, k) => {
     if (!k) return;
     ART['basic-shirt~' + k] = Object.assign({}, ART['basic-shirt'], { top: Object.assign({}, ART['basic-shirt'].top, { c, sl: c, cf: lt(c, 0.32) }) });
@@ -1171,17 +1174,20 @@
   // the comfy clothes in this explorer's own starter colors
   const starterOf = (id, look) => {
     const l = normLook(look);
-    return id === 'basic-shirt' && l.tee ? 'basic-shirt~' + l.tee : id === 'basic-pants' && l.legs ? 'basic-pants~' + l.legs : id;
+    return id === 'basic-shirt' && l.tee ? 'basic-shirt~' + l.tee : id === 'basic-pants' && l.legs ? 'basic-pants~' + l.legs : id === 'basic-shoes' && l.feet ? 'basic-shoes~' + l.feet : id;
   };
 
   /* ---------- shoes: drawn for the viewer-left foot, mirrored for the other ---------- */
   const SHOE = Object.create(null);
   const SOLE = 'M63.6 285L94.4 285L94.4 287C94.4 290 92.4 292 89.4 292L68 292C65 292 63.6 290 63.6 287Z';
-  SHOE['basic-shoes'] = () => {
-    const c = '#8f5b3a',
-      d = 'M64 286C62 276 68 270 78 270C88 270 94 274 94 282L94 287C94 290 92 292 89 292L68 292C65 292 64 290 64 286Z';
-    return F(d, c) + F(SOLE, '#5d3a2a') + EF(73, 275, 5, 2.4, '#fff', 0.45) + CF(84, 276, 1.6, lt(c, 0.4)) + P(d, 'none');
+  const comfyShoe = (c) => () => {
+    const d = 'M64 286C62 276 68 270 78 270C88 270 94 274 94 282L94 287C94 290 92 292 89 292L68 292C65 292 64 290 64 286Z';
+    return F(d, c) + F(SOLE, dk(c, 0.35)) + EF(73, 275, 5, 2.4, '#fff', 0.45) + CF(84, 276, 1.6, lt(c, 0.4)) + P(d, 'none');
   };
+  FEET.forEach((c, k) => {
+    SHOE['basic-shoes' + (k ? '~' + k : '')] = comfyShoe(c);
+    if (k) BYID['basic-shoes~' + k] = Object.assign({}, BYID['basic-shoes'], { id: 'basic-shoes~' + k });
+  });
   const BOOT = (top) => 'M63.6 287C62 279 66 274 68.4 272L68 ' + (top + 5) + 'Q68 ' + top + ' 73 ' + top + 'L87.5 ' + top + 'Q92.6 ' + top + ' 92.6 ' + (top + 5) + 'L92.4 271C95 273.5 95.6 278 95.6 284L95.6 287C95.6 290 93.6 292 90.6 292L68 292C65 292 63.6 290 63.6 287Z';
   SHOE['trail-boots'] = () => {
     const c = '#c98d4e',
@@ -1957,7 +1963,7 @@
   function normLook(l) {
     l = l || {};
     const i = (v, m) => (Number.isInteger(+v) && +v >= 0 && +v < m ? +v : 0);
-    return { skin: i(l.skin, 5), hair: LOOKS.hair.indexOf(l.hair) >= 0 ? l.hair : 'short', hairColor: i(l.hairColor, 4), hijabColor: i(l.hijabColor, 6), kid: LOOKS.kid.indexOf(l.kid) >= 0 ? l.kid : '', tee: i(l.tee, TEES.length), legs: i(l.legs, LEGS.length) };
+    return { skin: i(l.skin, 5), hair: LOOKS.hair.indexOf(l.hair) >= 0 ? l.hair : 'short', hairColor: i(l.hairColor, 4), hijabColor: i(l.hijabColor, 6), kid: LOOKS.kid.indexOf(l.kid) >= 0 ? l.kid : '', tee: i(l.tee, TEES.length), legs: i(l.legs, LEGS.length), feet: i(l.feet, FEET.length) };
   }
   function normOutfit(o, look) {
     const out = {};
@@ -1965,7 +1971,7 @@
       const id = o && o[s];
       out[s] = id === 'none' ? null : id && BYID[id] && BYID[id].slot === s ? id : DEFAULTS[s] || null; // 'none': nothing there (not even the default)
     });
-    if (look) ['top', 'pants'].forEach((s) => (out[s] = out[s] && starterOf(out[s], look)));
+    if (look) ['top', 'pants', 'shoes'].forEach((s) => (out[s] = out[s] && starterOf(out[s], look)));
     return out;
   }
   function explorerInner(look, outfit, back, mood) {
@@ -2804,6 +2810,8 @@
     DEFAULTS,
     TEES,
     LEGS,
+    FEET,
+    GIRL_COLORS,
     explorer,
     item,
     silhouette,

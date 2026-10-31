@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.7.1';
+  const VERSION = '2.7.2';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -207,7 +207,8 @@
   // starter shirt and pants colors that the other explorers aren't wearing yet
   function starterColors(others) {
     const all = [];
-    ART.TEES.forEach((_, tee) => ART.LEGS.forEach((__, legs) => all.push({ tee, legs })));
+    // (new explorers get one of the classic colors; the pastel ones are there to pick)
+    ART.TEES.forEach((_, tee) => ART.LEGS.forEach((__, legs) => !ART.GIRL_COLORS.tee.includes(tee) && !ART.GIRL_COLORS.legs.includes(legs) && all.push({ tee, legs })));
     const used = (c, k) => others.some((p) => p.look[k] === c[k]);
     // a new shirt and new pants if there are any left, else at least a new pair
     const best = all.filter((c) => !used(c, 'tee') && !used(c, 'legs'));
@@ -219,7 +220,7 @@
     return {
       id: 'p' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36),
       name: name || '',
-      look: { skin: 1, hair: 'short', hairColor: 0, hijabColor: 0, kid: '', tee: 0, legs: 0 },
+      look: { skin: 1, hair: 'short', hairColor: 0, hijabColor: 0, kid: '', tee: 0, legs: 0, feet: 0 },
       outfit: {},
       prog: {},
       items: [],
@@ -306,6 +307,7 @@
       kid: ART.LOOKS.kid.includes(L.kid) ? L.kid : '', // '' = not chosen yet (a girl's hair style counts as girl)
       tee: int(L.tee, 0, ART.TEES.length - 1, 0), // starter shirt and pants colors (v2.5.3)
       legs: int(L.legs, 0, ART.LEGS.length - 1, 0),
+      feet: int(L.feet, 0, ART.FEET.length - 1, 0), // and shoes (v2.7.2)
     };
     if (p.look.kid && !ART.LOOKS.hairFor[p.look.kid].includes(p.look.hair)) p.look.hair = ART.LOOKS.hairFor[p.look.kid][0]; // boys and girls have their own styles
     p.prog = cleanProg(o.prog);
@@ -681,6 +683,10 @@
     if (!prof.fresh.includes(key)) prof.fresh.push(key); // "new" until seen in My Explorer
   }
   const NEWDOT = '<i class="newdot" aria-label="new"></i>';
+  // the journal: a little book with a bookmark
+  const BOOK_IC =
+    '<svg class="wr-mapic" viewBox="0 0 48 40" aria-hidden="true"><g stroke="#2b2340" stroke-width="2.4" stroke-linejoin="round"><path d="M9 4H38Q41 4 41 7V36H12Q9 36 9 33Z" fill="#c0703a"/><path d="M12 30H41V36H12Q9 36 9 33Q9 30 12 30Z" fill="#fff6dc"/></g>' +
+    '<path d="M31 4V15L34 12.5L37 15V4Z" fill="#ff5d6c" stroke="#2b2340" stroke-width="2" stroke-linejoin="round"/><path d="M15 12H25M15 17H23M15 22H26" stroke="#ffe3a3" stroke-width="2.4" stroke-linecap="round"/></svg>';
   // items drawn and named for this explorer (a girl's crowns are tiaras)
   const itemPic = (id) => ART.item(id, P().look);
   const itemName = (id) => (ART.isGirl(P().look) && ITEM[id].girl) || ITEM[id].name;
@@ -1366,6 +1372,17 @@
   }
   // the action to do with the āyah (can be switched off in the Grown-up Corner)
   const gest = (a) => (prefs.actions ? `<div class="gest"><small>Do it</small>${a.gesture}</div>` : '');
+  // the explorer's name under a title: with more than one explorer, tap it to switch (the page stays)
+  const whoBtn = (prof, none) =>
+    store.profiles.filter((p) => p.made).length > 1 ? `<button class="whobtn" data-act="whopick" aria-label="Switch explorer">${prof.name ? esc(prof.name) : 'Explorer'} ▾</button>` : prof.name ? esc(prof.name) : none;
+  function showWho() {
+    const m = document.getElementById('modal');
+    m.innerHTML = `<div class="card whocard"><button class="cardx" data-act="cno" aria-label="Close">✕</button><h3>Who's playing?</h3><div class="wholist">${store.profiles
+      .filter((p) => p.made)
+      .map((p) => `<button class="whorow ${p.id === store.cur ? 'on' : ''}" data-act="pickprof" data-id="${p.id}"><span class="phead">${explorer({ view: 'front', cls: 'mini' }, p)}</span><span><b>${p.name ? esc(p.name) : 'Explorer'}</b><small>⭐ ${totalStars(p)} · 🏆 ${S.filter((s) => surahDone(s, p)).length} memorized</small></span></button>`)
+      .join('')}</div></div>`;
+    m.classList.add('show');
+  }
   function bar(title, sub, to, extra) {
     return `<div class="bar"><button class="icon-btn" data-act="back" data-to="${to}" aria-label="Back">${ICON.back}</button>
     <div class="bar-title">${title}${sub ? `<small>${sub}</small>` : ''}</div>${extra || ''}
@@ -1715,13 +1732,16 @@
     if (kind === 'hijab') m = `<path d="M5 34C3 16 10 6 20 6s17 10 15 28Z" fill="${c}" ${ink}/><ellipse cx="20" cy="22" rx="9.5" ry="10" fill="${SWATCH_SKIN}" ${ink}/><circle cx="16.6" cy="22" r="1.6" fill="#2b2340"/><circle cx="23.4" cy="22" r="1.6" fill="#2b2340"/>`;
     else if (kind === 'tee') m = `<path d="M7 13L15 7Q20 10 25 7L33 13L29 19L26 17V34H14V17L11 19Z" fill="${c}" ${ink}/>`;
     else if (kind === 'legs') m = `<path d="M11 6H29L31 34H23.5L20 17L16.5 34H9Z" fill="${c}" ${ink}/>`;
+    else if (kind === 'feet') m = `<path d="M6 30C5 22 10 18 17 18C24 18 28 21 28 26L34 27C36 28 36 33 33 33L9 33C7 33 6 32 6 30Z" fill="${c}" ${ink}/>`;
     else m = face(SWATCH_SKIN) + `<path d="M6.5 22C5 12 11 6 20 6s15 6 13.5 16c-2-5-4-6-6-7q-3 3-7.5 0q-4.5 3-7.5 0c-2 1-4 2-6 7Z" fill="${c}" ${ink}/>`;
     return `<svg viewBox="0 0 40 40" aria-hidden="true" focusable="false">${m}</svg>`;
   }
   function lookControls(prof) {
     const L = prof.look;
+    // (the pastel comfy colors are offered to girls)
+    const girlOnly = (k, j) => !ART.isGirl(L) && (ART.GIRL_COLORS[k] || []).includes(j) && L[k] !== j;
     const sw = (k, list, kind, label) =>
-      `<div class="swatches">${list.map((c, j) => `<button class="swatch2 ${L[k] === j ? 'on' : ''}" data-act="look" data-k="${k}" data-v="${j}" aria-label="${label} ${j + 1}" aria-pressed="${L[k] === j}">${swatchArt(kind, c)}</button>`).join('')}</div>`;
+      `<div class="swatches">${list.map((c, j) => (girlOnly(k, j) ? '' : `<button class="swatch2 ${(L[k] || 0) === j ? 'on' : ''}" data-act="look" data-k="${k}" data-v="${j}" aria-label="${label} ${j + 1}" aria-pressed="${(L[k] || 0) === j}">${swatchArt(kind, c)}</button>`)).join('')}</div>`;
     const hairs = ART.LOOKS.hairFor[ART.isGirl(L) ? 'girl' : 'boy']
       .map(
         (h) =>
@@ -1750,6 +1770,7 @@
       <div class="lkgroup"><div class="lkh">🎨 ${hij ? 'Hijab color' : 'Hair color'}</div>${hij ? sw('hijabColor', ART.LOOKS.hijabColor, 'hijab', 'Hijab color') : sw('hairColor', ART.LOOKS.hairColor, 'hair', 'Hair color')}</div>
       <div class="lkgroup"><div class="lkh">👕 Comfy shirt</div>${sw('tee', ART.TEES, 'tee', 'Shirt color')}</div>
       <div class="lkgroup"><div class="lkh">👖 Comfy pants</div>${sw('legs', ART.LEGS, 'legs', 'Pants color')}</div>
+      <div class="lkgroup"><div class="lkh">👟 Comfy shoes</div>${sw('feet', ART.FEET, 'feet', 'Shoe color')}</div>
     </div>`;
   }
   V.create = () => {
@@ -1792,7 +1813,8 @@
       ${giftIcon(prof)}
       <button class="icon-btn hud-bag hud-me" data-act="bag" aria-label="My explorer: dress up, collection and achievements"><span class="phead">${explorer({ cls: 'mini' })}</span>${prof.fresh.length ? NEWDOT : ''}</button>
     </div>
-    <div class="mapfoot"><button class="btn small jbtn" data-act="journal" aria-label="My journal: ${prof.found.length} of ${JKEYS.size} found">📔<span>Journal</span></button>${heroReady(prof) && prefs.elder ? `<button class="btn small eldtest" data-act="challenge" aria-label="Take the Wise Elder’s test"><span class="eldtest-ic">${elderArt('')}</span>Test</button>` : ''}</div>
+    <button class="wr-toggle jbtn" data-act="journal" aria-label="My journal: ${prof.found.length} of ${JKEYS.size} found">${BOOK_IC}<span class="wr-cur">Journal</span></button>
+    ${heroReady(prof) && prefs.elder ? `<div class="mapfoot"><button class="btn small eldtest" data-act="challenge" aria-label="Take your Teacher’s test"><span class="eldtest-ic">${elderArt('')}</span>Test</button></div>` : ''}
     <div id="map" class="mroot"></div>
   </div>`;
   };
@@ -1817,7 +1839,7 @@
       others: store.profiles
         .filter((p) => p.id !== store.cur && p.made)
         .map((p) => ({ id: p.id, name: p.name ? esc(p.name) : 'Explorer', svg: explorer({ view: 'front' }, p), wi: Math.max(0, worldOf(S[p.at] || S[0])) }))
-        .concat(prefs.elder ? [{ id: 'elder', name: 'The Wise Elder', svg: elderArt(''), wi: elderWorld(), elder: true }] : []),
+        .concat(prefs.elder ? [{ id: 'elder', name: 'Your Teacher', svg: elderArt(''), wi: elderWorld(), elder: true }] : []),
       worldIcon: (wi) => WORLD_ICON[wi],
       // what the Wise Elder throws in each world (so the explorer can dress for it)
       worldThrows: (wi) => (prefs.elder ? worldThrowIcons(wi) : ''),
@@ -2593,7 +2615,7 @@
       return `<button class="icell lost" data-act="goto" data-i="${BYN[lost.n].idx}"><span class="iart">${itemPic(it.id)}</span><span class="lostbadge">${ART.lostMarker()}</span><small>Lost at ${BYN[lost.n].name}!</small></button>`;
     if (owned)
       return `<button class="icell t${it.tier || 0} ${it.gold ? 'gold' : ''} ${on ? 'on' : ''}" data-act="equip" data-id="${it.id}" aria-pressed="${on}"><span class="iart">${itemPic(it.id)}</span><small>${itemName(it.id)}</small>${prefs.elder && blocksOf(it.id).length ? `<span class="iblk" aria-label="Blocks ${blocksOf(it.id).map((k) => THROW[k].name).join(', ')}">${blocksOf(it.id).map((k) => THROW[k].ic).join('')}</span>` : ''}${prof.fresh.includes('i:' + it.id) ? NEWDOT : ''}</button>`;
-    return `<div class="icell locked ${it.gold || it.wgold ? 'goldlock' : ''}"><span class="iart">${ART.silhouette(it.id, P().look)}</span><small>${it.wgold ? `World ${it.wgold} all golden` : it.quest === 'staff' ? 'At the summit' : it.quest ? 'Pass the Wise Elder’s test' : it.feat ? FEAT_HINT[it.feat] : it.drop ? 'A surprise gift' : it.track ? `At ${it.track} ⭐` : it.gold ? `Every star in ${BYN[it.from].name}` : `A star in ${BYN[it.from].name}`}</small></div>`;
+    return `<div class="icell locked ${it.gold || it.wgold ? 'goldlock' : ''}"><span class="iart">${ART.silhouette(it.id, P().look)}</span><small>${it.wgold ? `World ${it.wgold} all golden` : it.quest === 'staff' ? 'At the summit' : it.quest ? 'Pass your Teacher’s test' : it.feat ? FEAT_HINT[it.feat] : it.drop ? 'A surprise gift' : it.track ? `At ${it.track} ⭐` : it.gold ? `Every star in ${BYN[it.from].name}` : `A star in ${BYN[it.from].name}`}</small></div>`;
   }
   function stickerCell(id, prof) {
     const on = prof.badge === id;
@@ -2635,7 +2657,7 @@
       ? `<button class="wd-side wd-comfy on" data-act="comfy" aria-label="Put my things back on">✨<small>Back</small></button>`
       : `<button class="wd-side wd-comfy" data-act="comfy" ${fancy ? '' : 'disabled'} aria-label="Just comfy clothes">👕<small>Comfy</small></button>`;
     return `<div class="screen bagscr">
-    ${bar('My Explorer', prof.name ? esc(prof.name) : 'Dress up and collect', 'map', giftIcon(prof, 'inbar') + `<button class="mebtn ${tab === 'look' ? 'on' : ''}" data-act="tab" data-t="${tab === 'look' ? 'hat' : 'look'}" aria-label="Change my name and how I look" aria-pressed="${tab === 'look'}">${tab === 'look' ? '✓ Done' : '✏️ My look'}</button>`)}
+    ${bar('My Explorer', whoBtn(prof, 'Dress up and collect'), 'map', giftIcon(prof, 'inbar') + `<button class="mebtn ${tab === 'look' ? 'on' : ''}" data-act="tab" data-t="${tab === 'look' ? 'hat' : 'look'}" aria-label="Change my name and how I look" aria-pressed="${tab === 'look'}">${tab === 'look' ? '✓ Done' : '✏️ My look'}</button>`)}
     <div class="wd-stage"><button class="wd-ex" data-act="exmove" aria-label="Tap your explorer">${explorer({ view: st.backView ? 'back' : 'front' })}</button>${comfy}<button class="wd-side wd-turn" data-act="turn" aria-label="Turn around">↻<small>Turn</small></button><button class="wd-side wd-show" data-act="show" aria-label="My achievements">🏆<small>Awards</small></button></div>
     <div class="wtwrap"><div class="wtabs" id="wtabs">${tabs}</div><button class="cpmore cpless" data-act="wtscroll" data-d="-1" aria-label="Earlier categories">‹</button><button class="cpmore" data-act="wtscroll" data-d="1" aria-label="More categories">›</button></div>
     <div class="wbody">${body}</div>
@@ -2693,6 +2715,7 @@
       badges: prof.stickers.filter((id) => STICKER[id].stars).length,
       time: prof.time || 0,
       streak: streakNow(prof),
+      found: prof.found.length,
       best: prof.best || 0,
     };
   }
@@ -2704,7 +2727,7 @@
   }
   const ACH_ROWS = (a) => [
     ['⭐', `${a.stars}`, `of ${MAX_STARS} stars`],
-    ['📖', `${a.surahs}`, `of ${S.length} sūrahs started`],
+    ['📔', `${a.found}`, `of ${JKEYS.size} journal finds`],
     ['🏆', `${a.memorized}`, 'sūrahs memorized'],
     ['🗣️', `${a.ayat}`, `of ${a.allAyat} āyāt learned`],
     ['🎁', `${a.items}`, 'treasures found'],
@@ -2716,7 +2739,7 @@
     const prof = P(),
       a = achievements(prof);
     return `<div class="screen showscr">
-    ${bar('My Achievements', prof.name ? esc(prof.name) : 'Explorer', 'bag')}
+    ${bar('My Achievements', whoBtn(prof, 'Explorer'), 'bag')}
     <div class="show-stage"><button class="wd-ex" data-act="exmove" aria-label="Tap your explorer">${explorer({ view: 'front' })}</button></div>
     <div class="achgrid">${ACH_ROWS(a)
       .map(([ic, big, sub]) => `<div class="ach"><span class="ach-ic">${ic}</span><b>${big}</b><small>${sub}</small></div>`)
@@ -3326,7 +3349,7 @@
         [4, '4'],
         [5, '5'],
       ])}</div>
-      ${tg('elder', 'The Wise Elder', 'Now and then, between sūrahs, the Wise Elder asks 3 questions from a memorized sūrah')}
+      ${tg('elder', 'Your Teacher', 'Your Teacher walks the map and, now and then, asks 3 questions from a memorized sūrah')}
       ${tg('pzrtl', 'Puzzle from right to left', 'The Picture Puzzle fills from the right, like reading Arabic. Off: left to right, row by row')}
     </div>
     ${offlineSheet()}
@@ -3690,9 +3713,9 @@
       sub = it.wgold
         ? `For making World ${it.wgold}, ${WORLDS[it.wgold - 1].name}, all golden: every star in every sūrah! Climb aboard!`
         : it.quest === 'staff'
-          ? 'The Wise Elder gives you his staff. You are the master now!'
+          ? 'Your Teacher gives you his staff. You are the master now!'
           : it.quest
-          ? 'For passing the Wise Elder’s test with the Qur’an in your heart. A true hero!'
+          ? 'For passing your Teacher’s test with the Qur’an in your heart. A true hero!'
           : it.feat
         ? FEAT_WHY[it.feat]
         : it.drop
@@ -3943,6 +3966,10 @@
       case 'explorers':
         sfx.tap();
         go('explorers');
+        break;
+      case 'whopick':
+        sfx.tap();
+        showWho();
         break;
       case 'pickprof': {
         sfx.tap();
@@ -4424,18 +4451,16 @@
       }
       case 'journal':
         sfx.tap();
-        go('journal', { w: null });
+        go('journal', { w: Math.max(0, worldOf(S[P().at] || S[0])) });
         break;
       case 'jpage':
-        sfx.tap();
-        st.w = +b.dataset.w;
-        render();
+        turnPage(+b.dataset.w, +b.dataset.w > st.w ? 1 : -1);
         break;
       case 'jhint': {
         const k = b.dataset.k;
         sfx.tap();
         if (P().found.includes(k)) burstAt(b, 5, ['✨']);
-        else toast(`Find it on the map in World ${JPAGE.get(k) + 1}, then tap and hold it`);
+        else toast(`Find it on the map in World ${JPAGE.get(k) + 1}, then tap it`);
         break;
       }
       case 'jgo': {
@@ -5466,7 +5491,7 @@
   // the things worth finding in the āyāt's pictures: creatures, nature, food, buildings and objects (no people,
   // hands, faces or signs, and no square scenes like a sunrise, whose shadow would be just a square)
   const JOURNAL_EMOJI = new Set(
-    ('🛡️ 👑 🕌 🌫️ 🌍 🦁 🌳 🌑 🧶 🍼 🔍 🔥 💰 🌲 🎒 🏆 🚪 📿 📣 🛤️ 🎁 🐑 ✂️ 🌿 ⚖️ 🍲 📸 🥄 🏘️ 🐪 ❄️ ☀️ 🕋 🍞 🐘 🗺️ 🐦 🧱 🌾 🐄 💵 ' +
+    ('🛡️ 👑 🕌 🌍 🦁 🌳 🌑 🧶 🍼 🔍 🔥 💰 🌲 🎒 🏆 🚪 📿 📣 🛤️ 🎁 🐑 ✂️ 🌿 ⚖️ 🍲 📸 🥄 🏘️ 🐪 ❄️ ☀️ 🕋 🍞 🐘 🗺️ 🐦 🧱 🌾 🐄 💵 ' +
       '🧮 🔒 🏛️ ⏳ 🐢 ⏰ 💡 🔭 🍰 🦋 ⛰️ 🌈 🏡 🕳️ 🌡️ 🐎 🌪️ 🎯 🌱 🔓 🌋 🗞️ 📨 📋 🔦 📜 📚 📏 📖 🌙 📅 🔬 ✒️ 📝 🚧 🪃 🧭 🛑 🧢 📞 🔔 🏔️ 🔐 ⭐ ' +
       '🏅 🎈 🐫 📦 🔊 ⛈️ 🌵 🌸 🌤️ 🧺 🍎 🧸 🛷 🧼 🌕 ☁️ 🥇 🥀 🏠 💧 🌩️ 🏚️ 🛣️ ⛓️ 🏜️ 🏰 ⛏️ ⛺ 📌 🗑️ 🍗 🔨 📮 🕊️ 🌊 🍽️ 🌻 🍇 ⛲ 🛋️ 🥤 🎮 ⚡ 🍂 ' +
       '📢 🍃 🍭 🦴 🐣 🌧️ 🃏 🪑 💎 🗒️ 📗 📕 🎉 🏺 🥣 📆 🕰️ 🌞 🏁 🎣 🧩 🍉 🦒 📃 🍌 ☄️ 🌬️ 🦯 🚿 👟 🥬 🫒 🌴 💍 🌏 🎓 🗻 ⚓ 🗂️ 📰 🛏️ 🧥 🪔 📯 🧊 🧾 🎂 🥛 🌀').split(' '),
@@ -5500,7 +5525,7 @@
     sfx.chime();
     // it flies into the journal (the book on the map, or up to the top)
     const r = el.getBoundingClientRect(),
-      to = document.querySelector('.jbtn'),
+      to = document.querySelector('.jbtn, .bar .icon-btn'),
       t = to ? to.getBoundingClientRect() : { left: innerWidth / 2, top: 0, width: 0, height: 0 };
     if (!reduceMotion) {
       const f = document.createElement('div');
@@ -5524,62 +5549,41 @@
     save();
     toast(msg);
   }
-  // tap and hold: a ring fills around the finger; moving, lifting or scrolling early lets go
-  let jHold = null,
-    heldAt = 0;
-  const JHOLD_MS = 650;
-  function dropJHold() {
-    if (!jHold) return;
-    clearTimeout(jHold.t);
-    jHold.ring.remove();
-    jHold = null;
+  // tap a thing that isn't in the journal yet (on the map, or a picture in a sūrah): an "Add to journal" button
+  // pops up beside it for a few seconds; tap it to add, or carry on and it goes away
+  let jChip = null;
+  function dropChip() {
+    if (!jChip) return;
+    clearTimeout(jChip.t);
+    jChip.el.remove();
+    jChip = null;
   }
-  document.addEventListener(
-    'pointerdown',
-    (e) => {
-      if (jHold || e.button > 0 || noExplorers() || !P().made || st.view === 'elder') return;
-      const el = e.target.closest && e.target.closest('.e, .mprop');
-      if (!el || (el.classList.contains('mprop') && st.view !== 'map')) return;
-      const key = el.classList.contains('mprop') ? 'p:' + el.dataset.k : 'e:' + el.textContent.trim();
-      if (!JKEYS.has(key)) return; // not in the journal: holding does nothing
-      const ring = document.createElement('div');
-      ring.className = 'jring';
-      ring.style.left = e.clientX + 'px';
-      ring.style.top = e.clientY + 'px';
-      ring.innerHTML = '<svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="18"/></svg>';
-      const h = {
-        el,
-        key,
-        x: e.clientX,
-        y: e.clientY,
-        id: e.pointerId,
-        ring,
-        t: setTimeout(() => {
-          if (jHold !== h) return;
-          heldAt = Date.now();
-          dropJHold();
-          jot(key, el);
-        }, JHOLD_MS),
-      };
-      jHold = h;
-      setTimeout(() => jHold === h && document.body.appendChild(ring), 160); // a quick tap shows nothing
-    },
-    true,
-  );
-  document.addEventListener('pointermove', (e) => jHold && e.pointerId === jHold.id && Math.hypot(e.clientX - jHold.x, e.clientY - jHold.y) > 12 && dropJHold(), { passive: true });
-  ['pointerup', 'pointercancel'].forEach((ev) => document.addEventListener(ev, dropJHold, true));
-  addEventListener('scroll', dropJHold, { passive: true });
-  // the tap that ends a hold doesn't also tap
   document.addEventListener(
     'click',
     (e) => {
-      if (Date.now() - heldAt < 500) {
-        e.stopPropagation();
-        e.preventDefault();
-      }
+      if (e.target.closest && e.target.closest('.jchip')) return;
+      dropChip();
+      if (noExplorers() || !P().made || ['elder', 'order'].includes(st.view)) return;
+      const el = e.target.closest && e.target.closest('.e, .mprop');
+      if (!el || (el.classList.contains('mprop') && st.view !== 'map')) return;
+      const key = el.classList.contains('mprop') ? 'p:' + el.dataset.k : 'e:' + el.textContent.trim();
+      if (!JKEYS.has(key) || P().found.includes(key)) return; // not in the journal, or already in it: nothing
+      const r = el.getBoundingClientRect(),
+        c = document.createElement('button');
+      c.className = 'jchip';
+      c.innerHTML = `${BOOK_IC}<span>Add to journal</span>`;
+      c.style.left = Math.max(90, Math.min(innerWidth - 90, r.left + r.width / 2)) + 'px';
+      c.style.top = Math.max(120, r.top - 6) + 'px';
+      c.addEventListener('click', () => {
+        jot(key, c);
+        dropChip();
+      });
+      document.body.appendChild(c);
+      jChip = { el: c, t: setTimeout(dropChip, 5000) };
     },
     true,
   );
+  addEventListener('scroll', dropChip, { passive: true });
   V.journal = () => {
     const prof = P(),
       wi = st.w != null ? st.w : Math.max(0, worldOf(S[prof.at] || S[0])),
@@ -5588,9 +5592,8 @@
       keys = pageKeys(wi),
       got = keys.filter(has).length;
     const tabs = WORLDS.map((_, w) => {
-      const all = pageKeys(w),
-        done = all.every(has);
-      return `<button class="jtab ${w === wi ? 'on' : ''} ${done ? 'done' : ''}" data-act="jpage" data-w="${w}" aria-label="World ${w + 1}">${ART.props[WORLD_ICON[w]] || ''}${done ? '<i>✓</i>' : ''}</button>`;
+      const done = pageKeys(w).every(has);
+      return `<button class="jtab ${w === wi ? 'on' : ''} ${done ? 'done' : ''}" data-act="jpage" data-w="${w}" style="--tc:${ART.WORLDS[w].accent}" aria-label="World ${w + 1}">${ART.props[WORLD_ICON[w]] || ''}${done ? '<i>✓</i>' : ''}</button>`;
     }).join('');
     const things = pg.map
       .map((k) => `<button class="jit ${has('p:' + k) ? 'got' : ''}" data-act="jhint" data-k="p:${k}"><span class="jpic">${ART.props[k]}</span><small>${has('p:' + k) ? PROP_NAME[k] : '?'}</small></button>`)
@@ -5601,16 +5604,42 @@
     return `<div class="screen jscr">
     ${bar('My Journal', `${prof.found.length} of ${JKEYS.size} found`, 'map')}
     <div class="jtabs">${tabs}</div>
-    <div class="card jpage">
-      <div class="jhead"><b>World ${wi + 1} · ${WORLDS[wi].name}</b><span>${got}/${keys.length}${prof.jdone.includes(wi) ? ' ✓' : ' · 🎁'}</span></div>
-      <div class="jsec">On the map</div>
-      <div class="jgrid">${things}</div>
-      <div class="jsec">In the sūrahs' pictures</div>
-      ${suras}
+    <div class="jbook">
+      <div class="jpage" data-w="${wi}">
+        <i class="jribbon" aria-hidden="true"></i>
+        <div class="jhead"><b>World ${wi + 1}<small>${WORLDS[wi].name}</small></b><span>${got}/${keys.length}${prof.jdone.includes(wi) ? ' ✓' : ' 🎁'}</span></div>
+        <div class="jsec">On the map</div>
+        <div class="jgrid">${things}</div>
+        <div class="jsec">In the sūrahs' pictures</div>
+        ${suras}
+        <div class="jfoot"><span>‹</span> ${wi + 1} / ${WORLDS.length} <span>›</span></div>
+      </div>
     </div>
-    <p class="saveinfo center">Tap and hold a thing on the map, or a picture in a sūrah, to add it.</p>
+    <p class="saveinfo center">Tap a thing on the map, or a picture in a sūrah, to add it.</p>
   </div>`;
   };
+  // turn the page: tap a tab, or swipe the book left and right
+  function turnPage(w, dir) {
+    if (w < 0 || w >= WORLDS.length || w === st.w) return;
+    sfx.tap();
+    st.w = w;
+    render();
+    const pg = document.querySelector('.jpage');
+    if (pg && !reduceMotion) pg.animate([{ transform: `translateX(${dir * 60}px) rotateY(${dir * 12}deg)`, opacity: 0.2 }, { transform: 'none', opacity: 1 }], { duration: 320, easing: 'ease-out' });
+  }
+  let jSwipe = null;
+  document.addEventListener('pointerdown', (e) => (jSwipe = st.view === 'journal' && e.target.closest && e.target.closest('.jbook') ? { x: e.clientX, y: e.clientY } : null), true);
+  document.addEventListener(
+    'pointerup',
+    (e) => {
+      if (!jSwipe || st.view !== 'journal') return;
+      const dx = e.clientX - jSwipe.x,
+        dy = e.clientY - jSwipe.y;
+      jSwipe = null;
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) turnPage(st.w + (dx < 0 ? 1 : -1), dx < 0 ? 1 : -1);
+    },
+    true,
+  );
 
   /* ================= THE WISE ELDER =================
      Once the game has been open 7 minutes, every 7 minutes there is a 1 in 3 chance that, on the map, the Wise
@@ -5663,7 +5692,7 @@
     sfx.whoosh();
     const m = document.getElementById('modal');
     m.innerHTML = `<div class="card eldmeet"><div class="eldart">${elderArt(rematch ? 'happy' : '')}</div>
-      <h3>${rematch ? 'The Wise Elder is back!' : anytime ? 'You call the Wise Elder…' : 'The Wise Elder joins you on the path!'}</h3>
+      <h3>${rematch ? 'Your Teacher is back!' : anytime ? 'You call your Teacher…' : 'Your Teacher joins you on the path!'}</h3>
       <p class="eldsay">“${rematch ? `You found your things! Shall we walk the <b>${s.name}</b> path again?` : `Let’s walk this stretch together. Show me <b>${s.name}</b>: three questions, no help!`}”</p>
       <div class="row"><button class="btn go wide" data-act="eldface">✅ I'm ready!</button><button class="btn wide" data-act="eldrun">🏃 Not now</button></div></div>`;
     m.classList.add('show');
@@ -5689,7 +5718,7 @@
   /* A new explorer's first steps on the map: the Wise Elder greets them, tells them about the quest, and hands them
      their walking stick (they start without one). With him switched off, they simply get the stick. */
   const INTRO = [
-    (nm) => [`<div class="eldart">${elderArt('happy')}</div>`, `As-salāmu ʿalaykum, ${nm}!`, 'I’m the Wise Elder. I know the whole Qur’an by heart, and I’ll walk with you.'],
+    (nm) => [`<div class="eldart">${elderArt('happy')}</div>`, `As-salāmu ʿalaykum, ${nm}!`, 'I’m your Teacher. I know the whole Qur’an by heart, and I’ll walk with you.'],
     () => [`<div class="intart worlds">${WORLD_ICON.map((k) => ART.props[k] || '').join('')}</div>`, 'Seven worlds to climb', 'From An-Nās to the mountain top, one sūrah at a time.'],
     () => [`<div class="intart">${ART.gift({ tier: 3 })}</div>`, 'Gifts at every step', 'Treasures, golden things, stickers and rides are waiting for you!'],
     () => [`<div class="intart">${itemPic('twig')}</div>`, 'Your walking stick', 'Every explorer needs one. Here is yours. Bismillāh!'],
@@ -5710,7 +5739,7 @@
       [art, h, p] = INTRO[k](P().name ? esc(P().name) : 'explorer');
     m.innerHTML = `<div class="card eldmeet intro">${art}<h3>${h}</h3><p class="eldsay">${p}</p>
       <div class="introdots">${INTRO.map((_, j) => `<i class="${j === k ? 'on' : ''}"></i>`).join('')}</div>
-      <div class="row"><button class="btn go wide" data-act="intro" data-k="${k + 1}">${k < INTRO.length - 1 ? 'Next ›' : '🪵 Take it!'}</button></div></div>`;
+      <div class="row"><button class="btn go wide" data-act="intro" data-k="${k + 1}">${k < INTRO.length - 1 ? 'Next ›' : `<span class="btnic">${itemPic('twig')}</span>Take it!`}</button></div></div>`;
     m.classList.add('show');
   }
 
@@ -5846,7 +5875,7 @@
       .map((f, j) => `<span class="eldfallen" style="--j:${j}">${thingPic(f)}</span>`)
       .join('');
     return `<div class="screen eldscr" style="${cv(s.color)}">
-    <div class="eldtop"><span class="eldtitle">The Wise Elder · ${s.name}</span><span class="elddots">${dots}</span></div>
+    <div class="eldtop"><span class="eldtitle">Your Teacher · ${s.name}</span><span class="elddots">${dots}</span></div>
     ${eldWorld(s)}
     <div class="arena">
       <div class="eldbubble ${st.ack ? 'ack' : ''}">${say}</div>

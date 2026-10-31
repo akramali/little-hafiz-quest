@@ -7,7 +7,7 @@
   ok('and when he last came', L.store().profiles[0].elderAt === 12345);
   L.go('settings'); await wait(300);
   const tgl = d.querySelector('[data-act=tog][data-k=elder]');
-  ok('the settings switch says the Wise Elder', !!tgl && /The Wise Elder/.test(tgl.textContent) && !/Stranger/.test(tgl.textContent));
+  ok('the settings switch says Your Teacher', !!tgl && /Your Teacher/.test(tgl.textContent) && !/Stranger/.test(tgl.textContent));
   ok('his drawing is the kind elder (robe sways)', !!w.document.createRange().createContextualFragment(w.LHQ_ART.elder('')).querySelector('.robe-sway'));
   done();
 })();

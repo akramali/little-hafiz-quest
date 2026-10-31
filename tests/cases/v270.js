@@ -10,10 +10,12 @@
   const errs = watchErrors(w);
   const X = w.__lhq, A = w.LHQ_ART, m = d.getElementById('modal');
   const tap = (sel) => { const b = d.querySelector(sel); if (b) b.click(); return !!b; };
+  // (v2.7.2: a tap brings an "Add to journal" button; holdOn(el, long) taps and accepts it, holdOn(el, short) only taps)
   const holdOn = async (el, ms) => {
-    const r = el.getBoundingClientRect(), o = { bubbles: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, pointerId: 7, isPrimary: true };
-    el.dispatchEvent(new w.PointerEvent('pointerdown', o)); await wait(ms);
-    el.dispatchEvent(new w.PointerEvent('pointerup', o)); await wait(100);
+    el.click(); await wait(150);
+    const chip = d.querySelector('.jchip');
+    if (ms > 500 && chip) { chip.click(); await wait(150); }
+    else if (chip) chip.remove();
   };
   // 1. a new explorer: "Begin the quest", no stick yet; the Wise Elder welcomes them and hands it over
   let p = L.store().profiles.find((x) => x.id === 'pnew');
@@ -48,18 +50,18 @@
   const sheep = d.querySelector('.mprop[data-k="meadow-sheep"]');
   sheep.scrollIntoView({ block: 'center' }); await wait(600);
   await holdOn(sheep, 150);
-  ok('a quick tap adds nothing', !p.found.length);
+  ok('a tap alone adds nothing (it offers the button)', !p.found.length);
   await holdOn(sheep, 900);
-  ok('tap and hold: the sheep is in the journal', p.found.includes('p:meadow-sheep'), p.found.join());
+  ok('tap, then Add to journal: the sheep is in the journal', p.found.includes('p:meadow-sheep'), p.found.join());
   // in a sūrah: hold a picture
   L.go('learn', { i: idx(114), p: 0, a: 0, phase: 'repeat', popped: [false, false, false], peek: false, chain: 0, saidA: [], savedA: [] }); await wait(600);
   const pics = [...d.querySelectorAll('.e')];
   const shield = pics.find((e) => e.textContent.trim() === '🛡️'), people = pics.find((e) => e.textContent.trim() === '👨‍👩‍👧');
   if (shield) await holdOn(shield, 900);
-  ok('hold a picture in a sūrah: the shield is in the journal', p.found.includes('e:🛡️'), p.found.join());
+  ok('a picture in a sūrah: the shield is in the journal', p.found.includes('e:🛡️'), p.found.join());
   const before = p.found.length;
   if (people) await holdOn(people, 900);
-  ok('people are not in the journal: holding does nothing', !!people && p.found.length === before);
+  ok('people are not in the journal: no button', !!people && p.found.length === before);
   // a whole page brings a gift
   L.go('journal', { w: 0 }); await wait(300);
   ok('the journal shows the page and the count', /My Journal/.test(d.body.textContent) && /of \d+ found/.test(d.body.textContent) && d.querySelectorAll('.jit').length > 8);

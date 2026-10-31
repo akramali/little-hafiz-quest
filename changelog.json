@@ -1,7 +1,13 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.7.1",
+ "latest": "2.7.2",
  "versions": [
+  { "v": "2.7.2", "notes": [
+   "The Wise Elder is now Your Teacher",
+   "Journal: just tap a thing, then Add to journal; swipe to turn the pages",
+   "Pink shirt and pastel pants and shoes for girls",
+   "Tap your explorer's name in My Explorer to switch explorers"
+  ] },
   { "v": "2.7.1", "notes": [
    "Sharing progress with family now brings everything: journal, campfires, streaks, gifts waiting and more"
   ] },

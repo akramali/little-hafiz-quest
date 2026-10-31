@@ -40,12 +40,12 @@ recite on their own.
   <tr>
     <td align="center"><img src="screenshots/learn.png" width="200" alt="Look & Repeat: the āyah's pictures, the Arabic for the grown-up to read, the speed and loop buttons, and three bubbles to pop"></td>
     <td align="center"><img src="screenshots/words.png" width="200" alt="Word Steps: the āyah built word by word in colored boxes, with each word's transliteration and meaning"></td>
-    <td align="center"><img src="screenshots/elder.png" width="200" alt="The Wise Elder, a kind old man with a white beard and a star-topped staff, walks beside the explorer on a path through the world, with a question to answer"></td>
+    <td align="center"><img src="screenshots/elder.png" width="200" alt="Your Teacher, a kind old man with a white beard and a star-topped staff, walks beside the explorer on a path through the world, with a question to answer"></td>
   </tr>
   <tr>
     <td align="center">Look &amp; repeat</td>
     <td align="center">Build it word by word</td>
-    <td align="center">Walk with the Wise Elder</td>
+    <td align="center">Walk with your Teacher</td>
   </tr>
 </table>
 
@@ -59,13 +59,13 @@ recite on their own.
 - **Four steps per sūrah:** 👀 Look & Repeat and Word Steps to learn, then 🐸 Stepping Stones and 🧩 Picture Puzzle to review.
 - **Pictures and actions** for every āyah, plus simple meanings, word meanings and transliteration (optional).
 - **Campfires** beside memorized sūrahs burn down over the days; revising relights them (spaced review).
-- **A journal to fill:** a scavenger hunt for the animals and things on the map and in the āyāt's pictures.
-- **Daily streaks** and the Wise Elder's welcome, who hands each new explorer their walking stick.
+- **A journal to fill:** a book of the animals and things to find on the map and in the āyāt's pictures; tap one to add it.
+- **Daily streaks**, and a welcome from your Teacher, who hands each new explorer their walking stick.
 - **Read mode** for children who can read the muṣḥaf, following the recitation āyah by āyah.
 - **Four reciters**, adjustable speed (0.25×–2×) and loops; tap any word to hear it alone.
 - **200+ things to win and wear:** treasures, golden editions, stickers, buddies, toy rides for golden worlds and
   summit awards.
-- **The Wise Elder:** a kind old man who roams the map; tap him, or he finds you, to walk together and test a memorized sūrah, with no help.
+- **Your Teacher:** a kind old man who roams the map; tap him, or he finds you, to walk together and test a memorized sūrah, with no help.
 - **Family friendly:** up to 10 explorers on one phone, family sync between phones by link or QR code, backups to a file.
 
 Five to ten minutes a day is plenty. Stop while it's still fun.

@@ -18,6 +18,7 @@
   p.stash = { outfit: { hat: items[0] }, badge: 'moon' };
   p.badge = 'bee';
   p.at = 5;
+  p.look.feet = 2;
   p.greeted = true;
   p.daily = day(Date.now());
   p.elderGift = day(Date.now() - 864e5);
