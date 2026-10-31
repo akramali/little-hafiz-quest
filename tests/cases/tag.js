@@ -22,8 +22,9 @@
   log('walked 80 px: name moved', Math.round(b.getBoundingClientRect().left - x0), 'px');
   ok('the name follows them', Math.abs(b.getBoundingClientRect().left - x0 - 80) < 3);
   await wait(3500);
-  log('a few seconds later: name gone', !pal.querySelector('.mbubble'));
-  ok('the name fades', !pal.querySelector('.mbubble'));
+  // (that bubble: a salām from someone walking by may bring a new one meanwhile)
+  log('a few seconds later: name gone', !b.isConnected);
+  ok('the name fades', !b.isConnected);
   if (Q.get('hold')) { pal.dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await wait(5000); }
   ok('no game errors', !errs.length, errs.slice(0, 3).join('; ')); log('errors', errs);
   done();
