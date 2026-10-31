@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.6.4';
+  const VERSION = '2.6.5';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -638,7 +638,7 @@
   function explorer(opts, prof) {
     prof = prof || P();
     opts = Object.assign({ view: 'front' }, opts);
-    if (opts.mood == null) opts.mood = prof.lost.length ? 'sad' : '';
+    if (opts.mood == null) opts.mood = prof.lost.length || (prof.lostSt || []).length ? 'sad' : '';
     return ART.explorer(prof.look, Object.assign(wornOutfit(prof), { sticker: prof.badge }), opts);
   }
   function gotIt(prof, key) {
@@ -1649,6 +1649,8 @@
         .filter((p) => p.id !== store.cur && p.made)
         .map((p) => ({ id: p.id, name: p.name ? esc(p.name) : 'Explorer', svg: explorer({ view: 'front' }, p), wi: Math.max(0, worldOf(S[p.at] || S[0])) })),
       worldIcon: (wi) => WORLD_ICON[wi],
+      // what the Stranger throws in each world (so the explorer can dress for it)
+      worldThrows: (wi) => (prefs.stranger ? worldThrowIcons(wi) : ''),
       onWorld: (wi) => {
         const w = ART.WORLDS[wi];
         setTopColor(isNight() && w.dim ? w.dim.sky[0] : w.sky[0]); // the status bar follows the world in view
@@ -2417,7 +2419,7 @@
     if (lost)
       return `<button class="icell lost" data-act="goto" data-i="${BYN[lost.n].idx}"><span class="iart">${itemPic(it.id)}</span><span class="lostbadge">${ART.lostMarker()}</span><small>Lost at ${BYN[lost.n].name}!</small></button>`;
     if (owned)
-      return `<button class="icell t${it.tier || 0} ${it.gold ? 'gold' : ''} ${on ? 'on' : ''}" data-act="equip" data-id="${it.id}" aria-pressed="${on}"><span class="iart">${itemPic(it.id)}</span><small>${itemName(it.id)}</small>${prof.fresh.includes('i:' + it.id) ? NEWDOT : ''}</button>`;
+      return `<button class="icell t${it.tier || 0} ${it.gold ? 'gold' : ''} ${on ? 'on' : ''}" data-act="equip" data-id="${it.id}" aria-pressed="${on}"><span class="iart">${itemPic(it.id)}</span><small>${itemName(it.id)}</small>${prefs.stranger && blocksOf(it.id).length ? `<span class="iblk" aria-label="Blocks ${blocksOf(it.id).map((k) => THROW[k].name).join(', ')}">${blocksOf(it.id).map((k) => THROW[k].ic).join('')}</span>` : ''}${prof.fresh.includes('i:' + it.id) ? NEWDOT : ''}</button>`;
     return `<div class="icell locked ${it.gold || it.wgold ? 'goldlock' : ''}"><span class="iart">${ART.silhouette(it.id, P().look)}</span><small>${it.wgold ? `World ${it.wgold} all golden` : it.quest ? 'Stand up to the Stranger' : it.feat ? FEAT_HINT[it.feat] : it.drop ? 'A surprise gift' : it.track ? `At ${it.track} ⭐` : it.gold ? `Every star in ${BYN[it.from].name}` : `A star in ${BYN[it.from].name}`}</small></div>`;
   }
   function stickerCell(id, prof) {
@@ -5083,17 +5085,23 @@
     };
   }
 
-  /* ================= THE STRANGER (test concept, v2.6.0: keep or remove in v2.6.1) =================
-     Now and then, back on the map between sūrahs (after 5 minutes in the game, a 1 in 3 chance, at most
-     every 15 minutes), a hooded stranger asks 3 questions from one memorized sūrah: what comes after an āyah,
-     or finish an āyah. No Listen, no hints. A grown-up taps "Said it!" or "Not quite". Each miss, he throws a
-     rock, a gust of wind or a splash of water: a shield stops rocks, a cape or jacket the wind, boots the
-     water (hero armor stops everything). Miss all three and he takes something, left at that sūrah: one thing
-     for each throw that got through (one at most when wearing something golden; only a sticker when wearing
-     all the hero gear). Get it back with a review game there, and he comes back for a rematch: answer all
-     three and he leaves a special gift. After the summit, wins earn the hero armor, shield and sword; with
-     all three, the map has a ⚔️ Challenge button to face him any time. */
+  /* ================= THE STRANGER =================
+     Once the game has been open 5 minutes, every 5 minutes there is a 1 in 3 chance that, on the map, a hooded
+     stranger blocks the path and asks 3 questions from one memorized sūrah: what comes after an āyah, or
+     finish an āyah. No Listen, no hints: a grown-up taps "Said it!" or "Not quite".
+     Every miss costs something. He throws what his world has (two kinds per world, shown on its sign), and
+     what the explorer wears decides what happens:
+       - something worn that blocks that throw takes the hit: ordinary gear falls itself; golden or hero gear
+         holds (the next thing on the list falls instead), except in a golden sūrah, where it falls too;
+       - nothing that blocks it: the explorer is hurt, and the next thing on the list falls.
+     The list: worn things (not golden) best first, then other things owned, then one sticker, then golden
+     things only when nothing else is left (golden ones too, in a golden sūrah). Star badges and the comfy
+     starter clothes are never taken. Everything falls at that sūrah, until a review game there wins it all back;
+     then he comes back for a rematch. All three right: safe, and a small gift (a special one in a rematch).
+     After the summit, wins earn the hero armor, shield and sword; with all three, the map has a ⚔️ Challenge
+     button to face him any time. The Grown-up Corner can switch him off. */
   const APP_OPENED = Date.now();
+  let strangerRoll = APP_OPENED; // one roll in each 5-minute window
   // he can also turn up while you stay on the map (the 5 minutes count from opening the game, wherever you are)
   setInterval(() => !document.hidden && st.view === 'map' && maybeStranger(), 30000);
   const HERO = ['hero-armor', 'hero-shield', 'hero-sword'];
@@ -5107,13 +5115,14 @@
     if (prof.rematchReady.length) return Date.now() - prof.strangerAt > 5 * 60000 ? meetStranger(false, true) : undefined;
     if (!memorizedList(prof).length) return;
     if (window.__strangerNow) return meetStranger(false); // tests only: skip the waiting and the chance
-    if (Date.now() - APP_OPENED < 5 * 60000 || Date.now() - prof.strangerAt < 15 * 60000) return;
+    if (Date.now() - strangerRoll < 5 * 60000) return;
+    strangerRoll = Date.now();
     if (Math.random() < 1 / 3) meetStranger(false);
   }
   function meetStranger(anytime, rematch) {
     const prof = P(),
-      list = memorizedList(prof);
-    const s = rematch ? BYN[prof.rematchReady[0]] : list.filter((x) => !prof.fix.includes(x.n))[(Math.random() * list.length) | 0] || list[0];
+      free = memorizedList(prof).filter((x) => !prof.fix.includes(x.n)); // not where things are already waiting
+    const s = rematch ? BYN[prof.rematchReady[0]] : free[(Math.random() * free.length) | 0];
     if (!s) return;
     prof.strangerAt = Date.now();
     save();
@@ -5127,10 +5136,85 @@
     m.classList.add('show');
   }
   let strangerPlan = null;
+
+  /* the throws, what blocks them, and what each world has */
+  const THROW = {
+    rock: { ic: '🪨', name: 'a rock', slots: ['shield', 'pet'] },
+    wind: { ic: '💨', name: 'a gust of wind', slots: ['cape', 'top'] },
+    water: { ic: '💧', name: 'a splash of water', slots: ['shoes'] },
+    acorn: { ic: '🌰', name: 'a shower of acorns', slots: ['hat', 'hijab'] },
+    sand: { ic: '✨', name: 'a swirl of sand', slots: ['glasses'] },
+    vines: { ic: '🌿', name: 'a tangle of vines', slots: ['stick'] },
+  };
+  const WORLD_THROWS = [['rock', 'acorn'], ['vines', 'acorn'], ['sand', 'water'], ['rock', 'sand'], ['wind', 'sand'], ['wind', 'water'], ['wind', 'acorn']];
+  // the same throw, as each world has it
+  const THROW_AS = { 4: { sand: 'a swirl of stardust' }, 5: { water: 'a burst of rain' }, 6: { acorn: 'a shower of hailstones' } };
+  const throwName = (k, wi) => (THROW_AS[wi] && THROW_AS[wi][k]) || THROW[k].name;
+  const worldThrowIcons = (wi) => (WORLD_THROWS[wi] || []).map((k) => THROW[k].ic).join(' ');
+  const JACKETS = /jacket|coat|hoodie|cloak|suit|vest|armor/;
+  const RIDE_PET = /rocket|car|plane|train|boat|truck|helicopter/;
+  const animalBuddy = (id) => !!id && ITEM[id] && ITEM[id].slot === 'pet' && !ITEM[id].wgold && !RIDE_PET.test(id);
+  // special things block more (a future item only needs its list here)
+  const EXTRA_BLOCKS = { 'hero-sword': ['rock'], 'hafiz-crown': ['sand'], 'hero-armor': Object.keys(THROW) };
+  // what an item blocks: by its kind, plus any extras (the comfy starter things block nothing)
+  function blocksOf(id) {
+    const it = ITEM[id];
+    if (!it || starter(it)) return [];
+    const out = Object.keys(THROW).filter((k) => THROW[k].slots.includes(it.slot) && (it.slot !== 'pet' || animalBuddy(id)) && (it.slot !== 'top' || JACKETS.test(id)));
+    (EXTRA_BLOCKS[id] || []).forEach((k) => out.includes(k) || out.push(k));
+    return out;
+  }
+  const isGolden = (id) => !!ITEM[id] && (!!ITEM[id].gold || ITEM[id].tier >= 4);
+  // the explorer's move when a thing blocks
+  const MOVE_FOR = { shield: 'shield', pet: 'pethop', cape: 'cape', top: 'look', shoes: 'march', hat: 'hattip', hijab: 'look', glasses: 'glasses', stick: 'stomp' };
+  const defendMove = (id) => (id === 'hero-armor' ? 'jump' : MOVE_FOR[ITEM[id].slot] || 'jump');
+  /* What happens when a throw comes: { blocker, hurt, falls: {k:'i'|'s', id} | null } */
+  function strikeFor(kind, prof, goldSurah) {
+    const worn = Object.values(wornOutfit(prof)).filter((id) => !isLost(id, prof));
+    const cands = worn.filter((id) => blocksOf(id).includes(kind));
+    const blocker = cands.find((id) => !isGolden(id)) || cands[0] || null;
+    const falls = blocker && (!isGolden(blocker) || goldSurah) ? { k: 'i', id: blocker } : nextToFall(prof, goldSurah, blocker);
+    return { blocker, hurt: !blocker, falls };
+  }
+  function nextToFall(prof, goldSurah, keep) {
+    const worn = Object.values(wornOutfit(prof));
+    const rank = (id) => (ITEM[id].tier || 0) * 10000 + Math.max(0, gotAt(prof, 'i:' + id));
+    const canGo = (id) => ITEM[id] && !starter(ITEM[id]) && !isLost(id, prof) && id !== keep;
+    const ok = (id) => canGo(id) && (goldSurah || !isGolden(id));
+    const best = (list) => list.filter(ok).sort((a, b) => rank(b) - rank(a))[0];
+    const w = best(worn) || best(prof.items);
+    if (w) return { k: 'i', id: w };
+    const stk = (prof.badge && STICKER[prof.badge] && !STICKER[prof.badge].stars ? prof.badge : '') || prof.stickers.filter((id) => !STICKER[id].stars).slice(-1)[0];
+    if (stk) return { k: 's', id: stk };
+    // nothing else left: golden things too (worn first), and last of all the one protecting
+    const g = [...worn, ...prof.items].find(canGo) || (keep && canGo2(keep) ? keep : null);
+    return g ? { k: 'i', id: g } : null;
+    function canGo2(id) {
+      return ITEM[id] && !starter(ITEM[id]) && !isLost(id, prof);
+    }
+  }
+  // it falls at the sūrah (saved at once), until a review game there wins it back
+  function dropThing(prof, f, n) {
+    if (f.k === 'i') prof.lost.push({ id: f.id, n });
+    else {
+      prof.stickers = prof.stickers.filter((x) => x !== f.id);
+      if (prof.badge === f.id) prof.badge = '';
+      prof.lostSt.push({ id: f.id, n });
+    }
+    if (!prof.fix.includes(n)) prof.fix.push(n);
+    if (!prof.rematch.includes(n)) prof.rematch.push(n);
+    prof.rematchReady = prof.rematchReady.filter((x) => x !== n);
+    save();
+  }
+  const thingPic = (f) => (f.k === 'i' ? itemPic(f.id) : ART.sticker(f.id));
+  const thingName = (f) => (f.k === 'i' ? itemName(f.id) : STICKER[f.id].name + ' sticker');
+
   function strangerQuestions(s) {
     const A = s.ayat.length,
       ks = shuffle(range({ from: 0, to: A - 1 })),
+      wt = WORLD_THROWS[worldOf(s)] || ['rock'],
       qs = [];
+    const pick = () => wt[(Math.random() * wt.length) | 0];
     for (const k of ks) {
       if (qs.length === 3) break;
       const words = wordsOf(s.ayat[k].ar);
@@ -5138,61 +5222,39 @@
         canFinish = words.length >= 4;
       if (!canNext && !canFinish) continue;
       const kind = canNext && (!canFinish || Math.random() < 0.5) ? 'next' : 'finish';
-      qs.push({ k, kind, cut: kind === 'finish' ? Math.ceil(words.length / 2) : 0, throw: ['rock', 'wind', 'water'][(Math.random() * 3) | 0] });
+      qs.push({ k, kind, cut: kind === 'finish' ? Math.ceil(words.length / 2) : 0, throw: pick() });
     }
-    while (qs.length < 3) qs.push(Object.assign({}, qs[qs.length % Math.max(1, qs.length)] || { k: 0, kind: 'finish', cut: 1, throw: 'rock' }));
+    while (qs.length < 3) qs.push(Object.assign({}, qs[qs.length % Math.max(1, qs.length)] || { k: 0, kind: 'finish', cut: 1 }, { throw: pick() }));
     return qs;
   }
   function startStranger() {
     const p = strangerPlan;
     if (!p) return;
     stopAudio();
-    go('stranger', { i: p.i, p: 0, qs: strangerQuestions(S[p.i]), q: 0, marks: [], hits: 0, phase: 'intro', anytime: p.anytime, rematch: p.rematch, result: null });
+    go('stranger', { i: p.i, p: 0, qs: strangerQuestions(S[p.i]), q: 0, marks: [], hurt: false, fallen: [], phase: 'intro', anytime: p.anytime, rematch: p.rematch, result: null, ack: '' });
   }
-  // what stops each throw, and how the explorer uses it
-  const THROW = {
-    rock: { ic: '🪨', name: 'a rock' },
-    wind: { ic: '💨', name: 'a gust of wind' },
-    water: { ic: '💧', name: 'a splash of water' },
-  };
-  const animalBuddy = (id) => id && !ITEM[id].wgold && !/rocket|car|plane|train|boat|truck|helicopter/.test(id);
-  // → { id: the thing that blocks, move: the explorer's move } or null
-  function blockerFor(kind, prof) {
-    const o = wornOutfit(prof);
-    if (o.top === 'hero-armor') return { id: 'hero-armor', move: 'jump' };
-    if (kind === 'rock') {
-      if (o.shield) return { id: o.shield, move: 'shield' };
-      if (animalBuddy(o.pet) && Math.random() < 0.5) return { id: o.pet, move: 'pethop' }; // the buddy jumps in front
-      return null;
-    }
-    if (kind === 'wind') {
-      if (o.cape) return { id: o.cape, move: 'cape' };
-      if (o.top && !starter(ITEM[o.top]) && /jacket|coat|hoodie|cloak|suit|vest/.test(o.top)) return { id: o.top, move: 'look' };
-      return null;
-    }
-    return o.shoes && !starter(ITEM[o.shoes]) ? { id: o.shoes, move: 'march' } : null;
-  }
+  const ACKS = ['Hmm… right!', 'Well remembered!', 'You know it!', 'Correct… impressive!', 'Right again!'];
   V.stranger = () => {
     const s = S[st.i],
       prof = P(),
       q = st.qs[st.q],
-      sad = st.hits > 0 || (st.phase === 'end' && st.result && st.result.took);
+      sad = st.hurt || st.fallen.length > 0;
     const dots = st.qs.map((_, j) => `<span class="strdot ${st.marks[j] === true ? 'ok' : st.marks[j] === false ? 'bad' : j === st.q && st.phase === 'ask' ? 'cur' : ''}">${st.marks[j] === true ? '✓' : st.marks[j] === false ? '✗' : j + 1}</span>`).join('');
     let say, panel;
     if (st.phase === 'intro') {
       say = `I'll ask you three things about <b>${s.name}</b>. Get them right, and I'll be on my way!`;
       panel = `<div class="row"><button class="btn go wide" data-act="strgo">Ask me! ⚔️</button></div>`;
     } else if (st.phase === 'end') {
-      const r = st.result;
+      const r = st.result,
+        g = r.win && prof.pending[0];
       say = r.say;
-      const g = r.win && prof.pending[0];
       panel = `<div class="strend">${r.html}${g ? `<button class="giftbtn dgift" data-act="opengift"><span class="rattle">${giftArt(g)}</span><b>A gift for you!</b><small>Tap to open</small></button>` : ''}</div><div class="row"><button class="btn ${g ? '' : 'go'} wide" data-act="strdone">🗺️ Back to the map</button></div>`;
     } else {
       const a = s.ayat[q.k],
         words = wordsOf(a.ar);
       const shown = q.kind === 'finish' ? words.slice(0, q.cut).join(' ') + ' …' : a.ar;
       const answer = q.kind === 'finish' ? a.ar : s.ayat[q.k + 1].ar;
-      say = q.kind === 'next' ? `Āyah ${q.k + 1} of ${s.name}… <b>what comes after it?</b>` : `<b>Finish this āyah</b> of ${s.name}!`;
+      say = st.ack || (q.kind === 'next' ? `Āyah ${q.k + 1} of ${s.name}… <b>what comes after it?</b>` : `<b>Finish this āyah</b> of ${s.name}!`);
       panel = `<div class="card strq">
         <div class="ar-label">📖 Grown-up reads the question</div>
         <div class="ar sm" lang="ar">${shown}</div>
@@ -5201,24 +5263,31 @@
       </div>
       <div class="row"><button class="btn wide" data-act="strans" data-ok="0" ${st.phase !== 'ask' ? 'disabled' : ''}>🙈 Not quite</button><button class="btn go wide" data-act="strans" data-ok="1" ${st.phase !== 'ask' ? 'disabled' : ''}>✅ Said it!</button></div>`;
     }
+    const ground = st.fallen
+      .filter((f) => !f.ran)
+      .map((f, j) => `<span class="strfallen" style="--j:${j}">${thingPic(f)}</span>`)
+      .join('');
     return `<div class="screen strscr" style="${cv(s.color)}">
     <div class="strtop"><span class="strtitle">⚔️ The Stranger · ${s.name}</span><span class="strdots">${dots}</span></div>
     <div class="arena">
-      <div class="strbubble">${say}</div>
+      <div class="strbubble ${st.ack ? 'ack' : ''}">${say}</div>
       <div class="foe"><div class="strfig">${ART.stranger(st.phase === 'end' && st.result.win ? 'happy' : st.foeHit ? 'hit' : '')}</div><i class="plat"></i></div>
-      <div class="me"><div class="mefig">${explorer({ view: 'front', mood: sad ? 'sad' : undefined })}</div><i class="plat"></i></div>
+      <div class="me"><div class="mefig">${explorer({ view: 'front', mood: sad ? 'sad' : undefined })}</div>${st.hurt ? '<i class="plaster"></i>' : ''}<i class="plat"></i></div>
+      <div class="strground">${ground}</div>
     </div>
     ${panel}
   </div>`;
   };
   function strangerAnswer(right) {
     if (st.view !== 'stranger' || st.phase !== 'ask') return;
-    const q = st.qs[st.q];
+    const q = st.qs[st.q],
+      s = S[st.i];
     st.marks[st.q] = right;
     st.phase = 'anim';
     const next = () => {
       if (st.view !== 'stranger') return;
       st.foeHit = false;
+      st.ack = '';
       if (st.q < 2) {
         st.q++;
         st.phase = 'ask';
@@ -5226,112 +5295,169 @@
       } else endStranger();
     };
     if (right) {
+      // he staggers, and says so
       sfx.chime();
       st.foeHit = true;
+      st.ack = ACKS[(Math.random() * ACKS.length) | 0];
       render();
       burstAt(document.querySelector('.strfig'), 10, ['✨', '⭐']);
-      setTimeout(next, 1100);
+      setTimeout(next, 1500);
       return;
     }
-    // a miss: he throws something, and the explorer defends if they can
     render();
     const prof = P(),
-      bl = blockerFor(q.throw, prof),
-      T = THROW[q.throw];
+      wi = worldOf(s),
+      strike = strikeFor(q.throw, prof, surahStars(s) >= surahMax(s));
     const arena = document.querySelector('.arena'),
       foe = document.querySelector('.strfig'),
-      me = document.querySelector('.mefig');
+      me = document.querySelector('.mefig'),
+      meBox = me.parentNode;
     const A = arena.getBoundingClientRect(),
       a = (foe.querySelector('svg') || foe).getBoundingClientRect(), // the drawings (their boxes are only wrappers)
       b = (me.querySelector('svg') || me).getBoundingClientRect();
-    const from = { x: a.left - A.left + a.width * 0.3, y: a.top - A.top + a.height * 0.45 },
-      to = { x: b.left - A.left + b.width * 0.55, y: b.top - A.top + b.height * (q.throw === 'water' ? 0.85 : 0.45) };
-    const bit = (txt, size) => {
+    const P0 = { x: a.left - A.left + a.width * 0.3, y: a.top - A.top + a.height * 0.45 }, // his hand
+      head = { x: b.left - A.left + b.width * 0.5, y: b.top - A.top + b.height * 0.22 },
+      chest = { x: b.left - A.left + b.width * 0.55, y: b.top - A.top + b.height * 0.45 },
+      feet = { x: b.left - A.left + b.width * 0.5, y: b.top - A.top + b.height * 0.9 };
+    const bit = (txt, at, size) => {
       const e = document.createElement('span');
       e.className = 'strproj';
       e.textContent = txt;
       e.style.fontSize = (size || 40) + 'px';
-      e.style.left = from.x + 'px';
-      e.style.top = from.y + 'px';
+      e.style.left = at.x + 'px';
+      e.style.top = at.y + 'px';
       arena.appendChild(e);
       return e;
     };
-    const exSvg = () => me.querySelector('svg.ex');
-    const defend = () => {
-      if (!bl) return;
-      const svg = exSvg();
-      if (svg && !reduceMotion) {
-        svg.classList.add('mv-' + bl.move);
-        setTimeout(() => svg.classList.remove('mv-' + bl.move), 1700);
-      }
+    const fly = (e, frames, ms, delay, ease) => {
+      const f = e.animate(frames, { duration: ms, delay: delay || 0, easing: ease || 'ease-in', fill: 'both' });
+      f.onfinish = () => e.remove();
+      return f;
     };
-    sfx.whoosh();
-    // he winds up
+    const tr = (from, to, dx, dy, extra) => `translate(${(to.x - from.x) + (dx || 0)}px, ${(to.y - from.y) + (dy || 0)}px)${extra || ''}`;
     foe.classList.add('throwing');
     setTimeout(() => foe.classList.remove('throwing'), 500);
-    const dx = to.x - from.x,
-      dy = to.y - from.y;
-    let flights = [];
+    sfx.whoosh();
+    // the throw: returns how long until it lands
+    let ms;
     if (q.throw === 'rock') {
-      const r = bit('🪨', 44);
-      flights.push(r.animate([{ transform: 'translate(0,0) rotate(0) scale(.7)' }, { transform: `translate(${dx * 0.5}px, ${dy * 0.5 - 90}px) rotate(360deg) scale(1.15)` }, { transform: `translate(${dx}px, ${dy}px) rotate(720deg) scale(1)` }], { duration: 1200, delay: 350, easing: 'ease-in', fill: 'both' }));
-      setTimeout(defend, 900);
-      flights[0].onfinish = () => {
-        if (bl) {
-          // clang: it bounces off and drops to the ground
-          sfx.boop();
-          burstAt(r, 8, ['✨', '💥']);
-          r.animate([{ transform: `translate(${dx}px, ${dy}px) rotate(720deg)` }, { transform: `translate(${dx - 50}px, ${dy - 60}px) rotate(820deg)` }, { transform: `translate(${dx - 80}px, ${dy + 70}px) rotate(900deg)`, opacity: 0 }], { duration: 800, easing: 'ease-out', fill: 'forwards' }).onfinish = () => r.remove();
-        } else r.remove();
-        land();
-      };
+      const r = bit('🪨', P0, 44);
+      fly(r, [{ transform: 'translate(0,0) rotate(0) scale(.7)' }, { transform: tr(P0, chest, -(chest.x - P0.x) / 2, -(chest.y - P0.y) / 2 - 90, ' rotate(360deg) scale(1.15)') }, { transform: tr(P0, chest, 0, 0, ' rotate(720deg)') }], 1200, 350);
+      ms = 1550;
     } else if (q.throw === 'wind') {
-      // a long gust sweeping across, leaves and all
-      setTimeout(defend, 500);
       ['💨', '🍃', '💨', '🍂', '💨', '🍃'].forEach((t, j) => {
-        const g = bit(t, 30 + (j % 3) * 8),
-          yo = (j % 3) * 22 - 22;
-        const f = g.animate([{ transform: `translate(0, ${yo}px)`, opacity: 0 }, { transform: `translate(${dx * 0.5}px, ${dy * 0.5 + yo - 10}px)`, opacity: 1, offset: 0.4 }, { transform: `translate(${dx - 140}px, ${dy + yo + 20}px)`, opacity: 0 }], { duration: 1700, delay: j * 160, easing: 'ease-in-out', fill: 'both' });
-        f.onfinish = () => g.remove();
-        flights.push(f);
+        const yo = (j % 3) * 22 - 22;
+        fly(bit(t, P0, 30 + (j % 3) * 8), [{ transform: `translate(0, ${yo}px)`, opacity: 0 }, { transform: tr(P0, chest, -(chest.x - P0.x) / 2, yo - (chest.y - P0.y) / 2), opacity: 1, offset: 0.4 }, { transform: tr(P0, chest, -140, yo + 20), opacity: 0 }], 1700, j * 160, 'ease-in-out');
       });
-      flights[flights.length - 1].onfinish = () => {
-        flights.forEach((f) => f.effect && f.effect.target && f.effect.target.remove());
-        land();
-      };
-      if (!bl) setTimeout(() => me.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-22px) rotate(-6deg)' }, { transform: 'translateX(0)' }], { duration: 900, delay: 0 }), 700);
-    } else {
-      // a splash of water: drops arc down at the explorer's feet
-      setTimeout(defend, 800);
+      ms = 1500;
+    } else if (q.throw === 'water') {
       ['💧', '💧', '🌊', '💧', '💧'].forEach((t, j) => {
-        const w0 = bit(t, t === '🌊' ? 46 : 30),
-          xo = (j - 2) * 18;
-        const f = w0.animate([{ transform: 'translate(0,0) scale(.6)', opacity: 0 }, { transform: `translate(${dx * 0.5 + xo}px, ${dy * 0.5 - 80}px) scale(1)`, opacity: 1, offset: 0.45 }, { transform: `translate(${dx + xo}px, ${dy}px) scale(1.1)`, opacity: 0.2 }], { duration: 1300, delay: 300 + j * 90, easing: 'ease-in', fill: 'both' });
-        f.onfinish = () => w0.remove();
-        flights.push(f);
+        const xo = (j - 2) * 18;
+        fly(bit(t, P0, t === '🌊' ? 46 : 30), [{ transform: 'translate(0,0) scale(.6)', opacity: 0 }, { transform: tr(P0, feet, xo - (feet.x - P0.x) / 2, -(feet.y - P0.y) / 2 - 80, ' scale(1)'), opacity: 1, offset: 0.45 }, { transform: tr(P0, feet, xo, 0, ' scale(1.1)'), opacity: 0.2 }], 1300, 300 + j * 90);
       });
-      flights[flights.length - 1].onfinish = () => {
-        burstAt(me, 6, ['💧', '💦']);
-        land();
-      };
+      ms = 1700;
+    } else if (q.throw === 'acorn') {
+      // tossed up high, they rain down on the explorer's head
+      fly(bit('🌰', P0, 30), [{ transform: 'translate(0,0)' }, { transform: 'translate(-10px,-220px)', opacity: 0 }], 500, 0, 'ease-out');
+      [-34, -10, 14, 36, 0].forEach((xo, j) => {
+        const top = { x: head.x + xo, y: -40 };
+        fly(bit('🌰', top, 28), [{ transform: 'translate(0,0) rotate(0)', opacity: 0 }, { transform: `translate(0, ${head.y + 40}px) rotate(200deg)`, opacity: 1 }], 900, 500 + j * 120);
+      });
+      ms = 1700;
+    } else if (q.throw === 'sand') {
+      // a glittering swirl that blows at the eyes
+      [0, 1, 2, 3, 4, 5, 6].forEach((j) => {
+        const frames = [];
+        for (let i = 0; i <= 6; i++) {
+          const t = i / 6;
+          frames.push({ transform: `translate(${(head.x - P0.x) * t + Math.sin(t * 9 + j) * 14}px, ${(head.y - P0.y) * t + Math.cos(t * 9 + j) * 14}px) scale(${0.6 + t * 0.6})`, opacity: i === 6 ? 0.3 : 1 });
+        }
+        fly(bit(j % 2 ? '✨' : '·', P0, j % 2 ? 26 : 34), frames, 1400, j * 90, 'linear');
+      });
+      ms = 1700;
+    } else {
+      // vines creep along the ground to the explorer's feet
+      const g0 = { x: P0.x, y: feet.y };
+      [0, 1, 2, 3].forEach((j) => {
+        fly(bit('🌿', g0, 30), [{ transform: 'translate(0,0) scale(.4)', opacity: 0 }, { transform: tr(g0, feet, 30 - j * 6, -4, ' scale(1.1) rotate(-20deg)'), opacity: 1 }], 1500, j * 140, 'ease-out');
+      });
+      ms = 1900;
     }
-    function land() {
+    // defend just before it lands
+    if (strike.blocker)
+      setTimeout(() => {
+        const svg = me.querySelector('svg.ex'),
+          mv = defendMove(strike.blocker);
+        if (svg && !reduceMotion) {
+          svg.classList.add('mv-' + mv);
+          setTimeout(() => svg.classList.remove('mv-' + mv), 1700);
+        }
+      }, ms - 450);
+    setTimeout(() => {
+      if (st.view !== 'stranger') return;
       const note = document.createElement('div');
       note.className = 'strnote';
-      if (bl) {
-        note.innerHTML = `${itemPic(bl.id)}<b>${bl.move === 'pethop' ? `Your ${itemName(bl.id)} jumped in the way!` : `Blocked by your ${itemName(bl.id)}!`}</b>`;
-        burstAt(me, 8, ['✨', '🛡️']);
+      const f = strike.falls,
+        held = strike.blocker && f && f.id !== strike.blocker;
+      if (strike.blocker) {
+        sfx.boop();
+        burstAt(me, 8, ['✨', '💥']);
       } else {
+        // hurt: knocked back, dizzy, a plaster
         sfx.pop();
-        st.hits++;
-        me.classList.add('ouch');
-        me.innerHTML = explorer({ view: 'front', mood: 'sad' });
-        note.innerHTML = `<b>Oof! Hit by ${T.name}.</b>`;
-        burstAt(me, 6, [T.ic, '💫']);
+        st.hurt = true;
+        meBox.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-26px) rotate(-8deg)' }, { transform: 'translateX(0)' }], { duration: 700, easing: 'ease-out' });
+        if (!meBox.querySelector('.plaster')) meBox.insertAdjacentHTML('beforeend', '<i class="plaster"></i>');
+        const dz = document.createElement('span');
+        dz.className = 'dizzy';
+        dz.textContent = '💫';
+        meBox.appendChild(dz);
+        setTimeout(() => dz.remove(), 1800);
       }
+      if (f) dropThing(prof, f, s.n);
+      const name = f ? thingName(f) : '';
+      const ran = f && f.k === 'i' && animalBuddy(f.id) && f.id === strike.blocker;
+      note.innerHTML = !f
+        ? `<b>Ouch! ${throwName(q.throw, wi)}! There's nothing left for him to knock off.</b>`
+        : ran
+          ? `${thingPic(f)}<b>Your ${name} jumped in the way, and ran off!</b>`
+          : strike.blocker && !held
+            ? `${thingPic(f)}<b>Your ${name} took the hit, and fell!</b>`
+            : held
+              ? `${thingPic(f)}<b>Your ${itemName(strike.blocker)} held! But your ${name} fell.</b>`
+              : `${thingPic(f)}<b>Ouch! Hit by ${throwName(q.throw, wi)}. Your ${name} fell!</b>`;
       arena.appendChild(note);
-      setTimeout(next, 1900);
-    }
+      me.innerHTML = explorer({ view: 'front', mood: 'sad' }); // without what fell
+      if (f) {
+        // what fell flies off: a buddy runs away, anything else tumbles to the ground between them
+        const it = document.createElement('span');
+        it.className = 'strtumble';
+        it.innerHTML = thingPic(f);
+        it.style.left = chest.x - 20 + 'px';
+        it.style.top = chest.y - 20 + 'px';
+        arena.appendChild(it);
+        const j = st.fallen.filter((x) => !x.ran).length,
+          gx = A.width * 0.38 + j * 34,
+          gy = A.height - 40;
+        st.fallen.push(Object.assign({ ran }, f)); // recorded now; the picture lands when the tumble ends
+        const anim = ran
+          ? it.animate([0, 1, 2, 3, 4, 5, 6].map((i) => ({ transform: `translate(${-i * 40}px, ${i % 2 ? -14 : 0}px) scaleX(-1)` })), { duration: 1100, fill: 'forwards' })
+          : it.animate([{ transform: 'translate(0,0) rotate(0)' }, { transform: `translate(${(gx - chest.x) / 2}px, -70px) rotate(220deg)` }, { transform: `translate(${gx - chest.x + 20}px, ${gy - chest.y + 20}px) rotate(380deg)` }], { duration: 900, easing: 'ease-in', fill: 'forwards' });
+        anim.onfinish = () => {
+          it.remove();
+          const gr = arena.querySelector('.strground');
+          if (gr && !ran && !gr.querySelector(`.strfallen[style="--j:${j}"]`)) gr.insertAdjacentHTML('beforeend', `<span class="strfallen" style="--j:${j}">${thingPic(f)}</span>`);
+        };
+      }
+      setTimeout(next, 2300);
+    }, ms);
+  }
+  // "Your cap and boots fell. Your ladybug ran off."
+  function strangerLoss(fell) {
+    const and = (l) => (l.length > 1 ? l.slice(0, -1).join(', ') + ' and ' + l[l.length - 1] : l[0]);
+    const fallen = fell.filter((f) => !f.ran).map(thingName),
+      ran = fell.filter((f) => f.ran).map(thingName);
+    return (fallen.length ? `Your ${and(fallen)} fell. ` : '') + (ran.length ? `Your ${and(ran)} ran off. ` : '');
   }
   function endStranger() {
     const s = S[st.i],
@@ -5339,7 +5465,7 @@
       right = st.marks.filter(Boolean).length;
     let r;
     if (right === 3) {
-      // all three: he leaves a gift (a rematch or a hero win: a special one)
+      // all three: safe, and a gift (a rematch or a hero win: a special one)
       let gift = '';
       const nextHero = prof.feats.includes('once') ? HERO.map((id) => ITEM[id]).find((it) => !hasOrWaits(it, prof)) : null;
       if (nextHero) {
@@ -5353,47 +5479,16 @@
       save();
       sfx.win();
       r = { win: true, say: 'Good job! The Qur’an is safe in your heart. I’ll be on my way…', html: `<p class="memo gold">🏆 All three right!${gift ? ` He left ${gift} for you.` : ''}</p>` };
-    } else if (right > 0) {
-      sfx.chime();
-      if (st.rematch) prof.rematchReady = prof.rematchReady.filter((n) => n !== s.n); // he'll be back after more practice there
-      save();
-      r = { win: false, say: `${right} out of 3… not bad. Keep practicing ${s.name}!`, html: `<p class="memo">He nods and walks away. Practice <b>${s.name}</b> a little more!</p>` };
     } else {
-      // all three missed: he takes something, left at this sūrah
-      const o = wornOutfit(prof),
-        full = HERO.every((id) => Object.values(o).includes(id)),
-        golden = Object.values(o).some((id) => ITEM[id] && (ITEM[id].gold || ITEM[id].tier >= 4));
-      let took = [];
-      if (full) {
-        const stk = prof.stickers.filter((id) => !STICKER[id].stars).slice(-1)[0];
-        if (stk) {
-          prof.stickers = prof.stickers.filter((id) => id !== stk);
-          if (prof.badge === stk) prof.badge = '';
-          prof.lostSt.push({ id: stk, n: s.n });
-          took = [`the ${STICKER[stk].name} sticker`];
-        }
-      } else {
-        const n = golden ? 1 : Math.max(1, st.hits);
-        const pool = [...Object.values(o).filter((id) => !starter(ITEM[id])), ...prof.items.slice().reverse()].filter((id, j, a) => a.indexOf(id) === j && !isLost(id, prof) && !HERO.includes(id));
-        pool.slice(0, n).forEach((id) => {
-          prof.lost.push({ id, n: s.n });
-          took.push('your ' + itemName(id));
-        });
-      }
-      if (took.length) {
-        if (!prof.fix.includes(s.n)) prof.fix.push(s.n);
-        if (!prof.rematch.includes(s.n)) prof.rematch.push(s.n);
-        prof.rematchReady = prof.rematchReady.filter((n) => n !== s.n);
-      }
-      save();
+      const fell = st.fallen;
       sfx.boop();
       r = {
         win: false,
-        took: took.length,
-        say: took.length ? 'Hmm… I’ll keep these until you know it better!' : 'Hmm… practice it more, little one.',
-        html: took.length
-          ? `<p class="memo">💔 He took ${took.join(' and ')}. ${took.length > 1 || full ? 'They are' : 'It is'} waiting at <b>${s.name}</b>: finish a review game there to get ${took.length > 1 ? 'them' : 'it'} back. Then he'll come back for a rematch!</p>`
-          : `<p class="memo">He shakes his head and walks away. Practice <b>${s.name}</b> again!</p>`,
+        took: fell.length,
+        say: right ? `${right} out of 3… Practice ${s.name} some more!` : 'Hmm… you need to practice this one!',
+        html: fell.length
+          ? `<p class="memo">💔 ${strangerLoss(fell)} ${fell.length > 1 ? 'They are' : 'It is'} waiting at <b>${s.name}</b>: finish a review game there to win ${fell.length > 1 ? 'them' : 'it'} back. Then he'll come back for a rematch!</p>`
+          : `<p class="memo">He walks away. There was nothing left for him to knock off, but practice <b>${s.name}</b> again!</p>`,
       };
     }
     st.phase = 'end';
@@ -5541,5 +5636,5 @@
   registerOffline();
   if (linkCode) setTimeout(() => openSync(linkCode, `${appURL()}#sync=${linkCode}`), 400);
   if (justUpdated) loadChangelog().then(() => st.view === 'splash' && render());
-  window.__lhq = { st: () => st, store: () => store, go, player }; // for testing in the browser console
+  window.__lhq = { st: () => st, store: () => store, go, player, stranger: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeStranger } }; // for testing in the browser console
 })();

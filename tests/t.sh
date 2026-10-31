@@ -27,9 +27,9 @@ declare -A AREA=(
   [art]="allgifts face props"
   [layout]="hit contrast"
   [buttons]="buttons"
-  [stranger]="stranger throws v261"
+  [stranger]="stranger stakes v261"
 )
-declare -A SECS=([dl]=280 [buttons]=500 [allgifts]=150 [face]=240 [throws]=200 [contrast]=150 [pals]=90)
+declare -A SECS=([dl]=280 [buttons]=500 [allgifts]=150 [face]=240 [stakes]=120 [contrast]=150 [pals]=90)
 if [ -z "$1" ] || [ "$1" = list ]; then for a in "${!AREA[@]}"; do printf '  %-10s %s\n' "$a" "${AREA[$a]}"; done | sort; exit; fi
 tests=()
 for x in "$@"; do

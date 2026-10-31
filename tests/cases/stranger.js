@@ -47,20 +47,16 @@
     d.querySelector('.arena').getAnimations({ subtree: true }).forEach((x) => x.pause());
     await wait(3000); done(); return;
   }
-  // 2. a miss with a shield on: a rock is blocked; set every throw to a rock
-  prof.items.push('hero-shield'); prof.outfit.shield = 'hero-shield';
-  L.st().qs.forEach((q) => (q.throw = 'rock'));
+  // 2. three misses: every miss costs something (a shield takes the first rock and falls)
+  prof.items.push('sturdy-shield', 'rain-boots', 'explorer-cap'); prof.outfit.shield = 'sturdy-shield'; prof.outfit.hat = 'explorer-cap';
+  L.st().qs.forEach((q, j) => (q.throw = j ? 'water' : 'rock'));
   await answer([false]);
-  ok('a shield blocks the rock', L.st().hits === 0, 'hits ' + L.st().hits);
-  // two more misses with nothing to stop water: things are taken
-  delete prof.outfit.shield;
-  prof.items.push('rain-boots', 'explorer-cap'); prof.outfit.hat = 'explorer-cap';
-  L.st().qs.forEach((q) => (q.throw = 'water'));
+  ok('a shield takes the rock and falls itself', prof.lost.some((x) => x.id === 'sturdy-shield') && !L.st().hurt);
   await answer([false, false]);
   ok('all three missed: he takes things', L.st().phase === 'end' && prof.lost.length >= 1 && prof.rematch.includes(w.LHQ_DATA.surahs[L.st().i].n), `lost ${prof.lost.length}, rematch ${prof.rematch}`);
   ok('the explorer looks sad before going back to the world', !!d.querySelector('.mefig svg.ex-sad'));
   const n = prof.rematch[0], lostN = prof.lost.length;
-  ok('one thing per throw that got through (2 hits → 2 things)', lostN === 2, lostN);
+  ok('every miss cost one thing (3 misses → 3 things)', lostN === 3, lostN);
   if (Q.get('shot') === 'end') { await wait(1000); done(); return; }
   // 3. a review game there gives them back and he returns for a rematch
   const i = idx(n);
@@ -93,7 +89,7 @@
     w.__lhq.go('map'); await wait(300);
     m.classList.remove('show');
     prof.pending = [];
-    L.go('stranger', { i: idx(113), p: 0, qs: [{ k: 0, kind: 'next', cut: 0, throw: 'rock' }, { k: 1, kind: 'next', cut: 0, throw: 'rock' }, { k: 2, kind: 'next', cut: 0, throw: 'rock' }], q: 0, marks: [], hits: 0, phase: 'ask', anytime: false, rematch: false, result: null });
+    L.go('stranger', { i: idx(113), p: 0, qs: [{ k: 0, kind: 'next', cut: 0, throw: 'rock' }, { k: 1, kind: 'next', cut: 0, throw: 'rock' }, { k: 2, kind: 'next', cut: 0, throw: 'rock' }], q: 0, marks: [], hurt: false, fallen: [], phase: 'ask', anytime: false, rematch: false, result: null, ack: '' });
     await answer([true, true, true]);
     const g = prof.pending.find((x) => /^hero-/.test(x.id));
     if (g) prof.items.push(g.id);
@@ -101,14 +97,16 @@
   ok('three wins after the summit: armor, shield and sword', ['hero-armor', 'hero-shield', 'hero-sword'].every((id) => prof.items.includes(id)), prof.items.filter((x) => /^hero/.test(x)).join(','));
   L.go('map'); await wait(600);
   ok('⚔️ Challenge on the map', !!d.querySelector('[data-act=challenge]'));
-  // 5. wearing all the hero gear: only a sticker can be taken
+  // 5. (Al-Ikhlāṣ is green here, not golden) wearing all the hero gear (golden), with only golden things and stickers: never hurt, stickers fall first
+  prof.outfit = {};
   ['hero-armor', 'hero-shield', 'hero-sword'].forEach((id) => (prof.outfit[A.ITEMS.find((x) => x.id === id).slot] = id));
+  prof.items = ['hero-armor', 'hero-shield', 'hero-sword'];
   prof.stickers = ['star', 'moon'];
-  prof.lost = []; prof.rematch = [];
-  L.go('stranger', { i: idx(113), p: 0, qs: [{ k: 0, kind: 'next', cut: 0, throw: 'wind' }, { k: 1, kind: 'next', cut: 0, throw: 'water' }, { k: 2, kind: 'next', cut: 0, throw: 'rock' }], q: 0, marks: [], hits: 0, phase: 'ask', anytime: true, rematch: false, result: null });
+  prof.lost = []; prof.lostSt = []; prof.rematch = [];
+  L.go('stranger', { i: idx(112), p: 0, qs: [{ k: 0, kind: 'next', cut: 0, throw: 'wind' }, { k: 1, kind: 'next', cut: 0, throw: 'water' }, { k: 2, kind: 'next', cut: 0, throw: 'rock' }], q: 0, marks: [], hurt: false, fallen: [], phase: 'ask', anytime: true, rematch: false, result: null, ack: '' });
   await answer([false, false, false]);
-  ok('hero armor blocks everything', L.st().hits === 0);
-  ok('with all the hero gear he only takes a sticker', !prof.lost.length && prof.lostSt.length === 1 && prof.stickers.length === 1);
+  ok('hero armor blocks everything: never hurt', !L.st().hurt);
+  ok('golden gear holds: two stickers fall, then the golden gear itself (nothing else left)', prof.lostSt.length === 2 && prof.lost.length === 1, `stickers ${prof.lostSt.length}, items ${prof.lost.map((x) => x.id)}`);
   ok('the setting can switch him off', 'stranger' in L.store().prefs);
   ok('no game errors', !errs.length, errs.slice(0, 3).join('; '));
   done();

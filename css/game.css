@@ -7922,3 +7922,101 @@ body {
   }
 }
 
+
+/* ---------- v2.6.5: the Stranger's stakes ---------- */
+/* what each world's stranger throws: on its sign and in the world list */
+.msign .msthrows {
+  display: block;
+  margin-top: 2px;
+  font-size: 15px;
+  letter-spacing: 3px;
+  color: inherit;
+}
+.wr-thr {
+  margin-left: auto;
+  padding-left: 8px;
+  font-size: 15px;
+  letter-spacing: 2px;
+  white-space: nowrap;
+}
+/* what an item blocks, on its card in My Explorer */
+.iblk {
+  position: absolute;
+  top: 6px;
+  left: 7px;
+  font-size: 12px;
+  letter-spacing: 1px;
+  line-height: 1;
+}
+/* his acknowledgement of a right answer */
+.strbubble.ack {
+  background: var(--okbg);
+  animation: popin 0.3s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+/* hurt: a plaster on the cheek, dizzy stars */
+.me .plaster {
+  position: absolute;
+  left: calc(50% + 6px);
+  bottom: 120px;
+  width: 17px;
+  height: 8px;
+  border-radius: 3px;
+  background: #f4d7a8;
+  box-shadow: inset 0 0 0 1.5px #c99a5b;
+  transform: rotate(-24deg);
+  z-index: 2;
+  animation: popin 0.3s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+.me .plaster::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 2px;
+  width: 5px;
+  height: 4px;
+  border-radius: 1px;
+  background: #e9bf86;
+}
+.me .dizzy {
+  position: absolute;
+  left: calc(50% - 16px);
+  bottom: 168px;
+  font-size: 26px;
+  z-index: 3;
+  animation: dizzy 0.9s linear 2;
+  pointer-events: none;
+}
+@keyframes dizzy {
+  from {
+    transform: rotate(0) translateX(10px) rotate(0);
+  }
+  to {
+    transform: rotate(360deg) translateX(10px) rotate(-360deg);
+  }
+}
+/* what fell: it tumbles across and lies on the ground between them */
+.strtumble,
+.strfallen {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  pointer-events: none;
+  z-index: 4;
+}
+.strtumble svg,
+.strfallen svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.strground {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.strfallen {
+  left: calc(38% + var(--j) * 34px);
+  top: calc(100% - 40px);
+  filter: drop-shadow(0 3px 2px rgba(43, 35, 64, 0.25));
+  animation: none;
+}
