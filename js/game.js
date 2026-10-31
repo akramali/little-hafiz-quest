@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.6.10';
+  const VERSION = '2.6.11';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -189,7 +189,7 @@
     audio: true,
     chain: 3, // Look & Repeat: chain after every 3 new āyāt (or every 1, 4, 5)
     chainSet: false, // chosen by a grown-up (v2.5.7: until then, the default of 3)
-    stranger: true, // (test concept, v2.6.0) the Stranger's challenge on the map
+    elder: true, // the Wise Elder's test on the map (was 'stranger' before v2.6.11)
     speed: 1, // recitation speed (v2.5.2; replaces "slower" and "repeat each āyah": the loop button repeats)
     reciter: 'alafasy',
     hearts: true,
@@ -335,13 +335,14 @@
     p.cpg = uniq((Array.isArray(o.cpg) ? o.cpg : []).filter((k) => typeof k === 'string' && /^\d{2,3}:\d$/.test(k))).slice(0, 200);
     p.feats = uniq((Array.isArray(o.feats) ? o.feats : []).filter((k) => FEAT_ITEM[k]));
     p.fix = uniq((Array.isArray(o.fix) ? o.fix : []).filter((n) => BYN[n]));
-    // (test concept, v2.6.0) the Stranger: where he took things, whether he comes back, stickers he holds
+    // the Wise Elder: where he took things, whether he comes back, stickers he holds (saved as strangerAt before v2.6.11)
     // sūrahs where he took things (he comes back for a rematch once they're won back), and those ready now
     const nums = (v) => uniq((Array.isArray(v) ? v : BYN[v] ? [v] : []).map(Number).filter((n) => BYN[n]));
     p.rematch = nums(o.rematch);
     p.rematchReady = Array.isArray(o.rematchReady) ? nums(o.rematchReady) : o.rematchReady === true ? p.rematch.slice() : [];
     p.lostSt = (Array.isArray(o.lostSt) ? o.lostSt : []).filter((x) => x && STICKER[x.id] && BYN[x.n]).map((x) => ({ id: x.id, n: x.n }));
-    p.strangerAt = typeof o.strangerAt === 'number' && isFinite(o.strangerAt) ? o.strangerAt : 0;
+    const at0 = o.elderAt != null ? o.elderAt : o.strangerAt;
+    p.elderAt = typeof at0 === 'number' && isFinite(at0) ? at0 : 0;
     p.wdone = Array.isArray(o.wdone)
       ? uniq(o.wdone.filter((w) => Number.isInteger(w) && w >= 0 && w < WORLDS.length))
       : WORLDS.map((_, wi) => wi).filter((wi) => worldDone(wi, p)); // no party for worlds finished before v2.1
@@ -357,9 +358,10 @@
   function cleanPrefs(o) {
     const out = Object.assign({}, DEFAULT_PREFS);
     if (!o || typeof o !== 'object') return out;
-    ['meaning', 'translit', 'sfx', 'audio', 'hearts', 'actions', 'fullscreen', 'pzrtl', 'wordmean', 'stranger'].forEach((k) => {
+    ['meaning', 'translit', 'sfx', 'audio', 'hearts', 'actions', 'fullscreen', 'pzrtl', 'wordmean', 'elder'].forEach((k) => {
       if (typeof o[k] === 'boolean') out[k] = o[k];
     });
+    if (typeof o.elder !== 'boolean' && typeof o.stranger === 'boolean') out.elder = o.stranger; // the setting's old name
     if (['auto', 'light', 'dim'].includes(o.theme)) out.theme = o.theme;
     if (SPEEDS.includes(o.speed)) out.speed = o.speed;
     if (o.chainSet === true && CHAINS.includes(o.chain)) Object.assign(out, { chain: o.chain, chainSet: true });
@@ -1394,7 +1396,7 @@
   let st = { view: 'splash' };
   let mapCtl = null;
   function go(view, params = {}) {
-    if (view === 'map' && ['surah', 'done', 'learn', 'words', 'path', 'order', 'mushaf'].includes(st.view)) setTimeout(maybeStranger, 1400);
+    if (view === 'map' && ['surah', 'done', 'learn', 'words', 'path', 'order', 'mushaf'].includes(st.view)) setTimeout(maybeElder, 1400);
     // leaving My Explorer: everything new there has been seen
     if (st.view === 'bag' && view !== 'bag' && P().fresh.length) {
       P().fresh = [];
@@ -1673,7 +1675,7 @@
       ${giftIcon(prof)}
       <button class="icon-btn hud-bag hud-me" data-act="bag" aria-label="My explorer: dress up, collection and achievements"><span class="phead">${explorer({ cls: 'mini' })}</span>${prof.fresh.length ? NEWDOT : ''}</button>
     </div>
-    ${heroReady(prof) && prefs.stranger ? '<button class="btn small chalbtn" data-act="challenge" aria-label="Challenge the Stranger">⚔️ Challenge</button>' : ''}
+    ${heroReady(prof) && prefs.elder ? '<button class="btn small chalbtn" data-act="challenge" aria-label="Challenge the Wise Elder">⚔️ Challenge</button>' : ''}
     <div id="map" class="mroot"></div>
   </div>`;
   };
@@ -1699,8 +1701,8 @@
         .filter((p) => p.id !== store.cur && p.made)
         .map((p) => ({ id: p.id, name: p.name ? esc(p.name) : 'Explorer', svg: explorer({ view: 'front' }, p), wi: Math.max(0, worldOf(S[p.at] || S[0])) })),
       worldIcon: (wi) => WORLD_ICON[wi],
-      // what the Stranger throws in each world (so the explorer can dress for it)
-      worldThrows: (wi) => (prefs.stranger ? worldThrowIcons(wi) : ''),
+      // what the Wise Elder throws in each world (so the explorer can dress for it)
+      worldThrows: (wi) => (prefs.elder ? worldThrowIcons(wi) : ''),
       onWorld: (wi) => {
         const w = ART.WORLDS[wi];
         setTopColor(isNight() && w.dim ? w.dim.sky[0] : w.sky[0]); // the status bar follows the world in view
@@ -2472,8 +2474,8 @@
     if (lost)
       return `<button class="icell lost" data-act="goto" data-i="${BYN[lost.n].idx}"><span class="iart">${itemPic(it.id)}</span><span class="lostbadge">${ART.lostMarker()}</span><small>Lost at ${BYN[lost.n].name}!</small></button>`;
     if (owned)
-      return `<button class="icell t${it.tier || 0} ${it.gold ? 'gold' : ''} ${on ? 'on' : ''}" data-act="equip" data-id="${it.id}" aria-pressed="${on}"><span class="iart">${itemPic(it.id)}</span><small>${itemName(it.id)}</small>${prefs.stranger && blocksOf(it.id).length ? `<span class="iblk" aria-label="Blocks ${blocksOf(it.id).map((k) => THROW[k].name).join(', ')}">${blocksOf(it.id).map((k) => THROW[k].ic).join('')}</span>` : ''}${prof.fresh.includes('i:' + it.id) ? NEWDOT : ''}</button>`;
-    return `<div class="icell locked ${it.gold || it.wgold ? 'goldlock' : ''}"><span class="iart">${ART.silhouette(it.id, P().look)}</span><small>${it.wgold ? `World ${it.wgold} all golden` : it.quest ? 'Stand up to the Stranger' : it.feat ? FEAT_HINT[it.feat] : it.drop ? 'A surprise gift' : it.track ? `At ${it.track} ⭐` : it.gold ? `Every star in ${BYN[it.from].name}` : `A star in ${BYN[it.from].name}`}</small></div>`;
+      return `<button class="icell t${it.tier || 0} ${it.gold ? 'gold' : ''} ${on ? 'on' : ''}" data-act="equip" data-id="${it.id}" aria-pressed="${on}"><span class="iart">${itemPic(it.id)}</span><small>${itemName(it.id)}</small>${prefs.elder && blocksOf(it.id).length ? `<span class="iblk" aria-label="Blocks ${blocksOf(it.id).map((k) => THROW[k].name).join(', ')}">${blocksOf(it.id).map((k) => THROW[k].ic).join('')}</span>` : ''}${prof.fresh.includes('i:' + it.id) ? NEWDOT : ''}</button>`;
+    return `<div class="icell locked ${it.gold || it.wgold ? 'goldlock' : ''}"><span class="iart">${ART.silhouette(it.id, P().look)}</span><small>${it.wgold ? `World ${it.wgold} all golden` : it.quest ? 'Pass the Wise Elder’s test' : it.feat ? FEAT_HINT[it.feat] : it.drop ? 'A surprise gift' : it.track ? `At ${it.track} ⭐` : it.gold ? `Every star in ${BYN[it.from].name}` : `A star in ${BYN[it.from].name}`}</small></div>`;
   }
   function stickerCell(id, prof) {
     const on = prof.badge === id;
@@ -3171,7 +3173,7 @@
         [4, '4'],
         [5, '5'],
       ])}</div>
-      ${tg('stranger', 'The Stranger', 'Now and then, between sūrahs, a stranger on the map asks 3 questions from a memorized sūrah')}
+      ${tg('elder', 'The Wise Elder', 'Now and then, between sūrahs, the Wise Elder asks 3 questions from a memorized sūrah')}
       ${tg('pzrtl', 'Puzzle from right to left', 'The Picture Puzzle fills from the right, like reading Arabic. Off: left to right, row by row')}
     </div>
     ${offlineSheet()}
@@ -3322,12 +3324,12 @@
         prof.lost = prof.lost.filter((x) => x.n !== s.n);
         extra.found = back;
       }
-      // stickers the Stranger took here come back too, and he returns for a rematch
+      // stickers the Wise Elder took here come back too, and he returns for a rematch
       prof.lostSt.filter((x) => x.n === s.n).forEach((x) => prof.stickers.includes(x.id) || prof.stickers.push(x.id));
       prof.lostSt = prof.lostSt.filter((x) => x.n !== s.n);
       if (prof.rematch.includes(s.n) && !prof.rematchReady.includes(s.n)) {
         prof.rematchReady.push(s.n);
-        prof.strangerAt = 0; // he comes back right away
+        prof.elderAt = 0; // he comes back right away
       }
     }
     // memorized = Stepping Stones level 3 (the whole sūrah, for one with checkpoints)
@@ -3536,7 +3538,7 @@
       sub = it.wgold
         ? `For making World ${it.wgold}, ${WORLDS[it.wgold - 1].name}, all golden: every star in every sūrah! Climb aboard!`
         : it.quest
-          ? 'For standing up to the Stranger with the Qur’an in your heart. A true hero!'
+          ? 'For passing the Wise Elder’s test with the Qur’an in your heart. A true hero!'
           : it.feat
         ? FEAT_WHY[it.feat]
         : it.drop
@@ -3706,7 +3708,7 @@
     const m = document.getElementById('modal');
     if (e.target === m) {
       if (m.querySelector('.dropcard')) return; // must press "Try again"
-      if (m.querySelector('.strmeet')) return; // the Stranger waits for an answer: I'm ready or Not now
+      if (m.querySelector('.eldmeet')) return; // the Wise Elder waits for an answer: I'm ready or Not now
       if (m.querySelector('.dlcard.busy')) return; // downloading
       if (dlAnswer) stopAudio(); // a download question left unanswered: don't download
       pendingYes = null;
@@ -3973,7 +3975,7 @@
         prof.badge = prof.badge === id && b.dataset.from !== 'gift' ? '' : id;
         save();
         if (b.dataset.from === 'gift') {
-          if (st.view === 'stranger') {
+          if (st.view === 'elder') {
             hideModal();
             go('map');
           } else if (prof.pending.length) {
@@ -4052,16 +4054,16 @@
         }
         sfx.chime();
         hideModal();
-        if (st.view === 'stranger') go('map'); // the Stranger's gift: on to the world
+        if (st.view === 'elder') go('map'); // the Wise Elder's gift: on to the world
         else if (P().pending.length) render(); // more gifts: back to where they were opened
         else go('bag', { tab: it ? it.slot : 'hat' });
         break;
       }
       case 'giftok':
-        // Yay / Next gift: back to the screen the gift was opened from (from the Stranger: on to the world)
+        // Yay / Next gift: back to the screen the gift was opened from (from the Wise Elder: on to the world)
         sfx.tap();
         hideModal();
-        if (st.view === 'stranger') go('map');
+        if (st.view === 'elder') go('map');
         else render();
         break;
       case 'fs':
@@ -4225,25 +4227,25 @@
         break;
       case 'challenge':
         sfx.tap();
-        if (heroReady(P())) meetStranger(true);
+        if (heroReady(P())) meetElder(true);
         break;
-      case 'strface':
+      case 'eldface':
         hideModal();
-        startStranger();
+        startElder();
         break;
-      case 'strrun':
+      case 'eldrun':
         sfx.tap();
         hideModal();
         break;
-      case 'strgo':
+      case 'eldgo':
         sfx.tap();
         st.phase = 'ask';
         render();
         break;
-      case 'strans':
-        strangerAnswer(b.dataset.ok === '1');
+      case 'eldans':
+        elderAnswer(b.dataset.ok === '1');
         break;
-      case 'strdone':
+      case 'elddone':
         sfx.tap();
         go('map');
         break;
@@ -5138,9 +5140,9 @@
     };
   }
 
-  /* ================= THE STRANGER =================
-     Once the game has been open 10 minutes, every 10 minutes there is a 1 in 3 chance that, on the map, a hooded
-     stranger blocks the path and asks 3 questions from one memorized sūrah: what comes after an āyah, or
+  /* ================= THE WISE ELDER =================
+     Once the game has been open 10 minutes, every 10 minutes there is a 1 in 3 chance that, on the map, the Wise
+     Elder (a kind old man who knows the whole Qur'an by heart) blocks the path and asks 3 questions from one memorized sūrah: what comes after an āyah, or
      finish an āyah. No Listen, no hints: a grown-up taps "Said it!" or "Not quite".
      Every miss costs something. He throws what his world has (two kinds per world, shown on its sign), and
      what the explorer wears decides what happens:
@@ -5154,42 +5156,42 @@
      After the summit, wins earn the hero armor, shield and sword; with all three, the map has a ⚔️ Challenge
      button to face him any time. The Grown-up Corner can switch him off. */
   const APP_OPENED = Date.now();
-  const STRANGER_EVERY = 10 * 60000; // one chance in each 10 minutes
-  let strangerRoll = APP_OPENED; // one roll in each 10-minute window
+  const ELDER_EVERY = 10 * 60000; // one chance in each 10 minutes
+  let elderRoll = APP_OPENED; // one roll in each 10-minute window
   // he can also turn up while you stay on the map (the 10 minutes count from opening the game, wherever you are)
-  setInterval(() => !document.hidden && st.view === 'map' && maybeStranger(), 30000);
+  setInterval(() => !document.hidden && st.view === 'map' && maybeElder(), 30000);
   const HERO = ['hero-armor', 'hero-shield', 'hero-sword'];
   const heroReady = (prof) => HERO.every((id) => prof.items.includes(id));
   const memorizedList = (prof) => S.filter((s) => surahDone(s, prof));
-  function maybeStranger() {
+  function maybeElder() {
     const prof = P(),
       m = document.getElementById('modal');
-    if (!prefs.stranger || st.view !== 'map' || m.classList.contains('show') || document.body.classList.contains('busy') || noExplorers() || !prof.made) return;
+    if (!prefs.elder || st.view !== 'map' || m.classList.contains('show') || document.body.classList.contains('busy') || noExplorers() || !prof.made) return;
     // a rematch comes as soon as the things are back; after "Not now", again after the usual 10 minutes
-    if (prof.rematchReady.length) return Date.now() - prof.strangerAt > STRANGER_EVERY ? meetStranger(false, true) : undefined;
+    if (prof.rematchReady.length) return Date.now() - prof.elderAt > ELDER_EVERY ? meetElder(false, true) : undefined;
     if (!memorizedList(prof).length) return;
-    if (window.__strangerNow) return meetStranger(false); // tests only: skip the waiting and the chance
-    if (Date.now() - strangerRoll < STRANGER_EVERY) return;
-    strangerRoll = Date.now();
-    if (Math.random() < 1 / 3) meetStranger(false);
+    if (window.__elderNow) return meetElder(false); // tests only: skip the waiting and the chance
+    if (Date.now() - elderRoll < ELDER_EVERY) return;
+    elderRoll = Date.now();
+    if (Math.random() < 1 / 3) meetElder(false);
   }
-  function meetStranger(anytime, rematch) {
+  function meetElder(anytime, rematch) {
     const prof = P(),
       free = memorizedList(prof).filter((x) => !prof.fix.includes(x.n)); // not where things are already waiting
     const s = rematch ? BYN[prof.rematchReady[0]] : free[(Math.random() * free.length) | 0];
     if (!s) return;
-    prof.strangerAt = Date.now();
+    prof.elderAt = Date.now();
     save();
-    strangerPlan = { i: S.indexOf(s), anytime: !!anytime, rematch: !!rematch };
+    elderPlan = { i: S.indexOf(s), anytime: !!anytime, rematch: !!rematch };
     sfx.whoosh();
     const m = document.getElementById('modal');
-    m.innerHTML = `<div class="card strmeet"><div class="strart">${ART.stranger(rematch ? 'happy' : '')}</div>
-      <h3>${rematch ? 'The Stranger is back!' : anytime ? 'You call the Stranger…' : 'A stranger blocks the path!'}</h3>
-      <p class="strsay">“${rematch ? `You found your things. Now show me <b>${s.name}</b> is truly in your heart!` : `Show me what you know of <b>${s.name}</b>. Three questions… no help!`}”</p>
-      <div class="row"><button class="btn go wide" data-act="strface">⚔️ I'm ready!</button><button class="btn wide" data-act="strrun">🏃 Not now</button></div></div>`;
+    m.innerHTML = `<div class="card eldmeet"><div class="eldart">${ART.elder(rematch ? 'happy' : '')}</div>
+      <h3>${rematch ? 'The Wise Elder is back!' : anytime ? 'You call the Wise Elder…' : 'The Wise Elder blocks the path!'}</h3>
+      <p class="eldsay">“${rematch ? `You found your things. Now show me <b>${s.name}</b> is truly in your heart!` : `Show me what you know of <b>${s.name}</b>. Three questions… no help!`}”</p>
+      <div class="row"><button class="btn go wide" data-act="eldface">⚔️ I'm ready!</button><button class="btn wide" data-act="eldrun">🏃 Not now</button></div></div>`;
     m.classList.add('show');
   }
-  let strangerPlan = null;
+  let elderPlan = null;
 
   /* the throws, what blocks them, and what each world has */
   const THROW = {
@@ -5263,7 +5265,7 @@
   const thingPic = (f) => (f.k === 'i' ? itemPic(f.id) : ART.sticker(f.id));
   const thingName = (f) => (f.k === 'i' ? itemName(f.id) : STICKER[f.id].name + ' sticker');
 
-  function strangerQuestions(s) {
+  function elderQuestions(s) {
     const A = s.ayat.length,
       ks = shuffle(range({ from: 0, to: A - 1 })),
       wt = WORLD_THROWS[worldOf(s)] || ['rock'],
@@ -5281,75 +5283,75 @@
     while (qs.length < 3) qs.push(Object.assign({}, qs[qs.length % Math.max(1, qs.length)] || { k: 0, kind: 'finish', cut: 1 }, { throw: pick() }));
     return qs;
   }
-  function startStranger() {
-    const p = strangerPlan;
+  function startElder() {
+    const p = elderPlan;
     if (!p) return;
     stopAudio();
-    go('stranger', { i: p.i, p: 0, qs: strangerQuestions(S[p.i]), q: 0, marks: [], hurt: false, fallen: [], phase: 'intro', anytime: p.anytime, rematch: p.rematch, result: null, ack: '' });
+    go('elder', { i: p.i, p: 0, qs: elderQuestions(S[p.i]), q: 0, marks: [], hurt: false, fallen: [], phase: 'intro', anytime: p.anytime, rematch: p.rematch, result: null, ack: '' });
   }
   const ACKS = ['Hmm… right!', 'Well remembered!', 'You know it!', 'Correct… impressive!', 'Right again!'];
-  V.stranger = () => {
+  V.elder = () => {
     const s = S[st.i],
       prof = P(),
       q = st.qs[st.q],
       sad = st.hurt || st.fallen.length > 0;
-    const dots = st.qs.map((_, j) => `<span class="strdot ${st.marks[j] === true ? 'ok' : st.marks[j] === false ? 'bad' : j === st.q && st.phase === 'ask' ? 'cur' : ''}">${st.marks[j] === true ? '✓' : st.marks[j] === false ? '✗' : j + 1}</span>`).join('');
+    const dots = st.qs.map((_, j) => `<span class="elddot ${st.marks[j] === true ? 'ok' : st.marks[j] === false ? 'bad' : j === st.q && st.phase === 'ask' ? 'cur' : ''}">${st.marks[j] === true ? '✓' : st.marks[j] === false ? '✗' : j + 1}</span>`).join('');
     let say, panel;
     if (st.phase === 'intro') {
       say = `I'll ask you three things about <b>${s.name}</b>. Get them right, and I'll be on my way!`;
-      panel = `<div class="row"><button class="btn go wide" data-act="strgo">Ask me! ⚔️</button></div>`;
+      panel = `<div class="row"><button class="btn go wide" data-act="eldgo">Ask me! ⚔️</button></div>`;
     } else if (st.phase === 'end') {
       const r = st.result,
         g = r.win && prof.pending[0];
       say = r.say;
-      panel = `<div class="strend">${r.html}${g ? `<button class="giftbtn dgift" data-act="opengift"><span class="rattle">${giftArt(g)}</span><b>A gift for you!</b><small>Tap to open</small></button>` : ''}</div><div class="row"><button class="btn ${g ? '' : 'go'} wide" data-act="strdone">🗺️ Back to the map</button></div>`;
+      panel = `<div class="eldend">${r.html}${g ? `<button class="giftbtn dgift" data-act="opengift"><span class="rattle">${giftArt(g)}</span><b>A gift for you!</b><small>Tap to open</small></button>` : ''}</div><div class="row"><button class="btn ${g ? '' : 'go'} wide" data-act="elddone">🗺️ Back to the map</button></div>`;
     } else {
       const a = s.ayat[q.k],
         words = wordsOf(a.ar);
       const shown = q.kind === 'finish' ? words.slice(0, q.cut).join(' ') + ' …' : a.ar;
       const answer = q.kind === 'finish' ? a.ar : s.ayat[q.k + 1].ar;
       say = st.ack || (q.kind === 'next' ? `Āyah ${q.k + 1} of ${s.name}… <b>what comes after it?</b>` : `<b>Finish this āyah</b> of ${s.name}!`);
-      panel = `<div class="card strq">
+      panel = `<div class="card eldq">
         <div class="ar-label">📖 Grown-up reads the question</div>
         <div class="ar sm" lang="ar">${shown}</div>
-        ${q.kind === 'next' ? `<div class="strpics">${a.scene.join(' ')}</div>` : ''}
+        ${q.kind === 'next' ? `<div class="eldpics">${a.scene.join(' ')}</div>` : ''}
         <details class="adult"><summary>👁️ Grown-up check (the answer)</summary><div class="ar sm" lang="ar">${answer}</div></details>
       </div>
-      <div class="row"><button class="btn wide" data-act="strans" data-ok="0" ${st.phase !== 'ask' ? 'disabled' : ''}>🙈 Not quite</button><button class="btn go wide" data-act="strans" data-ok="1" ${st.phase !== 'ask' ? 'disabled' : ''}>✅ Said it!</button></div>`;
+      <div class="row"><button class="btn wide" data-act="eldans" data-ok="0" ${st.phase !== 'ask' ? 'disabled' : ''}>🙈 Not quite</button><button class="btn go wide" data-act="eldans" data-ok="1" ${st.phase !== 'ask' ? 'disabled' : ''}>✅ Said it!</button></div>`;
     }
     const ground = st.fallen
       .filter((f) => !f.ran)
-      .map((f, j) => `<span class="strfallen" style="--j:${j}">${thingPic(f)}</span>`)
+      .map((f, j) => `<span class="eldfallen" style="--j:${j}">${thingPic(f)}</span>`)
       .join('');
     // they stand on a patch of the world's own ground
     const W0 = ART.WORLDS[worldOf(s)],
       gr = (isNight() && W0.dim ? W0.dim : W0).ground;
-    return `<div class="screen strscr" style="${cv(s.color)};--pg0:${gr[0]};--pg1:${gr[1]}">
-    <div class="strtop"><span class="strtitle">⚔️ The Stranger · ${s.name}</span><span class="strdots">${dots}</span></div>
+    return `<div class="screen eldscr" style="${cv(s.color)};--pg0:${gr[0]};--pg1:${gr[1]}">
+    <div class="eldtop"><span class="eldtitle">⚔️ The Wise Elder · ${s.name}</span><span class="elddots">${dots}</span></div>
     <div class="arena">
-      <div class="strbubble ${st.ack ? 'ack' : ''}">${say}</div>
-      <div class="foe"><div class="strfig">${ART.stranger(st.phase === 'end' && st.result.win ? 'happy' : st.foeHit ? 'hit' : '')}</div><i class="plat"></i></div>
+      <div class="eldbubble ${st.ack ? 'ack' : ''}">${say}</div>
+      <div class="foe"><div class="eldfig">${ART.elder(st.phase === 'end' && st.result.win ? 'happy' : st.foeHit ? 'hit' : '')}</div><i class="plat"></i></div>
       <div class="me"><div class="mefig">${explorer({ view: 'front', mood: sad ? 'sad' : undefined })}</div>${st.hurt ? '<i class="plaster"></i>' : ''}<i class="plat"></i></div>
-      <div class="strground">${ground}</div>
+      <div class="eldground">${ground}</div>
     </div>
     ${panel}
   </div>`;
   };
-  function strangerAnswer(right) {
-    if (st.view !== 'stranger' || st.phase !== 'ask') return;
+  function elderAnswer(right) {
+    if (st.view !== 'elder' || st.phase !== 'ask') return;
     const q = st.qs[st.q],
       s = S[st.i];
     st.marks[st.q] = right;
     st.phase = 'anim';
     const next = () => {
-      if (st.view !== 'stranger') return;
+      if (st.view !== 'elder') return;
       st.foeHit = false;
       st.ack = '';
       if (st.q < 2) {
         st.q++;
         st.phase = 'ask';
         render();
-      } else endStranger();
+      } else endElder();
     };
     if (right) {
       // he staggers, and says so
@@ -5357,7 +5359,7 @@
       st.foeHit = true;
       st.ack = ACKS[(Math.random() * ACKS.length) | 0];
       render();
-      burstAt(document.querySelector('.strfig'), 10, ['✨', '⭐']);
+      burstAt(document.querySelector('.eldfig'), 10, ['✨', '⭐']);
       setTimeout(next, 1500);
       return;
     }
@@ -5366,7 +5368,7 @@
       wi = worldOf(s),
       strike = strikeFor(q.throw, prof, surahStars(s) >= surahMax(s));
     const arena = document.querySelector('.arena'),
-      foe = document.querySelector('.strfig'),
+      foe = document.querySelector('.eldfig'),
       me = document.querySelector('.mefig'),
       meBox = me.parentNode;
     const A = arena.getBoundingClientRect(),
@@ -5378,7 +5380,7 @@
       feet = { x: b.left - A.left + b.width * 0.5, y: b.top - A.top + b.height * 0.9 };
     const bit = (txt, at, size) => {
       const e = document.createElement('span');
-      e.className = 'strproj';
+      e.className = 'eldproj';
       e.textContent = txt;
       e.style.fontSize = (size || 40) + 'px';
       e.style.left = at.x + 'px';
@@ -5451,9 +5453,9 @@
         }
       }, ms - 450);
     setTimeout(() => {
-      if (st.view !== 'stranger') return;
+      if (st.view !== 'elder') return;
       const note = document.createElement('div');
-      note.className = 'strnote';
+      note.className = 'eldnote';
       const f = strike.falls,
         held = strike.blocker && f && f.id !== strike.blocker;
       if (strike.blocker) {
@@ -5488,7 +5490,7 @@
       if (f) {
         // what fell flies off: a buddy runs away, anything else tumbles to the ground between them
         const it = document.createElement('span');
-        it.className = 'strtumble';
+        it.className = 'eldtumble';
         it.innerHTML = thingPic(f);
         it.style.left = chest.x - 20 + 'px';
         it.style.top = chest.y - 20 + 'px';
@@ -5502,21 +5504,21 @@
           : it.animate([{ transform: 'translate(0,0) rotate(0)' }, { transform: `translate(${(gx - chest.x) / 2}px, -70px) rotate(220deg)` }, { transform: `translate(${gx - chest.x + 20}px, ${gy - chest.y + 20}px) rotate(380deg)` }], { duration: 900, easing: 'ease-in', fill: 'forwards' });
         anim.onfinish = () => {
           it.remove();
-          const gr = arena.querySelector('.strground');
-          if (gr && !ran && !gr.querySelector(`.strfallen[style="--j:${j}"]`)) gr.insertAdjacentHTML('beforeend', `<span class="strfallen" style="--j:${j}">${thingPic(f)}</span>`);
+          const gr = arena.querySelector('.eldground');
+          if (gr && !ran && !gr.querySelector(`.eldfallen[style="--j:${j}"]`)) gr.insertAdjacentHTML('beforeend', `<span class="eldfallen" style="--j:${j}">${thingPic(f)}</span>`);
         };
       }
       setTimeout(next, 2300);
     }, ms);
   }
   // "Your cap and boots fell. Your ladybug ran off."
-  function strangerLoss(fell) {
+  function elderLoss(fell) {
     const and = (l) => (l.length > 1 ? l.slice(0, -1).join(', ') + ' and ' + l[l.length - 1] : l[0]);
     const fallen = fell.filter((f) => !f.ran).map(thingName),
       ran = fell.filter((f) => f.ran).map(thingName);
     return (fallen.length ? `Your ${and(fallen)} fell. ` : '') + (ran.length ? `Your ${and(ran)} ran off. ` : '');
   }
-  function endStranger() {
+  function endElder() {
     const s = S[st.i],
       prof = P(),
       right = st.marks.filter(Boolean).length;
@@ -5544,7 +5546,7 @@
         took: fell.length,
         say: right ? `${right} out of 3… Practice ${s.name} some more!` : 'Hmm… you need to practice this one!',
         html: fell.length
-          ? `<p class="memo">💔 ${strangerLoss(fell)} ${fell.length > 1 ? 'They are' : 'It is'} waiting at <b>${s.name}</b>: finish a review game there to win ${fell.length > 1 ? 'them' : 'it'} back. Then he'll come back for a rematch!</p>`
+          ? `<p class="memo">💔 ${elderLoss(fell)} ${fell.length > 1 ? 'They are' : 'It is'} waiting at <b>${s.name}</b>: finish a review game there to win ${fell.length > 1 ? 'them' : 'it'} back. Then he'll come back for a rematch!</p>`
           : `<p class="memo">He walks away. There was nothing left for him to knock off, but practice <b>${s.name}</b> again!</p>`,
       };
     }
@@ -5699,5 +5701,5 @@
   registerOffline();
   if (linkCode) setTimeout(() => openSync(linkCode, `${appURL()}#sync=${linkCode}`), 400);
   if (justUpdated) loadChangelog().then(() => st.view === 'splash' && render());
-  window.__lhq = { st: () => st, store: () => store, go, player, stranger: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeStranger }, markNow, fabTarget }; // for testing in the browser console
+  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder }, markNow, fabTarget }; // for testing in the browser console
 })();

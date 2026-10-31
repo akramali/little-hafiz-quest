@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is the player- and developer-facing description; this file is the working state.
 
-**Current version:** v2.6.10 (2026-10-31) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.6.11 (2026-10-31) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -15,15 +15,15 @@ an **explorer** who climbs a map of 7 worlds (Meadow → Forest → Sands → Ca
 Each sūrah has two **quests** (👀 Look & Repeat, Word Steps) and two **review games** (🐸 Stepping Stones,
 🧩 Picture Puzzle, plus a Big Puzzle for the whole sūrah), 4 stars per checkpoint. Stars win treasures, golden
 editions, star-track prizes, star badges, world rides and surprise gifts to dress the explorer in.
-**The Stranger** tests memorized sūrahs on the map with no help; every miss costs something (rules below).
+**The Wise Elder** tests memorized sūrahs on the map with no help; every miss costs something (rules below).
 
 ## Where things are
 
 | File | What |
 |---|---|
 | `js/data.js` | all content: Arabic text, pictures (`scene`), hooks, gestures, simple meanings, checkpoints (`parts`) |
-| `js/game.js` | everything else: state, views (`V.<name>`), the click handler (`switch (act)`), gifts, hearts, the Stranger |
-| `js/art.js` | every drawing as SVG: explorer and outfits, items (`CATALOG`, `TRACK_*`, `DROP_*`, `WORLD_RIDES`), props, worlds, the Stranger |
+| `js/game.js` | everything else: state, views (`V.<name>`), the click handler (`switch (act)`), gifts, hearts, the Wise Elder |
+| `js/art.js` | every drawing as SVG: explorer and outfits, items (`CATALOG`, `TRACK_*`, `DROP_*`, `WORLD_RIDES`), props, worlds, the Wise Elder |
 | `js/map.js` | the quest map: path, props placement (back to front, never hidden), other explorers, world rail, walking |
 | `js/sync.js`, `js/qrcode.js` | family sync codes (format 2) and QR drawing |
 | `js/sounds.js` | Web Audio nature sounds |
@@ -36,9 +36,9 @@ editions, star-track prizes, star badges, world rides and surprise gifts to dres
 `js/game.js` sections (search for these headings): saving · gifts, collection, lost items · reciters & player ·
 hearts · state, scenes & render · SPLASH · SUMMIT · MAKE YOUR EXPLORER · QUEST MAP · SŪRAH · LOOK & REPEAT ·
 MUṢḤAF · WORD STEPS · STEPPING STONES · PICTURE PUZZLE · DONE · MY EXPLORER · EXPLORERS · FAMILY SYNC ·
-updates · GROWN-UP CORNER · offline · actions · other explorers on the map · THE STRANGER · start.
+updates · GROWN-UP CORNER · offline · actions · other explorers on the map · THE WISE ELDER · start.
 
-Testing hook: `window.__lhq = { st, store, go, player, stranger: { strikeFor, blocksOf, WORLD_THROWS, maybe } }`.
+Testing hook: `window.__lhq = { st, store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe }, markNow, fabTarget }`.
 
 ## Key rules worth knowing before changing things
 
@@ -50,8 +50,8 @@ Testing hook: `window.__lhq = { st, store, go, player, stranger: { strikeFor, bl
   at that sūrah (`prof.lost`, 💔 `prof.fix`); finishing a review game there returns everything left there.
 - **Worlds:** green when every sūrah is memorized (Stepping Stones done), gold when every star is won. A golden
   world wins its ride (`WORLD_RIDES`, `wgold`).
-- **The Stranger** (`THE STRANGER` section; Grown-up Corner switch `prefs.stranger`):
-  - after 10 min open, one 1-in-3 roll per 10-minute window (`STRANGER_EVERY`), on the map; skips sūrahs with things waiting;
+- **The Wise Elder** (`THE WISE ELDER` section; Grown-up Corner switch `prefs.elder`; called the Stranger, `prefs.stranger`, before v2.6.11, migrated in `cleanPrefs`):
+  - after 10 min open, one 1-in-3 roll per 10-minute window (`ELDER_EVERY`), on the map; skips sūrahs with things waiting;
     rematch per sūrah (`prof.rematch`, `prof.rematchReady`) once its things are won back.
   - 3 questions (what comes after / finish the āyah), no Listen. Right → he staggers and acknowledges.
   - **Every miss costs something.** Throws per world: `WORLD_THROWS` (🪨💨💧🌰✨🌿), shown on world signs, the world
@@ -87,10 +87,10 @@ Testing hook: `window.__lhq = { st, store, go, player, stranger: { strikeFor, bl
 ## Open items and ideas
 
 - **Never checked on real phones:** the share sheet, the camera reading a QR code, Android link capture, iOS Paste
-  from family, iOS update timing, 0.25× playback on iPhone Safari (if muted, make 0.5× the slowest), the screen staying on while reciting (Wake Lock: iOS 16.4+, and in Home Screen apps only on newer iOS), the Stranger's
+  from family, iOS update timing, 0.25× playback on iPhone Safari (if muted, make 0.5× the slowest), the screen staying on while reciting (Wake Lock: iOS 16.4+, and in Home Screen apps only on newer iOS), the Wise Elder's
   defend/hurt animations and swipe-to-turn on touch.
 - Not done (offered): a random starting face for new explorers, so no skin tone is "the default".
-- The Stranger was a test concept in v2.6.0–2.6.3 and is now part of the game; tune `1 / 3`, `STRANGER_EVERY` (10 min),
+- The Wise Elder (called the Stranger, drawn as a hooded figure, until v2.6.11) was a test concept in v2.6.0–2.6.3 and is now part of the game; tune `1 / 3`, `ELDER_EVERY` (10 min),
   `WORLD_THROWS`, `EXTRA_BLOCKS` if play-testing says so.
 - Known, accepted test oddities: some buttons covered while a page scrolls, three captions on bright scenery
   (whitelisted in `tests/cases/hit.js` and `contrast.js`).
@@ -100,5 +100,5 @@ Testing hook: `window.__lhq = { st, store, go, player, stranger: { strikeFor, bl
 v2.3–2.4: nature sounds, jigsaw, Read view, awards, files. v2.5.0: family sync, Explorers page, auto-updates,
 classic v1 retired, word meanings. v2.5.1–2.5.8: buttons, speed, info/how-to, fruit and animals, all explorers on
 the map, chain setting, gift fixes, faces, glasses, Big Puzzle. v2.6.0: golden/green worlds, world rides, speed
-button, one-tap gifts, the Stranger. v2.6.1–2.6.6: Stranger polish, closing animations, stakes (every miss costs,
-world throws, protection), battle ground in the world's colors. v2.6.7: the Stranger every 10 minutes; speed and loop in Word Steps and Stepping Stones. v2.6.8: Read starts with the Bismillah (āyah -1, word data in `BISM_WORDS`) and follows the recited āyah; the screen stays on while reciting (`keepAwake`, Wake Lock; 99× loops let go after 15 min); full world names in the list. v2.6.9: no text selection or long-press menus (text boxes and the share picture excepted); zoom kept. v2.6.10: My Achievements fits on one screen. Full detail: `git log` and `changelog.json`.
+button, one-tap gifts, the Wise Elder. v2.6.1–2.6.6: Wise Elder polish, closing animations, stakes (every miss costs,
+world throws, protection), battle ground in the world's colors. v2.6.7: the Wise Elder every 10 minutes; speed and loop in Word Steps and Stepping Stones. v2.6.8: Read starts with the Bismillah (āyah -1, word data in `BISM_WORDS`) and follows the recited āyah; the screen stays on while reciting (`keepAwake`, Wake Lock; 99× loops let go after 15 min); full world names in the list. v2.6.9: no text selection or long-press menus (text boxes and the share picture excepted); zoom kept. v2.6.10: My Achievements fits on one screen. v2.6.11: the Stranger becomes the Wise Elder (a kind old man, star staff, woven belt, swaying robe), renamed everywhere. Full detail: `git log` and `changelog.json`.

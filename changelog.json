@@ -1,7 +1,10 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.6.10",
+ "latest": "2.6.11",
  "versions": [
+  { "v": "2.6.11", "notes": [
+   "The Stranger is now the Wise Elder: a kind old man who knows the whole Qur'an"
+  ] },
   { "v": "2.6.10", "notes": [
    "Small visual tweaks"
   ] },
@@ -15,29 +18,29 @@
    "Small visual tweaks"
   ] },
   { "v": "2.6.7", "notes": [
-   "The Stranger comes less often (a chance every 10 minutes)",
+   "The Wise Elder comes less often (a chance every 10 minutes)",
    "Speed and loop buttons in Word Steps and Stepping Stones too"
   ] },
   { "v": "2.6.6", "notes": [
    "Small visual tweaks"
   ] },
   { "v": "2.6.5", "notes": [
-   "The Stranger: every mistake now costs something",
+   "The Wise Elder: every mistake now costs something",
    "Each world has its own throws; dress for them (see the icons on the sign and your things)",
    "Golden gear holds, except in a golden sūrah",
    "Small visual tweaks"
   ] },
   { "v": "2.6.4", "notes": [
-   "The Stranger is part of the game now (switch him off in the Grown-up Corner)",
+   "The Wise Elder is part of the game now (switch him off in the Grown-up Corner)",
    "A beating 💔 shows where things were dropped",
    "Small visual tweaks"
   ] },
   { "v": "2.6.3", "notes": [
-   "The Stranger turns up a little more often",
+   "The Wise Elder turns up a little more often",
    "Small visual tweaks"
   ] },
   { "v": "2.6.2", "notes": [
-   "The Stranger: bigger throws, and your shield, cape, boots or buddy really block them",
+   "The Wise Elder: bigger throws, and your shield, cape, boots or buddy really block them",
    "After winning things back, choose “I'm ready” or “Not now”",
    "Cards and the world list close smoothly",
    "Small visual tweaks"
@@ -45,7 +48,7 @@
   { "v": "2.6.1", "notes": [
    "The MāshāAllāh page fits on the screen",
    "Swipe the explorer to turn them around",
-   "A 🧪 Stranger button on the map, to try the challenge any time (for now)",
+   "A 🧪 Wise Elder button on the map, to try the challenge any time (for now)",
    "Small visual tweaks"
   ] },
   { "v": "2.6.0", "notes": [
@@ -53,7 +56,7 @@
    "Golden and green worlds on the map",
    "Speed button beside the loop button",
    "Gifts open in one tap",
-   "New, being tried out: the Stranger asks 3 questions now and then (can be switched off)",
+   "New, being tried out: the Wise Elder asks 3 questions now and then (can be switched off)",
    "Small visual tweaks"
   ] },
   { "v": "2.5.8", "notes": [

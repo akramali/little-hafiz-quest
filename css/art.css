@@ -541,3 +541,19 @@ svg.lhq-art {
   from { transform: scaleY(0.8); opacity: 0.85; }
   to { transform: scaleY(1.15); opacity: 1; }
 }
+/* the Wise Elder's robe sways gently from the shoulders, like the explorer's cape */
+.robe-sway {
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+  animation: robesway 3.6s ease-in-out infinite;
+}
+@keyframes robesway {
+  0%,
+  100% {
+    transform: skewX(-2.4deg) scaleX(1.01);
+  }
+  50% {
+    transform: skewX(2.4deg) scaleX(0.99);
+  }
+}
+

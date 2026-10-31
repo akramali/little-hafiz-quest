@@ -7551,45 +7551,45 @@ body {
 }
 
 
-/* ---------- (test concept, v2.6.0) the Stranger's challenge ---------- */
+/* ---------- the Wise Elder's test (the Stranger before v2.6.11) ---------- */
 .chalbtn {
   position: fixed;
   left: max(16px, env(safe-area-inset-left, 0px));
   bottom: calc(18px + env(safe-area-inset-bottom, 0px));
   z-index: 14;
 }
-.strmeet {
+.eldmeet {
   text-align: center;
 }
-.strmeet .strart svg {
+.eldmeet .eldart svg {
   display: block;
   margin: 0 auto;
   width: 130px;
   height: 195px;
   animation: popin 0.4s cubic-bezier(0.2, 1.4, 0.4, 1);
 }
-.strsay {
+.eldsay {
   font-size: 16px;
   font-weight: 700;
   margin: 6px 0 10px;
   line-height: 1.35;
 }
-.strtop {
+.eldtop {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   padding: 6px 0 2px;
 }
-.strtitle {
+.eldtitle {
   font-weight: 800;
   font-size: 17px;
 }
-.strdots {
+.elddots {
   display: flex;
   gap: 6px;
 }
-.strdot {
+.elddot {
   width: 30px;
   height: 30px;
   border-radius: 50%;
@@ -7602,19 +7602,19 @@ body {
   outline: 2px solid var(--edge);
   outline-offset: -2px;
 }
-.strdot.cur {
+.elddot.cur {
   background: var(--gold);
   color: #2b2340;
 }
-.strdot.ok {
+.elddot.ok {
   background: var(--go);
   color: #fff;
 }
-.strdot.bad {
+.elddot.bad {
   background: #e8414f;
   color: #fff;
 }
-/* the arena: the Stranger up on the right, the explorer down on the left, each on a platform */
+/* the arena: the Wise Elder up on the right, the explorer down on the left, each on a platform */
 .arena {
   position: relative;
   height: 330px;
@@ -7638,7 +7638,7 @@ body {
   width: 46%;
   height: 210px;
 }
-.strfig svg {
+.eldfig svg {
   position: absolute;
   bottom: 8px;
   left: 50%;
@@ -7646,10 +7646,10 @@ body {
   height: 165px;
   margin-left: -55px;
 }
-.strfig .stranger.hit {
+.eldfig .elder.hit {
   animation: wob 0.6s;
 }
-.strbubble {
+.eldbubble {
   position: absolute;
   left: 0;
   top: 0;
@@ -7684,7 +7684,7 @@ body {
 .mefig.ouch {
   animation: wob 0.5s;
 }
-.strproj {
+.eldproj {
   position: absolute;
   z-index: 5;
   font-size: 40px;
@@ -7693,16 +7693,16 @@ body {
   pointer-events: none;
 }
 /* he winds up before he throws */
-.strfig.throwing svg {
-  animation: strwind 0.5s ease-in-out;
+.eldfig.throwing svg {
+  animation: eldwind 0.5s ease-in-out;
   transform-origin: 50% 100%;
 }
-@keyframes strwind {
+@keyframes eldwind {
   50% {
     transform: rotate(-8deg) translateX(8px);
   }
 }
-.strnote {
+.eldnote {
   position: absolute;
   left: 4%;
   bottom: 186px;
@@ -7717,22 +7717,22 @@ body {
   box-shadow: 0 0 0 2px var(--edge);
   animation: popin 0.3s cubic-bezier(0.2, 1.4, 0.4, 1);
 }
-.strnote svg {
+.eldnote svg {
   width: 30px;
   height: 30px;
 }
-.strq {
+.eldq {
   text-align: center;
   padding: 10px 12px 12px;
 }
-.strpics {
+.eldpics {
   font-size: 30px;
   margin: 4px 0;
 }
-.strend {
+.eldend {
   text-align: center;
 }
-.strend .giftbtn {
+.eldend .giftbtn {
   margin-top: 10px;
 }
 
@@ -7923,8 +7923,8 @@ body {
 }
 
 
-/* ---------- v2.6.5: the Stranger's stakes ---------- */
-/* what each world's stranger throws: on its sign and in the world list */
+/* ---------- v2.6.5: the Wise Elder's stakes ---------- */
+/* what each world's elder throws: on its sign and in the world list */
 .msign .msthrows {
   display: block;
   margin-top: 2px;
@@ -7962,7 +7962,7 @@ body {
   line-height: 1;
 }
 /* his acknowledgement of a right answer */
-.strbubble.ack {
+.eldbubble.ack {
   background: var(--okbg);
   animation: popin 0.3s cubic-bezier(0.2, 1.4, 0.4, 1);
 }
@@ -8008,33 +8008,33 @@ body {
   }
 }
 /* what fell: it tumbles across and lies on the ground between them */
-.strtumble,
-.strfallen {
+.eldtumble,
+.eldfallen {
   position: absolute;
   width: 40px;
   height: 40px;
   pointer-events: none;
   z-index: 4;
 }
-.strtumble svg,
-.strfallen svg {
+.eldtumble svg,
+.eldfallen svg {
   width: 100%;
   height: 100%;
   display: block;
 }
-.strground {
+.eldground {
   position: absolute;
   inset: 0;
   pointer-events: none;
 }
-.strfallen {
+.eldfallen {
   left: calc(38% + var(--j) * 34px);
   top: calc(100% - 40px);
   filter: drop-shadow(0 3px 2px rgba(43, 35, 64, 0.25));
   animation: none;
 }
-/* the Stranger and the explorer each stand on a patch of the world's ground, with a soft shadow on it */
-.strscr .arena .plat {
+/* the Wise Elder and the explorer each stand on a patch of the world's ground, with a soft shadow on it */
+.eldscr .arena .plat {
   height: 34px;
   background:
     radial-gradient(closest-side, rgba(43, 35, 64, 0.26), rgba(43, 35, 64, 0.06) 62%, transparent 63%),

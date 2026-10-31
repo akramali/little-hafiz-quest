@@ -623,7 +623,7 @@
     ['space-rocket', 'Space rocket', 4],
   ];
   WORLD_RIDES.forEach((r, wi) => ITEMS.push({ id: r[0], slot: 'pet', name: r[1], tier: r[2], from: null, wgold: wi + 1 }));
-  /* (test concept, v2.6.0) the Stranger's challenge: hero gear won by standing up to him (quest: 'hero') */
+  /* the Wise Elder's test: hero gear won by passing it after the summit (quest: 'hero') */
   [['hero-armor', 'top', 'Hero armor'], ['hero-shield', 'shield', 'Hero shield'], ['hero-sword', 'stick', 'Wooden hero sword']].forEach((r) =>
     ITEMS.push({ id: r[0], slot: r[1], name: r[2], tier: 4, from: null, quest: 'hero' }),
   );
@@ -1021,7 +1021,7 @@
       return P('M72 154Q92 166 112 154L113 161Q92 173 71 161Z', '#fff1d6', sw(2.4)) + L('M62 180Q92 186 122 180', dk(j, 0.3), 2) + P(rr(80, 192, 24, 18, 5), '#2fa8a0', sw(2)) + F('M84 207L90 198L94 203L97 199L101 207Z', '#fff');
     },
   };
-  // (test concept, v2.6.0) won from the Stranger: shining hero armor
+  // won from the Wise Elder: shining hero armor
   TOP['hero-armor'] = {
     c: '#8fa3c9',
     sl: '#6f84ad',
@@ -2019,22 +2019,35 @@
       explorerInner(look, outfit, back, mood) + '</svg>';
   }
 
-  /* (test concept, v2.6.0) The Stranger: a hooded traveller who tests what you know (viewBox 0 0 200 300,
-     feet at the bottom like the explorer). mood: '' | 'hit' (staggers) | 'happy' (nods, smiles). */
-  function stranger(mood) {
-    const cloak = '#4b3a7a',
-      dkc = dk(cloak, 0.35);
-    const eyes = mood === 'happy' ? L('M78 108Q84 103 90 108M110 108Q116 103 122 108', '#ffe27a', 3.6) : CF(84, 107, 5, '#ffe27a') + CF(116, 107, 5, '#ffe27a') + CF(85.5, 105.5, 1.6, '#fff');
-    const mouth = mood === 'happy' ? L('M90 124Q100 132 110 124', '#ffe27a', 3) : mood === 'hit' ? P('M93 124Q100 119 107 124Q100 129 93 124Z', '#ffe27a', sw(1.6)) : L('M92 125L108 125', '#ffe27a', 2.6);
+  /* The Wise Elder: a kind elder who knows the whole Qur'an by heart (viewBox 0 0 200 300, feet at the bottom like
+     the explorer): a white kufi and beard, a midnight-blue robe with a gold trim and a woven belt, and a staff
+     topped by an eight-pointed star (as marks the quarters in a muṣḥaf) with a green gem. His robe sways gently.
+     mood: '' | 'hit' (surprised, he staggers) | 'happy' (eyes smiling). */
+  function elder(mood) {
+    const skin = '#f6c49c',
+      robeC = '#2c3f7a',
+      gold = '#ffcf3f',
+      happy = mood === 'happy',
+      hit = mood === 'hit';
+    const eyes = happy ? L('M84.8 96Q89 90 93.2 96M106.8 96Q111 90 115.2 96', INK, 3) : cuteEyes(89, 96, 111, 96, 4.2, true);
+    const mouth = hit ? EF(100, 126, 2.8, 3.4, INK) : happy ? P('M94 124Q100 131 106 124Z', '#c2455c', sw(2.2)) : smile(100, 124, 4.8);
+    const star8 = (R, r) => 'M' + [...Array(16).keys()].map((i) => { const a = ((i * 22.5 - 90) * Math.PI) / 180, q = i % 2 ? r : R; return n(150 + q * Math.cos(a)) + ' ' + n(58 + q * Math.sin(a)); }).join('L') + 'Z';
+    const staff = DL('M150 292L150 74', '#8a5a35', 4) + G(EF(150, 58, 22, 20, gold, 0.25), cls('pr-glow')) + P(star8(16, 11), gold, sw(2)) + P(star8(10.5, 7.2), '#ffe48a', sw(1.2)) + ball(150, 58, 4.6, 4.6, '#3fbf7f');
+    const robe =
+      S('M62 288Q54 200 66 150Q78 124 100 122Q122 124 134 150Q146 200 138 288Z', robeC, 'M118 128Q146 160 138 288L114 288Q128 200 118 128Z') + L('M100 128L100 286', gold, 3) +
+      S('M60 182Q100 194 140 182L141 196Q100 208 59 196Z', '#7a2e3a') + L('M62 186Q100 198 138 186M62 193Q100 205 138 193', gold, 1.4) +
+      [70, 82, 94, 106, 118, 130].map((x) => P('M' + x + ' ' + (189 + (x - 100) * (x - 100) * -0.0016 + 8) + 'l3 -3l3 3l-3 3Z', gold, sw(0.8))).join('') +
+      P('M92 192l8 -8l8 8l-8 8Z', gold, sw(1.6)) + P('M94 186h12v12h-12Z', gold, sw(1.6)) + CF(100, 192, 2.6, '#3fbf7f');
     const g =
-      EF(100, 292, 46, 6, INK, 0.16) +
-      DL('M150 292L150 70', '#8a5a35', 4) + G(ball(150, 64, 9, 9, '#7fd6ff') + CF(147, 61, 3, '#fff', 0.8), cls('lhq-pulse')) +
-      S('M62 288Q54 200 66 150Q78 120 100 118Q122 120 134 150Q146 200 138 288Z', cloak, 'M118 124Q146 160 138 288L114 288Q128 200 118 124Z') +
-      P(star5(80, 236, 5), '#ffe27a', sw(1.4)) + P(star5(118, 260, 4), '#ffe27a', sw(1.4)) + P(star5(96, 196, 3.6), '#ffe27a', sw(1.2)) +
-      S('M130 170Q146 186 150 200L144 206Q132 192 122 182Z', cloak) + ball(147, 203, 8, 8, '#8d7a6a', { hl: false }) +
-      S('M58 120Q56 64 100 58Q144 64 142 120Q134 150 100 150Q66 150 58 120Z', cloak, 'M118 64Q144 74 142 120Q136 140 118 147Q132 110 118 64Z') +
-      F('M72 118Q72 86 100 84Q128 86 128 118Q122 140 100 140Q78 140 72 118Z', '#241c3a') + eyes + mouth;
-    return '<svg class="lhq-art stranger ' + (mood || '') + '" viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' + OUT(g) + '</svg>';
+      EF(100, 292, 46, 6, INK, 0.16) + staff + G(robe, cls('robe-sway')) +
+      S('M58 152Q58 128 100 126Q142 128 142 152Q122 142 100 142Q78 142 58 152Z', robeC, 'M120 132Q142 138 142 152Q132 146 120 144Z') +
+      S('M130 170Q146 186 150 200L144 206Q132 192 122 182Z', robeC) + ball(147, 203, 8, 8, skin, { hl: false }) +
+      ball(73, 104, 7, 10, '#eeeae0', { hl: false }) + ball(127, 104, 7, 10, '#eeeae0', { hl: false }) + ball(100, 98, 30, 31, skin) +
+      S('M70 88Q70 64 100 62Q130 64 130 88Q100 78 70 88Z', '#f4f1ea', 'M112 64Q130 70 130 88Q122 84 114 82Z') + L('M76 80Q100 72 124 80', '#d8d2c2', 1.6) +
+      S('M74 104Q74 150 100 156Q126 150 126 104Q114 120 100 120Q86 120 74 104Z', '#f4f1ea', 'M112 116Q126 112 126 104Q126 146 104 155Q122 136 112 116Z') +
+      cheeks(83, 104, 117, 104, 6) + eyes + S('M80 86Q88 80 96 86Q88 84 80 89Z', '#eeeae0') + S('M120 86Q112 80 104 86Q112 84 120 89Z', '#eeeae0') +
+      P('M88 116Q94 110 100 114Q106 110 112 116Q106 118 100 116Q94 118 88 116Z', '#e7e2d6', sw(1.8)) + mouth;
+    return '<svg class="lhq-art elder ' + (mood || '') + '" viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' + OUT(g) + '</svg>';
   }
 
   /* =================================================================================================
@@ -2769,7 +2782,7 @@
     BORDER_H,
     bridge,
     fruit,
-    stranger,
+    elder,
     horizon,
     splash,
   };

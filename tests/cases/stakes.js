@@ -1,9 +1,9 @@
-// the Stranger's rules: every miss costs; protection decides whether you're hurt and what falls
+// the Wise Elder's rules: every miss costs; protection decides whether you're hurt and what falls
 (async () => {
   fixture();
   const { w, d, L, idx } = await openGame();
   const errs = watchErrors(w);
-  const prof = L.store().profiles[0], A = w.LHQ_ART, X = L.stranger;
+  const prof = L.store().profiles[0], A = w.LHQ_ART, X = L.elder;
   const own = (...ids) => ids.forEach((id) => prof.items.includes(id) || prof.items.push(id));
   const wear = (o) => { prof.outfit = Object.assign({}, o); };
   const k = (f) => (f ? f.k + ':' + f.id : 'nothing');
@@ -52,21 +52,21 @@
   // 8. a real battle: a right answer is acknowledged, a miss hurts and things fall to the ground
   prof.items = ['explorer-cap', 'rain-boots']; prof.stickers = ['star']; prof.lost = []; prof.lostSt = []; prof.fix = []; prof.rematch = []; prof.rematchReady = [];
   wear({ hat: 'explorer-cap', shoes: 'rain-boots' });
-  L.go('stranger', { i: idx(113), p: 0, qs: [{ k: 0, kind: 'next', cut: 0, throw: 'rock' }, { k: 1, kind: 'next', cut: 0, throw: 'rock' }, { k: 2, kind: 'next', cut: 0, throw: 'water' }], q: 0, marks: [], hurt: false, fallen: [], phase: 'ask', anytime: false, rematch: false, result: null, ack: '' });
+  L.go('elder', { i: idx(113), p: 0, qs: [{ k: 0, kind: 'next', cut: 0, throw: 'rock' }, { k: 1, kind: 'next', cut: 0, throw: 'rock' }, { k: 2, kind: 'next', cut: 0, throw: 'water' }], q: 0, marks: [], hurt: false, fallen: [], phase: 'ask', anytime: false, rematch: false, result: null, ack: '' });
   await wait(200);
-  d.querySelector('[data-act=strans][data-ok="1"]').click(); await wait(300);
-  ok('a right answer: he acknowledges it', d.querySelector('.strbubble.ack') && /right|know|remembered|impressive/i.test(d.querySelector('.strbubble').textContent));
+  d.querySelector('[data-act=eldans][data-ok="1"]').click(); await wait(300);
+  ok('a right answer: he acknowledges it', d.querySelector('.eldbubble.ack') && /right|know|remembered|impressive/i.test(d.querySelector('.eldbubble').textContent));
   await wait(1400);
-  d.querySelector('[data-act=strans][data-ok="0"]').click(); await wait(2200);
+  d.querySelector('[data-act=eldans][data-ok="0"]').click(); await wait(2200);
   ok('a miss with nothing to block: hurt (plaster), something falls', !!d.querySelector('.me .plaster') && prof.lost.length === 1, prof.lost.map((x) => x.id).join());
   await wait(1500);
-  ok('it lies on the ground in the arena', d.querySelectorAll('.strground .strfallen').length === 1);
-  for (let t = 0; t < 40 && !d.querySelector('[data-act=strans]:not([disabled])'); t++) await wait(100);
-  d.querySelector('[data-act=strans][data-ok="0"]').click(); // water: the boots block it and fall
+  ok('it lies on the ground in the arena', d.querySelectorAll('.eldground .eldfallen').length === 1);
+  for (let t = 0; t < 40 && !d.querySelector('[data-act=eldans]:not([disabled])'); t++) await wait(100);
+  d.querySelector('[data-act=eldans][data-ok="0"]').click(); // water: the boots block it and fall
   for (let t = 0; t < 80 && L.st().phase !== 'end'; t++) await wait(100);
   ok('boots block the water and fall themselves', prof.lost.some((x) => x.id === 'rain-boots'), prof.lost.map((x) => x.id).join());
   ok('every miss cost something: 2 misses, 2 things', prof.lost.length === 2);
-  ok('the result lists what fell and the explorer looks sad', /waiting at/.test(d.querySelector('.strend').textContent) && !!d.querySelector('.mefig svg.ex-sad'));
+  ok('the result lists what fell and the explorer looks sad', /waiting at/.test(d.querySelector('.eldend').textContent) && !!d.querySelector('.mefig svg.ex-sad'));
   if (Q.get('shot') === 'end') { await wait(500); done(); return; }
   // 9. revising there wins it all back and brings the rematch
   L.go('path', { i: idx(113), p: 0, L: 2, k: 0, hint: 0, hints: 0, hearts: 3, maxH: 3 });

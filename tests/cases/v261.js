@@ -1,4 +1,4 @@
-// v2.6.1: the MāshāAllāh page fits, the world list closes on an outside tap, swipe to turn, the Stranger test button
+// v2.6.1: the MāshāAllāh page fits, the world list closes on an outside tap, swipe to turn, the Wise Elder test button
 (async () => {
   fixture();
   const { w, d, L, idx } = await openGame();
@@ -19,8 +19,8 @@
   d.querySelector('[data-act=progress]').click(); await wait(350); // it folds away (0.2 s)
   ok('the world list closes on a tap outside', open1 && !d.querySelector('.wrail.open') && !d.getElementById('modal').classList.contains('show'));
   ok('the world sign has no extra words', [...d.querySelectorAll('.msign b')].every((b) => /^World \d$/.test(b.textContent)));
-  ok('no 🧪 Stranger test button any more', !d.querySelector('[data-act=strtest]'));
-  ok('settings say just “The Stranger”', (() => { L.go('settings'); return /The Stranger(?! \(test\))/.test(d.body.textContent) && !/Stranger \(test\)/.test(d.body.textContent); })());
+  ok('no 🧪 Wise Elder test button any more', !d.querySelector('[data-act=strtest]'));
+  ok('settings say just “The Wise Elder”', (() => { L.go('settings'); return /The Wise Elder(?! \(test\))/.test(d.body.textContent) && !/Wise Elder \(test\)/.test(d.body.textContent); })());
   // swipe to turn the explorer
   L.go('bag', { tab: 'hat' }); await wait(300);
   const st0 = d.querySelector('.wd-stage'), r = st0.getBoundingClientRect();

@@ -38,9 +38,9 @@
     L.go('surah', { i: idx(112), p: 0 }); await wait(200);
     d.querySelector('[data-act=words]').click(); await wait(1500);
     L.go('words', Object.assign({}, L.st(), { a: 0, w: 3, phase: 'build' }));
-  } else if (shot === 'stranger') {
+  } else if (shot === 'elder') {
     prof.prog[100] = full(2);
-    L.go('stranger', { i: idx(100), p: 0, qs: [{ k: 2, kind: 'next', cut: 0, throw: 'sand' }, { k: 4, kind: 'next', cut: 0, throw: 'water' }, { k: 6, kind: 'next', cut: 0, throw: 'sand' }], q: 1, marks: [true], hurt: false, fallen: [], phase: 'ask', anytime: false, rematch: false, result: null, ack: '' });
+    L.go('elder', { i: idx(100), p: 0, qs: [{ k: 2, kind: 'next', cut: 0, throw: 'sand' }, { k: 4, kind: 'next', cut: 0, throw: 'water' }, { k: 6, kind: 'next', cut: 0, throw: 'sand' }], q: 1, marks: [true], hurt: false, fallen: [], phase: 'ask', anytime: false, rematch: false, result: null, ack: '' });
   }
   await wait(shot === 'summit' ? 9000 : 1500);
   done();
