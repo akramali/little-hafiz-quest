@@ -8840,3 +8840,9 @@ body:has(.wrail.open) .jbtn {
   padding-left: 18px;
   padding-right: 18px;
 }
+/* My Explorer and My Achievements: the explorer's name is the title (tap it to switch), the page name small */
+.bar-title > .whobtn {
+  font-size: inherit;
+  font-weight: 800;
+  padding: 0 2px;
+}
