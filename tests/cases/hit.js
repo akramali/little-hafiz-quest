@@ -9,6 +9,11 @@
       if (!r.width || !r.height || r.bottom < 0 || r.top > w.innerHeight || r.right < 0 || r.left > w.innerWidth) return;
       const cs = w.getComputedStyle(b); if (+cs.opacity === 0 || cs.pointerEvents === 'none' || cs.visibility === 'hidden') return; // not shown or not tappable now
       const cx = Math.min(Math.max(r.left + r.width / 2, 1), w.innerWidth - 1), cy = Math.min(Math.max(r.top + r.height / 2, 1), w.innerHeight - 1);
+      // scrolled out of its own scrolling box (not covered, just out of view there)
+      for (let a = b.parentElement; a && a !== d.body; a = a.parentElement) {
+        const ov = w.getComputedStyle(a).overflowY;
+        if ((ov === 'auto' || ov === 'scroll') && a.scrollHeight > a.clientHeight + 2) { const q = a.getBoundingClientRect(); if (cy < q.top || cy > q.bottom) return; break; }
+      }
       const top = d.elementFromPoint(cx, cy);
       if (!top || (top !== b && !b.contains(top) && top.closest('[data-act]') !== b)) blocked.push(`${label}: ${b.dataset.act}${b.className ? '.' + String(b.className).split(' ')[0] : ''} covered by ${top ? top.tagName.toLowerCase() + '.' + String(top.className.baseVal != null ? top.className.baseVal : top.className).split(' ')[0] : 'nothing'}`);
     });

@@ -1159,8 +1159,9 @@
   const TEES = ['#7cc8f5', '#f3e6cc', '#c3c8d4', '#a9c79f', '#f7b2cf'];
   const LEGS = ['#3d5a99', '#ae9466', '#55566a', '#7d9fd4', '#c6b4ea', '#9fd8c4'];
   const FEET = ['#8f5b3a', '#f4a3c0', '#c6b4ea']; // the comfy shoes (look.feet, v2.7.2)
-  // pastel extras offered to girls (a pink shirt, lavender and mint pants, pink and lilac shoes)
-  const GIRL_COLORS = { tee: [4], legs: [4, 5], feet: [1, 2] };
+  // the pastel ones (a pink shirt, lavender and mint pants, pink and lilac shoes): anyone can pick them; new
+  // explorers are given one of the classic colors to start
+  const PASTEL = { tee: [4], legs: [4, 5], feet: [1, 2] };
   TEES.forEach((c, k) => {
     if (!k) return;
     ART['basic-shirt~' + k] = Object.assign({}, ART['basic-shirt'], { top: Object.assign({}, ART['basic-shirt'].top, { c, sl: c, cf: lt(c, 0.32) }) });
@@ -2811,7 +2812,7 @@
     TEES,
     LEGS,
     FEET,
-    GIRL_COLORS,
+    PASTEL,
     explorer,
     item,
     silhouette,

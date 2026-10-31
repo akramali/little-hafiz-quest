@@ -4677,7 +4677,8 @@ body {
   margin-top: 6px;
 }
 /* My Explorer: the explorer stays in view; only the bottom part scrolls (sideways for things) */
-.v-bag #app {
+.v-bag #app,
+.v-create #app {
   height: 100vh;
   height: 100dvh;
   display: flex;
@@ -8845,4 +8846,39 @@ body:has(.wrail.open) .jbtn {
   font-size: inherit;
   font-weight: 800;
   padding: 0 2px;
+}
+/* the swipe areas keep sideways swipes for the game (up-and-down scrolling and pinch-zoom still work) */
+.lcard,
+.wstage,
+.jbook,
+#modal .intro {
+  touch-action: pan-y pinch-zoom;
+}
+/* the start screen: days on the trail (👣), the same size as the settings button */
+.streakbtn {
+  position: relative;
+  font-size: 24px;
+}
+.streakbtn b {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  border-radius: 99px;
+  background: var(--gold2);
+  color: #2b2340;
+  font-size: 12px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+}
+.streakcard {
+  text-align: center;
+}
+.streakart {
+  font-size: 64px;
+  line-height: 1.1;
 }

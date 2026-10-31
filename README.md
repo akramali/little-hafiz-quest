@@ -61,7 +61,7 @@ recite on their own.
 - **Campfires** beside memorized sūrahs burn down over three weeks (strong, half lit, embers, out). Low ones glow
   on the map, your Teacher comes to test the cold ones, and practising lights them up again.
 - **A journal to fill:** a book of the animals and things to find on the map and in the āyāt's pictures; tap one to add it.
-- **Daily streaks**, and a welcome from your Teacher, who hands each new explorer their walking stick.
+- **Daily streaks** (👣 days on the trail, a little gift every 7 days in a row), and a welcome from your Teacher, who hands each new explorer their walking stick.
 - **Read mode** for children who can read the muṣḥaf, following the recitation āyah by āyah.
 - **Four reciters**, adjustable speed (0.25×–2×) and loops; tap any word to hear it alone.
 - **200+ things to win and wear:** treasures, golden editions, stickers, buddies, toy rides for golden worlds and

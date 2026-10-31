@@ -1,7 +1,14 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.7.15",
+ "latest": "2.7.16",
  "versions": [
+  { "v": "2.7.16", "notes": [
+   "Swiping works on phones: How to play, Look & Repeat, Word Steps and the journal",
+   "Every shirt, pants and shoe color for every explorer",
+   "Making your explorer looks like My look: Done at the top, your explorer always in view",
+   "Tap outside any pop-up to close it; out of hearts can wait until next time",
+   "👣 Days on the trail on the start screen, and a gift for every 7 days in a row"
+  ] },
   { "v": "2.7.15", "notes": [
    "Small visual tweaks"
   ] },

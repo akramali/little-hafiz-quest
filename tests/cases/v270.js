@@ -85,7 +85,15 @@
   L.go('show'); await wait(400);
   ok('My Achievements shows the streak and the best', /5 days/.test(d.body.textContent) && /best 5/.test(d.body.textContent) && d.querySelectorAll('.ach').length === 8);
   L.go('splash'); await wait(300);
-  ok('the start screen shows the streak', /5 days in a row/.test(d.querySelector('.sp-streak').textContent));
+  ok('the start screen shows the streak (👣, the size of the settings button)', /5/.test(d.querySelector('.streakbtn').textContent) && d.querySelector('.streakbtn').offsetWidth === d.querySelector('[data-act=settings]').offsetWidth);
+  d.querySelector('.streakbtn').click(); await wait(250);
+  ok('tap it: the streak and the best so far', /5 days on the trail/.test(d.querySelector('#modal.show .streakcard').textContent) && /best so far: 5 days/.test(d.querySelector('#modal.show .streakcard').textContent));
+  d.getElementById('modal').click(); await wait(150);
+  // 7 days in a row: a little gift
+  p.streak = [day(Date.now() - 864e5), 6]; p.dayT = [day(Date.now()), 50];
+  const g7 = p.pending.length;
+  X.countDay(p, 15);
+  ok('7 days in a row: a gift', p.streak[1] === 7 && p.pending.length === g7 + 1, `${p.streak[1]} · gifts ${g7}→${p.pending.length}`);
   // 5. the boat sails off after a few taps (and comes back)
   L.go('map'); await wait(1500);
   const boat = d.querySelector('.mprop[data-k="sands-boat"]');

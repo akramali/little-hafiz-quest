@@ -28,8 +28,9 @@
   L.go('surah', { i: idx(113), p: 0 }); await wait(200);
   L.go('map'); await wait(2400);
   ok('he appears between sūrahs', !!d.querySelector('#modal.show .eldmeet'));
-  m.click(); await wait(100); // a tap outside his card
-  ok('a tap outside does not send him away', !!d.querySelector('#modal.show .eldmeet'));
+  m.click(); await wait(100); // a tap outside his card: like Not now
+  ok('a tap outside closes his card (like Not now)', !d.querySelector('#modal.show .eldmeet'));
+  L.elder.maybe(); await wait(300); // (he comes again: the test switch skips his timer)
   if (Q.get('shot') === 'meet') { await wait(1500); done(); return; }
   tap('[data-act=eldface]'); await wait(300);
   ok('the challenge screen', L.st().view === 'elder' && !!d.querySelector('.arena .eldfig svg') && !!d.querySelector('.arena .mefig svg'));

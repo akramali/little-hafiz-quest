@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.7.15';
+  const VERSION = '2.7.16';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -208,7 +208,7 @@
   function starterColors(others) {
     const all = [];
     // (new explorers get one of the classic colors; the pastel ones are there to pick)
-    ART.TEES.forEach((_, tee) => ART.LEGS.forEach((__, legs) => !ART.GIRL_COLORS.tee.includes(tee) && !ART.GIRL_COLORS.legs.includes(legs) && all.push({ tee, legs })));
+    ART.TEES.forEach((_, tee) => ART.LEGS.forEach((__, legs) => !ART.PASTEL.tee.includes(tee) && !ART.PASTEL.legs.includes(legs) && all.push({ tee, legs })));
     const used = (c, k) => others.some((p) => p.look[k] === c[k]);
     // a new shirt and new pants if there are any left, else at least a new pair
     const best = all.filter((c) => !used(c, 'tee') && !used(c, 'legs'));
@@ -1521,10 +1521,16 @@
     stopAudio();
     pendingRestart = restart;
     const m = document.getElementById('modal');
-    m.innerHTML = `<div class="card dropcard">${body}<div class="row"><button class="btn go wide" data-act="retry">🔁 Try again</button></div></div>`;
+    m.innerHTML = `<div class="card dropcard">${body}<div class="row"><button class="btn wide" data-act="dropnext">Next time</button><button class="btn go wide" data-act="retry">🔁 Try again</button></div></div>`;
     m.classList.add('show');
   }
   let pendingRestart = null;
+  // out of hearts, "Next time": back to the sūrah's page (what fell waits there)
+  function dropNext() {
+    hideModal();
+    pendingRestart = null;
+    toSurah();
+  }
   function restartActivity(r) {
     st.i = r.i;
     st.p = r.p;
@@ -1693,12 +1699,11 @@
     <div class="sp-art">${ART.splash(prof.look, Object.assign(drawnOutfit(prof), { sticker: prof.badge }), { night: isNight(), mood: prof.lost.length ? 'sad' : '' })}</div>
     <div class="sp-top">
       <button class="verchip ${upd.available ? 'ready' : ''}" data-act="updates" aria-label="Version and updates">v${VERSION}${upd.available ? ' · Update ✨' : ''}</button>
-      <span class="sp-tr">${FS_OK && !STANDALONE ? `<button class="icon-btn" data-act="fs" aria-label="${fsNow() ? 'Exit fullscreen' : 'Fullscreen'}">${fsNow() ? ICON.fsOut : ICON.fsIn}</button>` : ''}<button class="icon-btn" data-act="settings" aria-label="Grown-up corner">${ICON.gear}</button></span>
+      <span class="sp-tr">${days >= 1 ? `<button class="icon-btn streakbtn" data-act="streak" aria-label="${days} ${days === 1 ? 'day' : 'days'} on the trail">👣<b>${days}</b></button>` : ''}${FS_OK && !STANDALONE ? `<button class="icon-btn" data-act="fs" aria-label="${fsNow() ? 'Exit fullscreen' : 'Fullscreen'}">${fsNow() ? ICON.fsOut : ICON.fsIn}</button>` : ''}<button class="icon-btn" data-act="settings" aria-label="Grown-up corner">${ICON.gear}</button></span>
     </div>
     <div class="sp-bottom">
       <h1 class="sp-title">Little Hafiz Quest</h1>
       <p class="sp-sub">Juz ‘Amma by heart · 37 sūrahs to the summit</p>
-      ${days > 1 ? `<span class="sp-streak">🔥 ${days} days in a row</span>` : ''}
       <button class="btn gold sp-begin" data-act="begin">${started ? 'Continue the quest ▶' : 'Begin the quest ▶'}</button>
       ${
         noExplorers()
@@ -1752,10 +1757,8 @@
   }
   function lookControls(prof) {
     const L = prof.look;
-    // (the pastel comfy colors are offered to girls)
-    const girlOnly = (k, j) => !ART.isGirl(L) && (ART.GIRL_COLORS[k] || []).includes(j) && L[k] !== j;
     const sw = (k, list, kind, label) =>
-      `<div class="swatches">${list.map((c, j) => (girlOnly(k, j) ? '' : `<button class="swatch2 ${(L[k] || 0) === j ? 'on' : ''}" data-act="look" data-k="${k}" data-v="${j}" aria-label="${label} ${j + 1}" aria-pressed="${(L[k] || 0) === j}">${swatchArt(kind, c)}</button>`)).join('')}</div>`;
+      `<div class="swatches">${list.map((c, j) => `<button class="swatch2 ${(L[k] || 0) === j ? 'on' : ''}" data-act="look" data-k="${k}" data-v="${j}" aria-label="${label} ${j + 1}" aria-pressed="${(L[k] || 0) === j}">${swatchArt(kind, c)}</button>`).join('')}</div>`;
     const hairs = ART.LOOKS.hairFor[ART.isGirl(L) ? 'girl' : 'boy']
       .map(
         (h) =>
@@ -1787,15 +1790,27 @@
       <div class="lkgroup"><div class="lkh">👟 Comfy shoes</div>${sw('feet', ART.FEET, 'feet', 'Shoe color')}</div>
     </div>`;
   }
+  // Make (or change) your explorer: the same page as My look in My Explorer (Done at the top right, the explorer
+  // always in view, only the choices below scroll); back from a brand-new explorer leaves without keeping them
   V.create = () => {
     const prof = P();
-    return `<div class="screen">
-    <div class="h1c">${st.first ? 'Make your explorer!' : 'Change your explorer'}</div>
-    <div class="wd-stage">${explorer({ view: 'front' })}</div>
-    ${lookControls(prof)}
-    <div class="row">${P().made ? '' : '<button class="btn wide" data-act="cancelnew">Cancel</button>'}<button class="btn gold wide" data-act="made">${st.first ? "Let's go! ▶" : 'Done ✓'}</button></div>
+    return `<div class="screen bagscr createscr">
+    ${bar(st.first ? 'Make your explorer!' : 'Change your explorer', '', prof.made ? (st.back === 'explorers' ? 'explorers' : 'bag') : 'new', `<button class="mebtn on" data-act="made">${st.first ? 'Let’s go ▶' : '✓ Done'}</button>`)}
+    <div class="wd-stage"><button class="wd-ex" data-act="exmove" aria-label="Tap your explorer">${explorer({ view: 'front' })}</button></div>
+    <div class="wbody"><div class="wscroll-v">${lookControls(prof)}</div></div>
   </div>`;
   };
+
+  // leave "make your explorer" without keeping the new, unfinished explorer
+  function cancelNew() {
+    const p = P();
+    if (p && !p.made) {
+      store.profiles = store.profiles.filter((x) => x.id !== p.id);
+      store.cur = store.profiles.length ? store.profiles[0].id : '';
+      save();
+    }
+    go('splash');
+  }
 
   /* ---------- THE QUEST MAP ---------- */
   function surahStatus(i) {
@@ -2701,9 +2716,9 @@
       ? `<button class="wd-side wd-comfy on" data-act="comfy" aria-label="Put my things back on">✨<small>Back</small></button>`
       : `<button class="wd-side wd-comfy" data-act="comfy" ${fancy ? '' : 'disabled'} aria-label="Just comfy clothes">👕<small>Comfy</small></button>`;
     return `<div class="screen bagscr">
-    ${bar(whoBtn(prof, 'My Explorer'), 'My Explorer', 'map', giftIcon(prof, 'inbar') + `<button class="mebtn ${tab === 'look' ? 'on' : ''}" data-act="tab" data-t="${tab === 'look' ? 'hat' : 'look'}" aria-label="Change my name and how I look" aria-pressed="${tab === 'look'}">${tab === 'look' ? '✓ Done' : '✏️ My look'}</button>`)}
-    <div class="wd-stage"><button class="wd-ex" data-act="exmove" aria-label="Tap your explorer">${explorer({ view: st.backView ? 'back' : 'front' })}</button>${comfy}<button class="wd-side wd-turn" data-act="turn" aria-label="Turn around">↻<small>Turn</small></button><button class="wd-side wd-show" data-act="show" aria-label="My achievements">🏆<small>Awards</small></button></div>
-    <div class="wtwrap"><div class="wtabs" id="wtabs">${tabs}</div><button class="cpmore cpless" data-act="wtscroll" data-d="-1" aria-label="Earlier categories">‹</button><button class="cpmore" data-act="wtscroll" data-d="1" aria-label="More categories">›</button></div>
+    ${bar(whoBtn(prof, 'My Explorer'), prof.name || store.profiles.filter((p) => p.made).length > 1 ? 'My Explorer' : '', 'map', giftIcon(prof, 'inbar') + `<button class="mebtn ${tab === 'look' ? 'on' : ''}" data-act="tab" data-t="${tab === 'look' ? 'hat' : 'look'}" aria-label="Change my name and how I look" aria-pressed="${tab === 'look'}">${tab === 'look' ? '✓ Done' : '✏️ My look'}</button>`)}
+    <div class="wd-stage"><button class="wd-ex" data-act="exmove" aria-label="Tap your explorer">${explorer({ view: st.backView && tab !== 'look' ? 'back' : 'front' })}</button>${tab === 'look' ? '' : `${comfy}<button class="wd-side wd-turn" data-act="turn" aria-label="Turn around">↻<small>Turn</small></button><button class="wd-side wd-show" data-act="show" aria-label="My achievements">🏆<small>Awards</small></button>`}</div>
+    ${tab === 'look' ? '' : `<div class="wtwrap"><div class="wtabs" id="wtabs">${tabs}</div><button class="cpmore cpless" data-act="wtscroll" data-d="-1" aria-label="Earlier categories">‹</button><button class="cpmore" data-act="wtscroll" data-d="1" aria-label="More categories">›</button></div>`}
     <div class="wbody">${body}</div>
   </div>`;
   };
@@ -2777,13 +2792,13 @@
     ['🎁', `${a.items}`, 'treasures found'],
     ['🏅', `${a.badges}`, a.badges === 1 ? 'star badge' : 'star badges'],
     ['⏱️', fmtTime(a.time), 'spent learning'],
-    ['🔥', `${a.streak} ${a.streak === 1 ? 'day' : 'days'}`, `in a row · best ${a.best}`],
+    ['👣', `${a.streak} ${a.streak === 1 ? 'day' : 'days'}`, `in a row · best ${a.best}`],
   ];
   V.show = () => {
     const prof = P(),
       a = achievements(prof);
     return `<div class="screen showscr">
-    ${bar(whoBtn(prof, 'Explorer'), 'My Achievements', 'bag')}
+    ${bar(whoBtn(prof, 'My Achievements'), prof.name || store.profiles.filter((p) => p.made).length > 1 ? 'My Achievements' : '', 'bag')}
     <div class="show-stage"><button class="wd-ex" data-act="exmove" aria-label="Tap your explorer">${explorer({ view: 'front' })}</button></div>
     <div class="achgrid">${ACH_ROWS(a)
       .map(([ic, big, sub]) => `<div class="ach"><span class="ach-ic">${ic}</span><b>${big}</b><small>${sub}</small></div>`)
@@ -3874,6 +3889,24 @@
     if (prof.dayT[1] < 60 || prof.streak[0] === d) return;
     prof.streak = [d, prof.streak[0] === dayKey(Date.now() - 864e5) ? prof.streak[1] + 1 : 1];
     prof.best = Math.max(prof.best, prof.streak[1]);
+    // every 7 days in a row on the trail: a little gift
+    if (prof.streak[1] % 7 === 0 && (giveSurprise(prof) || giveLevelGift(prof))) {
+      save();
+      toast(`👣 ${prof.streak[1]} days in a row on the trail! A gift is waiting for you 🎁`);
+    }
+  }
+  // the streak, from the 👣 on the start screen
+  function showStreak() {
+    const prof = P(),
+      now = streakNow(prof),
+      next = 7 - (now % 7),
+      days = (n) => `${n} ${n === 1 ? 'day' : 'days'}`;
+    const m = document.getElementById('modal');
+    m.innerHTML = `<div class="card streakcard"><button class="cardx" data-act="cno" aria-label="Close">✕</button>
+      <div class="streakart">👣</div><h3>${days(now)} on the trail!</h3>
+      <p class="eldsay">Your best so far: <b>${days(Math.max(prof.best, now))}</b> in a row.</p>
+      <p class="saveinfo center">🎁 ${next === 7 && now ? 'A gift for every 7 days in a row. Keep going!' : `${days(next)} more for a gift. Learn a little every day!`}</p></div>`;
+    m.classList.add('show');
   }
   // the streak still alive: learned today or yesterday
   const streakNow = (prof) => (prof.streak[0] === today() || prof.streak[0] === dayKey(Date.now() - 864e5) ? prof.streak[1] : 0);
@@ -3924,9 +3957,12 @@
     }
     const m = document.getElementById('modal');
     if (e.target === m) {
-      if (m.querySelector('.dropcard')) return; // must press "Try again"
-      if (m.querySelector('.eldmeet')) return; // the Wise Elder waits for an answer: I'm ready or Not now
-      if (m.querySelector('.dlcard.busy')) return; // downloading
+      // a tap outside closes any card (out of hearts: "Next time"; the Teacher: "Not now"; the welcome comes
+      // back the next time the map opens; a download carries on, its progress on the Listen button)
+      if (m.querySelector('.dropcard')) {
+        dropNext();
+        return;
+      }
       if (dlAnswer) stopAudio(); // a download question left unanswered: don't download
       pendingYes = null;
       const gift = m.querySelector('.giftcard');
@@ -3995,6 +4031,10 @@
       case 'firego':
         hideModal();
         enterSurah(+b.dataset.i);
+        break;
+      case 'streak':
+        sfx.tap();
+        showStreak();
         break;
       case 'whopick':
         sfx.tap();
@@ -4114,18 +4154,10 @@
         scrollTo(0, y);
         break;
       }
-      case 'cancelnew': {
-        // leave "make your explorer" without keeping the new, unfinished explorer
+      case 'cancelnew':
         sfx.tap();
-        const p = P();
-        if (!p.made) {
-          store.profiles = store.profiles.filter((x) => x.id !== p.id);
-          store.cur = store.profiles.length ? store.profiles[0].id : '';
-          save();
-        }
-        go('splash');
+        cancelNew();
         break;
-      }
       case 'made': {
         sfx.chime();
         P().made = true;
@@ -4372,6 +4404,7 @@
         else if (to === 'bag') go('bag', { tab: 'hat' });
         else if (to === 'explorers') go('explorers');
         else if (to === 'ret' && st.ret) go(st.ret.view, st.ret);
+        else if (to === 'new') cancelNew();
         else toSurah();
         break;
       }
@@ -4523,6 +4556,10 @@
       case 'elddone':
         sfx.tap();
         go('map');
+        break;
+      case 'dropnext':
+        sfx.tap();
+        dropNext();
         break;
       case 'retry': {
         hideModal();
@@ -5709,28 +5746,25 @@
   function onSwipe(where, turn) {
     SWIPES.push({ where, turn });
   }
+  // On a phone the touch events decide (the browser may cancel pointer events once it takes over a gesture, but a
+  // touch always ends); with a mouse, the pointer events
   let swipe0 = null;
-  document.addEventListener(
-    'pointerdown',
-    (e) => {
-      const t = e.target.closest ? e.target : null,
-        sw = t && SWIPES.find((x) => x.where(t));
-      swipe0 = sw ? { sw, x: e.clientX, y: e.clientY } : null;
-    },
-    true,
-  );
-  document.addEventListener(
-    'pointerup',
-    (e) => {
-      if (!swipe0) return;
-      const { sw, x, y } = swipe0,
-        dx = e.clientX - x,
-        dy = e.clientY - y;
-      swipe0 = null;
-      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) sw.turn(dx < 0 ? 1 : -1);
-    },
-    true,
-  );
+  const swipeStart = (t, x, y) => {
+    const sw = t && t.closest ? SWIPES.find((q) => q.where(t)) : null;
+    swipe0 = sw ? { sw, x, y } : null;
+  };
+  const swipeEnd = (x, y) => {
+    if (!swipe0) return;
+    const { sw } = swipe0,
+      dx = x - swipe0.x,
+      dy = y - swipe0.y;
+    swipe0 = null;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) sw.turn(dx < 0 ? 1 : -1);
+  };
+  document.addEventListener('touchstart', (e) => (e.touches.length === 1 ? swipeStart(e.target, e.touches[0].clientX, e.touches[0].clientY) : (swipe0 = null)), { passive: true, capture: true });
+  document.addEventListener('touchend', (e) => e.changedTouches[0] && swipeEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY), { passive: true, capture: true });
+  document.addEventListener('pointerdown', (e) => e.pointerType !== 'touch' && swipeStart(e.target, e.clientX, e.clientY), true);
+  document.addEventListener('pointerup', (e) => e.pointerType !== 'touch' && swipeEnd(e.clientX, e.clientY), true);
   // the page slides in from the side it came from
   const slideIn = (el, dir) => el && !reduceMotion && el.animate([{ transform: `translateX(${dir * 60}px)`, opacity: 0.3 }, { transform: 'none', opacity: 1 }], { duration: 260, easing: 'ease-out' });
   // Look & Repeat: the next āyah or the one before (like tapping the numbers)

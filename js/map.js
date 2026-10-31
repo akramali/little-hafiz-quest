@@ -314,7 +314,9 @@
               size = Math.round((40 + rnd() * 30 + (isTall(name) ? 10 : 0)) * grow),
               hgt = Math.round(isTall(name) ? size * 1.5 : size),
               box = boxOf(x, y, size, hgt);
-            if (loose ? !free(x, y, 0, null) : !free(x, y, 0, box)) continue;
+            // (a looser spot may overlap other pictures, but nobody's feet may be hidden inside another picture)
+            const feetIn = (q, fx, fy) => fx > q.x0 && fx < q.x1 && fy > q.y0 + (q.y1 - q.y0) * 0.15 && fy < q.y1 - 6;
+            if (loose ? !free(x, y, 0, null) || boxes.some((q) => feetIn(q, x, y)) || placed.some((q) => feetIn(box, q.x, q.y)) : !free(x, y, 0, box)) continue;
             put(name, x, y, size, hgt, box);
             return true;
           }
