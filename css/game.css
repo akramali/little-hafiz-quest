@@ -8069,3 +8069,28 @@ img,
 svg {
   -webkit-user-drag: none;
 }
+
+/* ---------- v2.6.10 ---------- */
+/* My Achievements fits on one screen: a shorter stage for the explorer, tighter cards */
+.showscr .show-stage {
+  height: 30vh;
+  height: 30dvh;
+  min-height: 190px;
+  max-height: 330px;
+}
+.showscr .show-stage .wd-ex {
+  height: 100%;
+}
+.showscr .achgrid {
+  gap: 6px;
+  margin: 8px 0 10px;
+}
+.showscr .ach {
+  padding: 6px 10px;
+}
+.showscr .ach b {
+  font-size: 18px;
+}
+.showscr .ach-ic {
+  font-size: 23px;
+}
