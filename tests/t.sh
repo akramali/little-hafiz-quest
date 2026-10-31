@@ -9,13 +9,13 @@
 J=${J:-3}
 declare -A AREA=(
   [core]="smoke"
-  [map]="fruit face pals tag excite props walkgift v258 v260 v261"
+  [map]="fruit face pals tag excite props walkgift v258 v260 v261 v268"
   [gifts]="gifts giftflow giftrun walkgift drops v257 v260 v261"
   [learn]="chain chain2 loop v257 v260 v267"
   [words]="v242 smoke v267"
   [stones]="stones v267"
   [puzzle]="puzzle ghost v242 v258"
-  [read]="mushaf focus v257 v260"
+  [read]="mushaf focus v257 v260 v268"
   [explorers]="hold sync sync1 pals"
   [sync]="sync sync1"
   [bag]="v241 v242 drops v258 v261"

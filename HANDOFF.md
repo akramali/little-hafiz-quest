@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is the player- and developer-facing description; this file is the working state.
 
-**Current version:** v2.6.7 (2026-10-31) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.6.8 (2026-10-31) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -60,6 +60,8 @@ Testing hook: `window.__lhq = { st, store, go, player, stranger: { strikeFor, bl
     holds (something lesser falls) except in an all-golden sūrah. Unprotected: hurt (plaster, dizzy) + best thing falls.
     Order: worn non-golden → owned non-golden → a sticker → golden. Star badges and comfy starter clothes are never lost.
   - All three right: safe + small gift (special in a rematch; hero gear after the summit, then ⚔️ Challenge).
+- **Recitation:** `playList` / `stopAudio` hold a screen Wake Lock while playing (`keepAwake`); Read's Listen plays
+  `[[1, 1], …]` (the Basmalah file, then the sūrah) and `markNow` scrolls the recited āyah into view.
 - **Starter look:** the face (skin) picker draws faces like the hair picker; comfy shirt/pants come in 4 colors each.
 
 ## Release flow (do this every time)
@@ -83,7 +85,7 @@ Testing hook: `window.__lhq = { st, store, go, player, stranger: { strikeFor, bl
 ## Open items and ideas
 
 - **Never checked on real phones:** the share sheet, the camera reading a QR code, Android link capture, iOS Paste
-  from family, iOS update timing, 0.25× playback on iPhone Safari (if muted, make 0.5× the slowest), the Stranger's
+  from family, iOS update timing, 0.25× playback on iPhone Safari (if muted, make 0.5× the slowest), the screen staying on while reciting (Wake Lock: iOS 16.4+, and in Home Screen apps only on newer iOS), the Stranger's
   defend/hurt animations and swipe-to-turn on touch.
 - Not done (offered): a random starting face for new explorers, so no skin tone is "the default".
 - The Stranger was a test concept in v2.6.0–2.6.3 and is now part of the game; tune `1 / 3`, `STRANGER_EVERY` (10 min),
@@ -97,4 +99,4 @@ v2.3–2.4: nature sounds, jigsaw, Read view, awards, files. v2.5.0: family sync
 classic v1 retired, word meanings. v2.5.1–2.5.8: buttons, speed, info/how-to, fruit and animals, all explorers on
 the map, chain setting, gift fixes, faces, glasses, Big Puzzle. v2.6.0: golden/green worlds, world rides, speed
 button, one-tap gifts, the Stranger. v2.6.1–2.6.6: Stranger polish, closing animations, stakes (every miss costs,
-world throws, protection), battle ground in the world's colors. v2.6.7: the Stranger every 10 minutes; speed and loop in Word Steps and Stepping Stones. Full detail: `git log` and `changelog.json`.
+world throws, protection), battle ground in the world's colors. v2.6.7: the Stranger every 10 minutes; speed and loop in Word Steps and Stepping Stones. v2.6.8: Read starts with the Bismillah (āyah -1, word data in `BISM_WORDS`) and follows the recited āyah; the screen stays on while reciting (`keepAwake`, Wake Lock; 99× loops let go after 15 min); full world names in the list. Full detail: `git log` and `changelog.json`.

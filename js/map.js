@@ -461,7 +461,7 @@
             const ic = ART.props[cfg.worldIcon ? cfg.worldIcon(wi) : names[0]] || '';
             const land = `background:linear-gradient(180deg,${pl.sky[0]},${pl.sky[1]} 58%,${pl.ground[0]} 58%,${pl.ground[1]})`;
             const mark = pr.gold ? ' <i class="wr-mark">⭐</i>' : pr.done ? ' <i class="wr-mark">✓</i>' : '';
-            return `<button class="wr ${pr.done ? 'done' : ''} ${pr.gold ? 'gold' : ''} ${wi === cur ? 'on' : ''}" data-act="world" data-w="${wi}" style="--wc:${pl.accent};--p:${Math.round(pr.frac * 100)}" aria-label="World ${wi + 1}: ${w.name}${pr.gold ? ', golden' : pr.done ? ', done' : ''}"><span class="wr-dot"><span class="wr-ic" style="${land}">${ic}</span></span><span class="wr-tx"><b>World ${wi + 1}${mark}</b><small>${w.name}</small></span>${cfg.worldThrows && cfg.worldThrows(wi) ? `<span class="wr-thr" aria-hidden="true">${cfg.worldThrows(wi)}</span>` : ''}</button>`;
+            return `<button class="wr ${pr.done ? 'done' : ''} ${pr.gold ? 'gold' : ''} ${wi === cur ? 'on' : ''}" data-act="world" data-w="${wi}" style="--wc:${pl.accent};--p:${Math.round(pr.frac * 100)}" aria-label="World ${wi + 1}: ${w.name}${pr.gold ? ', golden' : pr.done ? ', done' : ''}"><span class="wr-dot"><span class="wr-ic" style="${land}">${ic}</span></span><span class="wr-tx"><b><span>World ${wi + 1}${mark}</span>${cfg.worldThrows && cfg.worldThrows(wi) ? `<span class="wr-thr" aria-hidden="true">${cfg.worldThrows(wi)}</span>` : ''}</b><small>${w.name}</small></span></button>`;
           })
           .reverse()
           .join('') +

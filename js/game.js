@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.6.7';
+  const VERSION = '2.6.8';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -727,6 +727,7 @@
       queue.push(...items);
     }
     playing = true;
+    keepAwake(true);
     const tok = ++playTok;
     updateFab();
     loadTimings(id)
@@ -947,8 +948,38 @@
       if (playing && tok === advTok) playNext();
     }, 450);
   }
+  /* While the reciter plays, the screen stays on (Wake Lock), so a long sūrah or loop isn't cut off when the
+     phone would dim and lock. An endless (99×) loop lets go after 15 minutes. */
+  let wakeLock = null,
+    wakeWanted = false,
+    wakeT = 0;
+  function keepAwake(on) {
+    clearTimeout(wakeT);
+    wakeWanted = on;
+    if (!on) {
+      if (wakeLock) wakeLock.release().catch(() => {});
+      wakeLock = null;
+      return;
+    }
+    if (loopRun && loopRun.total >= 99) wakeT = setTimeout(() => keepAwake(false), 15 * 60000);
+    if (wakeLock || !navigator.wakeLock || document.hidden) return;
+    navigator.wakeLock
+      .request('screen')
+      .then((l) => {
+        if (!wakeWanted) return l.release();
+        wakeLock = l;
+        l.addEventListener('release', () => wakeLock === l && (wakeLock = null));
+      })
+      .catch(() => {});
+  }
+  // the lock ends when the page is hidden: take it again on coming back, if still reciting
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && wakeWanted && playing && !wakeLock && navigator.wakeLock)
+      navigator.wakeLock.request('screen').then((l) => (wakeLock = l), () => {});
+  });
   function stopAudio() {
     playing = false;
+    keepAwake(false);
     queue = [];
     advTok++;
     playTok++;
@@ -969,7 +1000,20 @@
     markNow(null);
   }
   function markNow(it) {
-    document.querySelectorAll('.mayah').forEach((el) => el.classList.toggle('now', !!it && it.length === 2 && +el.dataset.k === it[1] - 1));
+    const k = it && it.length === 2 ? (it[0] === 1 ? -1 : it[1] - 1) : null; // [1, 1] is the Basmalah
+    let cur = null;
+    document.querySelectorAll('.mayah').forEach((el) => {
+      const on = k != null && +el.dataset.k === k;
+      el.classList.toggle('now', on);
+      if (on) cur = el;
+    });
+    // Read: the āyah being recited stays in view (back up to the top when a loop starts over)
+    if (cur && st.view === 'mushaf' && !st.focus) {
+      const r = cur.getBoundingClientRect(),
+        top = 170, // under the bar and the floating buttons
+        bottom = innerHeight - 40;
+      if (r.top < top || r.bottom > bottom) scrollTo({ top: Math.max(0, scrollY + r.top - (k === -1 ? top + 120 : Math.max(top, (innerHeight - r.height) / 2))), behavior: reduceMotion ? 'auto' : 'smooth' });
+    }
   }
   player.addEventListener('seeked', () => {
     if (curSeg && player.currentTime >= curSeg.start - 0.1) player.muted = false;
@@ -1014,7 +1058,13 @@
       return ks.length > 1 ? many(ks, `Āyāt ${ks[0] + 1}–${ks[ks.length - 1] + 1}`) : one(ks[0]);
     }
     if (v === 'words') return Object.assign(one(st.a), { loop: true });
-    if (v === 'mushaf') return Object.assign(st.sel != null ? one(st.sel) : many(range({ from: 0, to: s.ayat.length - 1 }), 'Whole sūrah'), { loop: true });
+    if (v === 'mushaf') {
+      // the whole sūrah starts with the Basmalah ([1, 1]); it can also be chosen on its own (sel -1)
+      if (st.sel === -1) return { key: `${s.n}:bism`, label: 'Bismillah', items: [[1, 1]], loop: true };
+      if (st.sel != null) return Object.assign(one(st.sel), { loop: true });
+      const all = many(range({ from: 0, to: s.ayat.length - 1 }), 'Whole sūrah');
+      return Object.assign(all, { items: [[1, 1], ...all.items], loop: true });
+    }
     return null;
   }
   function updateFab() {
@@ -1911,11 +1961,13 @@
       .join(' ');
     const focus = st.sel != null && st.focus ? focusCard(s, st.sel) : '';
     return `<div class="screen mushafscr" style="${cv(s.color)}" data-act="mclear">
-    ${bar(`📖 ${s.name}`, `${s.ayat.length} āyāt · ${st.sel != null ? `āyah ${st.sel + 1} chosen` : 'the whole sūrah'}`, 'surah')}
+    ${bar(`📖 ${s.name}`, `${s.ayat.length} āyāt · ${st.sel === -1 ? 'Bismillah chosen' : st.sel != null ? `āyah ${st.sel + 1} chosen` : 'the whole sūrah'}`, 'surah')}
     <div class="mtools"><span>${st.sel != null ? (st.focus ? 'Listen plays this āyah. Tap anywhere to close.' : '<b>Tap the āyah again</b> to look closer. Tap anywhere else to clear the colors.') : '<b>Hold an āyah</b> to color its words, like Word Steps.'}</span></div>
     <div class="card mushaf ${focus ? 'focusing' : ''}">
       <div class="mtitle" lang="ar">سُورَةُ ${s.ar}</div>
-      <div class="mbism" lang="ar">${BISM}</div>
+      <div class="mbism" lang="ar" dir="rtl"><span class="mayah ${st.sel === -1 ? 'sel' : ''}" data-k="-1">${wordsOf(BISM)
+        .map((w, j) => (st.sel === -1 ? `<span class="mw" style="${wv(WCOL[j % WCOL.length])}">${w}</span>` : w))
+        .join(' ')}</span></div>
       <div class="mtext" lang="ar" dir="rtl">${ayat}</div>
     </div>
     ${focus}
@@ -1925,15 +1977,15 @@
   /* one āyah up close: its colored words, with the transliteration over each and the meaning under each
      (as the settings say), and the simple meaning of the whole āyah */
   function focusCard(s, k) {
-    const a = s.ayat[k];
+    const a = k === -1 ? { ar: BISM, kid: 'In the name of Allah, the Most Kind, the Most Merciful' } : s.ayat[k];
     const words = wordsOf(a.ar)
       .map((w, j) => {
         const ln = wordLines(s.n, k, j);
         return `<span class="fword" style="${wv(WCOL[j % WCOL.length])}">${ln.above}<span class="fwar" lang="ar">${w}</span>${ln.below}</span>`;
       })
       .join('');
-    return `<div class="mfocus" role="dialog" aria-label="Āyah ${k + 1}"><div class="mfcard">
-      <div class="mfhead"><span class="ayah-tag"><span class="num">${k + 1}</span>Āyah ${k + 1}</span><span class="mfbtns">${prefs.translit || prefs.wordmean ? '<button class="mfx" data-act="wordset" aria-label="Word meaning and transliteration settings">⚙️</button>' : ''}<button class="mfx" data-act="mclear" aria-label="Close">✕</button></span></div>
+    return `<div class="mfocus" role="dialog" aria-label="${k === -1 ? 'Bismillah' : 'Āyah ' + (k + 1)}"><div class="mfcard">
+      <div class="mfhead"><span class="ayah-tag">${k === -1 ? '<span class="num">🌙</span>Bismillah' : `<span class="num">${k + 1}</span>Āyah ${k + 1}`}</span><span class="mfbtns">${prefs.translit || prefs.wordmean ? '<button class="mfx" data-act="wordset" aria-label="Word meaning and transliteration settings">⚙️</button>' : ''}<button class="mfx" data-act="mclear" aria-label="Close">✕</button></span></div>
       <div class="mfwords" dir="rtl">${words}</div>
       ${prefs.meaning ? `<div class="mean">💬 ${a.kid}</div>` : ''}
       ${!prefs.translit && !prefs.wordmean ? '<div class="mfhint"><span>See how each word sounds and what it means: switch on transliteration and word meanings.</span><button class="icon-btn sm" data-act="wordset" aria-label="Open the word settings">⚙️</button></div>' : ''}
@@ -1995,7 +2047,8 @@
       .catch(() => {})
       .then(() => (wordsLoading = null));
   }
-  const wordInfo = (n, k, j) => (WORDS && WORDS[n] && WORDS[n][k] && WORDS[n][k][j]) || ['', ''];
+  const BISM_WORDS = [["bis'mi", 'In (the) name'], ['l-lahi', '(of) Allah'], ['l-raḥmāni', 'the Most Gracious'], ['l-raḥīmi', 'the Most Merciful']]; // Quranic Arabic Corpus 1:1
+  const wordInfo = (n, k, j) => (k === -1 ? BISM_WORDS[j] : WORDS && WORDS[n] && WORDS[n][k] && WORDS[n][k][j]) || ['', ''];
   // the lines over and under a word: transliteration above, meaning below (as the settings say)
   function wordLines(n, k, j) {
     const [tr, en] = wordInfo(n, k, j);
@@ -5640,5 +5693,5 @@
   registerOffline();
   if (linkCode) setTimeout(() => openSync(linkCode, `${appURL()}#sync=${linkCode}`), 400);
   if (justUpdated) loadChangelog().then(() => st.view === 'splash' && render());
-  window.__lhq = { st: () => st, store: () => store, go, player, stranger: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeStranger } }; // for testing in the browser console
+  window.__lhq = { st: () => st, store: () => store, go, player, stranger: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeStranger }, markNow, fabTarget }; // for testing in the browser console
 })();
