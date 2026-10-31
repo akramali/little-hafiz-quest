@@ -45,10 +45,15 @@
   sw(cr.left + 120, cr.left + 260); await wait(300);
   ok('swipe right: back again', L.st().a === 0, L.st().a);
   // 5. lost things stay on the screen, even beside a stop near the edge
-  p.lost = [{ id: 'explorer-cap', n: 113 }, { id: 'explorer-cap', n: 112 }];
+  const three = ['explorer-cap', 'trail-boots', 'leaf-cape'];
+  three.forEach((id) => p.items.includes(id) || p.items.push(id));
+  p.lost = [...three.map((id) => ({ id, n: 113 })), { id: 'sunrise-shades', n: 112 }];
+  if (!p.items.includes('sunrise-shades')) p.items.push('sunrise-shades');
   L.go('map'); await wait(1500);
-  const off = [...d.querySelectorAll('.mlost')].filter((b) => { const q = b.getBoundingClientRect(); return q.left < 0 || q.right > w.innerWidth; });
-  ok('lost things are on the screen', d.querySelectorAll('.mlost').length === 2 && !off.length, off.length);
+  const boxes = [...d.querySelectorAll('.mlost')].map((b) => b.getBoundingClientRect());
+  const off = boxes.filter((q) => q.left < 0 || q.right > w.innerWidth);
+  const lap = boxes.some((a, i) => boxes.some((b, j) => j > i && a.left < b.right - 6 && b.left < a.right - 6 && a.top < b.bottom - 6 && b.top < a.bottom - 6));
+  ok('lost things are on the screen and never on top of each other', boxes.length === 4 && !off.length && !lap, `${boxes.length} · off ${off.length} · overlap ${lap}`);
   ok('no errors', !errs.length, errs.join(' | '));
   done();
 })();

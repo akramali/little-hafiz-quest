@@ -333,6 +333,7 @@
         `<div class="msummit" data-x="${L.summit.x.toFixed(1)}" data-y="${(L.summit.y + 60).toFixed(1)}" style="left:${(L.summit.x - sz / 2).toFixed(1)}px;top:${(L.summit.y + 60 - sz * 0.8).toFixed(1)}px;width:${sz}px;height:${(sz * 0.8).toFixed(0)}px">${ART.props['peak-summit'] || ''}</div>`,
       );
       // sūrah stops
+      const lostSpots = []; // where lost things lie (so two never land on each other)
       L.nodes.forEach((nd) => {
         const s = cfg.surahs[nd.i],
           st = cfg.status(nd.i);
@@ -349,16 +350,32 @@
             <span class="nlab"><b>${s.name}</b><small>${st.done ? `✓ ⭐ ${st.stars}/${st.max}` : `⭐ ${st.stars}/${st.max}`}</small></span>
           </button>`,
         );
-        (st.lost || []).forEach((id, j) => {
-          // on the other side of the stop from where the explorer stands (past its campfire); when that would
-          // be off the screen, under the stop's name instead
-          const side = nd.x > L.cx ? 1 : -1;
-          let lx = nd.x + side * ((st.fire >= 0 ? 90 : 64) + j * 26),
-            ly = nd.y + 40;
-          if (lx < 30 || lx > width - 30) {
-            lx = Math.max(30, Math.min(width - 30, nd.x + side * 40 + j * 30 * side));
-            ly = nd.y + 140;
-          }
+        // lost things: each on the nearest free spot beside its stop (never on a stop, its name or campfire, the
+        // explorer, or another lost thing), the side away from the explorer first; kept 50 px in from the sides,
+        // as the curved-world effect pushes things near the edges outward a little
+        const lost = st.lost || [],
+          side = nd.x > L.cx ? 1 : -1,
+          ex = nd.i === cfg.current ? { x: nd.x - side * 52, y: nd.y + 30 } : null;
+        const freeAt = (x, y) =>
+          x >= 50 &&
+          x <= width - 50 &&
+          !L.nodes.some((m) => Math.abs(m.x - x) < 106 && y > m.y - 50 && y - 52 < m.y + 90) &&
+          !lostSpots.some((q) => Math.abs(q.x - x) < 56 && Math.abs(q.y - y) < 56) &&
+          !(ex && Math.abs(ex.x - x) < 70 && Math.abs(ex.y - y) < 80);
+        const spots = [];
+        [40, -10, 90, 140].forEach((dy) => [0, 1, 2, 3, 4].forEach((k) => [side, -side].forEach((sd) => spots.push({ x: nd.x + sd * (106 + k * 56), y: nd.y + dy, d: k + Math.abs(dy - 40) / 50 + (sd === side ? 0 : 0.5) }))));
+        spots.sort((a, b) => a.d - b.d);
+        const xs = [],
+          ys = [];
+        lost.forEach((_, j) => {
+          const p = spots.find((q) => freeAt(q.x, q.y)) || { x: Math.max(50, Math.min(width - 50, nd.x + side * (106 + j * 56))), y: nd.y + 40 };
+          lostSpots.push(p);
+          xs.push(p.x);
+          ys.push(p.y);
+        });
+        lost.forEach((id, j) => {
+          const lx = xs[j],
+            ly = ys[j];
           html.push(
             `<button class="mlost" data-act="surah" data-i="${nd.i}" data-x="${lx.toFixed(1)}" data-y="${ly.toFixed(1)}" style="left:${(lx - 26).toFixed(1)}px;top:${(ly - 52).toFixed(1)}px" aria-label="A lost item is waiting here"><span class="mlost-it">${ART.item(id)}</span></button>`,
           );
