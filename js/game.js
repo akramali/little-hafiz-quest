@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.7.18';
+  const VERSION = '2.7.19';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -1705,10 +1705,10 @@
       <button class="verchip ${upd.available ? 'ready' : ''}" data-act="updates" aria-label="Version and updates">v${VERSION}${upd.available ? ' · Update ✨' : ''}</button>
       <span class="sp-tr">${days >= 1 ? `<button class="icon-btn streakbtn" data-act="streak" aria-label="${days} ${days === 1 ? 'day' : 'days'} on the trail">🏃<b>${days}</b></button>` : ''}${FS_OK && !STANDALONE ? `<button class="icon-btn" data-act="fs" aria-label="${fsNow() ? 'Exit fullscreen' : 'Fullscreen'}">${fsNow() ? ICON.fsOut : ICON.fsIn}</button>` : ''}<button class="icon-btn" data-act="settings" aria-label="Grown-up corner">${ICON.gear}</button></span>
     </div>
+    ${installBar()}
     <div class="sp-bottom">
       <h1 class="sp-title">Little Hafiz Quest</h1>
       <p class="sp-sub">Juz ‘Amma by heart · 37 sūrahs to the summit</p>
-      ${installBar()}
       <button class="btn gold sp-begin" data-act="begin">${started ? 'Continue the quest ▶' : 'Begin the quest ▶'}</button>
       ${
         noExplorers()
@@ -3548,9 +3548,12 @@
     if (/Android/.test(UA) && /Firefox/.test(UA)) return 'firefox';
     return '';
   }
+  const PHONE = IOS || /Android|Mobile/.test(UA);
+  // (under the version and settings buttons; not while the "Updated to …" note is there)
   const installBar = () => {
-    const k = installKind();
-    return k ? `<div class="installbar"><span class="ib-ic">📲</span><span class="ib-tx"><b>Play it like an app</b><small>${k === 'mac' ? 'Keep it in your Dock' : 'One tap from your home screen, works offline'}</small></span><button class="btn small go" data-act="install">${k === 'prompt' ? 'Install' : 'How?'}</button><button class="ib-x" data-act="installno" aria-label="Not now">✕</button></div>` : '';
+    const k = justUpdated ? '' : installKind(),
+      where = k === 'mac' ? 'your Dock' : k === 'ios' ? 'your Home Screen' : PHONE ? 'your home screen' : 'your computer';
+    return k ? `<div class="installbar"><span class="ib-ic">📲</span><span class="ib-tx"><b>Install the game</b><small>Add it to ${where}. It works offline too.</small></span><button class="btn small go" data-act="install">${k === 'prompt' ? 'Install' : 'How?'}</button><button class="ib-x" data-act="installno" aria-label="Not now">✕</button></div>` : '';
   };
   function showInstallSteps(k) {
     const step = (t) => `<li>${t}</li>`;
@@ -3562,7 +3565,7 @@
           ? step('In the menu bar, choose <b>File</b> → <b>Add to Dock</b>.') + step('Tap <b>Add</b>.')
           : step('Tap <b>⋮</b> at the top right.') + step('Tap <b>Add app to Home screen</b>.');
     const m = document.getElementById('modal');
-    m.innerHTML = `<div class="card installcard"><button class="cardx" data-act="cno" aria-label="Close">✕</button><h3>📲 Play it like an app</h3>
+    m.innerHTML = `<div class="card installcard"><button class="cardx" data-act="cno" aria-label="Close">✕</button><h3>📲 Install the game</h3>
       <ol class="installsteps">${steps}</ol>
       <p class="saveinfo">Then open the game from its new icon.${k === 'ios' && has ? ' On iPhone the icon keeps its own progress: to bring your explorers along, use <b>Explorers → Share progress</b> here, then <b>Paste from family</b> in the app.' : ''}</p></div>`;
     m.classList.add('show');

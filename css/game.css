@@ -8944,6 +8944,16 @@ body:has(.wrail.open) .jbtn {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   animation: enter 0.4s 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) both;
 }
+/* under the version and settings buttons */
+.splash > .installbar {
+  position: absolute;
+  z-index: 3;
+  top: calc(12px + env(safe-area-inset-top, 0px) + 62px);
+  left: var(--gutl);
+  right: var(--gutr);
+  width: auto;
+  max-width: none;
+}
 .ib-ic {
   font-size: 26px;
 }
