@@ -8766,3 +8766,39 @@ body:has(.wrail.open) .jbtn {
   width: 46px;
   height: 16px;
 }
+/* the Listen and Read card, and a big icon card */
+.intro .intart.listenart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+.intro .intart.listenart .listen {
+  width: auto;
+  pointer-events: none;
+}
+.intro .intart.listenart .listen svg {
+  width: 24px;
+  height: 24px;
+}
+.intro .intart .readart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 12px 4px;
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: 0 0 0 2px var(--edge), 0 4px 0 var(--shd);
+  font-size: 30px;
+  line-height: 1;
+}
+.intro .intart .readart small {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--soft);
+  margin-top: 2px;
+}
+.intro .intart.big {
+  font-size: 84px;
+  line-height: 1;
+}

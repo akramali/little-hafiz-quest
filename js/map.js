@@ -298,21 +298,30 @@
             html: `<div class="mpal${q.elder ? ' melder' : ''}" data-act="pal" data-id="${q.id}" data-w="${b.wi}" data-x="${x.toFixed(1)}" data-y="${y.toFixed(1)}" style="left:${(x - (q.elder ? 42 : EX_FOOT)).toFixed(1)}px;top:${(y - (q.elder ? 123 : 108)).toFixed(1)}px" aria-label="${q.name}"><div class="mpal-in">${q.svg}</div></div>`,
           });
         });
-        // every kind of thing at least once (they're in the journal, to be found), then any of them
+        // every kind of thing at least once (they're in the journal, to be found), then any of them. Each kind
+        // gets its own tries (so one that doesn't fit never holds up the rest), and if it still has no room, a
+        // spot that may overlap other scenery (still off the path and the stops)
         const kinds = [...new Set(names)];
-        for (let t = 0, made = 0, n0 = Math.max(count, kinds.length); t < n0 * 12 && made < n0; t++) {
-          const x = 10 + rnd() * (width - 20),
-            y = hi + rnd() * h;
-          const name = made < kinds.length ? kinds[made] : names[(rnd() * names.length) | 0],
-            size = Math.round((40 + rnd() * 30 + (isTall(name) ? 10 : 0)) * grow),
-            hgt = Math.round(isTall(name) ? size * 1.5 : size),
-            box = boxOf(x, y, size, hgt);
-          if (!free(x, y, 0, box)) continue;
+        const put = (name, x, y, size, hgt, box) => {
           placed.push({ x, y, room: 0 });
           boxes.push(box);
-          made++;
           scenery.push({ y, html: propHTML(name, x, y, size, hgt, rnd, b.wi) });
-        }
+        };
+        const tryPut = (name, tries, loose) => {
+          for (let t = 0; t < tries; t++) {
+            const x = 10 + rnd() * (width - 20),
+              y = hi + rnd() * h,
+              size = Math.round((40 + rnd() * 30 + (isTall(name) ? 10 : 0)) * grow),
+              hgt = Math.round(isTall(name) ? size * 1.5 : size),
+              box = boxOf(x, y, size, hgt);
+            if (loose ? !free(x, y, 0, null) : !free(x, y, 0, box)) continue;
+            put(name, x, y, size, hgt, box);
+            return true;
+          }
+          return false;
+        };
+        kinds.forEach((name) => tryPut(name, 80) || tryPut(name, 80, true));
+        for (let t = 0, made = kinds.length; t < count * 12 && made < count; t++) if (tryPut(names[(rnd() * names.length) | 0], 1)) made++;
       });
       scenery.sort((p, q) => p.y - q.y).forEach((it) => html.push(it.html));
       // world signs

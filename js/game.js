@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.7.11';
+  const VERSION = '2.7.12';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -3362,7 +3362,7 @@
     ).join('');
     return `<div class="screen">
     ${bar('Grown-up Corner', `Settings · v${VERSION}`, st.ret ? 'ret' : 'splash', `<button class="icon-btn helpbtn" data-act="help" aria-label="About Little Hafiz Quest: sources and disclaimer">${INFO_ICON}</button>`)}
-    <button class="btn wide howbtn" data-act="howto">📘 How to use it</button>
+    <button class="btn wide howbtn" data-act="howto">📘 How to play</button>
     <div class="sheet">
       <h3>🎨 Look</h3>
       ${fsSheet()}
@@ -3672,7 +3672,7 @@
     <div class="row"><button class="btn wide" data-act="cno">Cancel</button><button class="btn wide danger" data-act="cyes">${yesLabel}</button></div></div>`;
     m.classList.add('show');
   }
-  /* How to use it: the tips, the disclaimer, and where to report a problem */
+  /* About: the disclaimer, and where to report a problem (How to play is the welcome cards: INTRO) */
   const REPO = 'https://github.com/akramali/little-hafiz-quest';
   const INFO_ICON =
     '<svg class="infoic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.6" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="12" cy="7.6" r="1.5" fill="currentColor"/><path d="M12 11.2v6.2" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>';
@@ -3705,29 +3705,6 @@
     </div>`;
     m.classList.add('show');
     m.querySelector('.infocard').scrollTop = 0;
-  }
-  /* 📘 How to use it: one tip at a time, each with its icon */
-  const BEADS_IC = `<span class="beads-ico tiny" aria-hidden="true">${WCOL.slice(0, 3)
-    .map((c) => `<i style="background:${c}"></i>`)
-    .join('')}</span>`;
-  function showHowTo() {
-    const tip = (ic, title, body) => `<li><span class="tipic" aria-hidden="true">${ic}</span><div><b>${title}</b>${body}</div></li>`;
-    const m = document.getElementById('modal');
-    m.innerHTML = `<div class="card infocard howcard"><button class="cardx" data-act="cno" aria-label="Close">✕</button>
-      <h3>📘 How to use it</h3>
-      <ol class="howto">
-        ${tip('🧭', 'Pick a step', `<p>Each sūrah has a quest: 👀 <b>Look &amp; Repeat</b>, then ${BEADS_IC} <b>Word Steps</b>.</p><p>Then two review games: 🐸 <b>Stepping Stones</b> and 🧩 <b>Picture Puzzle</b>. A sūrah is memorized ✓ once its Stepping Stones is done.</p>`)}
-        ${tip('🚩', 'One checkpoint at a time', '<p>Long sūrahs come in parts of a few āyāt. Finish each part, then the 🏁 whole sūrah.</p>')}
-        ${tip('🎁', 'Gifts to win', '<p>The first finish of every level wins a gift.</p><ul><li>⭐ One star wins the sūrah\'s treasure, and is enough to move on.</li><li>🌟 Every star in a sūrah wins its golden edition.</li><li>🚩 Each checkpoint crossed, and every few stars, win a little prize.</li><li>🏅 Every 100 stars wins a star badge.</li></ul>')}
-        ${tip('⛰️', 'The summit', '<p>A star in every sūrah: the explorer climbs the mountain and wins every treasure, every sticker and the Summit cloak.</p><p>👑 Three stars everywhere: the Hafiz crown. Every single star: the Golden hoopoe.</p>')}
-        ${tip('🔁', 'Revise any time', '<p>Tap a sūrah on the map, or the 📖 / ⭐ counters at the top of the map to see them all.</p><p>In review games, tap <b>Not quite</b> after a mistake. A 💔 on the map shows where the hearts ran out.</p>')}
-        ${tip('🔊', 'Listen and read', '<p>The orange <b>Listen</b> button plays the reciter; the loop button repeats it.</p><p>📖 <b>Read</b> shows the whole sūrah: hold an āyah to color its words, then tap it again to look closer.</p>')}
-        ${tip('👨‍👩‍👧', 'Explorers', '<p>On the start screen, under <b>Continue the quest</b>: switch explorers, share progress with another phone, or save a backup.</p>')}
-        ${tip('⏱️', '5–10 minutes a day is plenty', '<p>Stop while it\'s still fun. Recite it again at bedtime or in ṣalāh.</p>')}
-      </ol>
-    </div>`;
-    m.classList.add('show');
-    m.querySelector('.howcard').scrollTop = 0;
   }
   function showBism() {
     const m = document.getElementById('modal');
@@ -4409,7 +4386,7 @@
         break;
       case 'howto':
         sfx.tap();
-        showHowTo();
+        showIntro(0, true);
         break;
       case 'bismplay':
         playList([[1, 1]], { once: true });
@@ -4485,10 +4462,16 @@
         if (heroReady(P())) meetElder(true);
         break;
       case 'intro': {
-        const k = +b.dataset.k;
-        if (k < INTRO.length) {
+        const k = +b.dataset.k,
+          guide = b.dataset.g === '1';
+        if (k < INTRO.length - (guide ? 1 : 0)) {
           sfx.tap();
-          showIntro(k);
+          showIntro(k, guide);
+          break;
+        }
+        if (guide) {
+          sfx.chime();
+          hideModal();
           break;
         }
         // the stick is theirs: the quest begins
@@ -5797,17 +5780,24 @@
   let elderPlan = null;
   /* A new explorer's first steps on the map: the Wise Elder greets them, tells them about the quest, and hands them
      their walking stick (they start without one). With him switched off, they simply get the stick. */
+  /* The same cards are How to play (Grown-up Corner), without the walking stick at the end. */
   const INTRO = [
-    (nm) => [`<div class="eldart">${elderArt('happy')}</div>`, `As-salāmu ʿalaykum, ${nm}!`, 'I’m your Teacher. I know the whole Qur’an by heart, and I’ll walk with you.'],
+    (nm) => [`<div class="eldart">${noExplorers() ? ART.elder('happy') : elderArt('happy')}</div>`, `As-salāmu ʿalaykum, ${nm}!`, 'I’m your Teacher. I know the whole Qur’an by heart, and I’ll walk with you.'],
     () => [`<div class="intart worlds">${WORLD_ICON.map((k) => ART.props[k] || '').join('')}</div>`, 'Seven worlds to climb', 'From An-Nās to the mountain top, one sūrah at a time.'],
     () => [
       `<div class="intart steps">${[['👀', 'Look &amp; Repeat'], [`<svg viewBox="0 0 48 16" width="48" height="16" aria-hidden="true"><path d="M4 8H44" stroke="#c9c2d9" stroke-width="2"/>${WCOL.slice(0, 4).map((c, j) => `<circle cx="${6 + j * 12}" cy="8" r="5" fill="${c}"/>`).join('')}</svg>`, 'Word Steps'], ['🐸', 'Stepping Stones'], ['🧩', 'Picture Puzzle']].map(([ic, t]) => `<span><i>${ic}</i><small>${t}</small></span>`).join('')}</div>`,
       'Four steps for each sūrah',
       'Two to learn it, then two games to remember it.',
     ],
+    () => [
+      `<div class="intart listenart"><span class="listen show"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="#fff"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18.3 6.5a7.5 7.5 0 0 1 0 11"/></svg></span><span><b>Listen</b></span></span><span class="readart">📖<small>Read</small></span></div>`,
+      'Listen and read',
+      'Tap Listen to hear the reciter, as slow and as many times as you like. 📖 Read shows the whole sūrah.',
+    ],
     () => [`<div class="intart gifts">${ART.gift({ tier: 3 })}${['explorer-cap', 'leaf-cape', 'ladybug-buddy'].map((id) => (ITEM[id] ? `<span>${itemPic(id)}</span>` : '')).join('')}</div>`, 'Gifts at every step', 'Win treasures, then dress up your explorer in My Explorer!'],
     () => [`<div class="intart">${ART.campfire(3)}</div>`, 'Keep the campfires burning', 'Every sūrah you learn gets one. Practise it now and then so it never goes out.'],
     () => [`<div class="intart">${BOOK_IC}</div>`, 'Fill your journal', 'Tap animals and things on the map and in the pictures to collect them.'],
+    () => [`<div class="intart big">⏱️</div>`, 'A little every day', '5 to 10 minutes a day is plenty. Stop while it’s still fun!'],
     () => [`<div class="intart">${itemPic('twig')}</div>`, 'Your walking stick', 'Every explorer needs one. Here is yours. Bismillāh!'],
   ];
   function maybeIntro() {
@@ -5821,12 +5811,15 @@
     }
     showIntro(0);
   }
-  function showIntro(k) {
-    const m = document.getElementById('modal'),
-      [art, h, p] = INTRO[k](P().name ? esc(P().name) : 'explorer');
-    m.innerHTML = `<div class="card eldmeet intro">${art}<h3>${h}</h3><p class="eldsay">${p}</p>
-      <div class="introdots">${INTRO.map((_, j) => `<i class="${j === k ? 'on' : ''}"></i>`).join('')}</div>
-      <div class="row"><button class="btn go wide" data-act="intro" data-k="${k + 1}">${k < INTRO.length - 1 ? 'Next ›' : `<span class="btnic">${itemPic('twig')}</span>Take it!`}</button></div></div>`;
+  // guide: How to play (it can be closed, and ends with "Let's play!" instead of the walking stick)
+  function showIntro(k, guide) {
+    const n = guide ? INTRO.length - 1 : INTRO.length,
+      m = document.getElementById('modal'),
+      [art, h, p] = INTRO[k](!noExplorers() && P().name ? esc(P().name) : 'explorer');
+    const last = k === n - 1;
+    m.innerHTML = `<div class="card eldmeet intro">${guide ? '<button class="cardx" data-act="cno" aria-label="Close">✕</button>' : ''}${art}<h3>${h}</h3><p class="eldsay">${p}</p>
+      <div class="introdots">${[...Array(n).keys()].map((j) => `<i class="${j === k ? 'on' : ''}"></i>`).join('')}</div>
+      <div class="row"><button class="btn go wide" data-act="intro" data-k="${k + 1}" ${guide ? 'data-g="1"' : ''}>${!last ? 'Next ›' : guide ? 'Let’s play! ▶' : `<span class="btnic">${itemPic('twig')}</span>Take it!`}</button></div></div>`;
     m.classList.add('show');
   }
 

@@ -20,18 +20,22 @@
   log('playing at', L.player.playbackRate, '| repeat badge on Listen', !!d.querySelector('.listen .rep'));
   ok('plays at the chosen speed', L.player.playbackRate === 0.25);
   d.querySelector('.listen').click();
-  // the info button and How to use it
+  // the info button and How to play
   L.go('settings'); await wait(200);
   log('info button icon', !!d.querySelector('[data-act=help] .infoic'), '| first thing in the corner:', d.querySelector('.screen > .bar + *').textContent.trim());
   d.querySelector('[data-act=help]').click(); await wait(200);
   const ic = d.querySelector('#modal.show .infocard');
   log('info: title', ic.querySelector('h3').textContent.replace(/\s+/g, ' '), '| sections', [...ic.querySelectorAll('h4')].map((h) => h.textContent).join(', '), '| quran.com', !!ic.querySelector('a[href="https://quran.com"]'), '| issues', !!ic.querySelector('a[href$="/issues"]'), '| how-to inside', !!ic.querySelector('.howto'));
   ic.querySelector('.cardx').click(); await wait(150);
+  // How to play: the same cards as the Teacher's welcome, closable, ending with "Let's play!"
+  ok('the Grown-up Corner says How to play', /How to play/.test(d.querySelector('[data-act=howto]').textContent));
   d.querySelector('[data-act=howto]').click(); await wait(200);
-  const hc = d.querySelector('#modal.show .howcard');
-  log('how to: tips', hc.querySelectorAll('.howto > li').length, '| each with an icon', [...hc.querySelectorAll('.howto > li')].every((li) => li.querySelector('.tipic')), '| sources inside', /Sources/.test(hc.textContent));
-  ok('How to use it has its tips with icons', hc.querySelectorAll('.howto > li').length >= 8);
-  hc.querySelector('.cardx').click(); await wait(150);
+  const titles = [];
+  for (let k = 0; k < 12 && !/Let’s play/.test(d.getElementById('modal').textContent); k++) { titles.push(d.querySelector('#modal.show .intro h3').textContent); d.querySelector('#modal [data-act=intro]').click(); await wait(150); }
+  titles.push(d.querySelector('#modal.show .intro h3').textContent);
+  log('how to play cards:', titles.join(' | '));
+  ok('How to play shows the welcome cards, without the walking stick', titles.length >= 8 && titles.some((t) => /Four steps/.test(t)) && titles.some((t) => /Listen and read/.test(t)) && titles.some((t) => /every day/.test(t)) && !titles.some((t) => /walking stick/.test(t)), titles.join(' | '));
+  d.querySelector('#modal [data-act=intro]').click(); await wait(150);
   log('closed', !d.querySelector('#modal.show'));
   ok('no game errors', !errs.length, errs.slice(0, 3).join('; ')); log('errors', errs);
   done();
