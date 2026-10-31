@@ -8834,3 +8834,9 @@ body:has(.wrail.open) .jbtn {
   display: block;
   overflow: visible;
 }
+/* How to play: Back beside Next */
+.intro .row .introback {
+  flex: 0 0 auto;
+  padding-left: 18px;
+  padding-right: 18px;
+}

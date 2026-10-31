@@ -1,7 +1,12 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.7.13",
+ "latest": "2.7.14",
  "versions": [
+  { "v": "2.7.14", "notes": [
+   "Swipe through How to play, and go back to any card",
+   "Swipe between āyāt in Word Steps too",
+   "Small visual tweaks"
+  ] },
   { "v": "2.7.13", "notes": [
    "Campfires last longer: strong for a week, half lit the next, embers the third, then out",
    "Low campfires glow on the map, and your Teacher comes to test those sūrahs",

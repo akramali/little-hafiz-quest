@@ -31,11 +31,11 @@
   ok('the Grown-up Corner says How to play', /How to play/.test(d.querySelector('[data-act=howto]').textContent));
   d.querySelector('[data-act=howto]').click(); await wait(200);
   const titles = [];
-  for (let k = 0; k < 12 && !/Let’s play/.test(d.getElementById('modal').textContent); k++) { titles.push(d.querySelector('#modal.show .intro h3').textContent); d.querySelector('#modal [data-act=intro]').click(); await wait(150); }
+  for (let k = 0; k < 12 && !/Let’s play/.test(d.getElementById('modal').textContent); k++) { titles.push(d.querySelector('#modal.show .intro h3').textContent); d.querySelector('#modal [data-act=intro]:not(.introback)').click(); await wait(150); }
   titles.push(d.querySelector('#modal.show .intro h3').textContent);
   log('how to play cards:', titles.join(' | '));
   ok('How to play shows the welcome cards, without the walking stick', titles.length >= 8 && titles.some((t) => /Four steps/.test(t)) && titles.some((t) => /Listen and read/.test(t)) && titles.some((t) => /every day/.test(t)) && !titles.some((t) => /walking stick/.test(t)), titles.join(' | '));
-  d.querySelector('#modal [data-act=intro]').click(); await wait(150);
+  d.querySelector('#modal [data-act=intro]:not(.introback)').click(); await wait(150);
   log('closed', !d.querySelector('#modal.show'));
   ok('no game errors', !errs.length, errs.slice(0, 3).join('; ')); log('errors', errs);
   done();

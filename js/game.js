@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.7.13';
+  const VERSION = '2.7.14';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -5096,10 +5096,30 @@
         b.remove();
       };
     }
+    keepOnScreen(b);
     setTimeout(() => {
       b.classList.add('bye');
       setTimeout(done, 400);
     }, ms || 2400);
+  }
+  // a bubble near the edge of the screen slides back in (it stays above whoever is speaking, just shifted). Its
+  // pop-in grows it from the middle, so the middle is where it ends up; its size on screen is its own width times
+  // the map's scale there (the curved world), read from what carries it
+  function keepOnScreen(b) {
+    const fit = () => {
+      if (!b.isConnected) return;
+      const host = b.classList.contains('onmap') ? null : b.parentNode,
+        hr = host && host.getBoundingClientRect(),
+        cs = getComputedStyle(b).transform,
+        k = host ? hr.width / (host.offsetWidth || hr.width) || 1 : cs && cs !== 'none' ? new DOMMatrixReadOnly(cs).a : 1;
+      const r = b.getBoundingClientRect(),
+        mid = r.left + r.width / 2,
+        half = (b.offsetWidth * k) / 2,
+        over = mid - half < 8 ? 8 - (mid - half) : mid + half > innerWidth - 8 ? innerWidth - 8 - (mid + half) : 0;
+      if (Math.abs(over) > 0.5) b.style.marginLeft = (parseFloat(b.style.marginLeft) || 0) + over / k + 'px';
+    };
+    fit();
+    requestAnimationFrame(fit); // once more, after the map has placed it
   }
   const onScreen = (el) => {
     const r = el.getBoundingClientRect();
@@ -5683,40 +5703,79 @@
     const pg = document.querySelector('.jpage');
     if (pg && !reduceMotion) pg.animate([{ transform: `translateX(${dir * 60}px) rotateY(${dir * 12}deg)`, opacity: 0.2 }, { transform: 'none', opacity: 1 }], { duration: 320, easing: 'ease-out' });
   }
-  // Look & Repeat: swipe the āyah card left or right for the next or the one before (like tapping the numbers)
-  let lSwipe = null;
-  document.addEventListener('pointerdown', (e) => (lSwipe = st.view === 'learn' && st.phase !== 'chain' && e.target.closest && e.target.closest('.lcard') ? { x: e.clientX, y: e.clientY } : null), true);
+  /* Swipe left or right on anything with pages (as well as its buttons): `where(target)` says whether a swipe
+     starting there counts, `turn(dir)` goes forward (1) or back (-1). */
+  const SWIPES = [];
+  function onSwipe(where, turn) {
+    SWIPES.push({ where, turn });
+  }
+  let swipe0 = null;
+  document.addEventListener(
+    'pointerdown',
+    (e) => {
+      const t = e.target.closest ? e.target : null,
+        sw = t && SWIPES.find((x) => x.where(t));
+      swipe0 = sw ? { sw, x: e.clientX, y: e.clientY } : null;
+    },
+    true,
+  );
   document.addEventListener(
     'pointerup',
     (e) => {
-      if (!lSwipe || st.view !== 'learn' || st.phase === 'chain') return;
-      const dx = e.clientX - lSwipe.x,
-        dy = e.clientY - lSwipe.y;
-      lSwipe = null;
-      if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+      if (!swipe0) return;
+      const { sw, x, y } = swipe0,
+        dx = e.clientX - x,
+        dy = e.clientY - y;
+      swipe0 = null;
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) sw.turn(dx < 0 ? 1 : -1);
+    },
+    true,
+  );
+  // the page slides in from the side it came from
+  const slideIn = (el, dir) => el && !reduceMotion && el.animate([{ transform: `translateX(${dir * 60}px)`, opacity: 0.3 }, { transform: 'none', opacity: 1 }], { duration: 260, easing: 'ease-out' });
+  // Look & Repeat: the next āyah or the one before (like tapping the numbers)
+  onSwipe(
+    (t) => st.view === 'learn' && st.phase !== 'chain' && !!t.closest('.lcard'),
+    (dir) => {
       const c = ctx(),
-        k = st.a + (dx < 0 ? 1 : -1);
+        k = st.a + dir;
       if (k < c.from || k > c.to) return;
       sfx.tap();
       Object.assign(st, { a: k, phase: 'repeat', popped: [false, false, false], peek: false, chain: 0 });
       render(true);
-      const card = document.querySelector('.lcard');
-      if (card && !reduceMotion) card.animate([{ transform: `translateX(${dx < 0 ? 60 : -60}px)`, opacity: 0.3 }, { transform: 'none', opacity: 1 }], { duration: 260, easing: 'ease-out' });
+      slideIn(document.querySelector('.lcard'), dir);
     },
-    true,
   );
-  let jSwipe = null;
-  document.addEventListener('pointerdown', (e) => (jSwipe = st.view === 'journal' && e.target.closest && e.target.closest('.jbook') ? { x: e.clientX, y: e.clientY } : null), true);
-  document.addEventListener(
-    'pointerup',
-    (e) => {
-      if (!jSwipe || st.view !== 'journal') return;
-      const dx = e.clientX - jSwipe.x,
-        dy = e.clientY - jSwipe.y;
-      jSwipe = null;
-      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) turnPage(st.w + (dx < 0 ? 1 : -1), dx < 0 ? 1 : -1);
+  // Word Steps: the same, from the āyah's picture, beads and words
+  onSwipe(
+    (t) => st.view === 'words' && !!t.closest('.wstage'),
+    (dir) => {
+      const c = ctx(),
+        k = st.a + dir;
+      if (k < c.from || k > c.to) return;
+      sfx.tap();
+      Object.assign(st, { a: k, w: 1, phase: 'build', shown: [] });
+      render(true);
+      slideIn(document.querySelector('.wstage'), dir);
     },
-    true,
+  );
+  // the journal: turn the page
+  onSwipe(
+    (t) => st.view === 'journal' && !!t.closest('.jbook'),
+    (dir) => turnPage(st.w + dir, dir),
+  );
+  // How to play (and the Teacher's welcome): the next card or the one before
+  onSwipe(
+    (t) => !!t.closest('#modal.show .intro'),
+    (dir) => {
+      const c = document.querySelector('#modal.show .intro'),
+        k = +c.dataset.k + dir,
+        guide = c.dataset.g === '1';
+      if (k < 0 || k >= INTRO.length - (guide ? 1 : 0)) return;
+      sfx.tap();
+      showIntro(k, guide);
+      slideIn(document.querySelector('#modal .intro'), dir);
+    },
   );
 
   /* ================= THE WISE ELDER =================
@@ -5843,9 +5902,9 @@
       m = document.getElementById('modal'),
       [art, h, p] = INTRO[k](!noExplorers() && P().name ? esc(P().name) : 'explorer');
     const last = k === n - 1;
-    m.innerHTML = `<div class="card eldmeet intro">${guide ? '<button class="cardx" data-act="cno" aria-label="Close">✕</button>' : ''}${art}<h3>${h}</h3><p class="eldsay">${p}</p>
+    m.innerHTML = `<div class="card eldmeet intro" data-k="${k}" data-g="${guide ? 1 : 0}">${guide ? '<button class="cardx" data-act="cno" aria-label="Close">✕</button>' : ''}${art}<h3>${h}</h3><p class="eldsay">${p}</p>
       <div class="introdots">${[...Array(n).keys()].map((j) => `<i class="${j === k ? 'on' : ''}"></i>`).join('')}</div>
-      <div class="row"><button class="btn go wide" data-act="intro" data-k="${k + 1}" ${guide ? 'data-g="1"' : ''}>${!last ? 'Next ›' : guide ? 'Let’s play! ▶' : `<span class="btnic">${itemPic('twig')}</span>Take it!`}</button></div></div>`;
+      <div class="row">${k ? `<button class="btn introback" data-act="intro" data-k="${k - 1}" ${guide ? 'data-g="1"' : ''} aria-label="Back">‹ Back</button>` : ''}<button class="btn go wide" data-act="intro" data-k="${k + 1}" ${guide ? 'data-g="1"' : ''}>${!last ? 'Next ›' : guide ? 'Let’s play! ▶' : `<span class="btnic">${itemPic('twig')}</span>Take it!`}</button></div></div>`;
     m.classList.add('show');
   }
 
