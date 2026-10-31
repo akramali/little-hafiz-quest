@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.6.8';
+  const VERSION = '2.6.9';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -5676,6 +5676,12 @@
     darkMQ.addEventListener('change', () => {
       if (prefs.theme === 'auto' && st.view !== 'map') render();
     });
+
+  // a long press opens no menu (images, links, text), except in a text box and on the share picture
+  document.addEventListener('contextmenu', (e) => {
+    if (!(e.target.closest && e.target.closest('input, textarea, [contenteditable], .shareimg'))) e.preventDefault(); // the share picture can still be saved
+  });
+  document.addEventListener('dragstart', (e) => e.target.closest && !e.target.closest('input, textarea') && e.preventDefault());
 
   /* ================= start ================= */
   const linkCode = codeIn(location.hash);

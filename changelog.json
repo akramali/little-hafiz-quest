@@ -1,7 +1,10 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.6.8",
+ "latest": "2.6.9",
  "versions": [
+  { "v": "2.6.9", "notes": [
+   "Feels more like an app: a long press no longer selects text or opens menus"
+  ] },
   { "v": "2.6.8", "notes": [
    "Read starts with the Bismillah, and you can look at its words up close",
    "Read follows the āyah being recited",

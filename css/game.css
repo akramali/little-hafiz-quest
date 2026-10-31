@@ -8049,3 +8049,23 @@ body {
   margin: 0;
   min-width: 0;
 }
+
+/* ---------- v2.6.9 ---------- */
+/* app-like: a long press doesn't select text or open the copy/save menu (typing in a box still works).
+   Pinch-zoom is left alone. */
+html {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+input,
+textarea,
+[contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+img,
+svg {
+  -webkit-user-drag: none;
+}

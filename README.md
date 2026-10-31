@@ -116,6 +116,8 @@ The classic version (v1) was retired in v2.5.0. Its old address sends you here, 
 
 **Computer**: just open the link. Chrome and Edge also offer an "Install" button in the address bar.
 
+Like an app, a long press doesn't select text or pop up the copy or save menu (except in text boxes, and on the Awards share picture so it can be saved). Pinch-zoom still works.
+
 > Opening the `index.html` file straight from Files, WhatsApp or email on an iPhone shows a preview that can't run games. Always share the **link**.
 
 ## Privacy

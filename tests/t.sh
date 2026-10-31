@@ -8,7 +8,7 @@
 . "$(dirname "$0")/lib.sh"
 J=${J:-3}
 declare -A AREA=(
-  [core]="smoke"
+  [core]="smoke v269"
   [map]="fruit face pals tag excite props walkgift v258 v260 v261 v268"
   [gifts]="gifts giftflow giftrun walkgift drops v257 v260 v261"
   [learn]="chain chain2 loop v257 v260 v267"
