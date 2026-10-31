@@ -8020,3 +8020,11 @@ body {
   filter: drop-shadow(0 3px 2px rgba(43, 35, 64, 0.25));
   animation: none;
 }
+/* the Stranger and the explorer each stand on a patch of the world's ground, with a soft shadow on it */
+.strscr .arena .plat {
+  height: 34px;
+  background:
+    radial-gradient(closest-side, rgba(43, 35, 64, 0.26), rgba(43, 35, 64, 0.06) 62%, transparent 63%),
+    radial-gradient(closest-side, var(--pg0), var(--pg1) 78%, transparent);
+}
+

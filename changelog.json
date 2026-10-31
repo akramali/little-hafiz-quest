@@ -1,7 +1,10 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.6.5",
+ "latest": "2.6.6",
  "versions": [
+  { "v": "2.6.6", "notes": [
+   "Small visual tweaks"
+  ] },
   { "v": "2.6.5", "notes": [
    "The Stranger: every mistake now costs something",
    "Each world has its own throws; dress for them (see the icons on the sign and your things)",

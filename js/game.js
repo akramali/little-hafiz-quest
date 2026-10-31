@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.6.5';
+  const VERSION = '2.6.6';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -5267,7 +5267,10 @@
       .filter((f) => !f.ran)
       .map((f, j) => `<span class="strfallen" style="--j:${j}">${thingPic(f)}</span>`)
       .join('');
-    return `<div class="screen strscr" style="${cv(s.color)}">
+    // they stand on a patch of the world's own ground
+    const W0 = ART.WORLDS[worldOf(s)],
+      gr = (isNight() && W0.dim ? W0.dim : W0).ground;
+    return `<div class="screen strscr" style="${cv(s.color)};--pg0:${gr[0]};--pg1:${gr[1]}">
     <div class="strtop"><span class="strtitle">⚔️ The Stranger · ${s.name}</span><span class="strdots">${dots}</span></div>
     <div class="arena">
       <div class="strbubble ${st.ack ? 'ack' : ''}">${say}</div>
