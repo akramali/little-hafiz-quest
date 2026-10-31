@@ -8171,7 +8171,7 @@ svg {
 .eldworld {
   position: absolute;
   z-index: -1;
-  top: 126px;
+  top: 116px;
   bottom: calc(-48px - env(safe-area-inset-bottom, 0px));
   left: calc(-1 * var(--gutl));
   right: calc(-1 * var(--gutr));
@@ -8687,20 +8687,23 @@ body:has(.wrail.open) .jbtn {
   transform: translateY(3px);
   box-shadow: 0 1px 0 var(--shd);
 }
-/* the Teacher's test: Listen top right, as everywhere (it plays only the question), the dots under it */
+/* the Teacher's test: "Test · sūrah" with the question dots under it, as tall as Listen beside it (top right, as
+   everywhere; it plays only the question) */
 .eldscr .eldtop {
-  align-items: flex-start;
+  align-items: center;
+  padding-top: 6px;
 }
 .eldscr .eldtitle {
-  min-width: 0;
-  padding-top: 14px;
-}
-.eldright {
-  flex: none;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  height: 56px;
+  line-height: 1.1;
+}
+.eldscr .eldtop .listen {
+  flex: none;
 }
 /* a campfire tapped: how fresh the sūrah is */
 .nfire {

@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.7.6';
+  const VERSION = '2.7.7';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -5955,7 +5955,7 @@
       .map((f, j) => `<span class="eldfallen" style="--j:${j}">${thingPic(f)}</span>`)
       .join('');
     return `<div class="screen eldscr" style="${cv(s.color)}">
-    <div class="eldtop"><span class="eldtitle">Your Teacher · ${s.name}</span><span class="eldright">${LISTEN}<span class="elddots">${dots}</span></span></div>
+    <div class="eldtop"><span class="eldtitle">Test · ${s.name}<span class="elddots">${dots}</span></span>${LISTEN}</div>
     ${eldWorld(s)}
     <div class="arena">
       <div class="eldbubble ${st.ack ? 'ack' : ''}">${say}</div>
