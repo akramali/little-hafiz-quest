@@ -1,7 +1,10 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.7.0",
+ "latest": "2.7.1",
  "versions": [
+  { "v": "2.7.1", "notes": [
+   "Sharing progress with family now brings everything: journal, campfires, streaks, gifts waiting and more"
+  ] },
   { "v": "2.7.0", "notes": [
    "Campfires by your memorized sūrahs: revise to keep them burning",
    "Your journal: tap and hold things on the map and in the sūrah pictures to collect them",

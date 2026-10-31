@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is a short public overview (highlights, install, privacy, credits); this file holds the detail.
 
-**Current version:** v2.7.0 (2026-10-31) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.7.1 (2026-10-31) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -46,6 +46,15 @@ Testing hook: `window.__lhq = { st, store, go, player, elder: { strikeFor, block
 
 - **Saved data:** `localStorage.lhq2` = `{ v: 2, cur, profiles: [...], prefs }`, cleaned on load by `cleanProfile` /
   `cleanPrefs` (add any new field there, with a safe default and migration).
+- **Backups and family links must bring an explorer back exactly** (the user's rule: no accounts, so these are the
+  only safety net). A backup is the whole store as JSON, cleaned by `cleanStore`/`cleanProfile`: **every new profile
+  field needs a line there** (default in `newProfile`, validation in `cleanProfile`). The family code (`js/sync.js`)
+  carries every field too: the basics (format 2), then an **extras block** (marker `0xA5`, version 1: place on the map,
+  greeted, gifts waiting, won order + new dots, comfy-clothes stash, daily/Elder-gift dates, streak, best, today's
+  seconds, Elder timer, rematches, stickers he holds, campfires, journal bitmap with its own checksum, completed pages,
+  parts' `next`). Phones before v2.7.1 stop reading before it. **A new field = add it to the extras block (bump its
+  version) and to `mergeInto`.** `tests/cases/v271.js` round-trips every field through both and fails on any
+  difference.
 - **Up to 10 explorers**, all shown on the map in the world of the sūrah they're on (`cfg.others` → `js/map.js`).
 - **Gifts** (`prof.pending`) open in one tap; Next gift returns to the same screen. Keep the square, rattling gift box.
 - **Hearts** apply in review games only once both quests of the part are done. Running out drops the newest item
@@ -90,7 +99,7 @@ Testing hook: `window.__lhq = { st, store, go, player, elder: { strikeFor, block
 - **Campfires** (v2.7.0): `prof.fire[n] = [last revised, level]`, `FIRE_DAYS` 1/3/7/14/30. `fireOf` → 3 big, 2 small,
   1 embers (due), 0 out (2× overdue); drawn by `ART.campfire` in each memorized node (`.nfire`). `stokeFire` on any
   game finished in a memorized sūrah or an Elder win: on time → longer next interval, 3× late → shorter. Sūrahs
-  memorized before v2.7.0 start lit at level 2. Not in the sync code (sync merges it only within `doSync`).
+  memorized before v2.7.0 start lit at level 2.
 - **The journal** (v2.7.0, `V.journal`, map button `.jbtn` in `.mapfoot` with the Test button): one page per world =
   its map things (`PROP_NAME`, every kind is now placed at least once per world by js/map.js; the sea's sailboat is
   its own tappable `.mprop`) + the āyah-picture emoji of its sūrahs (`JOURNAL_EMOJI`: no people, hands, faces, signs or
@@ -134,7 +143,7 @@ Testing hook: `window.__lhq = { st, store, go, player, elder: { strikeFor, block
   from family, iOS update timing, 0.25× playback on iPhone Safari (if muted, make 0.5× the slowest), the screen staying on while reciting (Wake Lock: iOS 16.4+, and in Home Screen apps only on newer iOS), the Wise Elder's
   defend/hurt animations and swipe-to-turn on touch.
 - Journal ideas not built yet: a grand prize for the whole journal, a "new thing to find" hint after a sūrah is
-  learned, sync of `found`/`fire`/`streak` in the share code (only merged on the same phone today).
+  learned.
 - Not done (offered): a random starting face for new explorers, so no skin tone is "the default".
 - The Wise Elder (called the Stranger, drawn as a hooded figure, until v2.6.11) was a test concept in v2.6.0–2.6.3 and is now part of the game; tune `1 / 3`, `ELDER_EVERY` (7 min),
   `WORLD_THROWS`, `EXTRA_BLOCKS` if play-testing says so.
@@ -147,4 +156,4 @@ v2.3–2.4: nature sounds, jigsaw, Read view, awards, files. v2.5.0: family sync
 classic v1 retired, word meanings. v2.5.1–2.5.8: buttons, speed, info/how-to, fruit and animals, all explorers on
 the map, chain setting, gift fixes, faces, glasses, Big Puzzle. v2.6.0: golden/green worlds, world rides, speed
 button, one-tap gifts, the Wise Elder. v2.6.1–2.6.6: Wise Elder polish, closing animations, stakes (every miss costs,
-world throws, protection), battle ground in the world's colors. v2.6.7: the Wise Elder every 10 minutes; speed and loop in Word Steps and Stepping Stones. v2.6.8: Read starts with the Bismillah (āyah -1, word data in `BISM_WORDS`) and follows the recited āyah; the screen stays on while reciting (`keepAwake`, Wake Lock; 99× loops let go after 15 min); full world names in the list. v2.6.9: no text selection or long-press menus (text boxes and the share picture excepted); zoom kept. v2.6.10: My Achievements fits on one screen. v2.6.11: the Stranger becomes the Wise Elder (a kind old man, star staff, woven belt, swaying robe), renamed everywhere. v2.6.12: the Wise Elder walks with you through the world (taller, comforting, soft hurt, neutral "Test" wording), gives his staff at the summit; Read with the Bismillah plays the whole sūrah again. v2.6.13: the Wise Elder every 7 minutes, gentler robe sway, simpler praise; the temporary Elder test button removed. v2.7.0: campfires, the journal hunt, streaks, the Wise Elder's welcome and walking stick, Begin the quest, things on the map react (the boat sails off), the Elder's timer after 3 memorized sūrahs. v2.6.14: the Wise Elder roams the map (tap for a test, one gift a day), rematches wait for his timer, Auto theme by sunrise/sunset, still stickers, a new bee, the Version card updates in place. Full detail: `git log` and `changelog.json`.
+world throws, protection), battle ground in the world's colors. v2.6.7: the Wise Elder every 10 minutes; speed and loop in Word Steps and Stepping Stones. v2.6.8: Read starts with the Bismillah (āyah -1, word data in `BISM_WORDS`) and follows the recited āyah; the screen stays on while reciting (`keepAwake`, Wake Lock; 99× loops let go after 15 min); full world names in the list. v2.6.9: no text selection or long-press menus (text boxes and the share picture excepted); zoom kept. v2.6.10: My Achievements fits on one screen. v2.6.11: the Stranger becomes the Wise Elder (a kind old man, star staff, woven belt, swaying robe), renamed everywhere. v2.6.12: the Wise Elder walks with you through the world (taller, comforting, soft hurt, neutral "Test" wording), gives his staff at the summit; Read with the Bismillah plays the whole sūrah again. v2.6.13: the Wise Elder every 7 minutes, gentler robe sway, simpler praise; the temporary Elder test button removed. v2.7.1: family links carry every field (extras block); backups verified field by field. v2.7.0: campfires, the journal hunt, streaks, the Wise Elder's welcome and walking stick, Begin the quest, things on the map react (the boat sails off), the Elder's timer after 3 memorized sūrahs. v2.6.14: the Wise Elder roams the map (tap for a test, one gift a day), rematches wait for his timer, Auto theme by sunrise/sunset, still stickers, a new bee, the Version card updates in place. Full detail: `git log` and `changelog.json`.

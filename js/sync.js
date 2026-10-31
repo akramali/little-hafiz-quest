@@ -12,7 +12,13 @@
  * the stars, and only the rest waits until both phones are updated.
  *
  *   encode(profile, ctx) → Promise<string>        decode(code, ctx) → Promise<profile-like object>
- *   ctx = { surahs, items, stickers, looks, slots } (from js/game.js)
+ *   ctx = { surahs, items, stickers, looks, slots, journal } (from js/game.js)
+ *
+ * Since v2.7.1 the code ends with an extras block (a marker byte, then everything else an explorer has: where
+ * they are, gifts waiting, the order things were won and which are new, the comfy-clothes swap, the daily
+ * dates, streaks, campfires, the journal, and the Wise Elder's rematches and stickers he holds), so the other
+ * phone shows the explorer exactly as they are. Phones from before v2.7.1 stop reading before it, and still
+ * get the rest.
  */
 (function () {
   'use strict';
@@ -70,6 +76,7 @@
     };
     const r = {
       bit,
+      left: () => bytes.length * 8 - pos,
       num(bits) {
         let v = 0;
         for (let i = 0; i < bits; i++) v = (v << 1) | bit();
@@ -109,14 +116,19 @@
   };
 
   /* ---------- the game's list of things: items and stickers, sorted by id ---------- */
-  function catalog(ctx) {
-    const list = [...ctx.items.map((it) => 'i:' + it.id), ...ctx.stickers.map((x) => 's:' + x.id)].sort();
+  function listOf(keys) {
+    const list = [...keys].sort();
     let h = 0;
     list.forEach((k) => {
       for (let i = 0; i < k.length; i++) h = (Math.imul(h, 31) + k.charCodeAt(i)) | 0;
     });
     return { list, at: new Map(list.map((k, j) => [k, j])), sum: h & 0xffff };
   }
+  const catalog = (ctx) => listOf([...ctx.items.map((it) => 'i:' + it.id), ...ctx.stickers.map((x) => 's:' + x.id)]);
+  // dates travel as day numbers (days since 1970 in UTC, so the same date comes back on any time zone)
+  const dayNum = (d) => (/^\d{4}-\d{2}-\d{2}$/.test(d || '') ? Math.floor(Date.parse(d + 'T12:00:00Z') / 864e5) : 0);
+  const dayStr = (n) => (n ? new Date(n * 864e5).toISOString().slice(0, 10) : '');
+  const EXTRAS = 0xa5; // marks the extras block
 
   async function encode(p, ctx) {
     const w = writer(),
@@ -171,6 +183,56 @@
     ctx.surahs.forEach((s) => s.P.forEach((_, q) => w.bit((p.cpg || []).includes(s.n + ':' + q))));
     w.big(p.time || 0);
     ctx.surahs.forEach((s) => w.big((p.stime && p.stime[s.n]) || 0));
+    // the extras block (v2.7.1): everything else, so the other phone shows the explorer exactly as they are
+    w.num(EXTRAS, 8);
+    w.num(1, 8); // its version
+    w.num(Math.max(0, p.at || 0), 6);
+    w.bit(!!p.greeted);
+    const kOf = (g) => (g.k === 'i' ? 'i:' : 's:') + g.id;
+    const pend = (p.pending || []).filter((g) => cat.at.has(kOf(g))).slice(0, 255);
+    w.num(pend.length, 8);
+    pend.forEach((g) => {
+      w.num(ref(kOf(g)), 12);
+      w.bit(!!g.m);
+    });
+    const got = (p.got || []).filter((k) => cat.at.has(k));
+    w.big(got.length);
+    got.forEach((k) => {
+      w.num(ref(k), 12);
+      w.bit((p.fresh || []).includes(k));
+    });
+    w.bit(!!p.stash);
+    if (p.stash) {
+      ctx.slots.forEach((sl) => w.num(p.stash.outfit && p.stash.outfit[sl] ? ref('i:' + p.stash.outfit[sl]) : 0, 12));
+      w.num(p.stash.badge ? ref('s:' + p.stash.badge) : 0, 12);
+    }
+    const sk = p.streak || ['', 0],
+      dt = p.dayT || ['', 0];
+    [dayNum(p.daily), dayNum(p.elderGift), dayNum(sk[0]), sk[1] || 0, p.best || 0, dayNum(dt[0]), Math.round(dt[1] || 0), Math.floor((p.elderAt || 0) / 60000)].forEach((v) => w.big(v));
+    ctx.surahs.forEach((s) => {
+      w.bit((p.rematch || []).includes(s.n));
+      w.bit((p.rematchReady || []).includes(s.n));
+    });
+    const held = (p.lostSt || []).filter((x) => cat.at.has('s:' + x.id)).slice(0, 63);
+    w.num(held.length, 6);
+    held.forEach((x) => {
+      w.num(ref('s:' + x.id), 12);
+      w.num(ctx.surahs.findIndex((s) => s.n === x.n), 6);
+    });
+    ctx.surahs.forEach((s) => {
+      const f = p.fire && p.fire[s.n];
+      w.bit(!!f);
+      if (f) {
+        w.big(Math.floor(f[0] / 60000));
+        w.num(f[1], 3);
+      }
+    });
+    const jl = listOf(ctx.journal || []);
+    w.num(jl.sum, 16);
+    w.num(jl.list.length, 12);
+    jl.list.forEach((k) => w.bit((p.found || []).includes(k)));
+    for (let wi = 0; wi < 7; wi++) w.bit((p.jdone || []).includes(wi));
+    ctx.surahs.forEach((s) => s.P.forEach((_, q) => w.bit(p.prog[s.n] && p.prog[s.n].parts[q] && p.prog[s.n].parts[q].next)));
     const body = w.done();
     const zip = CAN_ZIP ? await pipe(body, new CompressionStream('deflate-raw')) : body;
     return b64(new Uint8Array([FORMAT, CAN_ZIP ? 1 : 0, ...zip]));
@@ -237,6 +299,63 @@
       const t = r.big();
       if (t) p.stime[s.n] = t;
     });
+    // the extras block (v2.7.1), when the code has one
+    if (r.left() >= 16 && r.num(8) === EXTRAS) {
+      r.num(8); // its version (1)
+      p.at = r.num(6);
+      p.greeted = !!r.bit();
+      p.pending = [];
+      for (let j = r.num(8); j > 0; j--) {
+        const k = key(r.num(12)),
+          m = r.bit();
+        if (k) p.pending.push(Object.assign({ k: k[0], id: k.slice(2) }, m ? { m: 1 } : {}));
+      }
+      p.got = [];
+      p.fresh = [];
+      for (let j = r.big(); j > 0; j--) {
+        const k = key(r.num(12)),
+          nw = r.bit();
+        if (k) {
+          p.got.push(k);
+          if (nw) p.fresh.push(k);
+        }
+      }
+      if (r.bit()) {
+        p.stash = { outfit: {}, badge: '' };
+        ctx.slots.forEach((sl) => {
+          const k = key(r.num(12));
+          if (k && k.startsWith('i:')) p.stash.outfit[sl] = k.slice(2);
+        });
+        const b = key(r.num(12));
+        if (b && b.startsWith('s:')) p.stash.badge = b.slice(2);
+      }
+      const [daily, eg, sd, sn, best, td, ts, ea] = [0, 0, 0, 0, 0, 0, 0, 0].map(() => r.big());
+      Object.assign(p, { daily: dayStr(daily), elderGift: dayStr(eg), streak: [dayStr(sd), sn], best, dayT: [dayStr(td), ts], elderAt: ea * 60000 });
+      p.rematch = [];
+      p.rematchReady = [];
+      ctx.surahs.forEach((s) => {
+        if (r.bit()) p.rematch.push(s.n);
+        if (r.bit()) p.rematchReady.push(s.n);
+      });
+      p.lostSt = [];
+      for (let j = r.num(6); j > 0; j--) {
+        const k = key(r.num(12)),
+          s = ctx.surahs[r.num(6)];
+        if (k && s && k.startsWith('s:')) p.lostSt.push({ id: k.slice(2), n: s.n });
+      }
+      p.fire = {};
+      ctx.surahs.forEach((s) => {
+        if (r.bit()) p.fire[s.n] = [r.big() * 60000, r.num(3)];
+      });
+      const jl = listOf(ctx.journal || []),
+        jsum = r.num(16),
+        jn = r.num(12),
+        jsame = jsum === jl.sum && jn === jl.list.length;
+      p.found = [];
+      for (let j = 0; j < jn; j++) if (r.bit() && jsame) p.found.push(jl.list[j]);
+      p.jdone = [0, 1, 2, 3, 4, 5, 6].filter(() => r.bit());
+      ctx.surahs.forEach((s) => s.P.forEach((_, q) => r.bit() && p.prog[s.n] && (p.prog[s.n].parts[q].next = 1)));
+    }
     p.made = true;
     p.sameThings = same;
     return p;

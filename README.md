@@ -81,7 +81,8 @@ Updates download by themselves; the start screen offers them with a short note o
 ## Privacy
 
 No accounts, analytics, ads or trackers, and no requests to other websites. Progress stays on the device; family
-sync puts it inside the link you send, never on a server.
+sync puts all of it inside the link you send, never on a server. A backup file or a family link brings an explorer
+back exactly as they were.
 
 ## For developers
 

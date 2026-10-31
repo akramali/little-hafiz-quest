@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.7.0';
+  const VERSION = '2.7.1';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -2930,7 +2930,7 @@
 
   /* ---------- FAMILY SYNC: one explorer, as a link or a QR code (js/sync.js) ---------- */
   const SYNC = window.LHQ_SYNC;
-  const syncCtx = () => ({ surahs: S, items: ITEMS, stickers: [...ART.STICKERS, ...ART.BADGES], looks: ART.LOOKS, slots: SLOTS });
+  const syncCtx = () => ({ surahs: S, items: ITEMS, stickers: [...ART.STICKERS, ...ART.BADGES], looks: ART.LOOKS, slots: SLOTS, journal: [...JKEYS] });
   const appURL = () => location.origin + location.pathname.replace(/index\.html$/, '');
   function qrSVG(text) {
     const q = window.qrcode(0, 'L');
@@ -2951,7 +2951,7 @@
       ${st.link ? `<div class="qrbox">${qrSVG(st.link)}</div>` : '<div class="qrbox wait">Making the code…</div>'}
       <p class="saveinfo center">Point the other phone's camera at the QR code, or send the link. Opening it adds ${nm}'s progress to that phone.</p>
       <div class="row"><button class="btn go wide" data-act="synclink" ${st.link ? '' : 'disabled'}>📤 Share</button><button class="btn wide" data-act="synccopy" ${st.link ? '' : 'disabled'}>📋 Copy</button></div>
-      <p class="saveinfo center small">The link holds ${nm}'s progress (stars, treasures and look). It isn't stored anywhere online.</p>
+      <p class="saveinfo center small">The link holds all of ${nm}'s progress. It isn't stored anywhere online.</p>
     </div>
   </div>`;
   };
@@ -3014,8 +3014,9 @@
       <div class="row"><button class="btn wide" data-act="cno">Not now</button><button class="btn go wide" data-act="syncdo" ${pick ? '' : 'disabled'}>✨ Sync</button></div></div>`;
     m.classList.add('show');
   }
-  /* the best of both phones: stars and āyāt practiced, every treasure and sticker; the most recently used
-     phone's look, outfit and lost things; the higher learning time */
+  /* the best of both phones: stars and āyāt practiced, every treasure, sticker and gift waiting, everything
+     found for the journal, the latest campfires and streak; the most recently used phone's look, outfit, place
+     on the map, lost things and the Wise Elder's rematches; the higher learning time */
   function mergeInto(into, from) {
     const newer = (from.touched || 0) > (into.touched || 0);
     for (const n in from.prog) mergeProg(into, n, from.prog[n]);
@@ -3039,14 +3040,33 @@
       into.badge = from.badge;
       into.lost = from.lost.filter((x) => into.items.includes(x.id));
       into.fix = from.fix.slice();
+      into.at = from.at;
+      into.stash = from.stash ? JSON.parse(JSON.stringify(from.stash)) : null;
+      into.rematch = from.rematch.slice();
+      into.rematchReady = from.rematchReady.slice();
+      // stickers the Wise Elder holds stay with him
+      into.lostSt = from.lostSt.map((x) => Object.assign({}, x));
+      into.stickers = into.stickers.filter((id) => !into.lostSt.some((x) => x.id === id));
+      if (into.lostSt.some((x) => x.id === into.badge)) into.badge = '';
+      into.elderAt = Math.max(into.elderAt || 0, from.elderAt || 0);
     }
+    // gifts still waiting on the other phone wait here too
+    from.pending.forEach((g) => {
+      const have = g.k === 'i' ? into.items.includes(g.id) : into.stickers.includes(g.id);
+      if (!have && !into.pending.some((x) => x.k === g.k && x.id === g.id)) into.pending.push(Object.assign({}, g));
+    });
+    into.fresh = [...new Set([...into.fresh, ...from.fresh.filter((k) => into.got.includes(k))])];
+    ['daily', 'elderGift'].forEach((k) => (into[k] = (from[k] || '') > (into[k] || '') ? from[k] : into[k]));
+    if (from.dayT[0] > into.dayT[0]) into.dayT = from.dayT.slice();
+    else if (from.dayT[0] === into.dayT[0]) into.dayT[1] = Math.max(into.dayT[1], from.dayT[1]);
+    into.jdone = [...new Set([...into.jdone, ...from.jdone])];
     ['wdone', 'feats', 'cpg'].forEach((k) => (into[k] = [...new Set([...into[k], ...from[k]])]));
     into.time = Math.max(into.time || 0, from.time || 0);
     for (const n in from.stime) into.stime[n] = Math.max(into.stime[n] || 0, from.stime[n]);
     for (const n in from.fire || {}) if (!into.fire[n] || from.fire[n][0] > into.fire[n][0]) into.fire[n] = from.fire[n].slice();
     into.found = [...new Set([...into.found, ...(from.found || [])])];
     into.best = Math.max(into.best || 0, from.best || 0);
-    if ((from.streak || [''])[0] > into.streak[0]) into.streak = from.streak.slice();
+    if (from.streak[0] > into.streak[0] || (from.streak[0] === into.streak[0] && from.streak[1] > into.streak[1])) into.streak = from.streak.slice();
     into.greeted = into.greeted || !!from.greeted;
     into.touched = Math.max(into.touched || 0, from.touched || 0);
     into.pending = into.pending.filter((g) => (g.k === 'i' ? !into.items.includes(g.id) : !into.stickers.includes(g.id)));
@@ -6252,5 +6272,5 @@
   registerOffline();
   if (linkCode) setTimeout(() => openSync(linkCode, `${appURL()}#sync=${linkCode}`), 400);
   if (justUpdated) loadChangelog().then(() => st.view === 'splash' && render());
-  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder, world: elderWorld }, sunDown, journal: JKEYS, countDay, markNow, fabTarget }; // for testing in the browser console
+  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder, world: elderWorld }, sunDown, journal: JKEYS, countDay, cleanStore, cleanProfile, syncCtx, markNow, fabTarget }; // for testing in the browser console
 })();
