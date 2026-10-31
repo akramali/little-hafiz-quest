@@ -8576,35 +8576,7 @@ body:has(.wrail.open) .jbtn {
   text-align: center;
 }
 .wholist {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.whorow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 10px;
-  border: 0;
-  border-radius: 16px;
-  background: var(--card);
-  box-shadow: 0 0 0 2px var(--edge);
-  color: var(--ink);
-  font: inherit;
   text-align: left;
-  cursor: pointer;
-}
-.whorow.on {
-  box-shadow: 0 0 0 3px var(--gold);
-}
-.whorow small {
-  display: block;
-  color: var(--soft);
-  font-size: 12px;
-}
-.whorow .phead svg {
-  width: 40px;
-  height: 60px;
 }
 /* the journal looks like a book: a leather cover, a cream page with ruled lines, a spine, a ribbon, page edges */
 .jtabs {

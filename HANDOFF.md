@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is a short public overview (highlights, install, privacy, credits); this file holds the detail.
 
-**Current version:** v2.7.2 (2026-10-31) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.7.3 (2026-10-31) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -89,6 +89,8 @@ Testing hook: `window.__lhq = { st, store, go, player, elder: { strikeFor, block
     holds (something lesser falls) except in an all-golden sūrah. Unprotected: a wobble + best thing falls.
     Order: worn non-golden → owned non-golden → a sticker → golden. Star badges and comfy starter clothes are never lost.
   - All three right: safe + small gift (special in a rematch; hero gear after the summit, then the **Test** button).
+- **What Listen plays** (`fabTarget`): Look & Repeat chain → only the lit āyah (v2.7.3; it used to play the rest of
+  the chain); Picture Puzzle → the next piece to place, then the whole once all are in (v2.7.3); the rest as before.
 - **Recitation:** `playList` / `stopAudio` hold a screen Wake Lock while playing (`keepAwake`); Read's Listen plays
   `[[1, 1], …]` (the Basmalah file, then the sūrah; each queued item plays from its own sūrah's file, `fileUrls`,
   so a list can span files) and `markNow` scrolls the recited āyah into view.
@@ -122,7 +124,7 @@ Testing hook: `window.__lhq = { st, store, go, player, elder: { strikeFor, block
   shoes in 3 (`look.feet`, v2.7.2); girls also get pastel picks (`ART.GIRL_COLORS`: pink shirt, lavender and mint
   pants, pink and lilac shoes). New explorers are given only the classic colors (`starterColors`).
 - **Switching explorer:** with more than one, the name under My Explorer and My Achievements is a button
-  (`whoBtn` → `showWho`, "Who's playing?") that switches and stays on the page.
+  (`whoBtn` → `showWho`, "Who's playing?", the Explorers page's `.exrow` rows) that switches and stays on the page.
 
 ## Release flow (do this every time)
 
@@ -162,4 +164,4 @@ v2.3–2.4: nature sounds, jigsaw, Read view, awards, files. v2.5.0: family sync
 classic v1 retired, word meanings. v2.5.1–2.5.8: buttons, speed, info/how-to, fruit and animals, all explorers on
 the map, chain setting, gift fixes, faces, glasses, Big Puzzle. v2.6.0: golden/green worlds, world rides, speed
 button, one-tap gifts, the Wise Elder. v2.6.1–2.6.6: Wise Elder polish, closing animations, stakes (every miss costs,
-world throws, protection), battle ground in the world's colors. v2.6.7: the Wise Elder every 10 minutes; speed and loop in Word Steps and Stepping Stones. v2.6.8: Read starts with the Bismillah (āyah -1, word data in `BISM_WORDS`) and follows the recited āyah; the screen stays on while reciting (`keepAwake`, Wake Lock; 99× loops let go after 15 min); full world names in the list. v2.6.9: no text selection or long-press menus (text boxes and the share picture excepted); zoom kept. v2.6.10: My Achievements fits on one screen. v2.6.11: the Stranger becomes the Wise Elder (a kind old man, star staff, woven belt, swaying robe), renamed everywhere. v2.6.12: the Wise Elder walks with you through the world (taller, comforting, soft hurt, neutral "Test" wording), gives his staff at the summit; Read with the Bismillah plays the whole sūrah again. v2.6.13: the Wise Elder every 7 minutes, gentler robe sway, simpler praise; the temporary Elder test button removed. v2.7.2: "Your Teacher", tap to add to the journal, the journal as a book (swipe pages), its button under the worlds button, pastel comfy colors and shoe colors, switch explorer by the name, journal finds in Achievements. v2.7.1: family links carry every field (extras block); backups verified field by field. v2.7.0: campfires, the journal hunt, streaks, the Wise Elder's welcome and walking stick, Begin the quest, things on the map react (the boat sails off), the Elder's timer after 3 memorized sūrahs. v2.6.14: the Wise Elder roams the map (tap for a test, one gift a day), rematches wait for his timer, Auto theme by sunrise/sunset, still stickers, a new bee, the Version card updates in place. Full detail: `git log` and `changelog.json`.
+world throws, protection), battle ground in the world's colors. v2.6.7: the Wise Elder every 10 minutes; speed and loop in Word Steps and Stepping Stones. v2.6.8: Read starts with the Bismillah (āyah -1, word data in `BISM_WORDS`) and follows the recited āyah; the screen stays on while reciting (`keepAwake`, Wake Lock; 99× loops let go after 15 min); full world names in the list. v2.6.9: no text selection or long-press menus (text boxes and the share picture excepted); zoom kept. v2.6.10: My Achievements fits on one screen. v2.6.11: the Stranger becomes the Wise Elder (a kind old man, star staff, woven belt, swaying robe), renamed everywhere. v2.6.12: the Wise Elder walks with you through the world (taller, comforting, soft hurt, neutral "Test" wording), gives his staff at the summit; Read with the Bismillah plays the whole sūrah again. v2.6.13: the Wise Elder every 7 minutes, gentler robe sway, simpler praise; the temporary Elder test button removed. v2.7.3: Listen plays the lit chain āyah / the next puzzle piece; the explorer switcher matches the Explorers page. v2.7.2: "Your Teacher", tap to add to the journal, the journal as a book (swipe pages), its button under the worlds button, pastel comfy colors and shoe colors, switch explorer by the name, journal finds in Achievements. v2.7.1: family links carry every field (extras block); backups verified field by field. v2.7.0: campfires, the journal hunt, streaks, the Wise Elder's welcome and walking stick, Begin the quest, things on the map react (the boat sails off), the Elder's timer after 3 memorized sūrahs. v2.6.14: the Wise Elder roams the map (tap for a test, one gift a day), rematches wait for his timer, Auto theme by sunrise/sunset, still stickers, a new bee, the Version card updates in place. Full detail: `git log` and `changelog.json`.

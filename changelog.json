@@ -1,7 +1,12 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.7.2",
+ "latest": "2.7.3",
  "versions": [
+  { "v": "2.7.3", "notes": [
+   "Look & Repeat chain: Listen plays just the āyah you're on",
+   "Picture Puzzle: Listen plays the next piece to place, right up to the last",
+   "Small visual tweaks"
+  ] },
   { "v": "2.7.2", "notes": [
    "The Wise Elder is now Your Teacher",
    "Journal: just tap a thing, then Add to journal; swipe to turn the pages",

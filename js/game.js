@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.7.2';
+  const VERSION = '2.7.3';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -1164,18 +1164,20 @@
     if (v === 'surah') return multi(s) && st.p !== 'all' ? many(range(c), `Part ${st.p + 1}`) : many(range(c), 'Whole sūrah');
     if (v === 'learn') {
       if (st.phase !== 'chain') return Object.assign(one(st.a), { loop: true });
-      // the chain: Listen helps from where the child is, the āyāt not tapped yet (the key stays the same while
-      // they tap along, so the recitation isn't cut off at each tap)
-      const L = chainList(),
-        rest = L.slice(Math.min(st.chain, L.length - 1));
-      return { key: `${s.n}:chain:${st.a}`, label: rest.length < L.length ? `From āyah ${rest[0] + 1}` : 'The chain', items: rest.map((k) => [s.n, k + 1]) };
+      // the chain: Listen plays just the āyah lit up now (where the child is), so they hear the one to say
+      const L = chainList();
+      return Object.assign(one(L[Math.min(st.chain, L.length - 1)]), { loop: true });
     }
     if (v === 'path') return Object.assign(one(c.from + st.k), { loop: true });
     if (v === 'order') {
       const all = st.p === 'all' ? range({ from: 0, to: s.ayat.length - 1 }) : range(c);
-      if (st.say == null) return many(all, st.p === 'all' ? 'Whole sūrah' : 'In order');
-      const ks = puzzleItems()[st.say].say;
-      return ks.length > 1 ? many(ks, `Āyāt ${ks[0] + 1}–${ks[ks.length - 1] + 1}`) : one(ks[0]);
+      // the piece to place next (the first one still missing, in order), so every piece can be practiced; once
+      // they're all in, the whole thing
+      const items = puzzleItems(),
+        j = items.findIndex((_, x) => !st.placed[x]);
+      if (j < 0) return many(all, st.p === 'all' ? 'Whole sūrah' : 'In order');
+      const ks = items[j].say;
+      return ks.length > 1 ? many(ks, `Next: āyāt ${ks[0] + 1}–${ks[ks.length - 1] + 1}`) : Object.assign(one(ks[0]), { label: `Next: āyah ${ks[0] + 1}` });
     }
     if (v === 'words') return Object.assign(one(st.a), { loop: true });
     if (v === 'mushaf') {
@@ -1379,7 +1381,8 @@
     const m = document.getElementById('modal');
     m.innerHTML = `<div class="card whocard"><button class="cardx" data-act="cno" aria-label="Close">✕</button><h3>Who's playing?</h3><div class="wholist">${store.profiles
       .filter((p) => p.made)
-      .map((p) => `<button class="whorow ${p.id === store.cur ? 'on' : ''}" data-act="pickprof" data-id="${p.id}"><span class="phead">${explorer({ view: 'front', cls: 'mini' }, p)}</span><span><b>${p.name ? esc(p.name) : 'Explorer'}</b><small>⭐ ${totalStars(p)} · 🏆 ${S.filter((s) => surahDone(s, p)).length} memorized</small></span></button>`)
+      // the same rows as the Explorers page
+      .map((p) => `<div class="exrow ${p.id === store.cur ? 'on' : ''}"><button class="exsel" data-act="pickprof" data-id="${p.id}" aria-pressed="${p.id === store.cur}"><span class="phead">${explorer({ view: 'front', cls: 'mini' }, p)}</span><span><b>${p.name ? esc(p.name) : 'Explorer'}</b>${exStats(p)}</span></button></div>`)
       .join('')}</div></div>`;
     m.classList.add('show');
   }

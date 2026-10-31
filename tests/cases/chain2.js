@@ -13,20 +13,18 @@
   log('said 3:', state(), '| Listen:', fab());
   d.querySelector('.chain .link[data-j="1"]').click(); await wait(80);
   log('tap āyah 2 again (untap):', state(), '| Listen:', fab());
-  ok('a said āyah can be untapped', state() === '1✓ 2• 3 4' && fab() === 'From āyah 2', state() + ' / ' + fab());
+  ok('a said āyah can be untapped; Listen plays just the lit āyah', state() === '1✓ 2• 3 4' && fab() === 'Āyah 2', state() + ' / ' + fab());
   d.querySelector('.chain .link.cur').click(); await wait(80);
   log('tap it again:', state(), '| Listen:', fab());
   // Listen plays from the first one not said
   d.querySelector('.listen').click(); await wait(300);
   log('Listen plays:', JSON.stringify(L.st && w.__lhq ? (w.__lhq.queue ? w.__lhq.queue() : 'n/a') : ''), '| playing label', d.querySelector('.listen b').textContent);
-  // tap along while it plays: it keeps playing
+  // tap along: the next āyah lights up, and Listen is for that one
   d.querySelector('.chain .link.cur').click(); await wait(150);
-  log('tapped along: still playing', d.querySelector('.listen b').textContent === 'Stop', '|', state());
-  ok('tapping along keeps Listen playing', d.querySelector('.listen b').textContent === 'Stop');
-  // go back while it plays: it carries on from there
+  log('tapped along:', state(), '| Listen:', fab());
+  ok('tapping along: Listen moves to the next lit āyah', fab() === 'Āyah 4', fab());
   d.querySelector('.chain .link[data-j="0"]').click(); await wait(200);
-  log('went back to āyah 1 while playing:', state(), '| playing', d.querySelector('.listen b').textContent, '| from', fab());
-  ok('going back while playing carries on from there', state().startsWith('1•') && d.querySelector('.listen b').textContent === 'Stop');
+  ok('going back: Listen is for that āyah', state().startsWith('1•') && fab() === 'Āyah 1', state() + ' / ' + fab());
   ok('no game errors', !errs.length, errs.slice(0, 3).join('; ')); log('errors', errs);
   done();
 })();
