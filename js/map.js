@@ -173,6 +173,14 @@
       html.push('<div class="mlayer">');
       // the path crosses each border on a bridge (a gate through the wall)
       L.borders.forEach((bd) => {
+        // the little sailboat on the sea between the forest and the sands: a thing of its own, to tap
+        if (bd.wi === 1) {
+          const bx = width * 0.1 + 35,
+            by = bd.y - BH / 2 + 80;
+          html.push(
+            `<div class="mprop mboat" data-act="poke" data-k="sands-boat" data-w="2" data-x="${bx.toFixed(1)}" data-y="${by.toFixed(1)}" style="left:${(bx - 35).toFixed(1)}px;top:${(by - 70).toFixed(1)}px;width:70px;height:70px"><div class="pr-bob">${ART.props['sands-boat'] || ''}</div></div>`,
+          );
+        }
         if (bd.wi === 3)
           html.push(
             `<div class="mgate" data-x="${bd.x.toFixed(1)}" data-y="${(bd.y + 34).toFixed(1)}" style="left:${(bd.x - 64).toFixed(1)}px;top:${(bd.y + 34 - 128).toFixed(1)}px">${ART.bridge(3, cfg.night)}</div>`,
@@ -290,10 +298,12 @@
             html: `<div class="mpal${q.elder ? ' melder' : ''}" data-act="pal" data-id="${q.id}" data-w="${b.wi}" data-x="${x.toFixed(1)}" data-y="${y.toFixed(1)}" style="left:${(x - (q.elder ? 42 : EX_FOOT)).toFixed(1)}px;top:${(y - (q.elder ? 123 : 108)).toFixed(1)}px" aria-label="${q.name}"><div class="mpal-in">${q.svg}</div></div>`,
           });
         });
-        for (let t = 0, made = 0; t < count * 8 && made < count; t++) {
+        // every kind of thing at least once (they're in the journal, to be found), then any of them
+        const kinds = [...new Set(names)];
+        for (let t = 0, made = 0, n0 = Math.max(count, kinds.length); t < n0 * 12 && made < n0; t++) {
           const x = 10 + rnd() * (width - 20),
             y = hi + rnd() * h;
-          const name = names[(rnd() * names.length) | 0],
+          const name = made < kinds.length ? kinds[made] : names[(rnd() * names.length) | 0],
             size = Math.round((40 + rnd() * 30 + (isTall(name) ? 10 : 0)) * grow),
             hgt = Math.round(isTall(name) ? size * 1.5 : size),
             box = boxOf(x, y, size, hgt);
@@ -334,13 +344,14 @@
             <span class="nnum">${s.n}</span>
             ${st.done ? '<span class="ncheck">✓</span>' : ''}
             ${st.fix ? '<span class="nfix" title="Needs fixing">💔</span>' : ''}
+            ${st.fire >= 0 && ART.campfire ? `<span class="nfire ${nd.x > L.cx ? 'fr' : 'fl'} f${st.fire}">${ART.campfire(st.fire)}</span>` : ''}
             ${st.gift ? `<span class="ngift">${ART.gift({ tier: st.giftTier || 1, open: false, kind: 'item' })}</span>` : ''}
             <span class="nlab"><b>${s.name}</b><small>${st.done ? `✓ ⭐ ${st.stars}/${st.max}` : `⭐ ${st.stars}/${st.max}`}</small></span>
           </button>`,
         );
         (st.lost || []).forEach((id, j) => {
           // on the other side of the stop from where the explorer stands
-          const lx = nd.x + (nd.x > L.cx ? 64 : -64) + j * 12,
+          const lx = nd.x + (nd.x > L.cx ? 1 : -1) * (st.fire >= 0 ? 90 : 64) + j * 12,
             ly = nd.y + 40;
           html.push(
             `<button class="mlost" data-act="surah" data-i="${nd.i}" data-x="${lx.toFixed(1)}" data-y="${ly.toFixed(1)}" style="left:${(lx - 26).toFixed(1)}px;top:${(ly - 52).toFixed(1)}px" aria-label="A lost item is waiting here"><span class="mlost-it">${ART.item(id)}</span></button>`,

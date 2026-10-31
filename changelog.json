@@ -1,7 +1,13 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.6.14",
+ "latest": "2.7.0",
  "versions": [
+  { "v": "2.7.0", "notes": [
+   "Campfires by your memorized sūrahs: revise to keep them burning",
+   "Your journal: tap and hold things on the map and in the sūrah pictures to collect them",
+   "Day streaks, and the Wise Elder welcomes new explorers with their walking stick",
+   "Things on the map do more when tapped (try the boat!)"
+  ] },
   { "v": "2.6.14", "notes": [
    "The Wise Elder now roams the map: tap him to take his test any time (one gift a day)",
    "After you win your things back, he comes on his usual timer",

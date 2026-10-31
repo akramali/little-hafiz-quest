@@ -1963,7 +1963,7 @@
     const out = {};
     SLOTS.forEach((s) => {
       const id = o && o[s];
-      out[s] = id && BYID[id] && BYID[id].slot === s ? id : DEFAULTS[s] || null;
+      out[s] = id === 'none' ? null : id && BYID[id] && BYID[id].slot === s ? id : DEFAULTS[s] || null; // 'none': nothing there (not even the default)
     });
     if (look) ['top', 'pants'].forEach((s) => (out[s] = out[s] && starterOf(out[s], look)));
     return out;
@@ -2070,6 +2070,23 @@
       cheeks(83, 104, 117, 104, 6) + eyes + S('M80 86Q88 80 96 86Q88 84 80 89Z', '#eeeae0') + S('M120 86Q112 80 104 86Q112 84 120 89Z', '#eeeae0') +
       P('M88 116Q94 110 100 114Q106 110 112 116Q106 118 100 116Q94 118 88 116Z', '#e7e2d6', sw(1.8)) + mouth;
     return '<svg class="lhq-art elder ' + (mood || '') + '" viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' + OUT(g) + '</svg>';
+  }
+
+  /* A campfire beside each memorized sūrah on the map (viewBox 0 0 60 60, standing on y=54). It burns down
+     until the sūrah is revised: lvl 3 a big fire, 2 smaller, 1 glowing embers, 0 out (grey logs, a wisp of smoke). */
+  function campfire(lvl) {
+    const logs = (c1, c2) => S(limb(10, 52, 50, 44, 4.2, 4.2), c1) + S(limb(10, 44, 50, 52, 4.2, 4.2), c2) + EF(30, 55, 22, 3, INK, 0.15);
+    const flame = (k) =>
+      G(
+        S('M30 6Q46 24 43 38Q41 50 30 50Q19 50 17 38Q14 24 30 6Z', '#ff7a3d', null, 'M24 40Q22 30 28 20Q26 32 28 42Z') + F('M30 22Q39 34 37 42Q35 49 30 49Q25 49 23 42Q21 34 30 22Z', '#ffd23f'),
+        ' transform="translate(30 50) scale(' + k + ') translate(-30 -50)"',
+      );
+    let g;
+    if (lvl >= 3) g = EF(30, 40, 26, 20, '#ffb347', 0.28) + logs('#8a5a35', '#a86b3c') + G(flame(1), cls('cf-flick'));
+    else if (lvl === 2) g = EF(30, 44, 20, 14, '#ffb347', 0.22) + logs('#8a5a35', '#a86b3c') + G(flame(0.66), cls('cf-flick'));
+    else if (lvl === 1) g = logs('#7a5038', '#8a5a35') + EF(30, 47, 11, 4, '#ff5d3d', 0.75) + CF(24, 46, 2, '#ffb347') + CF(35, 45, 1.6, '#ffd23f') + G(L('M30 40Q26 32 31 26Q35 20 31 14', '#b8b0c4', 2.2), cls('cf-smoke'));
+    else g = logs('#8f8a96', '#a39fab') + G(L('M30 42Q25 32 31 25Q36 18 30 10', '#b8b0c4', 2.4), cls('cf-smoke'));
+    return '<svg class="lhq-art campfire" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' + OUT(g, 2.2) + '</svg>';
   }
 
   /* =================================================================================================
@@ -2520,8 +2537,7 @@
       // a sea inlet: forest bank below, a sandy beach above, waves rolling in
       g += F(band(w, 30, 100, 5, 1.6, 0.2), N('#ffe8b0')) + F(band(w, 40, 92, 6, 1.6, 0.6), N('#22b8d0')) + F(band(w, 44, 70, 5, 1.6, 0.9), N('#5fd8e8'), 0.7);
       for (let j = 0; j < 5; j++) g += '<path class="bd-wave" style="animation-delay:-' + n(r() * 4) + 's" d="' + wavy(w, 48 + j * 9, 2.4, 3 + j, j) + '" fill="none" stroke="#ffffff" stroke-width="2" opacity=".75"/>';
-      // the bob animates its own group: a css transform on the group with tf() would replace its scale and place
-      g += '<g class="pr-bob">' + G(OUT(STKBY.boat(), 2.2 / 0.7), tf(n(w * 0.1), 10, 0.7)) + '</g>';
+      // (its little sailboat is drawn by the map, as a thing to tap: js/map.js)
     } else if (i === 2) {
       // a deep gorge with layered rock walls
       g += F(band(w, 38, 98, 7, 2.6, 0.5), N('#c25e34')) + F(band(w, 46, 90, 6, 2.6, 0.9), N('#6a2f3a')) + F(band(w, 56, 82, 4, 2.6, 1.4), N('#3d1c2e')) +
@@ -2814,6 +2830,7 @@
     bridge,
     fruit,
     elder,
+    campfire,
     horizon,
     splash,
   };

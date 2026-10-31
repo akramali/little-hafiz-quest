@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.6.14';
+  const VERSION = '2.7.0';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -236,6 +236,13 @@
       fix: [], // sūrahs where all the hearts ran out in a review game (a broken heart on the map until fixed)
       daily: '',
       elderGift: '', // the day a test the explorer asked the Wise Elder for last brought a gift (one a day)
+      greeted: false, // the Wise Elder has welcomed them and given them their walking stick
+      fire: {}, // campfires: sūrah number -> [last revised (ms), level 0-4]
+      found: [], // the journal: things found ('p:<map thing>' or 'e:<emoji>')
+      jdone: [], // journal pages (worlds) completed (a gift each)
+      streak: ['', 0], // [the last day with a minute of learning, days in a row]
+      best: 0, // the longest streak
+      dayT: ['', 0], // [today, seconds learned today] (a day counts after a minute)
       at: 0,
       made: false,
       time: 0, // seconds spent learning (for grown-ups)
@@ -356,6 +363,21 @@
     p.touched = typeof o.touched === 'number' && isFinite(o.touched) && o.touched > 0 ? Math.round(o.touched) : 0;
     if (o.stime && typeof o.stime === 'object') for (const n in o.stime) if (BYN[n] && secs(o.stime[n])) p.stime[BYN[n].n] = secs(o.stime[n]);
     if (p.feats.includes('once')) giveStaff(p); // explorers who reached the summit before v2.6.12
+    p.greeted = !!o.greeted;
+    // campfires: every memorized sūrah has one (lit a week's worth for sūrahs memorized before v2.7.0)
+    const f0 = o.fire && typeof o.fire === 'object' ? o.fire : {};
+    p.fire = {};
+    S.forEach((s) => {
+      if (!surahDone(s, p)) return;
+      const f = f0[s.n];
+      p.fire[s.n] = Array.isArray(f) && isFinite(f[0]) && f[0] > 0 ? [Math.min(+f[0], Date.now()), int(f[1], 0, FIRE_DAYS.length - 1, 0)] : [Date.now(), 2];
+    });
+    p.found = uniq((Array.isArray(o.found) ? o.found : []).filter((k) => JKEYS.has(k)));
+    p.jdone = uniq((Array.isArray(o.jdone) ? o.jdone : []).filter((w) => Number.isInteger(w) && w >= 0 && w < WORLDS.length));
+    const day = (v) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '');
+    if (Array.isArray(o.streak)) p.streak = [day(o.streak[0]), int(o.streak[1], 0, 1e5, 0)];
+    p.best = Math.max(p.streak[1], int(o.best, 0, 1e5, 0));
+    if (Array.isArray(o.dayT) && day(o.dayT[0])) p.dayT = [o.dayT[0], Math.min(86400, Math.max(0, +o.dayT[1] || 0))];
     return p;
   }
   function cleanPrefs(o) {
@@ -633,6 +655,9 @@
   /* Some things are for boys only (kufis) or girls only (hijabs); the hijab hair style is for girls too. */
   const kidOf = (prof) => (ART.isGirl((prof || P()).look) ? 'girl' : 'boy');
   const forKid = (it, prof) => !it.for || it.for === kidOf(prof);
+  // a new explorer has no walking stick until the Wise Elder gives them one (ART draws 'none' as nothing)
+  const begun = (prof) => !!prof.greeted || totalStars(prof) > 0 || prof.items.length > 0;
+  const drawnOutfit = (prof) => (begun(prof) ? wornOutfit(prof) : Object.assign(wornOutfit(prof), { stick: 'none' }));
   function wornOutfit(prof) {
     prof = prof || P();
     const o = {};
@@ -648,7 +673,7 @@
     prof = prof || P();
     opts = Object.assign({ view: 'front' }, opts);
     if (opts.mood == null) opts.mood = prof.lost.length || (prof.lostSt || []).length ? 'sad' : '';
-    return ART.explorer(prof.look, Object.assign(wornOutfit(prof), { sticker: prof.badge }), opts);
+    return ART.explorer(prof.look, Object.assign(drawnOutfit(prof), { sticker: prof.badge }), opts);
   }
   function gotIt(prof, key) {
     prof.got = prof.got.filter((k) => k !== key);
@@ -1484,6 +1509,7 @@
   let mapCtl = null;
   function go(view, params = {}) {
     if (view === 'map' && ['surah', 'done', 'learn', 'words', 'path', 'order', 'mushaf'].includes(st.view)) setTimeout(maybeElder, 1400);
+    if (view === 'map' && !noExplorers() && P().made && !begun(P())) setTimeout(maybeIntro, 900);
     // leaving My Explorer: everything new there has been seen
     if (st.view === 'bag' && view !== 'bag' && P().fresh.length) {
       P().fresh = [];
@@ -1630,9 +1656,10 @@
   /* ---------- SPLASH ---------- */
   V.splash = () => {
     const prof = P(),
-      started = totalStars(prof) > 0;
+      started = !noExplorers() && prof.made && begun(prof),
+      days = streakNow(prof);
     return `<div class="splash">
-    <div class="sp-art">${ART.splash(prof.look, Object.assign(wornOutfit(prof), { sticker: prof.badge }), { night: isNight(), mood: prof.lost.length ? 'sad' : '' })}</div>
+    <div class="sp-art">${ART.splash(prof.look, Object.assign(drawnOutfit(prof), { sticker: prof.badge }), { night: isNight(), mood: prof.lost.length ? 'sad' : '' })}</div>
     <div class="sp-top">
       <button class="verchip ${upd.available ? 'ready' : ''}" data-act="updates" aria-label="Version and updates">v${VERSION}${upd.available ? ' · Update ✨' : ''}</button>
       <span class="sp-tr">${FS_OK && !STANDALONE ? `<button class="icon-btn" data-act="fs" aria-label="${fsNow() ? 'Exit fullscreen' : 'Fullscreen'}">${fsNow() ? ICON.fsOut : ICON.fsIn}</button>` : ''}<button class="icon-btn" data-act="settings" aria-label="Grown-up corner">${ICON.gear}</button></span>
@@ -1640,7 +1667,8 @@
     <div class="sp-bottom">
       <h1 class="sp-title">Little Hafiz Quest</h1>
       <p class="sp-sub">Juz ‘Amma by heart · 37 sūrahs to the summit</p>
-      <button class="btn gold sp-begin" data-act="begin">${started ? 'Continue the quest ▶' : 'Begin ▶'}</button>
+      ${days > 1 ? `<span class="sp-streak">🔥 ${days} days in a row</span>` : ''}
+      <button class="btn gold sp-begin" data-act="begin">${started ? 'Continue the quest ▶' : 'Begin the quest ▶'}</button>
       ${
         noExplorers()
           ? '<button class="pchip" data-act="newprof"><span class="phead">➕</span>Add explorer<small>to start</small></button>'
@@ -1747,6 +1775,7 @@
       gift: false,
       lost: prof.lost.filter((x) => x.n === s.n).map((x) => x.id),
       fix: prof.fix.includes(s.n),
+      fire: fireOf(s, prof),
     };
   }
   function suggestIdx() {
@@ -1763,7 +1792,7 @@
       ${giftIcon(prof)}
       <button class="icon-btn hud-bag hud-me" data-act="bag" aria-label="My explorer: dress up, collection and achievements"><span class="phead">${explorer({ cls: 'mini' })}</span>${prof.fresh.length ? NEWDOT : ''}</button>
     </div>
-    ${heroReady(prof) && prefs.elder ? `<button class="btn small chalbtn eldtest" data-act="challenge" aria-label="Take the Wise Elder’s test"><span class="eldtest-ic">${elderArt('')}</span>Test</button>` : ''}
+    <div class="mapfoot"><button class="btn small jbtn" data-act="journal" aria-label="My journal: ${prof.found.length} of ${JKEYS.size} found">📔<span>Journal</span></button>${heroReady(prof) && prefs.elder ? `<button class="btn small eldtest" data-act="challenge" aria-label="Take the Wise Elder’s test"><span class="eldtest-ic">${elderArt('')}</span>Test</button>` : ''}</div>
     <div id="map" class="mroot"></div>
   </div>`;
   };
@@ -2663,6 +2692,8 @@
       items: prof.items.length,
       badges: prof.stickers.filter((id) => STICKER[id].stars).length,
       time: prof.time || 0,
+      streak: streakNow(prof),
+      best: prof.best || 0,
     };
   }
   function fmtTime(sec) {
@@ -2679,6 +2710,7 @@
     ['🎁', `${a.items}`, 'treasures found'],
     ['🏅', `${a.badges}`, a.badges === 1 ? 'star badge' : 'star badges'],
     ['⏱️', fmtTime(a.time), 'spent learning'],
+    ['🔥', `${a.streak} ${a.streak === 1 ? 'day' : 'days'}`, `in a row · best ${a.best}`],
   ];
   V.show = () => {
     const prof = P(),
@@ -3011,6 +3043,11 @@
     ['wdone', 'feats', 'cpg'].forEach((k) => (into[k] = [...new Set([...into[k], ...from[k]])]));
     into.time = Math.max(into.time || 0, from.time || 0);
     for (const n in from.stime) into.stime[n] = Math.max(into.stime[n] || 0, from.stime[n]);
+    for (const n in from.fire || {}) if (!into.fire[n] || from.fire[n][0] > into.fire[n][0]) into.fire[n] = from.fire[n].slice();
+    into.found = [...new Set([...into.found, ...(from.found || [])])];
+    into.best = Math.max(into.best || 0, from.best || 0);
+    if ((from.streak || [''])[0] > into.streak[0]) into.streak = from.streak.slice();
+    into.greeted = into.greeted || !!from.greeted;
     into.touched = Math.max(into.touched || 0, from.touched || 0);
     into.pending = into.pending.filter((g) => (g.k === 'i' ? !into.items.includes(g.id) : !into.stickers.includes(g.id)));
     S.forEach((s) => giveSurahGift(s, into));
@@ -3423,13 +3460,11 @@
       // stickers the Wise Elder took here come back too, and he returns for a rematch
       prof.lostSt.filter((x) => x.n === s.n).forEach((x) => prof.stickers.includes(x.id) || prof.stickers.push(x.id));
       prof.lostSt = prof.lostSt.filter((x) => x.n !== s.n);
-      if (prof.rematch.includes(s.n) && !prof.rematchReady.includes(s.n)) {
-        prof.rematchReady.push(s.n);
-        prof.elderAt = 0; // he comes back right away
-      }
+      if (prof.rematch.includes(s.n) && !prof.rematchReady.includes(s.n)) prof.rematchReady.push(s.n); // on his usual timer
     }
     // memorized = Stepping Stones level 3 (the whole sūrah, for one with checkpoints)
     if (st.view === 'path' && (!multi(s) || st.p === 'all') && surahDone(s)) extra.memorized = true;
+    if (surahDone(s) && stokeFire(s, prof)) setTimeout(() => toast('🔥 You relit the campfire!'), 1200);
     const given = giveSurahGift(s);
     if (given === 'gold' || given === 'both') extra.allStars = true;
     // a world with a star in every sūrah: celebrate once, and it brings an extra heart (up to 5)
@@ -3762,6 +3797,22 @@
     lastTick = Date.now(),
     unsavedTime = 0;
   ['pointerdown', 'keydown'].forEach((ev) => document.addEventListener(ev, () => (lastTouch = Date.now()), { capture: true, passive: true }));
+  // a day with a minute of learning in a sūrah counts: days in a row make a streak (and the longest is kept)
+  const dayKey = (t) => {
+    const d = new Date(t);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  };
+  function countDay(prof, dt) {
+    const d = today();
+    if (prof.dayT[0] !== d) prof.dayT = [d, 0];
+    if (prof.dayT[1] >= 60) return;
+    prof.dayT[1] += dt;
+    if (prof.dayT[1] < 60 || prof.streak[0] === d) return;
+    prof.streak = [d, prof.streak[0] === dayKey(Date.now() - 864e5) ? prof.streak[1] + 1 : 1];
+    prof.best = Math.max(prof.best, prof.streak[1]);
+  }
+  // the streak still alive: learned today or yesterday
+  const streakNow = (prof) => (prof.streak[0] === today() || prof.streak[0] === dayKey(Date.now() - 864e5) ? prof.streak[1] : 0);
   function tickTime() {
     const now = Date.now(),
       dt = Math.min(now - lastTick, 15000) / 1000; // never a long gap (a phone asleep doesn't count)
@@ -3770,7 +3821,10 @@
     if (now - lastTouch > TIME_IDLE && player.paused) return;
     const prof = P();
     prof.time = (prof.time || 0) + dt;
-    if (st.i != null && S[st.i] && TIME_VIEWS.includes(st.view)) prof.stime[S[st.i].n] = (prof.stime[S[st.i].n] || 0) + dt;
+    if (st.i != null && S[st.i] && TIME_VIEWS.includes(st.view)) {
+      prof.stime[S[st.i].n] = (prof.stime[S[st.i].n] || 0) + dt;
+      countDay(prof, dt);
+    }
     unsavedTime += dt;
     if (unsavedTime >= 30) {
       unsavedTime = 0;
@@ -4332,6 +4386,44 @@
         sfx.tap();
         if (heroReady(P())) meetElder(true);
         break;
+      case 'intro': {
+        const k = +b.dataset.k;
+        if (k < INTRO.length) {
+          sfx.tap();
+          showIntro(k);
+          break;
+        }
+        // the stick is theirs: the quest begins
+        P().greeted = true;
+        save();
+        hideModal();
+        sfx.win();
+        render();
+        setTimeout(() => burstAt(document.querySelector('.mex'), 12, ['✨', '⭐', '🌟']), 300);
+        break;
+      }
+      case 'journal':
+        sfx.tap();
+        go('journal', { w: null });
+        break;
+      case 'jpage':
+        sfx.tap();
+        st.w = +b.dataset.w;
+        render();
+        break;
+      case 'jhint': {
+        const k = b.dataset.k;
+        sfx.tap();
+        if (P().found.includes(k)) burstAt(b, 5, ['✨']);
+        else toast(`Find it on the map in World ${JPAGE.get(k) + 1}, then tap and hold it`);
+        break;
+      }
+      case 'jgo': {
+        sfx.tap();
+        const i = S.findIndex((x) => x.n === +b.dataset.n);
+        if (i >= 0) openSurah(i);
+        break;
+      }
       case 'eldface':
         hideModal();
         startElder();
@@ -4763,6 +4855,14 @@
   }, 15000);
 
   /* Tap the world: animals hop, plants shake, houses and other things bounce, the explorer jumps for joy. */
+  // things that drift off after a few taps (and come back), and what each thing gives off when tapped
+  const DRIFT = { 'sands-boat': 'sail', 'sky-airship': 'sail', 'sky-kite': 'float', 'sky-balloon': 'float', 'sky-cloud': 'float', 'canyon-tumbleweed': 'roll' };
+  const BURST = [
+    [/pond/, ['💧', '🐟', '💦']], [/lantern|lighthouse|observatory/, ['✨', '🌟', '💡']], [/moon|star\b|starry-star/, ['⭐', '✨', '🌙']], [/crystal/, ['💎', '✨']],
+    [/shell/, ['✨', '🫧']], [/castle/, ['🐚', '✨', '🚩']], [/umbrella/, ['☀️', '🌊']], [/rainbow/, ['🌈', '✨']], [/kite|balloon|airship|cloud/, ['💨', '☁️']],
+    [/boat/, ['🌊', '💧']], [/tumbleweed|dune|mesa|arch|rock/, ['💨', '·']], [/cottage|cabin|igloo|tent/, ['💨', '🏠']], [/sign|fence|flag/, ['✨', '⭐']],
+  ];
+  const STONE = /rock|mesa|arch|dune/; // they don't move: a little thud and some dust
   const ANIMAL = /sheep|rabbit|fox|owl|deer|squirrel|crab|turtle|camel|lizard|goat|starfish|snowman/,
     PLANT = /tree|pine|oak|bush|grass|flower|fern|palm|cactus|mushroom|berries|crystal/;
   function poke(el) {
@@ -4782,7 +4882,9 @@
               ? 'hop'
               : PLANT.test(k)
                 ? 'shake'
-                : 'bounce';
+                : STONE.test(k)
+                  ? 'thud'
+                  : 'bounce';
     el._last = kind;
     // tap an animal on the map a few times in a row: it runs away, peeks back in, then comes home
     if (kind === 'hop' && el.classList.contains('mprop')) {
@@ -4791,31 +4893,52 @@
       if (el._away || el._busy) return; // already running off, or on its way to a fruit
       if (el._taps.length >= 3 && runAway(el)) return;
     }
-    el.classList.remove('poke-joy', 'poke-puff', 'poke-hop', 'poke-shake', 'poke-bounce', 'poke-spin', 'poke-dance', 'poke-hops', 'poke-flag');
+    el.classList.remove('poke-joy', 'poke-puff', 'poke-hop', 'poke-shake', 'poke-bounce', 'poke-spin', 'poke-dance', 'poke-hops', 'poke-flag', 'poke-thud');
+    if (el._away) return; // drifting off: it'll be back
     void el.getBoundingClientRect();
     el.classList.add('poke-' + kind);
     clearTimeout(el._pk);
     el._pk = setTimeout(() => el.classList.remove('poke-' + kind), kind === 'flag' ? 1600 : 1100);
-    const set = { joy: ['⭐', '✨', '💛'], spin: ['✨', '⭐'], dance: ['🎵', '✨'], hops: ['⭐', '✨'], flag: ['🎉', '⭐', '✨'], puff: ['☁️', '✨'], hop: ['💕', '✨'], shake: ['🍃', '🌸'], bounce: ['✨', '⭐'] }[kind];
+    const own = (BURST.find(([re]) => re.test(k)) || [])[1];
+    const set = own || { joy: ['⭐', '✨', '💛'], spin: ['✨', '⭐'], dance: ['🎵', '✨'], hops: ['⭐', '✨'], flag: ['🎉', '⭐', '✨'], puff: ['☁️', '✨'], hop: ['💕', '✨'], shake: ['🍃', '🌸'], bounce: ['✨', '⭐'], thud: ['💨', '·'] }[kind];
     burstAt(el, kind === 'joy' || kind === 'flag' ? 10 : 5, set);
     if (kind === 'shake' && FRUIT_OF[k] && el.classList.contains('mprop')) dropFruit(el);
     // tap a windmill, a cottage, a lighthouse, a flag… a few times in a row: it gets excited
-    if (kind === 'bounce' && el.classList.contains('mprop')) {
+    // a few taps in a row: a boat sails off, a kite or balloon floats away (both come back); a windmill, a
+    // cottage, a lighthouse… gets going
+    if ((kind === 'bounce' || kind === 'puff') && el.classList.contains('mprop')) {
       const now = Date.now();
       el._taps = (el._taps || []).filter((t) => now - t < 2500).concat(now);
       if (el._taps.length >= 3) {
         el._taps = [];
-        excite(el);
+        if (DRIFT[k]) drift(el, DRIFT[k]);
+        else excite(el);
       }
     }
-    ({ joy: sfx.hop, spin: sfx.whoosh, dance: sfx.dance, hops: sfx.hop, flag: sfx.win, puff: sfx.whoosh, hop: sfx.pop, shake: sfx.rustle, bounce: sfx.tap })[kind]();
+    ({ joy: sfx.hop, spin: sfx.whoosh, dance: sfx.dance, hops: sfx.hop, flag: sfx.win, puff: sfx.whoosh, hop: sfx.pop, shake: sfx.rustle, bounce: sfx.tap, thud: sfx.boop })[kind]();
   }
 
   /* A windmill spins fast, a chimney puffs more smoke, a lighthouse beam whirls, flags flap: everything that
      moves in the picture speeds up, then slows back down over a few seconds. Animals nearby scurry off and
      creep back as it calms down. */
+  // off it goes, out of sight for a while, and back again from the other side (or from above)
+  function drift(el, mode) {
+    const who = el.firstElementChild;
+    if (!who || !who.animate || reduceMotion || el._away) return;
+    el._away = true;
+    sfx.whoosh();
+    const far = innerWidth * 0.9,
+      at = (o, x, y, op, r) => ({ offset: o, opacity: op, transform: `translate(${x}px, ${y}px)${r ? ` rotate(${r}deg)` : ''}` });
+    const frames =
+      mode === 'float'
+        ? [at(0, 0, 0, 1), at(0.3, 30, -420, 0), at(0.7, -20, -300, 0), at(1, 0, 0, 1)]
+        : [at(0, 0, 0, 1), at(0.3, far, mode === 'roll' ? 0 : -6, 0, mode === 'roll' ? 900 : 0), at(0.7, -far, 0, 0, mode === 'roll' ? -600 : 0), at(1, 0, 0, 1, 0)];
+    const a = who.animate(frames, { duration: 10000, easing: 'ease-in-out' });
+    a.onfinish = a.oncancel = () => (el._away = false);
+  }
   function excite(el) {
     const anims = el.getAnimations({ subtree: true }).filter((x) => x instanceof CSSAnimation);
+    if (!anims.length && !reduceMotion) burstAt(el, 10, ['✨', '⭐', '💫']); // nothing in it moves: a bigger sparkle
     if (!anims.length || reduceMotion) return;
     sfx.whoosh();
     burstAt(el, 8, /cottage|cabin|igloo/.test(el.dataset.k) ? ['💨', '☁️'] : ['✨', '💨', '⭐']);
@@ -5271,6 +5394,204 @@
     };
   }
 
+  /* ================= CAMPFIRES =================
+     Each memorized sūrah has a campfire beside it on the map. It burns down over the days unless the sūrah is
+     revised (any game finished in it, or the Wise Elder's test passed); a revision that comes when it's due lets
+     it burn longer next time: 1, 3, 7, 14, then 30 days (spaced review). Level: 3 a big fire, 2 smaller,
+     1 embers (time to revise), 0 out (well overdue). */
+  const FIRE_DAYS = [1, 3, 7, 14, 30];
+  function fireOf(s, prof) {
+    prof = prof || P();
+    const f = prof.fire[s.n];
+    if (!f || !surahDone(s, prof)) return -1;
+    const r = (Date.now() - f[0]) / (FIRE_DAYS[f[1]] * 864e5);
+    return r < 0.5 ? 3 : r < 1 ? 2 : r < 2 ? 1 : 0;
+  }
+  // feed the fire; true when it had burned low (so the explorer relit it)
+  function stokeFire(s, prof) {
+    const f = prof.fire[s.n],
+      now = Date.now();
+    if (!f) {
+      prof.fire[s.n] = [now, 0];
+      return false;
+    }
+    const low = fireOf(s, prof) <= 1,
+      due = FIRE_DAYS[f[1]] * 864e5,
+      age = now - f[0];
+    if (age >= due * 3) f[1] = Math.max(0, f[1] - 1); // long forgotten: check back sooner
+    else if (age >= due * 0.5) f[1] = Math.min(FIRE_DAYS.length - 1, f[1] + 1);
+    f[0] = now;
+    return low;
+  }
+
+  /* ================= THE JOURNAL =================
+     A scavenger hunt in a book: a page for each world, with the things on the map there and the things hidden in
+     the pictures of its sūrahs (each listed once, under the first sūrah of the journey that has it). Tap and hold
+     one to add it. Things that aren't in the journal (people, hands, signs) do nothing when held. A whole page
+     found brings a gift. */
+  const PROP_NAME = {
+    'meadow-grass': 'Grass', 'meadow-flower-pink': 'Pink flower', 'meadow-flower-yellow': 'Yellow flower', 'meadow-flower-blue': 'Blue flower', 'meadow-bush': 'Berry bush',
+    'meadow-tree': 'Apple tree', 'meadow-fence': 'Fence', 'meadow-sign': 'Signpost', 'meadow-sheep': 'Sheep', 'meadow-rabbit': 'Rabbit', 'meadow-pond': 'Pond',
+    'meadow-cottage': 'Cottage', 'meadow-windmill': 'Windmill', 'forest-pine': 'Pine tree', 'forest-oak': 'Oak tree', 'forest-mushroom': 'Mushroom', 'forest-log': 'Log',
+    'forest-fern': 'Fern', 'forest-fox': 'Fox', 'forest-owl': 'Owl', 'forest-deer': 'Deer', 'forest-squirrel': 'Squirrel', 'forest-berries': 'Berries', 'forest-bigtree': 'Big old tree',
+    'sands-palm': 'Palm tree', 'sands-shell': 'Shell', 'sands-starfish': 'Starfish', 'sands-castle': 'Sandcastle', 'sands-crab': 'Crab', 'sands-rock': 'Rock',
+    'sands-umbrella': 'Beach umbrella', 'sands-turtle': 'Turtle', 'sands-lighthouse': 'Lighthouse', 'sands-boat': 'Sailboat', 'canyon-cactus': 'Cactus', 'canyon-mesa': 'Mesa',
+    'canyon-dune': 'Dune', 'canyon-lantern': 'Lantern', 'canyon-flower': 'Desert flower', 'canyon-camel': 'Camel', 'canyon-tent': 'Tent', 'canyon-lizard': 'Lizard',
+    'canyon-tumbleweed': 'Tumbleweed', 'canyon-arch': 'Rock arch', 'starry-mushroom': 'Glowing mushroom', 'starry-crystal': 'Crystal', 'starry-lantern': 'Star lantern',
+    'starry-moon': 'Moon', 'starry-owl': 'Night owl', 'starry-star': 'Star', 'starry-pond': 'Starry pond', 'starry-observatory': 'Observatory', 'sky-island': 'Floating island',
+    'sky-rainbow': 'Rainbow', 'sky-kite': 'Kite', 'sky-rock': 'Sky rock', 'sky-balloon': 'Hot-air balloon', 'sky-cloud': 'Cloud', 'sky-airship': 'Airship', 'sky-castle': 'Sky castle',
+    'peak-pine': 'Snowy pine', 'peak-rock': 'Boulder', 'peak-snowman': 'Snowman', 'peak-crystal': 'Ice crystal', 'peak-flag': 'Flag', 'peak-igloo': 'Igloo', 'peak-goat': 'Mountain goat',
+    'peak-cabin': 'Cabin',
+  };
+  // the things worth finding in the āyāt's pictures: creatures, nature, food, buildings and objects (no people,
+  // hands, faces or signs, and no square scenes like a sunrise, whose shadow would be just a square)
+  const JOURNAL_EMOJI = new Set(
+    ('🛡️ 👑 🕌 🌫️ 🌍 🦁 🌳 🌑 🧶 🍼 🔍 🔥 💰 🌲 🎒 🏆 🚪 📿 📣 🛤️ 🎁 🐑 ✂️ 🌿 ⚖️ 🍲 📸 🥄 🏘️ 🐪 ❄️ ☀️ 🕋 🍞 🐘 🗺️ 🐦 🧱 🌾 🐄 💵 ' +
+      '🧮 🔒 🏛️ ⏳ 🐢 ⏰ 💡 🔭 🍰 🦋 ⛰️ 🌈 🏡 🕳️ 🌡️ 🐎 🌪️ 🎯 🌱 🔓 🌋 🗞️ 📨 📋 🔦 📜 📚 📏 📖 🌙 📅 🔬 ✒️ 📝 🚧 🪃 🧭 🛑 🧢 📞 🔔 🏔️ 🔐 ⭐ ' +
+      '🏅 🎈 🐫 📦 🔊 ⛈️ 🌵 🌸 🌤️ 🧺 🍎 🧸 🛷 🧼 🌕 ☁️ 🥇 🥀 🏠 💧 🌩️ 🏚️ 🛣️ ⛓️ 🏜️ 🏰 ⛏️ ⛺ 📌 🗑️ 🍗 🔨 📮 🕊️ 🌊 🍽️ 🌻 🍇 ⛲ 🛋️ 🥤 🎮 ⚡ 🍂 ' +
+      '📢 🍃 🍭 🦴 🐣 🌧️ 🃏 🪑 💎 🗒️ 📗 📕 🎉 🏺 🥣 📆 🕰️ 🌞 🏁 🎣 🧩 🍉 🦒 📃 🍌 ☄️ 🌬️ 🦯 🚿 👟 🥬 🫒 🌴 💍 🌏 🎓 🗻 ⚓ 🗂️ 📰 🛏️ 🧥 🪔 📯 🧊 🧾 🎂 🥛 🌀').split(' '),
+  );
+  const JOURNAL = WORLDS.map((_, wi) => ({ wi, map: [], suras: [] }));
+  const JPAGE = new Map(); // key -> world
+  ART.PROPS_BY_WORLD.forEach((names, wi) => {
+    const list = [...new Set([ART.LANDMARKS[wi], ...(names || []), ...(wi === 2 ? ['sands-boat'] : [])])].filter((k) => k && PROP_NAME[k] && ART.props[k]);
+    JOURNAL[wi].map = list;
+    list.forEach((k) => JPAGE.set('p:' + k, wi));
+  });
+  [...S]
+    .sort((a, b) => b.n - a.n) // the journey: An-Nās first
+    .forEach((s) => {
+      const es = [];
+      s.ayat.forEach((a) => a.scene.forEach((e) => JOURNAL_EMOJI.has(e) && !JPAGE.has('e:' + e) && (JPAGE.set('e:' + e, worldOf(s)), es.push(e))));
+      if (es.length) JOURNAL[worldOf(s)].suras.push({ n: s.n, es });
+    });
+  const JKEYS = new Set(JPAGE.keys());
+  const pageKeys = (wi) => [...JPAGE].filter(([, w]) => w === wi).map(([k]) => k);
+  const jName = (k) => (k[0] === 'p' ? PROP_NAME[k.slice(2)] : k.slice(2));
+  function jot(key, el) {
+    const prof = P();
+    if (!JKEYS.has(key)) return;
+    if (prof.found.includes(key)) {
+      sfx.tap();
+      toast('✓ Already in your journal');
+      return;
+    }
+    prof.found.push(key);
+    sfx.chime();
+    // it flies into the journal (the book on the map, or up to the top)
+    const r = el.getBoundingClientRect(),
+      to = document.querySelector('.jbtn'),
+      t = to ? to.getBoundingClientRect() : { left: innerWidth / 2, top: 0, width: 0, height: 0 };
+    if (!reduceMotion) {
+      const f = document.createElement('div');
+      f.className = 'jfly';
+      f.innerHTML = key[0] === 'e' ? `<span>${key.slice(2)}</span>` : ART.props[key.slice(2)];
+      f.style.left = r.left + r.width / 2 - 24 + 'px';
+      f.style.top = r.top + r.height / 2 - 24 + 'px';
+      document.body.appendChild(f);
+      const a = f.animate([{ transform: 'scale(1)', opacity: 1 }, { transform: 'translate(0,-40px) scale(1.4)', opacity: 1, offset: 0.3 }, { transform: `translate(${t.left + t.width / 2 - (r.left + r.width / 2)}px, ${t.top + t.height / 2 - (r.top + r.height / 2)}px) scale(.3)`, opacity: 0.2 }], { duration: 900, easing: 'ease-in' });
+      a.onfinish = () => f.remove();
+    }
+    burstAt(el, 6, ['✨', '⭐']);
+    const wi = JPAGE.get(key);
+    let msg = `📔 ${jName(key)} is in your journal!`;
+    if (!prof.jdone.includes(wi) && pageKeys(wi).every((k) => prof.found.includes(k))) {
+      prof.jdone.push(wi);
+      giveSurprise(prof) || giveLevelGift(prof);
+      msg = `📔 The ${WORLDS[wi].name} page is complete! A gift for you 🎁`;
+      sfx.win();
+    }
+    save();
+    toast(msg);
+  }
+  // tap and hold: a ring fills around the finger; moving, lifting or scrolling early lets go
+  let jHold = null,
+    heldAt = 0;
+  const JHOLD_MS = 650;
+  function dropJHold() {
+    if (!jHold) return;
+    clearTimeout(jHold.t);
+    jHold.ring.remove();
+    jHold = null;
+  }
+  document.addEventListener(
+    'pointerdown',
+    (e) => {
+      if (jHold || e.button > 0 || noExplorers() || !P().made || st.view === 'elder') return;
+      const el = e.target.closest && e.target.closest('.e, .mprop');
+      if (!el || (el.classList.contains('mprop') && st.view !== 'map')) return;
+      const key = el.classList.contains('mprop') ? 'p:' + el.dataset.k : 'e:' + el.textContent.trim();
+      if (!JKEYS.has(key)) return; // not in the journal: holding does nothing
+      const ring = document.createElement('div');
+      ring.className = 'jring';
+      ring.style.left = e.clientX + 'px';
+      ring.style.top = e.clientY + 'px';
+      ring.innerHTML = '<svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="18"/></svg>';
+      const h = {
+        el,
+        key,
+        x: e.clientX,
+        y: e.clientY,
+        id: e.pointerId,
+        ring,
+        t: setTimeout(() => {
+          if (jHold !== h) return;
+          heldAt = Date.now();
+          dropJHold();
+          jot(key, el);
+        }, JHOLD_MS),
+      };
+      jHold = h;
+      setTimeout(() => jHold === h && document.body.appendChild(ring), 160); // a quick tap shows nothing
+    },
+    true,
+  );
+  document.addEventListener('pointermove', (e) => jHold && e.pointerId === jHold.id && Math.hypot(e.clientX - jHold.x, e.clientY - jHold.y) > 12 && dropJHold(), { passive: true });
+  ['pointerup', 'pointercancel'].forEach((ev) => document.addEventListener(ev, dropJHold, true));
+  addEventListener('scroll', dropJHold, { passive: true });
+  // the tap that ends a hold doesn't also tap
+  document.addEventListener(
+    'click',
+    (e) => {
+      if (Date.now() - heldAt < 500) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
+    },
+    true,
+  );
+  V.journal = () => {
+    const prof = P(),
+      wi = st.w != null ? st.w : Math.max(0, worldOf(S[prof.at] || S[0])),
+      pg = JOURNAL[wi],
+      has = (k) => prof.found.includes(k),
+      keys = pageKeys(wi),
+      got = keys.filter(has).length;
+    const tabs = WORLDS.map((_, w) => {
+      const all = pageKeys(w),
+        done = all.every(has);
+      return `<button class="jtab ${w === wi ? 'on' : ''} ${done ? 'done' : ''}" data-act="jpage" data-w="${w}" aria-label="World ${w + 1}">${ART.props[WORLD_ICON[w]] || ''}${done ? '<i>✓</i>' : ''}</button>`;
+    }).join('');
+    const things = pg.map
+      .map((k) => `<button class="jit ${has('p:' + k) ? 'got' : ''}" data-act="jhint" data-k="p:${k}"><span class="jpic">${ART.props[k]}</span><small>${has('p:' + k) ? PROP_NAME[k] : '?'}</small></button>`)
+      .join('');
+    const suras = pg.suras
+      .map((x) => `<div class="jsura"><button class="jsname" data-act="jgo" data-n="${x.n}">${BYN[x.n].name} ›</button><div class="jems">${x.es.map((e) => `<span class="jem ${has('e:' + e) ? 'got' : ''}">${e}</span>`).join('')}</div></div>`)
+      .join('');
+    return `<div class="screen jscr">
+    ${bar('My Journal', `${prof.found.length} of ${JKEYS.size} found`, 'map')}
+    <div class="jtabs">${tabs}</div>
+    <div class="card jpage">
+      <div class="jhead"><b>World ${wi + 1} · ${WORLDS[wi].name}</b><span>${got}/${keys.length}${prof.jdone.includes(wi) ? ' ✓' : ' · 🎁'}</span></div>
+      <div class="jsec">On the map</div>
+      <div class="jgrid">${things}</div>
+      <div class="jsec">In the sūrahs' pictures</div>
+      ${suras}
+    </div>
+    <p class="saveinfo center">Tap and hold a thing on the map, or a picture in a sūrah, to add it.</p>
+  </div>`;
+  };
+
   /* ================= THE WISE ELDER =================
      Once the game has been open 7 minutes, every 7 minutes there is a 1 in 3 chance that, on the map, the Wise
      Elder (a kind old man who knows the whole Qur'an by heart) joins the explorer on the path and asks 3 questions from one memorized sūrah: what comes after an āyah, or
@@ -5306,6 +5627,7 @@
     const re = prof.rematchReady.length > 0;
     if (!re && !memorizedList(prof).length) return;
     if (window.__elderNow) return meetElder(false, re); // tests only: skip the waiting and the chance
+    if (!re && memorizedList(prof).length < 3) return; // he starts coming once three sūrahs are memorized (enough to revise)
     if (Date.now() - elderRoll < ELDER_EVERY || Date.now() - prof.elderAt < ELDER_EVERY) return;
     elderRoll = Date.now();
     if (Math.random() < 1 / 3) meetElder(false, re);
@@ -5344,6 +5666,33 @@
     }, 700);
   }
   let elderPlan = null;
+  /* A new explorer's first steps on the map: the Wise Elder greets them, tells them about the quest, and hands them
+     their walking stick (they start without one). With him switched off, they simply get the stick. */
+  const INTRO = [
+    (nm) => [`<div class="eldart">${elderArt('happy')}</div>`, `As-salāmu ʿalaykum, ${nm}!`, 'I’m the Wise Elder. I know the whole Qur’an by heart, and I’ll walk with you.'],
+    () => [`<div class="intart worlds">${WORLD_ICON.map((k) => ART.props[k] || '').join('')}</div>`, 'Seven worlds to climb', 'From An-Nās to the mountain top, one sūrah at a time.'],
+    () => [`<div class="intart">${ART.gift({ tier: 3 })}</div>`, 'Gifts at every step', 'Treasures, golden things, stickers and rides are waiting for you!'],
+    () => [`<div class="intart">${itemPic('twig')}</div>`, 'Your walking stick', 'Every explorer needs one. Here is yours. Bismillāh!'],
+  ];
+  function maybeIntro() {
+    const prof = P();
+    if (st.view !== 'map' || noExplorers() || !prof.made || begun(prof) || document.getElementById('modal').classList.contains('show')) return;
+    if (!prefs.elder) {
+      prof.greeted = true;
+      save();
+      render();
+      return;
+    }
+    showIntro(0);
+  }
+  function showIntro(k) {
+    const m = document.getElementById('modal'),
+      [art, h, p] = INTRO[k](P().name ? esc(P().name) : 'explorer');
+    m.innerHTML = `<div class="card eldmeet intro">${art}<h3>${h}</h3><p class="eldsay">${p}</p>
+      <div class="introdots">${INTRO.map((_, j) => `<i class="${j === k ? 'on' : ''}"></i>`).join('')}</div>
+      <div class="row"><button class="btn go wide" data-act="intro" data-k="${k + 1}">${k < INTRO.length - 1 ? 'Next ›' : '🪵 Take it!'}</button></div></div>`;
+    m.classList.add('show');
+  }
 
   /* the throws, what blocks them, and what each world has */
   const THROW = {
@@ -5733,6 +6082,7 @@
         prof.rematch = prof.rematch.filter((n) => n !== s.n);
         prof.rematchReady = prof.rematchReady.filter((n) => n !== s.n);
       }
+      stokeFire(s, prof);
       save();
       sfx.win();
       r = { win: true, say: 'You know it well. The Qur’an is safe in your heart. Walk on!', html: `<p class="memo gold">🏆 All three right!${gift ? ` He left ${gift} for you.` : noGift ? ' (His gift comes once a day.)' : ''}</p>` };
@@ -5902,5 +6252,5 @@
   registerOffline();
   if (linkCode) setTimeout(() => openSync(linkCode, `${appURL()}#sync=${linkCode}`), 400);
   if (justUpdated) loadChangelog().then(() => st.view === 'splash' && render());
-  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder, world: elderWorld }, sunDown, markNow, fabTarget }; // for testing in the browser console
+  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder, world: elderWorld }, sunDown, journal: JKEYS, countDay, markNow, fabTarget }; // for testing in the browser console
 })();

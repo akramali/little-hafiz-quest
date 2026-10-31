@@ -8210,3 +8210,302 @@ svg {
   width: 84px;
   height: 126px;
 }
+
+/* ---------- v2.7.0: campfires, the journal, the welcome, streaks ---------- */
+/* a campfire beside each memorized sūrah stop, on the side away from the explorer */
+.nfire {
+  position: absolute;
+  bottom: 6px;
+  width: 34px;
+  height: 34px;
+  pointer-events: none;
+}
+.nfire.fl {
+  left: -34px;
+}
+.nfire.fr {
+  right: -34px;
+}
+.nfire svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+.cf-flick {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: cfflick 0.9s ease-in-out infinite alternate;
+}
+@keyframes cfflick {
+  from {
+    transform: scale(1, 1) skewX(-3deg);
+  }
+  to {
+    transform: scale(0.94, 1.08) skewX(3deg);
+  }
+}
+.cf-smoke {
+  animation: cfsmoke 3s ease-in-out infinite;
+}
+@keyframes cfsmoke {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(2px);
+  }
+  50% {
+    opacity: 0.9;
+    transform: translateY(-3px);
+  }
+}
+/* the start screen: days in a row */
+.sp-streak {
+  display: inline-block;
+  margin: 2px 0 8px;
+  padding: 3px 12px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #2b2340;
+  font-weight: 800;
+  font-size: 14px;
+}
+/* the map's journal button (and the Test button beside it), bottom left */
+.mapfoot {
+  position: fixed;
+  left: max(16px, env(safe-area-inset-left, 0px));
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  z-index: 14;
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.jbtn {
+  gap: 4px;
+  font-size: 15px;
+}
+/* tap and hold: a ring fills around the finger, then the thing flies into the journal */
+.jring {
+  position: fixed;
+  z-index: 60;
+  width: 64px;
+  height: 64px;
+  margin: -32px 0 0 -32px;
+  pointer-events: none;
+}
+.jring svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+  overflow: visible;
+}
+.jring circle {
+  fill: rgba(255, 255, 255, 0.35);
+  stroke: #ffc83d;
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-dasharray: 113;
+  stroke-dashoffset: 113;
+  animation: jring 0.5s linear forwards;
+  filter: drop-shadow(0 1px 2px rgba(43, 35, 64, 0.4));
+}
+@keyframes jring {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.jfly {
+  position: fixed;
+  z-index: 60;
+  width: 48px;
+  height: 48px;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  font-size: 38px;
+}
+.jfly svg {
+  width: 100%;
+  height: 100%;
+}
+/* the journal */
+.jtabs {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin: 4px 0 8px;
+}
+.jtab {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  padding: 4px;
+  border-radius: 14px;
+  border: 0;
+  background: var(--card);
+  box-shadow: 0 0 0 2px var(--edge);
+  cursor: pointer;
+}
+.jtab.on {
+  box-shadow: 0 0 0 3px var(--gold);
+}
+.jtab svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.jtab i {
+  position: absolute;
+  right: -5px;
+  top: -5px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #2fbf71;
+  color: #fff;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 900;
+  display: grid;
+  place-items: center;
+}
+.jpage {
+  padding: 10px 12px 14px;
+  background: linear-gradient(#fffaf0, #fff4dc);
+  color: #2b2340;
+}
+.jhead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+.jhead span {
+  font-weight: 800;
+  color: #6b6385;
+}
+.jsec {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #8a7f9c;
+  margin: 10px 0 4px;
+}
+.jgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 6px;
+}
+.jit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 2px;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.7);
+  color: #2b2340;
+  cursor: pointer;
+  font: inherit;
+}
+.jit small {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: center;
+}
+.jpic {
+  width: 44px;
+  height: 44px;
+  display: block;
+}
+.jpic svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+/* not found yet: a shadow of it */
+.jit:not(.got) .jpic,
+.jem:not(.got) {
+  filter: brightness(0) opacity(0.22);
+}
+.jsura {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  border-top: 1px dashed rgba(43, 35, 64, 0.15);
+}
+.jsname {
+  flex: 0 0 auto;
+  min-width: 96px;
+  text-align: left;
+  border: 0;
+  background: none;
+  color: #2b2340;
+  font: inherit;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 0;
+}
+.jems {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-size: 26px;
+  line-height: 1.2;
+}
+/* the welcome */
+.intro .intart {
+  height: 130px;
+  display: grid;
+  place-items: center;
+}
+.intro .intart svg {
+  width: 110px;
+  height: 110px;
+}
+.intro .intart.worlds {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px;
+}
+.intro .intart.worlds svg {
+  width: 44px;
+  height: 52px;
+}
+.introdots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: 2px 0 10px;
+}
+.introdots i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--edge);
+}
+.introdots i.on {
+  background: var(--gold);
+}
+/* a rock doesn't move: a little thud */
+.poke-thud .lhq-prop {
+  animation: pokeThud 0.4s ease-out;
+}
+@keyframes pokeThud {
+  25% {
+    transform: translateX(-2px);
+  }
+  50% {
+    transform: translateX(2px) translateY(1px);
+  }
+  75% {
+    transform: translateX(-1px);
+  }
+}
