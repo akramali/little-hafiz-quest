@@ -8,7 +8,7 @@
   const ask = (qs) => L.go('elder', { i: idx(113), p: 0, qs, q: 0, marks: [], hurt: false, fallen: [], phase: 'ask', anytime: false, rematch: false, result: null, ack: '' });
   // 1. Listen: the start of the āyah to finish, or the āyah given
   ask([{ k: 1, kind: 'finish', cut: 2, throw: 'rock' }, { k: 0, kind: 'next', cut: 0, throw: 'rock' }, { k: 2, kind: 'next', cut: 0, throw: 'rock' }]); await wait(300);
-  ok('finish the āyah: Listen plays only the words shown', !!d.querySelector('.eldq .listen.show') && JSON.stringify(X.fabTarget().items) === JSON.stringify([[113, 2, 0, 1]]), JSON.stringify(X.fabTarget()));
+  ok('finish the āyah: Listen plays only the words shown', !!d.querySelector('.eldtop .listen.show') && JSON.stringify(X.fabTarget().items) === JSON.stringify([[113, 2, 0, 1]]), JSON.stringify(X.fabTarget()));
   ask([{ k: 0, kind: 'next', cut: 0, throw: 'rock' }, { k: 1, kind: 'next', cut: 0, throw: 'rock' }, { k: 2, kind: 'next', cut: 0, throw: 'rock' }]); await wait(300);
   ok('what comes after: Listen plays only the āyah shown', JSON.stringify(X.fabTarget().items) === JSON.stringify([[113, 1]]), JSON.stringify(X.fabTarget()));
   // 2. a miss burns the fire down a step
@@ -20,6 +20,17 @@
   // 3. the campfire on the sūrah page
   L.go('surah', { i: idx(113), p: 0 }); await wait(300);
   ok('the sūrah page shows its campfire', /Burning/.test((d.querySelector('.herofire') || {}).textContent || ''));
+  d.querySelector('.herofire').click(); await wait(300);
+  ok('tap it: how fresh the sūrah is', /burning/.test(d.querySelector('#modal.show .firecard h3').textContent) && /still fresh/.test(d.querySelector('#modal.show .firecard').textContent));
+  d.querySelector('#modal [data-act=cno]').click(); await wait(200);
+  p.fire[112] = [Date.now() - 3 * 7 * 864e5, 2];
+  L.go('map'); await wait(1500);
+  d.querySelector(`.node[data-i="${idx(112)}"] .nfire`).click(); await wait(300);
+  ok('on the map too: out, practise now', /out/.test(d.querySelector('#modal.show .firecard h3').textContent) && !!d.querySelector('#modal [data-act=firego]'));
+  d.querySelector('#modal [data-act=firego]').click();
+  for (let t = 0; t < 80 && L.st().view !== 'surah'; t++) await wait(100);
+  await wait(300);
+  ok('Practise now goes to that sūrah', L.st().view === 'surah' && L.st().i === idx(112), L.st().view);
   L.go('surah', { i: idx(78), p: 0 }); await wait(300);
   ok('not memorized: no campfire', !d.querySelector('.herofire'));
   // 4. swipe between āyāt

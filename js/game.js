@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.7.5';
+  const VERSION = '2.7.6';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -2058,7 +2058,28 @@
   const FIRE_WORD = ['Out', 'Low', 'Burning', 'Strong'];
   function fireChip(s) {
     const lvl = fireOf(s);
-    return lvl < 0 ? '' : `<button class="herofire f${lvl}" data-act="fireinfo" data-l="${lvl}" aria-label="Campfire: ${FIRE_WORD[lvl]}">${ART.campfire(lvl)}<small>${FIRE_WORD[lvl]}</small></button>`;
+    return lvl < 0 ? '' : `<button class="herofire f${lvl}" data-act="fireinfo" data-n="${s.n}" aria-label="Campfire: ${FIRE_WORD[lvl]}">${ART.campfire(lvl)}<small>${FIRE_WORD[lvl]}</small></button>`;
+  }
+  // tap a campfire (here or on the map): how fresh the sūrah is, and what to do
+  function showFire(s) {
+    const prof = P(),
+      lvl = fireOf(s, prof);
+    if (lvl < 0) return;
+    const f = prof.fire[s.n],
+      left = Math.max(1, Math.ceil((f[0] + FIRE_DAYS[f[1]] * 864e5 - Date.now()) / 864e5)),
+      days = (n) => `${n} ${n === 1 ? 'day' : 'days'}`;
+    const say = [
+      `It’s been a while. Practise <b>${s.name}</b> to light it again!`,
+      `Time to practise <b>${s.name}</b>! Play any game in it to relight the fire.`,
+      `<b>${s.name}</b> is still fresh. Practise it in the next ${days(left)} to keep it strong.`,
+      `<b>${s.name}</b> is fresh in your heart! Practise it again in ${days(left)}.`,
+    ][lvl];
+    const m = document.getElementById('modal');
+    m.innerHTML = `<div class="card firecard"><button class="cardx" data-act="cno" aria-label="Close">✕</button>
+      <div class="fireart f${lvl}">${ART.campfire(lvl)}</div><h3>${['Your campfire is out', 'Your campfire is low', 'Your campfire is burning', 'Your campfire is strong'][lvl]}</h3>
+      <p class="eldsay">${say}</p>
+      <div class="row">${st.view === 'map' ? `<button class="btn ${lvl <= 1 ? 'go' : ''} wide" data-act="firego" data-i="${S.indexOf(s)}">${lvl <= 1 ? '🔥 Practise now' : 'Go there'}</button>` : `<button class="btn go wide" data-act="cno">${lvl <= 1 ? '🔥 Let’s practise!' : 'OK'}</button>`}</div></div>`;
+    m.classList.add('show');
   }
 
   /* ---------- LOOK & REPEAT ---------- */
@@ -3989,12 +4010,14 @@
         sfx.tap();
         go('explorers');
         break;
-      case 'fireinfo': {
+      case 'fireinfo':
         sfx.tap();
-        const l = +b.dataset.l;
-        toast(l >= 2 ? '🔥 Your campfire is burning well. Revise now and then to keep it going!' : l === 1 ? '🔥 Your campfire is low: play a game here to relight it!' : '🔥 Your campfire went out: play a game here to relight it!');
+        if (BYN[+b.dataset.n]) showFire(BYN[+b.dataset.n]);
         break;
-      }
+      case 'firego':
+        hideModal();
+        enterSurah(+b.dataset.i);
+        break;
       case 'whopick':
         sfx.tap();
         showWho();
@@ -5923,7 +5946,6 @@
         <div class="ar-label">📖 Grown-up reads the question</div>
         <div class="ar sm" lang="ar">${shown}</div>
         ${q.kind === 'next' ? `<div class="eldpics">${a.scene.join(' ')}</div>` : ''}
-        <div class="eldlisten">${LISTEN}</div>
         <details class="adult"><summary>👁️ Grown-up check (the answer)</summary><div class="ar sm" lang="ar">${answer}</div></details>
       </div>
       <div class="row"><button class="btn wide" data-act="eldans" data-ok="0" ${st.phase !== 'ask' ? 'disabled' : ''}>🙈 Not quite</button><button class="btn go wide" data-act="eldans" data-ok="1" ${st.phase !== 'ask' ? 'disabled' : ''}>✅ Said it!</button></div>`;
@@ -5933,7 +5955,7 @@
       .map((f, j) => `<span class="eldfallen" style="--j:${j}">${thingPic(f)}</span>`)
       .join('');
     return `<div class="screen eldscr" style="${cv(s.color)}">
-    <div class="eldtop"><span class="eldtitle">Your Teacher · ${s.name}</span><span class="elddots">${dots}</span></div>
+    <div class="eldtop"><span class="eldtitle">Your Teacher · ${s.name}</span><span class="eldright">${LISTEN}<span class="elddots">${dots}</span></span></div>
     ${eldWorld(s)}
     <div class="arena">
       <div class="eldbubble ${st.ack ? 'ack' : ''}">${say}</div>

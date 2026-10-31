@@ -344,7 +344,7 @@
             <span class="nnum">${s.n}</span>
             ${st.done ? '<span class="ncheck">✓</span>' : ''}
             ${st.fix ? '<span class="nfix" title="Needs fixing">💔</span>' : ''}
-            ${st.fire >= 0 && ART.campfire ? `<span class="nfire ${nd.x > L.cx ? 'fr' : 'fl'} f${st.fire}">${ART.campfire(st.fire)}</span>` : ''}
+            ${st.fire >= 0 && ART.campfire ? `<span class="nfire ${nd.x > L.cx ? 'fr' : 'fl'} f${st.fire}" data-act="fireinfo" data-n="${s.n}" role="button" aria-label="Campfire">${ART.campfire(st.fire)}</span>` : ''}
             ${st.gift ? `<span class="ngift">${ART.gift({ tier: st.giftTier || 1, open: false, kind: 'item' })}</span>` : ''}
             <span class="nlab"><b>${s.name}</b><small>${st.done ? `✓ ⭐ ${st.stars}/${st.max}` : `⭐ ${st.stars}/${st.max}`}</small></span>
           </button>`,

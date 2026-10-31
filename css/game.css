@@ -8171,7 +8171,7 @@ svg {
 .eldworld {
   position: absolute;
   z-index: -1;
-  top: 108px;
+  top: 126px;
   bottom: calc(-48px - env(safe-area-inset-bottom, 0px));
   left: calc(-1 * var(--gutl));
   right: calc(-1 * var(--gutr));
@@ -8687,9 +8687,33 @@ body:has(.wrail.open) .jbtn {
   transform: translateY(3px);
   box-shadow: 0 1px 0 var(--shd);
 }
-/* the Teacher's test: Listen plays only the question */
-.eldlisten {
+/* the Teacher's test: Listen top right, as everywhere (it plays only the question), the dots under it */
+.eldscr .eldtop {
+  align-items: flex-start;
+}
+.eldscr .eldtitle {
+  min-width: 0;
+  padding-top: 14px;
+}
+.eldright {
+  flex: none;
   display: flex;
-  justify-content: center;
-  margin: 6px 0 2px;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+/* a campfire tapped: how fresh the sūrah is */
+.nfire {
+  pointer-events: auto;
+  cursor: pointer;
+}
+.firecard {
+  text-align: center;
+}
+.fireart svg {
+  width: 96px;
+  height: 96px;
+  display: block;
+  margin: 0 auto;
+  overflow: visible;
 }
