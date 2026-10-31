@@ -550,10 +550,10 @@ svg.lhq-art {
 @keyframes robesway {
   0%,
   100% {
-    transform: skewX(-2.4deg) scaleX(1.01);
+    transform: skewX(-1.2deg) scaleX(1.005);
   }
   50% {
-    transform: skewX(2.4deg) scaleX(0.99);
+    transform: skewX(1.2deg) scaleX(0.995);
   }
 }
 

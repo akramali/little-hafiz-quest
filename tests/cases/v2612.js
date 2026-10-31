@@ -21,8 +21,10 @@
   ok('neutral words: no swords or "challenge"', !/⚔|Challenge/.test(d.querySelector('.eldscr').textContent));
   // a new explorer has his staff on the ground at the summit, not before
   prof.pending = []; prof.items = prof.items.filter((x) => x !== 'elder-staff');
+  ['hero-armor', 'hero-shield', 'hero-sword'].forEach((id) => prof.items.push(id));
   L.go('map'); await wait(400);
-  ok('then he has his staff again (not given yet)', !!d.querySelector('.eldtest .pr-glow'));
+  ok('then he has his staff again (not given yet), on the Test button', !!d.querySelector('[data-act=challenge] .pr-glow'));
+  ok('no temporary Elder button', !d.querySelector('[data-act=eldtest]'));
   ok('no errors', !errs.length, errs.join(' | '));
   done();
 })();

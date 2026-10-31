@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.6.12';
+  const VERSION = '2.6.13';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -1702,7 +1702,7 @@
       ${giftIcon(prof)}
       <button class="icon-btn hud-bag hud-me" data-act="bag" aria-label="My explorer: dress up, collection and achievements"><span class="phead">${explorer({ cls: 'mini' })}</span>${prof.fresh.length ? NEWDOT : ''}</button>
     </div>
-    ${heroReady(prof) && prefs.elder ? `<button class="btn small chalbtn eldtest" data-act="challenge" aria-label="Take the Wise Elder’s test"><span class="eldtest-ic">${elderArt('')}</span>Test</button>` : prefs.elder && memorizedList(prof).length ? `<button class="btn small chalbtn eldtest" data-act="eldtest" aria-label="Meet the Wise Elder (for testing)"><span class="eldtest-ic">${elderArt('')}</span>Elder</button>` : ''}
+    ${heroReady(prof) && prefs.elder ? `<button class="btn small chalbtn eldtest" data-act="challenge" aria-label="Take the Wise Elder’s test"><span class="eldtest-ic">${elderArt('')}</span>Test</button>` : ''}
     <div id="map" class="mroot"></div>
   </div>`;
   };
@@ -4255,12 +4255,6 @@
         pendingYes = null;
         hideModal();
         break;
-      case 'eldtest':
-        // TEMPORARY (testing the walk-with-you version): meet him any time
-        sfx.tap();
-        if (P().rematchReady.length) meetElder(false, true);
-        else meetElder(false);
-        break;
       case 'challenge':
         sfx.tap();
         if (heroReady(P())) meetElder(true);
@@ -5177,7 +5171,7 @@
   }
 
   /* ================= THE WISE ELDER =================
-     Once the game has been open 10 minutes, every 10 minutes there is a 1 in 3 chance that, on the map, the Wise
+     Once the game has been open 7 minutes, every 7 minutes there is a 1 in 3 chance that, on the map, the Wise
      Elder (a kind old man who knows the whole Qur'an by heart) joins the explorer on the path and asks 3 questions from one memorized sūrah: what comes after an āyah, or
      finish an āyah. No Listen, no hints: a grown-up taps "Said it!" or "Not quite". He is glad at a right answer and comforts after a miss.
      Every miss costs something. The world sends what it has (two kinds per world, shown on its sign: a rolling rock, rain,
@@ -5193,9 +5187,9 @@
      take his test any time. At the summit he gives the explorer his staff and walks without it from then on.
      The Grown-up Corner can switch him off. */
   const APP_OPENED = Date.now();
-  const ELDER_EVERY = 10 * 60000; // one chance in each 10 minutes
-  let elderRoll = APP_OPENED; // one roll in each 10-minute window
-  // he can also turn up while you stay on the map (the 10 minutes count from opening the game, wherever you are)
+  const ELDER_EVERY = 7 * 60000; // one chance in each 7 minutes
+  let elderRoll = APP_OPENED; // one roll in each 7-minute window
+  // he can also turn up while you stay on the map (the 7 minutes count from opening the game, wherever you are)
   setInterval(() => !document.hidden && st.view === 'map' && maybeElder(), 30000);
   const HERO = ['hero-armor', 'hero-shield', 'hero-sword'];
   const heroReady = (prof) => HERO.every((id) => prof.items.includes(id));
@@ -5207,7 +5201,7 @@
     const prof = P(),
       m = document.getElementById('modal');
     if (!prefs.elder || st.view !== 'map' || m.classList.contains('show') || document.body.classList.contains('busy') || noExplorers() || !prof.made) return;
-    // a rematch comes as soon as the things are back; after "Not now", again after the usual 10 minutes
+    // a rematch comes as soon as the things are back; after "Not now", again after the usual 7 minutes
     if (prof.rematchReady.length) return Date.now() - prof.elderAt > ELDER_EVERY ? meetElder(false, true) : undefined;
     if (!memorizedList(prof).length) return;
     if (window.__elderNow) return meetElder(false); // tests only: skip the waiting and the chance
@@ -5330,7 +5324,7 @@
     go('elder', { i: p.i, p: 0, qs: elderQuestions(S[p.i]), q: 0, marks: [], hurt: false, fallen: [], phase: 'intro', anytime: p.anytime, rematch: p.rematch, result: null, ack: '' });
   }
   // he walks with you: glad when you know it, comforting when the path is rough
-  const ACKS = ['Well remembered!', 'MāshāAllāh, that’s right!', 'You know it! Let’s walk on.', 'Yes! Step forward.', 'Beautiful!'];
+  const ACKS = ['Well done!', 'MāshāAllāh!', 'Good job!', 'Nice!', 'Well remembered!', 'MāshāAllāh, that’s right!', 'Beautiful!'];
   V.elder = () => {
     const s = S[st.i],
       prof = P(),

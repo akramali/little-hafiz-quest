@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is the player- and developer-facing description; this file is the working state.
 
-**Current version:** v2.6.12 (2026-10-31) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.6.13 (2026-10-31) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -51,7 +51,7 @@ Testing hook: `window.__lhq = { st, store, go, player, elder: { strikeFor, block
 - **Worlds:** green when every sūrah is memorized (Stepping Stones done), gold when every star is won. A golden
   world wins its ride (`WORLD_RIDES`, `wgold`).
 - **The Wise Elder** (`THE WISE ELDER` section; Grown-up Corner switch `prefs.elder`; called the Stranger, `prefs.stranger`, before v2.6.11, migrated in `cleanPrefs`):
-  - after 10 min open, one 1-in-3 roll per 10-minute window (`ELDER_EVERY`), on the map; skips sūrahs with things waiting;
+  - after 7 min open, one 1-in-3 roll per 7-minute window (`ELDER_EVERY`), on the map; skips sūrahs with things waiting;
     rematch per sūrah (`prof.rematch`, `prof.rematchReady`) once its things are won back.
   - **He walks with you (v2.6.12, "option B"):** he stands beside the explorer (taller), both in the world
     (`eldWorld`: hills, a path running ahead to the right, the world's props; the scenery shifts left a little per
@@ -64,8 +64,6 @@ Testing hook: `window.__lhq = { st, store, go, player, elder: { strikeFor, block
     `quest: 'staff'`, `giveStaff`; earlier summit reachers get it on load). From then on `elderArt()` draws him
     without it, hands tucked in his sleeves (`ART.elder(mood, noStaff)`). The all-golden special award stays the
     Golden hoopoe.
-  - **TEMPORARY:** a map button (`eldtest`, an Elder icon + "Elder") calls him any time for play-testing; remove it
-    (and `.eldtest` CSS except what the Test button uses) once the user is done testing.
   - **Every miss costs something.** Throws per world: `WORLD_THROWS` (🪨💨💧🌰✨🌿), shown on world signs, the world
     list and item cards. What blocks what: `blocksOf(id)` (by slot + `EXTRA_BLOCKS`: hero sword also 🪨, hero armor all,
     Hafiz crown also ✨). Matching ordinary gear takes the hit and falls; an animal buddy runs off; golden/hero gear
@@ -103,7 +101,7 @@ Testing hook: `window.__lhq = { st, store, go, player, elder: { strikeFor, block
   from family, iOS update timing, 0.25× playback on iPhone Safari (if muted, make 0.5× the slowest), the screen staying on while reciting (Wake Lock: iOS 16.4+, and in Home Screen apps only on newer iOS), the Wise Elder's
   defend/hurt animations and swipe-to-turn on touch.
 - Not done (offered): a random starting face for new explorers, so no skin tone is "the default".
-- The Wise Elder (called the Stranger, drawn as a hooded figure, until v2.6.11) was a test concept in v2.6.0–2.6.3 and is now part of the game; tune `1 / 3`, `ELDER_EVERY` (10 min),
+- The Wise Elder (called the Stranger, drawn as a hooded figure, until v2.6.11) was a test concept in v2.6.0–2.6.3 and is now part of the game; tune `1 / 3`, `ELDER_EVERY` (7 min),
   `WORLD_THROWS`, `EXTRA_BLOCKS` if play-testing says so.
 - Known, accepted test oddities: some buttons covered while a page scrolls, three captions on bright scenery
   (whitelisted in `tests/cases/hit.js` and `contrast.js`).
@@ -114,4 +112,4 @@ v2.3–2.4: nature sounds, jigsaw, Read view, awards, files. v2.5.0: family sync
 classic v1 retired, word meanings. v2.5.1–2.5.8: buttons, speed, info/how-to, fruit and animals, all explorers on
 the map, chain setting, gift fixes, faces, glasses, Big Puzzle. v2.6.0: golden/green worlds, world rides, speed
 button, one-tap gifts, the Wise Elder. v2.6.1–2.6.6: Wise Elder polish, closing animations, stakes (every miss costs,
-world throws, protection), battle ground in the world's colors. v2.6.7: the Wise Elder every 10 minutes; speed and loop in Word Steps and Stepping Stones. v2.6.8: Read starts with the Bismillah (āyah -1, word data in `BISM_WORDS`) and follows the recited āyah; the screen stays on while reciting (`keepAwake`, Wake Lock; 99× loops let go after 15 min); full world names in the list. v2.6.9: no text selection or long-press menus (text boxes and the share picture excepted); zoom kept. v2.6.10: My Achievements fits on one screen. v2.6.11: the Stranger becomes the Wise Elder (a kind old man, star staff, woven belt, swaying robe), renamed everywhere. v2.6.12: the Wise Elder walks with you through the world (taller, comforting, soft hurt, neutral "Test" wording), gives his staff at the summit; Read with the Bismillah plays the whole sūrah again. Full detail: `git log` and `changelog.json`.
+world throws, protection), battle ground in the world's colors. v2.6.7: the Wise Elder every 10 minutes; speed and loop in Word Steps and Stepping Stones. v2.6.8: Read starts with the Bismillah (āyah -1, word data in `BISM_WORDS`) and follows the recited āyah; the screen stays on while reciting (`keepAwake`, Wake Lock; 99× loops let go after 15 min); full world names in the list. v2.6.9: no text selection or long-press menus (text boxes and the share picture excepted); zoom kept. v2.6.10: My Achievements fits on one screen. v2.6.11: the Stranger becomes the Wise Elder (a kind old man, star staff, woven belt, swaying robe), renamed everywhere. v2.6.12: the Wise Elder walks with you through the world (taller, comforting, soft hurt, neutral "Test" wording), gives his staff at the summit; Read with the Bismillah plays the whole sūrah again. v2.6.13: the Wise Elder every 7 minutes, gentler robe sway, simpler praise; the temporary Elder test button removed. Full detail: `git log` and `changelog.json`.
