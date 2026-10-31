@@ -1,7 +1,7 @@
 # Hand-off: where Little Hafiz Quest stands, and how to carry on
 
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
-`README.md` is the player- and developer-facing description; this file is the working state.
+`README.md` is a short public overview (highlights, install, privacy, credits); this file holds the detail.
 
 **Current version:** v2.6.13 (2026-10-31) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
@@ -31,7 +31,9 @@ editions, star-track prizes, star badges, world rides and surprise gifts to dres
 | `sw.js` | service worker; `VERSION` must match `js/game.js` |
 | `changelog.json` | in-app "What's new" (shows everything since the version the phone last ran) |
 | `words.json` | word-by-word transliteration/meaning (Quranic Arabic Corpus, GPL v3) |
-| `tests/` | headless-Chrome tests (`t.sh` by area), screenshots (`shot.sh`, `grid.sh`); see README → Tests |
+| `tests/` | headless-Chrome tests (`t.sh` by area, `run.sh <case>` for one with its log), screenshots (`shot.sh`, `grid.sh`); a case is one file in `tests/cases/` using `fixture()`, `openGame()`, `ok(label, cond)` |
+| `tools/` | `serve.py` (local preview with Range requests), `build_audio.py` (reciter files + word timings from EveryAyah/Quran.com, needs ffmpeg; `--snap-only --all` re-snaps word cuts), `build_words.py` (words.json), `art-gallery.html`, `sound-board.html` |
+| `audio/` | `<reciter>/NNN.mp3` one file per sūrah (001 = the Basmalah), `<reciter>/timings.json`, `reciters.json` |
 
 `js/game.js` sections (search for these headings): saving · gifts, collection, lost items · reciters & player ·
 hearts · state, scenes & render · SPLASH · SUMMIT · MAKE YOUR EXPLORER · QUEST MAP · SŪRAH · LOOK & REPEAT ·
@@ -85,8 +87,9 @@ Testing hook: `window.__lhq = { st, store, go, player, elder: { strikeFor, block
 4. Test: `tests/t.sh <areas touched>` (`tests/t.sh list` shows areas). Add a self-checking case in `tests/cases/`
    for new behavior and tag it in `tests/t.sh`. Full `tests/t.sh all` (~6 min) only for major releases.
    Look at screenshots (`tests/shot.sh view "v=…"`) for anything visual, in light and `theme=dim`.
-5. **Update `README.md`** for anything a player or developer would notice, and **update this `HANDOFF.md`**
-   (current version, rules that changed, open items). Retake README screenshots when screens changed:
+5. **Update this `HANDOFF.md`** (current version, rules that changed, open items). Keep **`README.md`** a short
+   highlights page: touch it only when a headline feature, install step or credit changes (one short bullet, no
+   rule details). Retake README screenshots when screens changed:
    `tests/shot.sh readme "shot=<name>" 390 844` (summit needs `VT=14000`), copy into `screenshots/`.
 6. Commit "Little Hafiz Quest vX.Y.Z" with a short body and the attribution lines; push.
    - **Push over SSH**: `git push git@github.com:akramali/little-hafiz-quest.git main` (the HTTPS token lacks the
