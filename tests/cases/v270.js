@@ -38,12 +38,12 @@
   ok('explorers from before keep going (no welcome again)', p.greeted || p.items.length > 0 || Object.keys(p.prog).length > 0);
   // 2. campfires: memorized sūrahs have one; it burns down, and revising relights it
   ok('memorized sūrahs have a campfire', !!p.fire[113] && !!p.fire[112]);
-  p.fire[113] = [Date.now() - 1.5 * 864e5, 0]; // a day and a half: embers
+  p.fire[113] = [Date.now() - 15 * 864e5, 0]; // a little over two weeks: embers
   L.go('map'); await wait(1500);
   ok('on the map: embers by Al-Falaq', !!d.querySelector(`.node[data-i="${idx(113)}"] .nfire.f1`));
   L.go('path', { i: idx(113), p: 0, L: 2, k: 0, hint: 0, hints: 0, hearts: 3, maxH: 3 });
   for (let k = 0; k < 12 && L.st().view === 'path'; k++) { tap('.pathbtns [data-act=hop]'); await wait(900); }
-  ok('revising relights it, and it lasts longer next time', Date.now() - p.fire[113][0] < 60000 && p.fire[113][1] === 1, JSON.stringify(p.fire[113]));
+  ok('revising relights it', Date.now() - p.fire[113][0] < 60000, JSON.stringify(p.fire[113]));
   // 3. the journal: hold a thing on the map to add it; a quick tap or something not in it does nothing
   L.go('map'); await wait(1500);
   const keys = [...X.journal];

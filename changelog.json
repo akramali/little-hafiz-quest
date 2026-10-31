@@ -1,7 +1,12 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.7.12",
+ "latest": "2.7.13",
  "versions": [
+  { "v": "2.7.13", "notes": [
+   "Campfires last longer: strong for a week, half lit the next, embers the third, then out",
+   "Low campfires glow on the map, and your Teacher comes to test those sūrahs",
+   "Relight a campfire and watch it flare up; see every campfire in the sūrahs list"
+  ] },
   { "v": "2.7.12", "notes": [
    "How to play (in the Grown-up Corner) now shows your Teacher's guide, card by card",
    "Every animal and thing for the journal is now always on the map"

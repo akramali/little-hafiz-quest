@@ -8802,3 +8802,35 @@ body:has(.wrail.open) .jbtn {
   font-size: 84px;
   line-height: 1;
 }
+
+/* ---------- v2.7.13: campfires over three weeks ---------- */
+/* a fire burning low or out breathes gently on the map: time to touch up that sūrah */
+.nfire.f1 svg,
+.nfire.f0 svg {
+  transform-origin: 50% 90%;
+  animation: fireBreathe 2.6s ease-in-out infinite;
+}
+@keyframes fireBreathe {
+  50% {
+    transform: scale(1.16);
+    filter: drop-shadow(0 0 6px rgba(255, 150, 70, 0.85));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nfire.f1 svg,
+  .nfire.f0 svg {
+    animation: none;
+  }
+}
+/* each memorized sūrah's campfire in the sūrahs list */
+.pgfire {
+  flex: none;
+  width: 28px;
+  height: 28px;
+}
+.pgfire svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}

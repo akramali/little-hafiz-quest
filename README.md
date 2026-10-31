@@ -58,7 +58,8 @@ recite on their own.
 - **A quest map:** the child's own explorer climbs 7 worlds, from a meadow at An-Nās to the mountain top at An-Naba’.
 - **Four steps per sūrah:** 👀 Look & Repeat and Word Steps to learn, then 🐸 Stepping Stones and 🧩 Picture Puzzle to review.
 - **Pictures and actions** for every āyah, plus simple meanings, word meanings and transliteration (optional).
-- **Campfires** beside memorized sūrahs burn down over the days; revising relights them (spaced review).
+- **Campfires** beside memorized sūrahs burn down over three weeks (strong, half lit, embers, out). Low ones glow
+  on the map, your Teacher comes to test the cold ones, and practising lights them up again.
 - **A journal to fill:** a book of the animals and things to find on the map and in the āyāt's pictures; tap one to add it.
 - **Daily streaks**, and a welcome from your Teacher, who hands each new explorer their walking stick.
 - **Read mode** for children who can read the muṣḥaf, following the recitation āyah by āyah.

@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.7.12';
+  const VERSION = '2.7.13';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -372,7 +372,7 @@
     S.forEach((s) => {
       if (!surahDone(s, p)) return;
       const f = f0[s.n];
-      p.fire[s.n] = Array.isArray(f) && isFinite(f[0]) && f[0] > 0 ? [Math.min(+f[0], Date.now()), int(f[1], 0, FIRE_DAYS.length - 1, 0)] : [Date.now(), 2];
+      p.fire[s.n] = Array.isArray(f) && isFinite(f[0]) && f[0] > 0 ? [Math.min(+f[0], Date.now()), int(f[1], 0, 4, 0)] : [Date.now(), 2];
     });
     p.found = uniq((Array.isArray(o.found) ? o.found : []).filter((k) => JKEYS.has(k)));
     p.jdone = uniq((Array.isArray(o.jdone) ? o.jdone : []).filter((w) => Number.isInteger(w) && w >= 0 && w < WORLDS.length));
@@ -1540,6 +1540,7 @@
   function go(view, params = {}) {
     if (view === 'map' && ['surah', 'done', 'learn', 'words', 'path', 'order', 'mushaf'].includes(st.view)) setTimeout(maybeElder, 1400);
     if (view === 'map' && !noExplorers() && P().made && !begun(P())) setTimeout(maybeIntro, 900);
+    if (view === 'map' && relit) setTimeout(flareFire, 1100); // a campfire just relit flares up
     // leaving My Explorer: everything new there has been seen
     if (st.view === 'bag' && view !== 'bag' && P().fresh.length) {
       P().fresh = [];
@@ -1882,8 +1883,9 @@
         tab === 'stars'
           ? `<span class="pgbar"><i style="width:${Math.round((got / max) * 100)}%"></i></span><span class="pgst">${got}/${max} ⭐</span>`
           : `<span class="pgok ${got ? 'on' : ''}">${got ? '✓' : ''}</span>`;
-      const t = prof.stime[s.n];
-      return `<button class="pgrow ${got ? 'done' : ''}" data-act="jump" data-i="${i}"><span class="pn">${s.n}</span><span class="pgname">${s.name}${fix ? ' <span class="pgfix" title="Needs fixing">💔</span>' : ''}<small>${s.icon} ${s.meaning}${t >= 30 ? ` · ⏱️ ${fmtTime(t)}` : ''}</small></span>${right}</button>`;
+      const t = prof.stime[s.n],
+        fl = fireOf(s, prof);
+      return `<button class="pgrow ${got ? 'done' : ''}" data-act="jump" data-i="${i}"><span class="pn">${s.n}</span><span class="pgname">${s.name}${fix ? ' <span class="pgfix" title="Needs fixing">💔</span>' : ''}<small>${s.icon} ${s.meaning}${t >= 30 ? ` · ⏱️ ${fmtTime(t)}` : ''}</small></span>${fl >= 0 ? `<span class="pgfire f${fl}" title="Campfire: ${FIRE_WORD[fl]}">${ART.campfire(fl)}</span>` : ''}${right}</button>`;
     }).join('');
     const fixes = prof.fix.length ? `<p class="saveinfo center">💔 ${prof.fix.length === 1 ? 'One sūrah needs' : prof.fix.length + ' sūrahs need'} a little fixing: tap it to play a review game there.</p>` : '';
     m.innerHTML = `<div class="card progcard">
@@ -2055,7 +2057,7 @@
   };
 
   // the sūrah's campfire, beside its name: how strong it is (tap for what to do)
-  const FIRE_WORD = ['Out', 'Low', 'Burning', 'Strong'];
+  const FIRE_WORD = ['Out', 'Low', 'Half lit', 'Strong'];
   function fireChip(s) {
     const lvl = fireOf(s);
     return lvl < 0 ? '' : `<button class="herofire f${lvl}" data-act="fireinfo" data-n="${s.n}" aria-label="Campfire: ${FIRE_WORD[lvl]}">${ART.campfire(lvl)}<small>${FIRE_WORD[lvl]}</small></button>`;
@@ -2065,18 +2067,17 @@
     const prof = P(),
       lvl = fireOf(s, prof);
     if (lvl < 0) return;
-    const f = prof.fire[s.n],
-      left = Math.max(1, Math.ceil((f[0] + FIRE_DAYS[f[1]] * 864e5 - Date.now()) / 864e5)),
+    const left = Math.max(1, Math.ceil((prof.fire[s.n][0] + 2 * FIRE_WEEK - Date.now()) / 864e5)), // until it's embers
       days = (n) => `${n} ${n === 1 ? 'day' : 'days'}`;
     const say = [
       `It’s been a while. Practise <b>${s.name}</b> to light it again!`,
-      `Time to practise <b>${s.name}</b>! Play any game in it to relight the fire.`,
-      `<b>${s.name}</b> is still fresh. Practise it in the next ${days(left)} to keep it strong.`,
-      `<b>${s.name}</b> is fresh in your heart! Practise it again in ${days(left)}.`,
+      `The fire is getting low: time to touch up <b>${s.name}</b>! Play any game in it to relight it.`,
+      `<b>${s.name}</b> is still warm. Practise it in the next ${days(left)} to keep it burning.`,
+      `<b>${s.name}</b> is fresh in your heart! Practise it again in about ${days(left)}.`,
     ][lvl];
     const m = document.getElementById('modal');
     m.innerHTML = `<div class="card firecard"><button class="cardx" data-act="cno" aria-label="Close">✕</button>
-      <div class="fireart f${lvl}">${ART.campfire(lvl)}</div><h3>${['Your campfire is out', 'Your campfire is low', 'Your campfire is burning', 'Your campfire is strong'][lvl]}</h3>
+      <div class="fireart f${lvl}">${ART.campfire(lvl)}</div><h3>${['Your campfire is out', 'Your campfire is low', 'Your campfire is half lit', 'Your campfire is strong'][lvl]}</h3>
       <p class="eldsay">${say}</p>
       <div class="row">${st.view === 'map' ? `<button class="btn ${lvl <= 1 ? 'go' : ''} wide" data-act="firego" data-i="${S.indexOf(s)}">${lvl <= 1 ? '🔥 Practise now' : 'Go there'}</button>` : `<button class="btn go wide" data-act="cno">${lvl <= 1 ? '🔥 Let’s practise!' : 'OK'}</button>`}</div></div>`;
     m.classList.add('show');
@@ -5474,40 +5475,54 @@
   }
 
   /* ================= CAMPFIRES =================
-     Each memorized sūrah has a campfire beside it on the map. It burns down over the days unless the sūrah is
-     revised (any game finished in it, or the Wise Elder's test passed); a revision that comes when it's due lets
-     it burn longer next time: 1, 3, 7, 14, then 30 days (spaced review). Level: 3 a big fire, 2 smaller,
-     1 embers (time to revise), 0 out (well overdue). */
-  const FIRE_DAYS = [1, 3, 7, 14, 30];
+     Each memorized sūrah has a campfire beside it on the map. It burns down slowly, the same for every sūrah:
+     strong for a week, half lit the second week, embers the third (it breathes on the map: time to touch up),
+     then out. Practising the sūrah (any game finished in it, or passing the Teacher's test) relights it, and it
+     flares up on the map; each wrong answer in his test burns it down a step. His own visits go to sūrahs whose
+     fire is low or out (all burning: he just greets you). prof.fire[n] = [last practised (ms), unused since v2.7.13]. */
+  const FIRE_WEEK = 7 * 864e5;
   function fireOf(s, prof) {
     prof = prof || P();
     const f = prof.fire[s.n];
     if (!f || !surahDone(s, prof)) return -1;
-    const r = (Date.now() - f[0]) / (FIRE_DAYS[f[1]] * 864e5);
-    return r < 0.5 ? 3 : r < 1 ? 2 : r < 2 ? 1 : 0;
+    const wk = (Date.now() - f[0]) / FIRE_WEEK;
+    return wk < 1 ? 3 : wk < 2 ? 2 : wk < 3 ? 1 : 0;
   }
-  // a miss in the Teacher's test: the fire burns down one step (big → smaller → embers → out)
+  // a miss in the Teacher's test: the fire burns down one step (strong → half → embers → out)
   function dimFire(s, prof) {
     const f = prof.fire[s.n],
       lvl = fireOf(s, prof);
     if (!f || lvl <= 0) return;
-    f[0] = Math.min(f[0], Date.now() - [0.5, 1, 2][3 - lvl] * FIRE_DAYS[f[1]] * 864e5 - 1000); // just past the next step down
+    f[0] = Math.min(f[0], Date.now() - (4 - lvl) * FIRE_WEEK - 1000); // just past the next step down
   }
-  // feed the fire; true when it had burned low (so the explorer relit it)
+  let relit = null; // a sūrah whose fire was just relit: it flares up when the map is back
+  // practised: the fire burns strong again; true when it had burned low (so the explorer relit it)
   function stokeFire(s, prof) {
-    const f = prof.fire[s.n],
-      now = Date.now();
+    const f = prof.fire[s.n];
     if (!f) {
-      prof.fire[s.n] = [now, 0];
+      prof.fire[s.n] = [Date.now(), 0];
       return false;
     }
-    const low = fireOf(s, prof) <= 1,
-      due = FIRE_DAYS[f[1]] * 864e5,
-      age = now - f[0];
-    if (age >= due * 3) f[1] = Math.max(0, f[1] - 1); // long forgotten: check back sooner
-    else if (age >= due * 0.5) f[1] = Math.min(FIRE_DAYS.length - 1, f[1] + 1);
-    f[0] = now;
+    const low = fireOf(s, prof) <= 1;
+    f[0] = Date.now();
+    if (low) relit = s.n;
     return low;
+  }
+  function flareFire() {
+    const s = BYN[relit];
+    relit = null;
+    const el = s && st.view === 'map' && document.querySelector(`.node[data-i="${S.indexOf(s)}"] .nfire`);
+    if (!el || reduceMotion) return;
+    sfx.chime();
+    el.animate(
+      [
+        { transform: 'scale(.3)', filter: 'brightness(1)' },
+        { transform: 'scale(1.6)', filter: 'brightness(1.6) drop-shadow(0 0 10px #ffb347)', offset: 0.45 },
+        { transform: 'scale(1)', filter: 'brightness(1)' },
+      ],
+      { duration: 1100, easing: 'ease-out' },
+    );
+    burstAt(el, 10, ['🔥', '✨', '⭐']);
   }
 
   /* ================= THE JOURNAL =================
@@ -5746,8 +5761,19 @@
   }
   function meetElder(anytime, rematch) {
     const prof = P(),
-      free = memorizedList(prof).filter((x) => !prof.fix.includes(x.n)); // not where things are already waiting
-    const s = rematch ? BYN[prof.rematchReady[0]] : free[(Math.random() * free.length) | 0];
+      free = memorizedList(prof).filter((x) => !prof.fix.includes(x.n)), // not where things are already waiting
+      cold = free.filter((x) => fireOf(x, prof) <= 1); // his own visits: to a campfire burning low or out
+    const pool = cold.length ? cold : anytime ? free : [];
+    if (!rematch && !pool.length) {
+      // every fire is burning: he only says hello, and comes back on his usual timer
+      if (!anytime && free.length) {
+        prof.elderAt = Date.now();
+        save();
+        toast('🔥 Your Teacher passed by: all your campfires are burning. MāshāAllāh!');
+      }
+      return false;
+    }
+    const s = rematch ? BYN[prof.rematchReady[0]] : pool[(Math.random() * pool.length) | 0];
     if (!s) return false;
     prof.elderAt = Date.now();
     save();
@@ -5756,7 +5782,7 @@
     const m = document.getElementById('modal');
     m.innerHTML = `<div class="card eldmeet"><div class="eldart">${elderArt(rematch ? 'happy' : '')}</div>
       <h3>${rematch ? 'Your Teacher is back!' : anytime ? 'You call your Teacher…' : 'Your Teacher joins you on the path!'}</h3>
-      <p class="eldsay">“${rematch ? `You found your things! Shall we walk the <b>${s.name}</b> path again?` : `Let’s walk this stretch together. Show me <b>${s.name}</b>: three questions, no help!`}”</p>
+      <p class="eldsay">“${rematch ? `You found your things! Shall we walk the <b>${s.name}</b> path again?` : fireOf(s, prof) <= 1 ? `Your campfire at <b>${s.name}</b> is getting cold. Show me <b>${s.name}</b>: three questions, no help!` : `Let’s walk this stretch together. Show me <b>${s.name}</b>: three questions, no help!`}”</p>
       <div class="row"><button class="btn go wide" data-act="eldface">✅ I'm ready!</button><button class="btn wide" data-act="eldrun">🏃 Not now</button></div></div>`;
     m.classList.add('show');
     return true;

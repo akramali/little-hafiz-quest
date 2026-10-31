@@ -24,6 +24,7 @@
   // 1. it appears on the way back to the map (forced: the 5-minute and chance rules are skipped by a test switch)
   w.__elderNow = true;
   prof.elderAt = 0;
+  for (const n in prof.fire) prof.fire[n][0] = Date.now() - 15 * 864e5; // (his own visits go to campfires burning low)
   L.go('surah', { i: idx(113), p: 0 }); await wait(200);
   L.go('map'); await wait(2400);
   ok('he appears between sūrahs', !!d.querySelector('#modal.show .eldmeet'));
