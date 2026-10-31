@@ -167,6 +167,8 @@ tools/sound-board.html     every sound on one page, to hear them side by side
 .github/workflows/         publishing to GitHub Pages
 screenshots/               README pictures (not used by the game)
 tests/                     browser tests (not published with the game; see Tests below)
+HANDOFF.md                 the working state for whoever picks up development next (not published)
+CLAUDE.md                  notes for Claude Code sessions: read HANDOFF.md, follow its release flow (not published)
 ```
 
 **Preview locally**
@@ -187,7 +189,7 @@ Then open http://localhost:8000/. Use this rather than `python3 -m http.server`,
 
 **Change a drawing or add a gift:** see the notes at the top of `js/art.js`, and check the result in `tools/art-gallery.html`.
 
-**After any change:** bump `VERSION` in `sw.js` and `js/game.js`, and add the version to `changelog.json` with a few short notes about what changes in play (the game shows them in its update note). Installed copies download it in the background and offer it on the start screen.
+**After any change:** bump `VERSION` in `sw.js` and `js/game.js`, and add the version to `changelog.json` with a few short notes about what changes in play (the game shows them in its update note). Installed copies download it in the background and offer it on the start screen. Keep this README and `HANDOFF.md` up to date in the same commit; `HANDOFF.md` has the full release checklist.
 
 **Deploy:** the workflow in `.github/workflows/pages.yml` publishes `main` (GitHub Pages source: *GitHub Actions*); pushing republishes the site within a few minutes. The `v1` branch keeps the retired classic version's history.
 

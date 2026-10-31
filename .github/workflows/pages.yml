@@ -28,7 +28,7 @@ jobs:
       - name: Put the site together
         run: |
           mkdir -p _site
-          rsync -a --exclude .git --exclude .github --exclude screenshots --exclude tests latest/ _site/
+          rsync -a --exclude .git --exclude .github --exclude screenshots --exclude tests --exclude HANDOFF.md --exclude CLAUDE.md latest/ _site/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
