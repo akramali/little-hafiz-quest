@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.7.21';
+  const VERSION = '2.7.22';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -641,7 +641,17 @@
   /* A surprise gift: a sticker not collected yet, or an everyday accessory not won yet (a stick, a bag, a
      hat…), picked at random, so there is often something new to wear. The sūrah and milestone treasures
      stay the special ones. Returns false when every sticker and accessory is already collected. */
-  function giveSurprise(prof, small) {
+  /* Surprises (everyday things and stickers) are paced along the journey, so they keep coming until every star is
+     won: a few to start, then a share of them matching the share of the Juz's stars won. Milestones (a journal page,
+     7 days in a row, the Teacher's gift) are never held back; after every star, his tests bring the rest. */
+  const surprisePool = (prof) => DROPS.filter((it) => forKid(it, prof)).length + ART.STICKERS.length;
+  function surprisesGot(prof) {
+    const stk = new Set([...prof.stickers, ...prof.pending.filter((g) => g.k === 's').map((g) => g.id), ...(prof.lostSt || []).map((x) => x.id)]);
+    return DROPS.filter((it) => forKid(it, prof) && hasOrWaits(it, prof)).length + ART.STICKERS.filter((x) => stk.has(x.id)).length;
+  }
+  const surpriseRoom = (prof) => Math.min(surprisePool(prof), 6 + Math.ceil((surprisePool(prof) * totalStars(prof)) / MAX_STARS)) - surprisesGot(prof);
+  function giveSurprise(prof, small, milestone) {
+    if (!milestone && surpriseRoom(prof) <= 0) return false; // saved for further along the journey
     const waiting = (k) => prof.pending.filter((g) => g.k === k).map((g) => g.id);
     const haveS = new Set([...prof.stickers, ...waiting('s')]);
     const stickers = ART.STICKERS.filter((x) => !haveS.has(x.id));
@@ -3750,8 +3760,9 @@
   const hasOrWaits = (it, prof) => prof.items.includes(it.id) || prof.pending.some((g) => g.id === it.id);
   /* Every level finished for the first time brings a gift. When nothing else came with it: a sticker not
      collected yet, or once there are none left, the next prize on the star track, early. */
-  function giveLevelGift(prof) {
-    if (giveSurprise(prof, true)) return true;
+  function giveLevelGift(prof, milestone) {
+    if (giveSurprise(prof, true, milestone)) return true;
+    if (surprisesGot(prof) < surprisePool(prof)) return false; // surprises are saved for later: nothing pulled early
     const early = TRACK.find((it) => forKid(it, prof) && !hasOrWaits(it, prof));
     if (!early) return false;
     prof.pending.push({ k: 'i', id: early.id });
@@ -3760,7 +3771,7 @@
   function giveCheckpointGift(s, p) {
     const prof = P(),
       key = s.n + ':' + p;
-    if (prof.cpg.includes(key)) return false;
+    if (prof.cpg.includes(key) || surpriseRoom(prof) <= 0) return false; // (paced like the other surprises)
     prof.cpg.push(key);
     const have = new Set([...prof.stickers, ...prof.pending.filter((g) => g.k === 's').map((g) => g.id)]);
     const left = ART.STICKERS.filter((x) => !have.has(x.id));
@@ -3979,7 +3990,7 @@
     prof.streak = [d, prof.streak[0] === dayKey(Date.now() - 864e5) ? prof.streak[1] + 1 : 1];
     prof.best = Math.max(prof.best, prof.streak[1]);
     // every 7 days in a row on the trail: a little gift
-    if (prof.streak[1] % 7 === 0 && (giveSurprise(prof) || giveLevelGift(prof))) {
+    if (prof.streak[1] % 7 === 0 && (giveSurprise(prof, false, true) || giveLevelGift(prof, true))) {
       save();
       toast(`🏃 ${prof.streak[1]} days in a row on the trail! A gift is waiting for you 🎁`);
     }
@@ -5813,7 +5824,7 @@
     let msg = `📔 ${jName(key)} is in your journal!`;
     if (!prof.jdone.includes(wi) && pageKeys(wi).every((k) => prof.found.includes(k))) {
       prof.jdone.push(wi);
-      giveSurprise(prof) || giveLevelGift(prof);
+      giveSurprise(prof, false, true) || giveLevelGift(prof, true);
       msg = `📔 The ${WORLDS[wi].name} page is complete! A gift for you 🎁`;
       sfx.win();
     }
@@ -6485,7 +6496,7 @@
       else if (nextHero) {
         prof.pending.push({ k: 'i', id: nextHero.id });
         gift = `the <b>${nextHero.name}</b>`;
-      } else if (st.rematch ? giveSurprise(prof) || giveLevelGift(prof) : giveLevelGift(prof)) gift = st.rematch ? 'a special gift' : 'a little gift';
+      } else if (st.rematch ? giveSurprise(prof, false, true) || giveLevelGift(prof, true) : giveLevelGift(prof, true)) gift = st.rematch ? 'a special gift' : 'a little gift';
       if (st.rematch) {
         prof.rematch = prof.rematch.filter((n) => n !== s.n);
         prof.rematchReady = prof.rematchReady.filter((n) => n !== s.n);

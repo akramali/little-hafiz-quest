@@ -1,7 +1,11 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.7.21",
+ "latest": "2.7.22",
  "versions": [
+  { "v": "2.7.22", "notes": [
+   "50 new surprises with their own patterns: dots, stripes, stars, stitching, checks and zigzags",
+   "Surprises now keep coming all the way to the last star"
+  ] },
   { "v": "2.7.21", "notes": [
    "Your Teacher visits again now and then, and more often when a campfire is low",
    "Winning back what fell is its own gift (no extra gift on top)",

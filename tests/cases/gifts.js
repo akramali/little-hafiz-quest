@@ -19,10 +19,11 @@
   };
   await run(2, 'level 2 first time');
   await run(2, 'level 2 again');
-  // with every sticker collected, an early star-track prize instead
+  // with every surprise collected (every sticker and everyday thing), an early star-track prize instead (v2.7.22)
   prof().stickers = w.LHQ_ART.STICKERS.map((x) => x.id); prof().pending = [];
+  prof().items = [...new Set([...prof().items, ...w.LHQ_ART.ITEMS.filter((it) => it.drop).map((it) => it.id)])];
   prof().items = prof().items.filter((id) => !(w.LHQ_ART.ITEMS.find((it) => it.id === id) || {}).track);
-  const keep = prof().items.slice();
+  const keep = [...new Set([...prof().items, ...w.LHQ_ART.ITEMS.filter((it) => it.drop).map((it) => it.id)])];
   // give back the ones already due by stars, so only far-off prizes remain
   w.LHQ_ART.ITEMS.filter((it) => it.track && it.track <= 30).forEach((it) => keep.push(it.id)); prof().items = keep;
   await run(3, 'level 3, all stickers owned');

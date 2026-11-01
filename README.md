@@ -64,8 +64,8 @@ recite on their own.
 - **Daily streaks** (🏃 days on the trail, a little gift every 7 days in a row), and a welcome from your Teacher, who hands each new explorer their walking stick.
 - **Read mode** for children who can read the muṣḥaf, following the recitation āyah by āyah.
 - **Four reciters**, adjustable speed (0.25×–2×) and loops; tap any word to hear it alone.
-- **200+ things to win and wear:** treasures, golden editions, stickers, buddies, toy rides for golden worlds and
-  summit awards.
+- **Over 250 things to win and wear:** treasures, golden editions, patterned surprises, stickers, buddies, toy rides
+  for golden worlds and summit awards, paced so new ones keep coming right up to the last star.
 - **Your Teacher:** a kind old man who roams the map; tap him, or he finds you, to walk together and test a memorized sūrah, with no help.
 - **Family friendly:** up to 10 explorers on one phone, family sync between phones by link or QR code, backups to a file.
 

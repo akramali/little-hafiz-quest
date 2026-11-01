@@ -720,10 +720,28 @@
     ['pink', 'sandals', 160], ['blue', 'frog-boots', 95], ['red', 'drawstring-sack', 143], ['orange', 'drawstring-sack', 170], ['red', 'buckle-satchel', 338], ['blue', 'buckle-satchel', 190],
     ['orange', 'round-pouch', 130], ['pink', 'band-watch', 113], ['yellow', 'band-watch', 188], ['blue', 'scarf-cape', 185], ['purple', 'scarf-cape', 245], ['red', 'knob-cane', 139],
   ];
+  /* Pattern versions (v2.7.22): the same shape with a pattern over it (dots, stripes, stars, stitching, checks,
+     zigzags) and its own color, so a surprise looks like a new thing, not just a new color. Two for each of these.
+     [pattern, base item, hue turn] */
+  const PAT_NAME = { dots: 'Polka-dot', stripes: 'Striped', stars: 'Starry', stitch: 'Stitched', checks: 'Checked', zigzag: 'Zigzag' };
+  const PAT_BASES = [
+    'explorer-cap', 'bucket-hat', 'beanie', 'sun-visor', 'earflap-hat', 'ranger-hat', 'sun-hat',
+    'basic-shoes', 'rain-boots', 'comfy-sneakers', 'sandals', 'frog-boots', 'trail-boots',
+    'little-backpack', 'drawstring-sack', 'buckle-satchel', 'book-pouch', 'gallop-boots',
+    'leaf-cape', 'scarf-cape', 'sturdy-shield', 'round-shield', 'star-buckler', 'sun-shield',
+  ]; // (not sticks or the little pouch, too thin for a pattern to show, nor white things, where it wouldn't)
+  const PATS = Object.keys(PAT_NAME);
+  const DROP_PATTERNS = [];
+  PAT_BASES.forEach((base, j) => [0, 1].forEach((k) => DROP_PATTERNS.push([PATS[(j * 2 + k * 3) % PATS.length], base, ((j * 97 + k * 151) % 300) + 30])));
   DROP_NEW.forEach((r) => ITEMS.push({ id: r[0], slot: r[1], name: r[2], tier: 1, from: null, drop: true }));
   DROP_COLORS.forEach(([c, base, deg]) => {
     const b = ITEMS.find((i) => i.id === base);
     ITEMS.push({ id: c + '-' + base, slot: b.slot, name: colorName(c, base), tier: 1, from: null, drop: true, vof: base, deg });
+  });
+  DROP_PATTERNS.forEach(([pat, base, deg]) => {
+    const b = ITEMS.find((i) => i.id === base) || { slot: (TRACK_NEW.find((x) => x[0] === base) || [])[1] };
+    const nm = baseName(base);
+    ITEMS.push({ id: pat + '-' + base, slot: b.slot, name: PAT_NAME[pat] + ' ' + nm.charAt(0).toLowerCase() + nm.slice(1), tier: 1, from: null, drop: true, vof: base, deg, pat });
   });
   const BYID = Object.create(null);
   ITEMS.forEach((it) => (BYID[it.id] = it));
@@ -1959,6 +1977,31 @@
     ART[it.id] = recolorOf(ART[it.vof], (c) => hueTurn(c, it.deg));
     if (it.slot === 'pet') PETFX[it.id] = PETFX[it.vof];
   });
+  /* a pattern laid over an item's own shape (its fills: a mask of the drawing with the outlines left out), white
+     with a soft dark edge so it shows on light and dark colors alike */
+  const PATTERNS = {
+    dots: (c) => CF(4, 4, 2, c) + CF(12, 12, 2, c),
+    stripes: (c) => '<path d="M-4 4L4 -4M0 16L16 0M12 20L20 12" stroke="' + c + '" stroke-width="2.8" fill="none"/>',
+    stars: (c) => '<path d="' + star5(8, 8, 4, 1.8) + '" fill="' + c + '"/>',
+    stitch: (c) => '<path d="M0 5H16M0 13H16" stroke="' + c + '" stroke-width="1.6" stroke-dasharray="3.2 2.4" fill="none"/>',
+    checks: (c) => '<rect x="0" y="0" width="8" height="8" fill="' + c + '"/><rect x="8" y="8" width="8" height="8" fill="' + c + '"/>',
+    zigzag: (c) => '<path d="M0 10L4 5L8 10L12 5L16 10" stroke="' + c + '" stroke-width="2.2" fill="none"/>',
+  };
+  function patterned(out, pat) {
+    if (typeof out !== 'string' || !/<(path|ellipse|circle|rect|polygon)\b/.test(out)) return out;
+    const id = uid('pt'),
+      m = uid('pm'),
+      shape = flat(out, '#ffffff').replace(/ stroke="#ffffff"/g, ' stroke="#000000"');
+    return out + '<defs><pattern id="' + id + '" width="16" height="16" patternUnits="userSpaceOnUse"><g transform="translate(.9 .9)" opacity=".35">' + PATTERNS[pat](INK) + '</g>' + PATTERNS[pat]('#ffffff') + '</pattern>' +
+      '<mask id="' + m + '" maskUnits="userSpaceOnUse" x="-100" y="-100" width="400" height="500">' + shape + '</mask></defs><rect x="-100" y="-100" width="400" height="500" fill="url(#' + id + ')" mask="url(#' + m + ')" opacity=".62" stroke="none"/>';
+  }
+  const DRAWS = ['ex', 'shoe', 'sh', 'ic'];
+  function patternOf(v, pat) {
+    const o = {};
+    for (const k in v) o[k] = DRAWS.includes(k) && typeof v[k] === 'function' ? ((f) => (...a) => patterned(f(...a), pat))(v[k]) : v[k];
+    return o;
+  }
+  ITEMS.filter((it) => it.pat).forEach((it) => (ART[it.id] = patternOf(ART[it.id], it.pat)));
   ITEMS.filter((it) => it.gold).forEach((it) => {
     const a = goldOf(ART[it.base]);
     a.fx = a.fx || GOLD_FX[it.slot];
