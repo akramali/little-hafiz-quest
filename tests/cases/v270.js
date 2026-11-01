@@ -65,6 +65,12 @@
   const before = p.found.length;
   if (people) await holdOn(people, 900);
   ok('people are not in the journal: no button', !!people && p.found.length === before);
+  // not in chain time, nor in the other games (only Look & Repeat itself)
+  const anyPic = async () => { const e = [...d.querySelectorAll('.e')].find((x) => keys.includes('e:' + x.textContent.trim()) && !p.found.includes('e:' + x.textContent.trim())); if (!e) return 'none'; e.click(); await wait(150); const c = d.querySelector('.jchip'); if (c) c.remove(); return !!c; };
+  L.go('learn', { i: idx(99), p: 0, a: 3, phase: 'chain', popped: [false, false, false], peek: false, chain: 0, saidA: [0, 1, 2], savedA: [] }); await wait(300);
+  ok('chain time: no Add to journal', (await anyPic()) === false);
+  L.go('path', { i: idx(99), p: 0, L: 1, k: 0, hint: 0, hints: 0, hearts: 3, maxH: 3 }); await wait(300);
+  ok('Stepping Stones: no Add to journal', (await anyPic()) !== true);
   // a whole page brings a gift
   L.go('journal', { w: 0 }); await wait(300);
   ok('the journal shows the page and the count', /My Journal/.test(d.body.textContent) && /of \d+ found/.test(d.body.textContent) && d.querySelectorAll('.jit').length > 8);

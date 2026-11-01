@@ -1,7 +1,10 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.7.22",
+ "latest": "2.7.23",
  "versions": [
+  { "v": "2.7.23", "notes": [
+   "Journal pictures are collected in Look & Repeat (not during chain time or the other games)"
+  ] },
   { "v": "2.7.22", "notes": [
    "50 new surprises with their own patterns: dots, stripes, stars, stitching, checks and zigzags",
    "Surprises now keep coming all the way to the last star"

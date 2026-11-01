@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.7.22';
+  const VERSION = '2.7.23';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -5847,7 +5847,8 @@
       dropChip();
       if (noExplorers() || !P().made || ['elder', 'order'].includes(st.view)) return;
       const el = e.target.closest && e.target.closest('.e, .mprop');
-      if (!el || (el.classList.contains('mprop') && st.view !== 'map')) return;
+      // things on the map; pictures only in Look & Repeat itself (not chain time or the other games)
+      if (!el || (el.classList.contains('mprop') ? st.view !== 'map' : st.view !== 'learn' || st.phase === 'chain')) return;
       const key = el.classList.contains('mprop') ? 'p:' + el.dataset.k : 'e:' + el.textContent.trim();
       if (!JKEYS.has(key) || P().found.includes(key)) return; // not in the journal, or already in it: nothing
       const r = el.getBoundingClientRect(),
@@ -5897,7 +5898,7 @@
         <div class="jfoot"><span>‹</span> ${wi + 1} / ${WORLDS.length} <span>›</span></div>
       </div>
     </div>
-    <p class="saveinfo center">Tap a thing on the map, or a picture in a sūrah, to add it.</p>
+    <p class="saveinfo center">Tap a thing on the map, or a picture in Look &amp; Repeat, to add it.</p>
   </div>`;
   };
   // turn the page: tap a tab, or swipe the book left and right
