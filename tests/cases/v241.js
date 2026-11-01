@@ -31,6 +31,7 @@
   prof().pending = [];
   L.go('path', { i: idx(112), p: 0, L: 1, k: 0, hint: 0, hints: 0, hearts: 3, maxH: 3 });
   for (let k = 0; k < 4; k++) { d.querySelector('.pathbtns [data-act=hop]').click(); await wait(1000); }
+  await wait(1300); // (the frog lands on the bank and has a happy hop first)
   log('badges waiting:', prof().pending.filter((g) => /^stars/.test(g.id)).map((g) => g.id).join(','), '| memo:', [...d.querySelectorAll('.memo.gold')].map((m) => m.textContent.trim()).join(' | '));
   ok('star badges given', prof().pending.some((g) => /^stars/.test(g.id)));
   // checkpoint done screen: next checkpoint, not the next game

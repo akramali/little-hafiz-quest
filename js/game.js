@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.7.20';
+  const VERSION = '2.7.21';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -1676,7 +1676,10 @@
     if (st.view === 'map') mountMap();
     else if (scroll) window.scrollTo({ top: 0, behavior: 'auto' });
     if (st.view === 'surah') showSelectedCheckpoint();
-    if (st.view === 'path') showStoneSet(false);
+    if (st.view === 'path') {
+      showStoneSet(false);
+      placeTap();
+    }
     blendBars();
     if (st.view === 'bag') {
       // keep the chosen category in view in its sideways row
@@ -2412,7 +2415,26 @@
     if (!el._watch) {
       el._watch = true;
       el.addEventListener('scroll', dots, { passive: true });
+      el.addEventListener('scroll', placeTap, { passive: true });
     }
+  }
+  // "tap me!" above the frog: it sits on the stream itself (not among the stones, which scroll sideways and would
+  // crop it), placed over the frog's stone, and hidden while that stone is swiped out of view
+  function placeTap() {
+    const lb = $app.querySelector('.stream > .taplbl'),
+      fr = $app.querySelector('.stone.cur:not(.empty) .frog');
+    if (!lb) return;
+    const sets = document.getElementById('stsets'),
+      r = fr && fr.getBoundingClientRect(),
+      box = sets && sets.getBoundingClientRect();
+    if (!r || (box && (r.left < box.left - 4 || r.right > box.right + 4))) {
+      lb.style.display = 'none';
+      return;
+    }
+    const sr = lb.parentNode.getBoundingClientRect();
+    lb.style.display = '';
+    lb.style.left = r.left + r.width / 2 - sr.left + 'px';
+    lb.style.top = r.top - sr.top + 'px';
   }
   V.path = () => {
     const s = S[st.i],
@@ -2432,7 +2454,7 @@
     return `<div class="screen" style="${cv(s.color)}">
     ${bar('Stepping Stones', `${s.name}${c.all ? ' · whole sūrah' : multi(s) ? ' · ' + partLabel(s, st.p) : ''}`, 'surah')}
     ${heartsBar()}
-    <div class="stream w${wi}">${streamBack(wi)}${stonesHTML(idx, wi)}</div>
+    <div class="stream w${wi}">${streamBack(wi)}${stonesHTML(idx, wi)}<span class="taplbl" aria-hidden="true">tap me!</span></div>
     <div class="row pathbtns">
       ${heartsOn() ? '<button class="btn wide" data-act="oops">🙈 Not quite</button>' : ''}
       <button class="btn go wide" data-act="hop">✅ Said it!</button>
@@ -2705,8 +2727,9 @@
     else if (tab === 'stickers') {
       const mine = prof.stickers.slice().sort((a, b) => gotAt(prof, 's:' + b) - gotAt(prof, 's:' + a));
       const locked = ART.STICKERS.filter((x) => !prof.stickers.includes(x.id));
-      const badges = ART.BADGES.map((b) => (prof.stickers.includes(b.id) ? stickerCell(b.id, prof) : `<div class="scell locked badge"><span class="q">🏅</span><small>At ${b.stars} ⭐</small></div>`)).join('');
-      body = `<div class="wrow">${mine.filter((id) => !STICKER[id].stars).map((id) => stickerCell(id, prof)).join('')}${locked.map(() => `<div class="scell locked"><span class="q">?</span><small>A gift to win</small></div>`).join('')}${badges}</div>
+      // the ones still to win: the same tiles as things still to find (a shadow of a badge, a ? for a sticker)
+      const badges = ART.BADGES.map((b) => (prof.stickers.includes(b.id) ? stickerCell(b.id, prof) : `<div class="icell locked goldlock"><span class="iart sil">${ART.sticker(b.id)}</span><small>At ${b.stars} ⭐</small></div>`)).join('');
+      body = `<div class="wrow">${mine.filter((id) => !STICKER[id].stars).map((id) => stickerCell(id, prof)).join('')}${locked.map(() => `<div class="icell locked"><span class="iart"><span class="lockq">?</span></span><small>A gift to win</small></div>`).join('')}${badges}</div>
       <p class="wnote2">${mine.length ? 'Tap a sticker to stick it on. Tap again to take it off.' : 'Finish games to win stickers.'} ${prof.stickers.filter((id) => !STICKER[id].stars).length} of ${ART.STICKERS.length} stickers · 🏅 a badge every 100 stars</p>`;
     } else {
       // won things newest first, then the starting clothes, then the ones still to find
@@ -3623,6 +3646,7 @@
         extra.found = back;
       }
       // stickers the Wise Elder took here come back too, and he returns for a rematch
+      if (prof.lostSt.some((x) => x.n === s.n)) extra.wonBack = true;
       prof.lostSt.filter((x) => x.n === s.n).forEach((x) => prof.stickers.includes(x.id) || prof.stickers.push(x.id));
       prof.lostSt = prof.lostSt.filter((x) => x.n !== s.n);
       if (prof.rematch.includes(s.n) && !prof.rematchReady.includes(s.n)) prof.rematchReady.push(s.n); // on his usual timer
@@ -3641,11 +3665,13 @@
     }
     // crossing a checkpoint's stepping stones for the first time: a small gift (a sticker)
     if (st.view === 'path' && multi(s) && st.p !== 'all' && giveCheckpointGift(s, st.p)) extra.cpGift = true;
-    giveDailyGift();
+    // winning back what fell is the gift: no surprise or level gift on top (prizes won by new stars still come)
+    const wonBack = !!(extra.found || extra.wonBack);
+    if (!wonBack) giveDailyGift();
     extra.prizes = giveTrackPrizes(prof);
     extra.badge = giveStarBadges(prof);
     extra.rides = giveWorldRides(prof);
-    if ((newStar || extra.firstTime) && prof.pending.length === giftsBefore && giveLevelGift(prof)) extra.levelGift = true;
+    if (!wonBack && (newStar || extra.firstTime) && prof.pending.length === giftsBefore && giveLevelGift(prof)) extra.levelGift = true;
     // the summit milestones for the whole Juz
     const feats = Object.keys(FEAT_TEST).filter((f) => !prof.feats.includes(f) && FEAT_TEST[f](prof));
     feats.forEach((f) => {
@@ -4944,7 +4970,8 @@
         render();
         break;
       case 'oops':
-        // a mistake: lose a heart and show one more clue
+        // a mistake: lose a heart and show one more clue (in Stepping Stones, the frog slips in and climbs back)
+        if (st.view === 'path') slipFrog();
         if (loseHeart() && st.hearts > 0) {
           const cl = pathClues(S[st.i], range(ctx())[st.k], st.L, st.hint);
           if (!cl.full) {
@@ -4953,7 +4980,7 @@
           }
           setTimeout(() => {
             if (st.view === 'path' && st.hearts > 0) render();
-          }, 500);
+          }, 1050);
         }
         break;
       case 'hop':
@@ -5585,11 +5612,16 @@
     }
     const a = cur.getBoundingClientRect(),
       edge = turn ? sets.getBoundingClientRect() : null;
+    // the last stone: onto the sandy bank at the side of the water, safe
+    const bank = !turn && !next && $app.querySelector('.stream'),
+      br = bank && bank.getBoundingClientRect();
     const target = turn
       ? { left: edge.right - a.width, top: a.top - 10, width: a.width, height: a.height } // off the edge, as the next set slides in
       : next
         ? next.getBoundingClientRect()
-        : { left: a.left + 70, top: a.top + 40, width: a.width, height: a.height };
+        : br
+          ? { left: br.right - a.width - 16, top: br.bottom - a.height - 4, width: a.width, height: a.height }
+          : { left: a.left + 70, top: a.top + 40, width: a.width, height: a.height };
     if (turn) {
       sets._q = Math.floor((st.k + 1) / STONES_PER);
       sets.scrollTo({ left: sets._q * sets.clientWidth, behavior: 'smooth' });
@@ -5622,10 +5654,39 @@
     anim.onfinish = () => {
       if (landed) return;
       landed = true;
+      if (bank) {
+        // safe on the bank: a happy little hop, then on
+        sfx.chime();
+        burst(target.left + target.width / 2, target.top + target.height / 2, 10, ['⭐', '✨', '🎉']);
+        f.animate([{ transform: `translate(-50%,-60%) translate(${Math.round(dx)}px,${Math.round(dy)}px)` }, { transform: `translate(-50%,-60%) translate(${Math.round(dx)}px,${Math.round(dy - 22)}px)` }, { transform: `translate(-50%,-60%) translate(${Math.round(dx)}px,${Math.round(dy)}px)` }], { duration: 420, iterations: 2, fill: 'forwards' });
+        setTimeout(() => {
+          f.remove();
+          advance();
+        }, 900);
+        return;
+      }
       f.remove();
       if (!turn) burst(target.left + target.width / 2, target.top + target.height / 2, 8, ['💦', '💧', '✨']);
       advance();
     };
+  }
+  // a mistake: the frog slips into the water with a splash, then climbs back up onto its stone
+  function slipFrog() {
+    const fr = $app.querySelector('.stone.cur .frog');
+    if (!fr || reduceMotion) return;
+    sfx.splash();
+    fr.animate(
+      [
+        { transform: 'translate(0,0) rotate(0)', opacity: 1 },
+        { transform: 'translate(8px,10px) rotate(28deg)', opacity: 1, offset: 0.2 },
+        { transform: 'translate(10px,30px) rotate(40deg) scale(.8)', opacity: 0.15, offset: 0.4 },
+        { transform: 'translate(0,24px) scale(.8)', opacity: 0.15, offset: 0.6 },
+        { transform: 'translate(0,-26px) scale(1.05)', opacity: 1, offset: 0.82 },
+        { transform: 'translate(0,0) rotate(0)', opacity: 1 },
+      ],
+      { duration: 1000, easing: 'ease-in-out' },
+    );
+    setTimeout(() => fr.isConnected && burstAt(fr, 8, ['💦', '💧']), 380);
   }
 
   /* ================= CAMPFIRES =================
@@ -5947,22 +6008,17 @@
     if (!re && memorizedList(prof).length < 3) return; // he starts coming once three sūrahs are memorized (enough to revise)
     if (Date.now() - elderRoll < ELDER_EVERY || Date.now() - prof.elderAt < ELDER_EVERY) return;
     elderRoll = Date.now();
-    if (Math.random() < 1 / 3) meetElder(false, re);
+    // a campfire burning low or out: he comes more often (1 in 2 instead of 1 in 3)
+    const cold = memorizedList(prof).some((x) => !prof.fix.includes(x.n) && fireOf(x, prof) <= 1);
+    if (Math.random() < (cold ? 1 / 2 : 1 / 3)) meetElder(false, re);
   }
   function meetElder(anytime, rematch) {
     const prof = P(),
       free = memorizedList(prof).filter((x) => !prof.fix.includes(x.n)), // not where things are already waiting
-      cold = free.filter((x) => fireOf(x, prof) <= 1); // his own visits: to a campfire burning low or out
-    const pool = cold.length ? cold : anytime ? free : [];
-    if (!rematch && !pool.length) {
-      // every fire is burning: he only says hello, and comes back on his usual timer
-      if (!anytime && free.length) {
-        prof.elderAt = Date.now();
-        save();
-        toast('🔥 Your Teacher passed by: all your campfires are burning. MāshāAllāh!');
-      }
-      return false;
-    }
+      cold = free.filter((x) => fireOf(x, prof) <= 1); // campfires burning low or out
+    // mostly to a cold campfire (3 times in 4 on his own visits; always when you call him), else any sūrah
+    const pool = cold.length && (anytime || Math.random() < 0.75) ? cold : free;
+    if (!rematch && !pool.length) return false;
     const s = rematch ? BYN[prof.rematchReady[0]] : pool[(Math.random() * pool.length) | 0];
     if (!s) return false;
     prof.elderAt = Date.now();
@@ -6047,12 +6103,17 @@
     acorn: { ic: '🌰', name: 'a shower of acorns', slots: ['hat', 'hijab'] },
     sand: { ic: '✨', name: 'a swirl of sand', slots: ['glasses'] },
     vines: { ic: '🌿', name: 'a tangle of vines', slots: ['stick'] },
+    ice: { ic: '🧊', name: 'a shower of hailstones', slots: ['top', 'hat'] }, // jackets and winter hats
   };
-  const WORLD_THROWS = [['rock', 'acorn'], ['vines', 'acorn'], ['sand', 'water'], ['rock', 'sand'], ['wind', 'sand'], ['wind', 'water'], ['wind', 'acorn']];
+  const WORLD_THROWS = [['rock', 'acorn'], ['vines', 'acorn'], ['sand', 'water'], ['rock', 'sand'], ['wind', 'sand'], ['wind', 'water'], ['wind', 'ice']];
   // the same throw, as each world has it
-  const THROW_AS = { 4: { sand: 'a swirl of stardust' }, 5: { water: 'a burst of rain' }, 6: { acorn: 'a shower of hailstones' } };
+  // (the meadow's are apples from its apple trees: the same as acorns, stopped by a hat or hijab)
+  const THROW_AS = { 0: { acorn: 'a shower of apples' }, 4: { sand: 'a swirl of stardust' }, 5: { water: 'a burst of rain' } };
+  const THROW_IC = { 0: { acorn: '🍎' } };
   const throwName = (k, wi) => (THROW_AS[wi] && THROW_AS[wi][k]) || THROW[k].name;
-  const worldThrowIcons = (wi) => (WORLD_THROWS[wi] || []).map((k) => THROW[k].ic).join(' ');
+  const throwIc = (k, wi) => (THROW_IC[wi] && THROW_IC[wi][k]) || THROW[k].ic;
+  const worldThrowIcons = (wi) => (WORLD_THROWS[wi] || []).map((k) => throwIc(k, wi)).join(' ');
+  const WINTER_HATS = /beanie|earflap/; // the hats that keep off the hail
   const JACKETS = /jacket|coat|hoodie|cloak|suit|vest|armor/;
   const RIDE_PET = /rocket|car|plane|train|boat|truck|helicopter/;
   const animalBuddy = (id) => !!id && ITEM[id] && ITEM[id].slot === 'pet' && !ITEM[id].wgold && !RIDE_PET.test(id);
@@ -6062,7 +6123,7 @@
   function blocksOf(id) {
     const it = ITEM[id];
     if (!it || starter(it)) return [];
-    const out = Object.keys(THROW).filter((k) => THROW[k].slots.includes(it.slot) && (it.slot !== 'pet' || animalBuddy(id)) && (it.slot !== 'top' || JACKETS.test(id)));
+    const out = Object.keys(THROW).filter((k) => THROW[k].slots.includes(it.slot) && (it.slot !== 'pet' || animalBuddy(id)) && (it.slot !== 'top' || JACKETS.test(id)) && (k !== 'ice' || it.slot !== 'hat' || WINTER_HATS.test(id)));
     (EXTRA_BLOCKS[id] || []).forEach((k) => out.includes(k) || out.push(k));
     return out;
   }
@@ -6258,7 +6319,7 @@
       head = { x: b.left - A.left + b.width * 0.5, y: b.top - A.top + b.height * 0.22 },
       chest = { x: b.left - A.left + b.width * 0.55, y: b.top - A.top + b.height * 0.45 },
       feet = { x: b.left - A.left + b.width * 0.5, y: b.top - A.top + b.height * 0.9 };
-    const P0 = { rock: { x: W - 12, y: 30 }, wind: { x: W + 10, y: chest.y - 10 }, water: { x: chest.x + 40, y: -30 }, acorn: { x: head.x, y: -40 }, sand: { x: W + 6, y: head.y }, vines: { x: W - 6, y: feet.y } }[q.throw];
+    const P0 = { rock: { x: W - 12, y: 30 }, wind: { x: W + 10, y: chest.y - 10 }, water: { x: chest.x + 40, y: -30 }, acorn: { x: head.x, y: -40 }, ice: { x: head.x, y: -40 }, sand: { x: W + 6, y: head.y }, vines: { x: W - 6, y: feet.y } }[q.throw];
     const bit = (txt, at, size) => {
       const e = document.createElement('span');
       e.className = 'eldproj';
@@ -6298,11 +6359,11 @@
         fly(bit(t, from, 26), [{ transform: 'translate(0,0)', opacity: 0 }, { transform: `translate(0, ${feet.y - 50}px)`, opacity: 1 }], 700, 700 + j * 110);
       });
       ms = 1600;
-    } else if (q.throw === 'acorn') {
-      // a shower of acorns (or hail) drops from above onto the explorer's head
+    } else if (q.throw === 'acorn' || q.throw === 'ice') {
+      // a shower of acorns (apples in the meadow, hailstones at the peak) drops from above onto the explorer's head
       [-34, -10, 14, 36, 0].forEach((xo, j) => {
         const top = { x: head.x + xo, y: -40 };
-        fly(bit('🌰', top, 28), [{ transform: 'translate(0,0) rotate(0)', opacity: 0 }, { transform: `translate(0, ${head.y + 40}px) rotate(200deg)`, opacity: 1 }], 900, 300 + j * 120);
+        fly(bit(throwIc(q.throw, wi), top, 28), [{ transform: 'translate(0,0) rotate(0)', opacity: 0 }, { transform: `translate(0, ${head.y + 40}px) rotate(200deg)`, opacity: 1 }], 900, 300 + j * 120);
       });
       ms = 1500;
     } else if (q.throw === 'sand') {

@@ -10,7 +10,7 @@
   prof.items = []; prof.lost = []; prof.stickers = ['star', 'moon', 'stars100']; prof.badge = '';
   // what things block
   ok('a shield blocks rocks, boots water, a hat acorns, glasses sand, a stick vines, a cape wind', X.blocksOf('sturdy-shield').includes('rock') && X.blocksOf('rain-boots').includes('water') && X.blocksOf('explorer-cap').includes('acorn') && X.blocksOf('sunrise-shades').includes('sand') && X.blocksOf('crystal-staff').includes('vines') && X.blocksOf('leaf-cape').includes('wind'));
-  ok('the hero sword also parries rocks; the armor blocks everything', X.blocksOf('hero-sword').includes('rock') && X.blocksOf('hero-armor').length === 6);
+  ok('the hero sword also parries rocks; the armor blocks everything', X.blocksOf('hero-sword').includes('rock') && X.blocksOf('hero-armor').length === 7);
   ok('comfy starter things and rides block nothing', !X.blocksOf('twig').length && !X.blocksOf('basic-shoes').length && !X.blocksOf('toy-car').length);
   ok('an animal buddy blocks rocks', X.blocksOf('ladybug-buddy').includes('rock'));
   // 1. nothing protecting: hurt, and the best worn thing (not golden) falls

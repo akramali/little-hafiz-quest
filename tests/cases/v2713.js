@@ -26,12 +26,14 @@
   for (const n in p.fire) p.fire[n][0] = Date.now() - 2 * day;
   p.fire[112][0] = Date.now() - 22 * day;
   p.fix = []; p.rematch = []; p.rematchReady = []; p.elderAt = 0;
-  w.__elderNow = true; L.elder.maybe(); await wait(300);
+  w.__elderNow = true; const R0 = w.Math.random; w.Math.random = () => 0.1; L.elder.maybe(); w.Math.random = R0; await wait(300);
+  // (3 times in 4 to a cold fire: make the pick certain)
   ok('his visit is to the cold fire (Al-Ikhlāṣ)', !!d.querySelector('#modal.show .eldmeet') && /getting cold/.test(m.textContent) && /Al-Ikhlāṣ/.test(m.textContent), m.textContent.slice(0, 120));
   m.classList.remove('show');
   p.fire[112][0] = Date.now() - 2 * day; p.elderAt = 0;
   L.elder.maybe(); await wait(300);
-  ok('every fire burning: no test, just a hello', !d.querySelector('#modal.show .eldmeet') && /all your campfires are burning/.test(d.getElementById('toast').textContent), d.getElementById('toast').textContent);
+  ok('every fire burning: he still comes now and then (v2.7.21)', !!d.querySelector('#modal.show .eldmeet') && !/getting cold/.test(d.getElementById('modal').textContent));
+  d.getElementById('modal').click(); await wait(200);
   w.__elderNow = false;
   // 5. practising a low fire relights it, and it flares up on the map
   p.fire[113][0] = Date.now() - 16 * day;

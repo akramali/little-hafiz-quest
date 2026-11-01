@@ -958,10 +958,14 @@
     box: [44, 102, 140, 134],
     ex(v) {
       if (v === 'back') return '';
-      // teardrop lenses, a little wider at the outer bottom
-      const lens = (x, d) => 'M' + (x - 13) + ' 109Q' + x + ' 104 ' + (x + 13) + ' 109Q' + (x + 13 + d * 3) + ' 124 ' + (x + d * 4) + ' 128Q' + (x - d * 9) + ' 129 ' + (x - 13) + ' 109Z';
+      // teardrop lenses: a gently arched top, bulging at the outer bottom (d = the outer side: -1 left, 1 right)
+      const lens = (x, d) => {
+        const inner = x - d * 12,
+          outer = x + d * 13;
+        return 'M' + inner + ' 108Q' + x + ' 104 ' + outer + ' 108Q' + (outer + d * 2) + ' 122 ' + (x + d * 4) + ' 128Q' + (inner - d) + ' 128 ' + inner + ' 113Z';
+      };
       return temples('#d9a520') + P(lens(75, -1), '#3a4a6e', ' stroke="#d9a520" stroke-width="3"') + P(lens(109, 1), '#3a4a6e', ' stroke="#d9a520" stroke-width="3"') +
-        L('M88 109Q92 106 96 109M88 113L96 113', '#d9a520', 2.4) + F('M66 120L76 110L80 110L70 120Z', '#9fd3ff', 0.55) + F('M100 120L110 110L114 110L104 120Z', '#9fd3ff', 0.55);
+        L('M87 109Q92 106 97 109M87 113L97 113', '#d9a520', 2.4) + F('M66 120L76 110L80 110L70 120Z', '#9fd3ff', 0.55) + F('M100 120L110 110L114 110L104 120Z', '#9fd3ff', 0.55);
     },
   };
   ART['visor-shades'] = {

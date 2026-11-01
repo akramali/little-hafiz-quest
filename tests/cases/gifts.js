@@ -14,7 +14,7 @@
     await wait(200);
     const before = prof().pending.length;
     for (let k = 0; k < 4; k++) { d.querySelector('.pathbtns [data-act=hop]').click(); await wait(1100); }
-    await wait(300);
+    await wait(1300); // (the frog lands on the bank and has a happy hop first)
     log(`${label}: gifts +${prof().pending.length - before}`, prof().pending.slice(before).map((g) => g.k + ':' + g.id).join(','), '| memo:', [...d.querySelectorAll('.memo')].map((m) => m.textContent.trim()).join(' | '));
   };
   await run(2, 'level 2 first time');

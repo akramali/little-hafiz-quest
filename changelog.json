@@ -1,7 +1,14 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.7.20",
+ "latest": "2.7.21",
  "versions": [
+  { "v": "2.7.21", "notes": [
+   "Your Teacher visits again now and then, and more often when a campfire is low",
+   "Winning back what fell is its own gift (no extra gift on top)",
+   "The frog hops onto the bank at the end, and slips in after a mistake",
+   "Apples fall in the Meadow, hail at the Peak: jackets and winter hats keep it off",
+   "Small visual tweaks"
+  ] },
   { "v": "2.7.20", "notes": [
    "Small visual tweaks"
   ] },
