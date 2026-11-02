@@ -1,7 +1,11 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.8.2",
+ "latest": "2.8.3",
  "versions": [
+  { "v": "2.8.3", "notes": [
+   "The sūrahs list shows which sūrahs are green or golden",
+   "Stars shows just the stars, with room for every sūrah's meaning"
+  ] },
   { "v": "2.8.2", "notes": [
    "Small visual tweaks"
   ] },

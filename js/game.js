@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.8.2';
+  const VERSION = '2.8.3';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -1939,13 +1939,15 @@
           : `<span class="pgok ${got ? 'on' : ''}">${got ? '✓' : ''}</span>`;
       const t = prof.stime[s.n],
         fl = fireOf(s, prof);
-      return `<button class="pgrow ${got ? 'done' : ''}" data-act="jump" data-i="${i}"><span class="pn">${s.n}</span><span class="pgname">${s.name}${fix ? ' <span class="pgfix" title="Needs fixing">💔</span>' : ''}<small>${s.icon} ${s.meaning}${t >= 30 ? ` · ⏱️ ${fmtTime(t)}` : ''}</small></span>${fl >= 0 ? `<span class="pgfire f${fl}" title="Campfire: ${FIRE_WORD[fl]}">${ART.campfire(fl)}</span>` : ''}${right}</button>`;
+      // the number ringed like the map's stops: gold with every star, green once memorized
+      const ring = got >= max ? ' gold' : surahDone(s) ? ' green' : '';
+      return `<button class="pgrow ${got ? 'done' : ''}" data-act="jump" data-i="${i}"><span class="pn${ring}">${s.n}</span><span class="pgname">${s.name}${fix ? ' <span class="pgfix" title="Needs fixing">💔</span>' : ''}<small><span>${s.icon} ${s.meaning}</span>${t >= 30 ? `<span>\u00a0· ⏱️ ${fmtTime(t)}</span>` : ''}</small></span>${fl >= 0 && tab !== 'stars' ? `<span class="pgfire f${fl}" title="Campfire: ${FIRE_WORD[fl]}">${ART.campfire(fl)}</span>` : ''}${right}</button>`;
     }).join('');
     const fixes = prof.fix.length ? `<p class="saveinfo center">💔 ${prof.fix.length === 1 ? 'One sūrah needs' : prof.fix.length + ' sūrahs need'} a little fixing: tap it to play a review game there.</p>` : '';
     m.innerHTML = `<div class="card progcard">
       <div class="pgtabs"><button class="${tab !== 'stars' ? 'on' : ''}" data-act="progress" data-t="surahs">📖 Sūrahs <b>${doneSurahs()}/${S.length}</b></button><button class="${tab === 'stars' ? 'on' : ''}" data-act="progress" data-t="stars">⭐ Stars <b>${totalStars()}/${MAX_STARS}</b></button></div>
       <p class="saveinfo center">${tab === 'stars' ? 'Every star in every sūrah. Tap a sūrah to go there.' : 'A sūrah is done with at least one star. Tap one to go there.'} ⏱️ ${fmtTime(prof.time || 0)} learning in all.</p>${fixes}
-      <div class="pglist">${rows}</div>
+      <div class="pglist${tab === 'stars' ? ' stars' : ''}">${rows}</div>
       <div class="row"><button class="btn wide" data-act="cno">Close</button></div></div>`;
     m.classList.add('show');
     const list = m.querySelector('.pglist'),

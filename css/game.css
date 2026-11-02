@@ -9182,3 +9182,36 @@ body:has(.wrail.open) .jbtn {
 .strscr .arena .me {
   left: 20%;
 }
+
+/* ---------- v2.8.3: the sūrahs list ---------- */
+/* the number ringed like the map's stops: gold with every star, green once memorized */
+.pgrow .pn.gold {
+  box-shadow: 0 0 0 3px var(--gold);
+}
+.pgrow .pn.green {
+  box-shadow: 0 0 0 3px var(--go);
+}
+/* Stars: the bar right beside its count, leaving room for the sūrah's meaning */
+.pgbar {
+  width: 44px;
+}
+.pglist.stars .pgrow {
+  gap: 6px;
+  padding-right: 6px;
+}
+.pgst {
+  width: 52px;
+  text-align: left;
+}
+/* the meaning stays whole: the time beside it shows only when it fits (else it wraps out of sight) */
+.pgname small {
+  display: flex;
+  flex-wrap: wrap;
+  height: 1.2em;
+  line-height: 1.2;
+}
+.pgname small > span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
