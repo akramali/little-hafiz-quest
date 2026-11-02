@@ -58,14 +58,16 @@ recite on their own.
 - **A quest map:** the child's own explorer climbs 7 worlds, from a meadow at An-Nās to the mountain top at An-Naba’.
 - **Four steps per sūrah:** 👀 Look & Repeat and Word Steps to learn, then 🐸 Stepping Stones and 🧩 Picture Puzzle to review.
 - **Pictures and actions** for every āyah, plus simple meanings, word meanings and transliteration (optional).
-- **Campfires** beside memorized sūrahs burn down over three weeks (strong, half lit, embers, out). Low ones glow
-  on the map, your Teacher comes to test the cold ones, and practising lights them up again.
+- **Campfires** beside memorized sūrahs burn down over three weeks (roaring, strong, steady, low, embers, out).
+  Low ones glow on the map, your Teacher comes to test the cold ones, and practising lights them up again.
 - **A journal to fill:** a book of the animals and things to find on the map and in the āyāt's pictures; tap one to add it.
 - **Daily streaks** (🏃 days on the trail, a little gift every 7 days in a row), and a welcome from your Teacher, who hands each new explorer their walking stick.
 - **Read mode** for children who can read the muṣḥaf, following the recitation āyah by āyah.
 - **Four reciters**, adjustable speed (0.25×–2×) and loops; tap any word to hear it alone.
 - **Over 250 things to win and wear:** treasures, golden editions, patterned surprises, stickers, buddies, toy rides
   for golden worlds and summit awards, paced so new ones keep coming right up to the last star.
+- **The Stranger** waits at the border of each world you fully memorize and tries its elements on you, but with
+  your Teacher at your side they can't reach you: what's in your heart protects you. Nothing is lost.
 - **Your Teacher:** a kind old man who roams the map; tap him, or he finds you, to walk together and test a memorized sūrah, with no help.
 - **Family friendly:** up to 10 explorers on one phone, family sync between phones by link or QR code, backups to a file.
 

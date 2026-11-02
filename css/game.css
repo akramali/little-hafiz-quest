@@ -8158,14 +8158,16 @@ svg {
 }
 /* the world they walk through, edge to edge and down to the bottom of the screen: hills, a path running
    ahead, the world's things (the drawing is 284px tall, starting 64px into the arena; plain ground below it) */
-.v-elder #app {
+.v-elder #app,
+.v-stranger #app {
   min-height: 100vh;
   min-height: 100dvh;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
 }
-.v-elder .eldscr {
+.v-elder .eldscr,
+.v-stranger .eldscr {
   flex: 1;
   position: relative;
 }
@@ -9025,4 +9027,158 @@ body:has(.wrail.open) .jbtn {
 }
 .stream > .stones {
   padding-top: 24px; /* a little room over the first row for "tap me!" (one set of stones) */
+}
+
+/* ---------- v2.7.24 ---------- */
+/* a roaring campfire's sparks rise and fade */
+.cf-spark {
+  animation: cfspark 1.6s ease-out infinite;
+}
+@keyframes cfspark {
+  0% {
+    transform: translateY(6px);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-8px);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cf-spark {
+    animation: none;
+  }
+}
+/* the Stranger: on the right, facing the explorer; a shield glows round the explorer each time */
+.strscr .arena .foe {
+  left: -4%;
+}
+.strscr .arena .me {
+  left: 24%;
+}
+.strfoe {
+  position: absolute;
+  right: -4%;
+  bottom: 0;
+  width: 42%;
+  height: 240px;
+  z-index: 1;
+  transition: opacity 0.9s, transform 0.9s;
+}
+.strfoe.gone {
+  opacity: 0;
+  transform: translateX(40px);
+}
+.strfig svg {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  width: 140px;
+  height: 210px;
+  margin-left: -70px;
+  transform: scaleX(-1);
+}
+.strfig .stranger.hit {
+  animation: wob 0.6s;
+}
+.strshield {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 150px;
+  height: 190px;
+  margin-left: -75px;
+  border-radius: 50% 50% 46% 46%;
+  background: radial-gradient(closest-side, rgba(255, 245, 190, 0), rgba(255, 236, 140, 0.22) 72%, rgba(255, 220, 90, 0.5));
+  box-shadow: 0 0 18px rgba(255, 214, 90, 0.55);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 0; /* behind the explorer: an aura round them, never over them */
+}
+.strscr .mefig svg {
+  z-index: 1;
+}
+.eldbubble .who {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--soft);
+  margin-bottom: 2px;
+}
+.strscr .eldbubble.fromright {
+  left: auto;
+  right: 0;
+  border-radius: 16px 16px 4px 16px;
+}
+/* the Stranger stands before the border with the next world: its hills beyond, the border across the far right,
+   the bridge over it (the last time: the mountain top) */
+.eldbeyond {
+  position: absolute;
+  right: 0;
+  top: 40px;
+  width: 52%;
+  height: 84px;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 30%);
+  mask-image: linear-gradient(to right, transparent, #000 30%);
+}
+.eldedge {
+  position: absolute;
+  right: 0;
+  top: 112px;
+  width: 52%;
+  height: 40px;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 22%);
+  mask-image: linear-gradient(to right, transparent, #000 22%);
+}
+.eldedge svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.eldbridge {
+  position: absolute;
+  right: 8%;
+  top: 82px;
+  width: 32px;
+  height: 110px;
+}
+.eldbridge .ebr-in {
+  width: 100%;
+  height: 100%;
+  transform: rotate(90deg) scaleX(0.7);
+}
+.eldbridge svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.eldbridge.gate {
+  top: 70px;
+  width: 64px;
+  height: 64px;
+}
+.eldbridge.gate .ebr-in {
+  transform: none;
+}
+.eldsummit {
+  position: absolute;
+  right: 2%;
+  top: 30px;
+  width: 140px;
+  height: 112px;
+}
+.eldsummit svg {
+  width: 100%;
+  height: 100%;
+}
+/* he stands a little further from the explorer */
+.strscr .strfoe {
+  right: -9%;
+}
+.strscr .arena .me {
+  left: 20%;
 }

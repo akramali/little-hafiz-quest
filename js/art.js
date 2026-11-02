@@ -1993,7 +1993,7 @@
       m = uid('pm'),
       shape = flat(out, '#ffffff').replace(/ stroke="#ffffff"/g, ' stroke="#000000"');
     return out + '<defs><pattern id="' + id + '" width="16" height="16" patternUnits="userSpaceOnUse"><g transform="translate(.9 .9)" opacity=".35">' + PATTERNS[pat](INK) + '</g>' + PATTERNS[pat]('#ffffff') + '</pattern>' +
-      '<mask id="' + m + '" maskUnits="userSpaceOnUse" x="-100" y="-100" width="400" height="500">' + shape + '</mask></defs><rect x="-100" y="-100" width="400" height="500" fill="url(#' + id + ')" mask="url(#' + m + ')" opacity=".62" stroke="none"/>';
+      '<mask id="' + m + '" maskUnits="userSpaceOnUse" x="-100" y="-100" width="400" height="500">' + shape + '</mask></defs><rect x="-100" y="-100" width="400" height="500" fill="url(#' + id + ')" mask="url(#' + m + ')" opacity=".62" stroke="none" pointer-events="none"/>'; // (a mask hides it, but not from taps)
   }
   const DRAWS = ['ex', 'shoe', 'sh', 'ic'];
   function patternOf(v, pat) {
@@ -2126,20 +2126,52 @@
     return '<svg class="lhq-art elder ' + (mood || '') + '" viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' + OUT(g) + '</svg>';
   }
 
-  /* A campfire beside each memorized sūrah on the map (viewBox 0 0 60 60, standing on y=54). It burns down
-     until the sūrah is revised: lvl 3 a big fire, 2 smaller, 1 glowing embers, 0 out (grey logs, a wisp of smoke). */
+  /* The Stranger (v2.7.24, back from v2.6.0–2.6.10): a hooded figure in a starry cloak with glowing eyes and a staff
+     with a blue orb. He comes when a world is fully memorized, tries the world's elements on the explorer, and finds
+     they can't hurt them. mood: '' | 'hit' (taken aback) | 'happy'. */
+  function stranger(mood) {
+    const cloak = '#4b3a7a';
+    const eyes = mood === 'happy' ? L('M78 108Q84 103 90 108M110 108Q116 103 122 108', '#ffe27a', 3.6) : CF(84, 107, 5, '#ffe27a') + CF(116, 107, 5, '#ffe27a') + CF(85.5, 105.5, 1.6, '#fff');
+    const mouth = mood === 'happy' ? L('M90 124Q100 132 110 124', '#ffe27a', 3) : mood === 'hit' ? P('M93 124Q100 119 107 124Q100 129 93 124Z', '#ffe27a', sw(1.6)) : L('M92 125L108 125', '#ffe27a', 2.6);
+    const g =
+      EF(100, 292, 46, 6, INK, 0.16) +
+      DL('M150 292L150 70', '#8a5a35', 4) + G(ball(150, 64, 9, 9, '#7fd6ff') + CF(147, 61, 3, '#fff', 0.8), cls('lhq-pulse')) +
+      S('M62 288Q54 200 66 150Q78 120 100 118Q122 120 134 150Q146 200 138 288Z', cloak, 'M118 124Q146 160 138 288L114 288Q128 200 118 124Z') +
+      P(star5(80, 236, 5), '#ffe27a', sw(1.4)) + P(star5(118, 260, 4), '#ffe27a', sw(1.4)) + P(star5(96, 196, 3.6), '#ffe27a', sw(1.2)) +
+      S('M130 170Q146 186 150 200L144 206Q132 192 122 182Z', cloak) + ball(147, 203, 8, 8, '#8d7a6a', { hl: false }) +
+      S('M58 120Q56 64 100 58Q144 64 142 120Q134 150 100 150Q66 150 58 120Z', cloak, 'M118 64Q144 74 142 120Q136 140 118 147Q132 110 118 64Z') +
+      F('M72 118Q72 86 100 84Q128 86 128 118Q122 140 100 140Q78 140 72 118Z', '#241c3a') + eyes + mouth;
+    return '<svg class="lhq-art stranger ' + (mood || '') + '" viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' + OUT(g) + '</svg>';
+  }
+
+  /* A campfire beside each memorized sūrah on the map (viewBox 0 0 60 60, standing on y=54). It burns down over
+     three weeks until the sūrah is practised: 5 roaring (a big fire, side flames, sparks), 4 strong, 3 steady,
+     2 low, 1 embers, 0 out (grey logs, a wisp of smoke). */
   function campfire(lvl) {
     const logs = (c1, c2) => S(limb(10, 52, 50, 44, 4.2, 4.2), c1) + S(limb(10, 44, 50, 52, 4.2, 4.2), c2) + EF(30, 55, 22, 3, INK, 0.15);
-    const flame = (k) =>
+    const flame = (k, dx) =>
       G(
         S('M30 6Q46 24 43 38Q41 50 30 50Q19 50 17 38Q14 24 30 6Z', '#ff7a3d', null, 'M24 40Q22 30 28 20Q26 32 28 42Z') + F('M30 22Q39 34 37 42Q35 49 30 49Q25 49 23 42Q21 34 30 22Z', '#ffd23f'),
+        ' transform="translate(' + (30 + (dx || 0)) + ' 50) scale(' + k + ') translate(-30 -50)"',
+      );
+    // a roaring fire: one big flame with three tongues, and tiny embers rising off the tips
+    const roar = (k) =>
+      G(
+        S('M30 0Q34 12 37 17Q41 7 46 9Q51 24 46 39Q42 50 30 50Q18 50 14 39Q9 24 14 9Q19 7 23 17Q26 12 30 0Z', '#ff6a2b', null, 'M21 40Q19 28 23 20Q22 32 24 42Z') +
+          F('M30 18Q33 26 35 29Q38 23 41 26Q43 36 38 44Q35 49 30 49Q25 49 22 44Q17 36 19 26Q22 23 25 29Q27 26 30 18Z', '#ffd23f') + F('M30 32Q34 38 33 44Q31 48 30 48Q29 48 27 44Q26 38 30 32Z', '#fff3b0'),
         ' transform="translate(30 50) scale(' + k + ') translate(-30 -50)"',
       );
+    const embers = [[30, -6, 0], [17, 2, 0.5], [43, 0, 0.9], [36, -12, 1.3], [23, -10, 0.25]].map(([x, y, d]) => '<circle class="cf-spark" cx="' + x + '" cy="' + y + '" r="1.5" fill="' + (d > 0.6 ? '#ffb347' : '#ffd23f') + '" stroke="none" style="animation-delay:' + d + 's"/>').join('');
+    const glow = (ry, o) => EF(30, 50 - ry * 0.55, ry * 1.3, ry, '#ffb347', o);
+    const smoke = (o) =>
+      G(L('M27 40Q22 30 28 22Q33 15 27 6', '#a9a2b8', 2.6) + L('M34 38Q38 30 34 23Q31 17 36 10', '#bdb7c9', 2.2), cls('cf-smoke')) + (o ? G(EF(30, 4, 6, 4, '#c9c3d4', 0.7) + EF(36, -4, 4, 3, '#d6d1df', 0.6), cls('cf-smoke')) : '');
     let g;
-    if (lvl >= 3) g = EF(30, 40, 26, 20, '#ffb347', 0.28) + logs('#8a5a35', '#a86b3c') + G(flame(1), cls('cf-flick'));
-    else if (lvl === 2) g = EF(30, 44, 20, 14, '#ffb347', 0.22) + logs('#8a5a35', '#a86b3c') + G(flame(0.66), cls('cf-flick'));
+    if (lvl >= 5) g = glow(28, 0.38) + logs('#8a5a35', '#a86b3c') + G(roar(1.12), cls('cf-flick')) + embers;
+    else if (lvl === 4) g = glow(22, 0.3) + logs('#8a5a35', '#a86b3c') + G(flame(1), cls('cf-flick'));
+    else if (lvl === 3) g = glow(17, 0.24) + logs('#8a5a35', '#a86b3c') + G(flame(0.8), cls('cf-flick'));
+    else if (lvl === 2) g = glow(12, 0.18) + logs('#7f5438', '#9a6440') + G(flame(0.5), cls('cf-flick'));
     else if (lvl === 1) g = logs('#7a5038', '#8a5a35') + EF(30, 47, 11, 4, '#ff5d3d', 0.75) + CF(24, 46, 2, '#ffb347') + CF(35, 45, 1.6, '#ffd23f') + G(L('M30 40Q26 32 31 26Q35 20 31 14', '#b8b0c4', 2.2), cls('cf-smoke'));
-    else g = logs('#8f8a96', '#a39fab') + G(L('M30 42Q25 32 31 25Q36 18 30 10', '#b8b0c4', 2.4), cls('cf-smoke'));
+    else g = logs('#8f8a96', '#a39fab') + smoke(true); // burned out: grey logs and smoke drifting up
     return '<svg class="lhq-art campfire" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' + OUT(g, 2.2) + '</svg>';
   }
 
@@ -2886,6 +2918,7 @@
     bridge,
     fruit,
     elder,
+    stranger,
     campfire,
     horizon,
     splash,

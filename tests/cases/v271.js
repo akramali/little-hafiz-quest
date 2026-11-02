@@ -21,9 +21,9 @@
   p.look.feet = 2;
   p.greeted = true;
   p.daily = day(Date.now());
-  p.elderGift = day(Date.now() - 864e5);
+  p.teacherGift = day(Date.now() - 864e5);
   p.streak = [day(Date.now()), 6]; p.best = 11; p.dayT = [day(Date.now()), 42];
-  p.elderAt = min(Date.now() - 3600e3);
+  p.teacherAt = min(Date.now() - 3600e3);
   p.rematch = [113]; p.rematchReady = [];
   p.lostSt = [{ id: 'star', n: 113 }]; p.stickers = p.stickers.filter((x) => x !== 'star');
   for (const n in p.fire) p.fire[n] = [min(p.fire[n][0]), p.fire[n][1]];

@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.7.23';
+  const VERSION = '2.8.0';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -189,7 +189,8 @@
     audio: true,
     chain: 3, // Look & Repeat: chain after every 3 new āyāt (or every 1, 4, 5)
     chainSet: false, // chosen by a grown-up (v2.5.7: until then, the default of 3)
-    elder: true, // the Wise Elder's test on the map (was 'stranger' before v2.6.11)
+    teacher: true, // your Teacher's test on the map (saved as 'elder' v2.6.11–v2.7.23, as 'stranger' before that)
+    stranger: true, // the Stranger, once at the end of each world fully memorized (v2.8.0)
     speed: 1, // recitation speed (v2.5.2; replaces "slower" and "repeat each āyah": the loop button repeats)
     reciter: 'alafasy',
     hearts: true,
@@ -236,7 +237,7 @@
       feats: [], // summit milestones reached: 'once', 'three', 'all'
       fix: [], // sūrahs where all the hearts ran out in a review game (a broken heart on the map until fixed)
       daily: '',
-      elderGift: '', // the day a test the explorer asked the Wise Elder for last brought a gift (one a day)
+      teacherGift: '', // the day a test the explorer asked the Wise Elder for last brought a gift (one a day)
       greeted: false, // the Wise Elder has welcomed them and given them their walking stick
       fire: {}, // campfires: sūrah number -> [last revised (ms), level 0-4]
       found: [], // the journal: things found ('p:<map thing>' or 'e:<emoji>')
@@ -244,6 +245,7 @@
       streak: ['', 0], // [the last day with a minute of learning, days in a row]
       best: 0, // the longest streak
       dayT: ['', 0], // [today, seconds learned today] (a day counts after a minute)
+      strangers: [], // worlds where the Stranger has come (0-6), and 7: the last time, with the whole Juz memorized
       at: 0,
       made: false,
       time: 0, // seconds spent learning (for grown-ups)
@@ -351,9 +353,10 @@
     p.rematch = nums(o.rematch);
     p.rematchReady = Array.isArray(o.rematchReady) ? nums(o.rematchReady) : o.rematchReady === true ? p.rematch.slice() : [];
     p.lostSt = (Array.isArray(o.lostSt) ? o.lostSt : []).filter((x) => x && STICKER[x.id] && BYN[x.n]).map((x) => ({ id: x.id, n: x.n }));
-    const at0 = o.elderAt != null ? o.elderAt : o.strangerAt;
-    p.elderAt = typeof at0 === 'number' && isFinite(at0) ? at0 : 0;
-    if (typeof o.elderGift === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(o.elderGift)) p.elderGift = o.elderGift;
+    const at0 = o.teacherAt != null ? o.teacherAt : o.elderAt != null ? o.elderAt : o.strangerAt; // (its older names)
+    p.teacherAt = typeof at0 === 'number' && isFinite(at0) ? at0 : 0;
+    const g0 = typeof o.teacherGift === 'string' ? o.teacherGift : o.elderGift;
+    if (typeof g0 === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(g0)) p.teacherGift = g0;
     p.wdone = Array.isArray(o.wdone)
       ? uniq(o.wdone.filter((w) => Number.isInteger(w) && w >= 0 && w < WORLDS.length))
       : WORLDS.map((_, wi) => wi).filter((wi) => worldDone(wi, p)); // no party for worlds finished before v2.1
@@ -366,6 +369,8 @@
     if (o.stime && typeof o.stime === 'object') for (const n in o.stime) if (BYN[n] && secs(o.stime[n])) p.stime[BYN[n].n] = secs(o.stime[n]);
     if (p.feats.includes('once')) giveStaff(p); // explorers who reached the summit before v2.6.12
     p.greeted = !!o.greeted;
+    // the Stranger's visits (worlds already memorized before v2.7.24 count as visited: no catching up)
+    p.strangers = Array.isArray(o.strangers) ? uniq(o.strangers.filter((w) => Number.isInteger(w) && w >= 0 && w <= 7)) : strangerDue(p).concat(allMemorized(p) ? [7] : []);
     // campfires: every memorized sūrah has one (lit a week's worth for sūrahs memorized before v2.7.0)
     const f0 = o.fire && typeof o.fire === 'object' ? o.fire : {};
     p.fire = {};
@@ -385,10 +390,17 @@
   function cleanPrefs(o) {
     const out = Object.assign({}, DEFAULT_PREFS);
     if (!o || typeof o !== 'object') return out;
-    ['meaning', 'translit', 'sfx', 'audio', 'hearts', 'actions', 'fullscreen', 'pzrtl', 'wordmean', 'elder'].forEach((k) => {
+    ['meaning', 'translit', 'sfx', 'audio', 'hearts', 'actions', 'fullscreen', 'pzrtl', 'wordmean'].forEach((k) => {
       if (typeof o[k] === 'boolean') out[k] = o[k];
     });
-    if (typeof o.elder !== 'boolean' && typeof o.stranger === 'boolean') out.elder = o.stranger; // the setting's old name
+    // your Teacher and the Stranger, under the names of each age: 'teacher' (v2.8.0 on), 'elder' (v2.6.11–v2.7.23),
+    // 'stranger' (before v2.6.11, when the Teacher was called the Stranger). A 'stranger' key is the new Stranger only
+    // in a save from v2.8.0 on (one that also has 'teacher').
+    const bool = (v) => typeof v === 'boolean';
+    if (bool(o.teacher)) out.teacher = o.teacher;
+    else if (bool(o.elder)) out.teacher = o.elder;
+    else if (bool(o.stranger)) out.teacher = o.stranger;
+    if ('teacher' in o && bool(o.stranger)) out.stranger = o.stranger;
     if (['auto', 'light', 'dim'].includes(o.theme)) out.theme = o.theme;
     if (SPEEDS.includes(o.speed)) out.speed = o.speed;
     if (o.chainSet === true && CHAINS.includes(o.chain)) Object.assign(out, { chain: o.chain, chainSet: true });
@@ -589,12 +601,15 @@
   }
   const totalStars = (prof) => S.reduce((t, s) => t + surahStars(s, prof), 0);
   const MAX_STARS = S.reduce((t, s) => t + surahMax(s), 0);
-  /* A world is complete when every sūrah in it has at least one star. Each one gives an extra heart, up to 5. */
+  /* A world is complete when every sūrah in it has at least one star. Review games have 3 hearts; finishing the
+     Starry Path (world 5) adds a 4th and the Sky Kingdom (world 6) a 5th, for the long sūrahs at the top (v2.7.24:
+     before, every world added one, so five came far too early). */
   const worldSurahs = (wi) => S.filter((s) => worldOf(s) === wi);
   function worldDone(wi, prof) {
     return worldSurahs(wi).every((s) => surahStars(s, prof) > 0);
   }
-  const maxHearts = (prof) => Math.min(5, 3 + WORLDS.filter((_, wi) => worldDone(wi, prof)).length);
+  const HEART_WORLDS = [4, 5];
+  const maxHearts = (prof, but) => 3 + HEART_WORLDS.filter((wi) => wi !== but && worldDone(wi, prof)).length;
   /* The summit milestones for the whole Juz: a star in every sūrah, three in every sūrah, every star */
   const FEAT_TEST = {
     once: (prof) => S.every((s) => surahStars(s, prof) > 0),
@@ -1558,6 +1573,7 @@
     if (view === 'map' && ['surah', 'done', 'learn', 'words', 'path', 'order', 'mushaf'].includes(st.view)) setTimeout(maybeElder, 1400);
     if (view === 'map' && !noExplorers() && P().made && !begun(P())) setTimeout(maybeIntro, 900);
     if (view === 'map' && relit) setTimeout(flareFire, 1100); // a campfire just relit flares up
+    if (view === 'map' && ['done', 'surah', 'path', 'order', 'learn', 'words', 'summit'].includes(st.view)) setTimeout(maybeStranger, 900);
     // leaving My Explorer: everything new there has been seen
     if (st.view === 'bag' && view !== 'bag' && P().fresh.length) {
       P().fresh = [];
@@ -1861,7 +1877,7 @@
       <button class="icon-btn hud-bag hud-me" data-act="bag" aria-label="My explorer: dress up, collection and achievements"><span class="phead">${explorer({ cls: 'mini' })}</span>${prof.fresh.length ? NEWDOT : ''}</button>
     </div>
     <button class="wr-toggle jbtn" data-act="journal" aria-label="My journal: ${prof.found.length} of ${JKEYS.size} found">${BOOK_IC}<span class="wr-cur">Journal</span></button>
-    ${heroReady(prof) && prefs.elder ? `<div class="mapfoot"><button class="btn small eldtest" data-act="challenge" aria-label="Take your Teacher’s test"><span class="eldtest-ic">${elderArt('')}</span>Test</button></div>` : ''}
+    ${heroReady(prof) && prefs.teacher ? `<div class="mapfoot"><button class="btn small eldtest" data-act="challenge" aria-label="Take your Teacher’s test"><span class="eldtest-ic">${elderArt('')}</span>Test</button></div>` : ''}
     <div id="map" class="mroot"></div>
   </div>`;
   };
@@ -1886,10 +1902,10 @@
       others: store.profiles
         .filter((p) => p.id !== store.cur && p.made)
         .map((p) => ({ id: p.id, name: p.name ? esc(p.name) : 'Explorer', svg: explorer({ view: 'front' }, p), wi: Math.max(0, worldOf(S[p.at] || S[0])) }))
-        .concat(prefs.elder ? [{ id: 'elder', name: 'Your Teacher', svg: elderArt(''), wi: elderWorld(), elder: true }] : []),
+        .concat(prefs.teacher ? [{ id: 'elder', name: 'Your Teacher', svg: elderArt(''), wi: elderWorld(), elder: true }] : []),
       worldIcon: (wi) => WORLD_ICON[wi],
       // what the Wise Elder throws in each world (so the explorer can dress for it)
-      worldThrows: (wi) => (prefs.elder ? worldThrowIcons(wi) : ''),
+      worldThrows: (wi) => (prefs.teacher ? worldThrowIcons(wi) : ''),
       onWorld: (wi) => {
         const w = ART.WORLDS[wi];
         setTopColor(isNight() && w.dim ? w.dim.sky[0] : w.sky[0]); // the status bar follows the world in view
@@ -2090,7 +2106,7 @@
   };
 
   // the sūrah's campfire, beside its name: how strong it is (tap for what to do)
-  const FIRE_WORD = ['Out', 'Low', 'Half lit', 'Strong'];
+  const FIRE_WORD = ['Out', 'Embers', 'Low', 'Steady', 'Strong', 'Roaring'];
   function fireChip(s) {
     const lvl = fireOf(s);
     return lvl < 0 ? '' : `<button class="herofire f${lvl}" data-act="fireinfo" data-n="${s.n}" aria-label="Campfire: ${FIRE_WORD[lvl]}">${ART.campfire(lvl)}<small>${FIRE_WORD[lvl]}</small></button>`;
@@ -2104,13 +2120,15 @@
       days = (n) => `${n} ${n === 1 ? 'day' : 'days'}`;
     const say = [
       `It’s been a while. Practise <b>${s.name}</b> to light it again!`,
-      `The fire is getting low: time to touch up <b>${s.name}</b>! Play any game in it to relight it.`,
+      `Only embers are left: time to touch up <b>${s.name}</b>! Play any game in it to relight it.`,
+      `<b>${s.name}</b> is fading. Practise it in the next ${days(left)}, before it turns to embers.`,
       `<b>${s.name}</b> is still warm. Practise it in the next ${days(left)} to keep it burning.`,
       `<b>${s.name}</b> is fresh in your heart! Practise it again in about ${days(left)}.`,
+      `<b>${s.name}</b> is roaring in your heart, māshāAllāh! Practise it again in about ${days(left)}.`,
     ][lvl];
     const m = document.getElementById('modal');
     m.innerHTML = `<div class="card firecard"><button class="cardx" data-act="cno" aria-label="Close">✕</button>
-      <div class="fireart f${lvl}">${ART.campfire(lvl)}</div><h3>${['Your campfire is out', 'Your campfire is low', 'Your campfire is half lit', 'Your campfire is strong'][lvl]}</h3>
+      <div class="fireart f${lvl}">${ART.campfire(lvl)}</div><h3>${['Your campfire is out', 'Only embers are left', 'Your campfire is low', 'Your campfire burns steady', 'Your campfire is strong', 'Your campfire is roaring!'][lvl]}</h3>
       <p class="eldsay">${say}</p>
       <div class="row">${st.view === 'map' ? `<button class="btn ${lvl <= 1 ? 'go' : ''} wide" data-act="firego" data-i="${S.indexOf(s)}">${lvl <= 1 ? '🔥 Practise now' : 'Go there'}</button>` : `<button class="btn go wide" data-act="cno">${lvl <= 1 ? '🔥 Let’s practise!' : 'OK'}</button>`}</div></div>`;
     m.classList.add('show');
@@ -2710,7 +2728,7 @@
     if (lost)
       return `<button class="icell lost" data-act="goto" data-i="${BYN[lost.n].idx}"><span class="iart">${itemPic(it.id)}</span><span class="lostbadge">${ART.lostMarker()}</span><small>Lost at ${BYN[lost.n].name}!</small></button>`;
     if (owned)
-      return `<button class="icell t${it.tier || 0} ${it.gold ? 'gold' : ''} ${on ? 'on' : ''}" data-act="equip" data-id="${it.id}" aria-pressed="${on}"><span class="iart">${itemPic(it.id)}</span><small>${itemName(it.id)}</small>${prefs.elder && blocksOf(it.id).length ? `<span class="iblk" aria-label="Blocks ${blocksOf(it.id).map((k) => THROW[k].name).join(', ')}">${blocksOf(it.id).map((k) => THROW[k].ic).join('')}</span>` : ''}${prof.fresh.includes('i:' + it.id) ? NEWDOT : ''}</button>`;
+      return `<button class="icell t${it.tier || 0} ${it.gold ? 'gold' : ''} ${on ? 'on' : ''}" data-act="equip" data-id="${it.id}" aria-pressed="${on}"><span class="iart">${itemPic(it.id)}</span><small>${itemName(it.id)}</small>${prefs.teacher && blocksOf(it.id).length ? `<span class="iblk" aria-label="Blocks ${blocksOf(it.id).map((k) => THROW[k].name).join(', ')}">${blocksOf(it.id).map((k) => THROW[k].ic).join('')}</span>` : ''}${prof.fresh.includes('i:' + it.id) ? NEWDOT : ''}</button>`;
     return `<div class="icell locked ${it.gold || it.wgold ? 'goldlock' : ''}"><span class="iart">${ART.silhouette(it.id, P().look)}</span><small>${it.wgold ? `World ${it.wgold} all golden` : it.quest === 'staff' ? 'At the summit' : it.quest ? 'Pass your Teacher’s test' : it.feat ? FEAT_HINT[it.feat] : it.drop ? 'A surprise gift' : it.track ? `At ${it.track} ⭐` : it.gold ? `Every star in ${BYN[it.from].name}` : `A star in ${BYN[it.from].name}`}</small></div>`;
   }
   function stickerCell(id, prof) {
@@ -3168,7 +3186,7 @@
       into.lostSt = from.lostSt.map((x) => Object.assign({}, x));
       into.stickers = into.stickers.filter((id) => !into.lostSt.some((x) => x.id === id));
       if (into.lostSt.some((x) => x.id === into.badge)) into.badge = '';
-      into.elderAt = Math.max(into.elderAt || 0, from.elderAt || 0);
+      into.teacherAt = Math.max(into.teacherAt || 0, from.teacherAt || 0);
     }
     // gifts still waiting on the other phone wait here too
     from.pending.forEach((g) => {
@@ -3176,10 +3194,11 @@
       if (!have && !into.pending.some((x) => x.k === g.k && x.id === g.id)) into.pending.push(Object.assign({}, g));
     });
     into.fresh = [...new Set([...into.fresh, ...from.fresh.filter((k) => into.got.includes(k))])];
-    ['daily', 'elderGift'].forEach((k) => (into[k] = (from[k] || '') > (into[k] || '') ? from[k] : into[k]));
+    ['daily', 'teacherGift'].forEach((k) => (into[k] = (from[k] || '') > (into[k] || '') ? from[k] : into[k]));
     if (from.dayT[0] > into.dayT[0]) into.dayT = from.dayT.slice();
     else if (from.dayT[0] === into.dayT[0]) into.dayT[1] = Math.max(into.dayT[1], from.dayT[1]);
     into.jdone = [...new Set([...into.jdone, ...from.jdone])];
+    into.strangers = [...new Set([...into.strangers, ...(from.strangers || [])])];
     ['wdone', 'feats', 'cpg'].forEach((k) => (into[k] = [...new Set([...into[k], ...from[k]])]));
     into.time = Math.max(into.time || 0, from.time || 0);
     for (const n in from.stime) into.stime[n] = Math.max(into.stime[n] || 0, from.stime[n]);
@@ -3453,7 +3472,8 @@
         [4, '4'],
         [5, '5'],
       ])}</div>
-      ${tg('elder', 'Your Teacher', 'Your Teacher walks the map and, now and then, asks 3 questions from a memorized sūrah')}
+      ${tg('stranger', 'The Stranger', 'When a world is fully memorized, he tries its elements on your explorer, and finds they can’t be hurt')}
+      ${tg('teacher', 'Your Teacher', 'Your Teacher walks the map and, now and then, asks 3 questions from a memorized sūrah')}
       ${tg('pzrtl', 'Puzzle from right to left', 'The Picture Puzzle fills from the right, like reading Arabic. Off: left to right, row by row')}
     </div>
     ${offlineSheet()}
@@ -3666,10 +3686,10 @@
     if (surahDone(s) && stokeFire(s, prof)) setTimeout(() => toast('🔥 You relit the campfire!'), 1200);
     const given = giveSurahGift(s);
     if (given === 'gold' || given === 'both') extra.allStars = true;
-    // a world with a star in every sūrah: celebrate once, and it brings an extra heart (up to 5)
+    // a world with a star in every sūrah: celebrate once (worlds 5 and 6 bring an extra heart)
     const wi = worldOf(s);
     if (!prof.wdone.includes(wi) && worldDone(wi, prof)) {
-      const before = Math.min(5, 3 + WORLDS.filter((_, w) => w !== wi && worldDone(w, prof)).length);
+      const before = maxHearts(prof, wi);
       prof.wdone.push(wi);
       extra.world = { wi, heart: maxHearts(prof) > before, hearts: maxHearts(prof) };
     }
@@ -4173,6 +4193,9 @@
           localStorage.setItem(INSTALL_NO, String(Date.now()));
         } catch (e) {}
         render();
+        break;
+      case 'strnext':
+        strangerNext();
         break;
       case 'whopick':
         sfx.tap();
@@ -5614,20 +5637,21 @@
         st.k++;
         st.hint = 0;
         render();
-        if (turn) burstAt($app.querySelector('.stone.cur'), 8, ['💦', '💧', '✨']);
       }
     };
     if (!cur || reduceMotion || !Element.prototype.animate) {
       setTimeout(advance, 120);
       return;
     }
-    const a = cur.getBoundingClientRect(),
-      edge = turn ? sets.getBoundingClientRect() : null;
+    const a = cur.getBoundingClientRect();
+    // on to the next set: the next stone is where it will be once that set has slid into view
+    const slide = turn ? Math.floor((st.k + 1) / STONES_PER) * sets.clientWidth - sets.scrollLeft : 0,
+      nr = turn && next ? next.getBoundingClientRect() : null;
     // the last stone: onto the sandy bank at the side of the water, safe
     const bank = !turn && !next && $app.querySelector('.stream'),
       br = bank && bank.getBoundingClientRect();
     const target = turn
-      ? { left: edge.right - a.width, top: a.top - 10, width: a.width, height: a.height } // off the edge, as the next set slides in
+      ? { left: nr.left - slide, top: nr.top, width: nr.width, height: nr.height }
       : next
         ? next.getBoundingClientRect()
         : br
@@ -5677,7 +5701,7 @@
         return;
       }
       f.remove();
-      if (!turn) burst(target.left + target.width / 2, target.top + target.height / 2, 8, ['💦', '💧', '✨']);
+      burst(target.left + target.width / 2, target.top + target.height / 2, 8, ['💦', '💧', '✨']);
       advance();
     };
   }
@@ -5701,25 +5725,27 @@
   }
 
   /* ================= CAMPFIRES =================
-     Each memorized sūrah has a campfire beside it on the map. It burns down slowly, the same for every sūrah:
-     strong for a week, half lit the second week, embers the third (it breathes on the map: time to touch up),
-     then out. Practising the sūrah (any game finished in it, or passing the Teacher's test) relights it, and it
+     Each memorized sūrah has a campfire beside it on the map. It burns down slowly, the same for every sūrah, a
+     step every few days (FIRE_STEPS): roaring, strong (from day 3), steady (7), low (10), embers (14: it breathes
+     on the map, time to touch up), out (21). Practising the sūrah (any game finished in it, or passing the Teacher's test) relights it, and it
      flares up on the map; each wrong answer in his test burns it down a step. His own visits go to sūrahs whose
      fire is low or out (all burning: he just greets you). prof.fire[n] = [last practised (ms), unused since v2.7.13]. */
   const FIRE_WEEK = 7 * 864e5;
+  // the days at which it burns down a step: roaring (5) → strong → steady → low → embers (1) → out (0)
+  const FIRE_STEPS = [3, 7, 10, 14, 21];
   function fireOf(s, prof) {
     prof = prof || P();
     const f = prof.fire[s.n];
     if (!f || !surahDone(s, prof)) return -1;
-    const wk = (Date.now() - f[0]) / FIRE_WEEK;
-    return wk < 1 ? 3 : wk < 2 ? 2 : wk < 3 ? 1 : 0;
+    const days = (Date.now() - f[0]) / 864e5;
+    return 5 - FIRE_STEPS.filter((d) => days >= d).length;
   }
   // a miss in the Teacher's test: the fire burns down one step (strong → half → embers → out)
   function dimFire(s, prof) {
     const f = prof.fire[s.n],
       lvl = fireOf(s, prof);
     if (!f || lvl <= 0) return;
-    f[0] = Math.min(f[0], Date.now() - (4 - lvl) * FIRE_WEEK - 1000); // just past the next step down
+    f[0] = Math.min(f[0], Date.now() - FIRE_STEPS[5 - lvl] * 864e5 - 1000); // just past the next step down
   }
   let relit = null; // a sūrah whose fire was just relit: it flares up when the map is back
   // practised: the fire burns strong again; true when it had burned low (so the explorer relit it)
@@ -5982,6 +6008,157 @@
     },
   );
 
+
+  /* ================= THE STRANGER =================
+     Once a world is fully memorized (every sūrah's Stepping Stones done), the Stranger comes, with your Teacher at
+     your side: "Let's see if you deserve to go past <world>!" He tries the world's elements three times; each one
+     stops short (the Qur'an in your heart protects you), he is taken aback, and at last: "You're stronger than I
+     thought!" and he goes. Nothing is lost and nothing is won (finishing the world already brings its rewards).
+     The seventh and last time, with the whole Juz memorized, he tries every element of every world, none reach
+     you, and he wishes you well and never comes again. prof.strangers: the worlds (0-6) he has come to, 7 = the last.
+     The Grown-up Corner can switch him off (prefs.stranger). */
+  const worldMemorized = (wi, prof) => S.filter((s) => worldOf(s) === wi).every((s) => surahDone(s, prof));
+  const allMemorized = (prof) => S.every((s) => surahDone(s, prof));
+  const strangerDue = (prof) => WORLDS.map((_, wi) => wi).filter((wi) => worldMemorized(wi, prof));
+  // the last time: one of each element, as each world has it
+  const ALL_THROWS = [['rock', 0], ['acorn', 0], ['vines', 1], ['acorn', 1], ['sand', 2], ['water', 2], ['wind', 4], ['ice', 6]];
+  function maybeStranger() {
+    const prof = P();
+    if (!prefs.stranger || st.view !== 'map' || noExplorers() || !prof.made || !begun(prof) || document.getElementById('modal').classList.contains('show') || document.body.classList.contains('busy')) return;
+    if (allMemorized(prof) && !prof.strangers.includes(7)) return startStranger(7);
+    const wi = strangerDue(prof).find((w) => !prof.strangers.includes(w));
+    if (wi != null && !allMemorized(prof)) startStranger(wi);
+  }
+  function startStranger(w) {
+    stopAudio();
+    sfx.whoosh();
+    go('stranger', { w, step: 0, phase: 'talk', hits: 0 });
+  }
+  // the lines, step by step: [who, words, button] (who: 's' the Stranger, 't' your Teacher)
+  function strangerScript(w) {
+    const nm = P().name ? esc(P().name) : 'this explorer',
+      world = w === 7 ? '' : WORLDS[w].name;
+    if (w === 7)
+      return [
+        ['s', `One last time! Let’s see if anything from all seven worlds can reach you.`, 'Next ›'],
+        ['t', `${nm} holds the whole of Juz ʿAmma in their heart. Nothing can hurt them now.`, '🛡️ Stand strong!'],
+        ['s', `Not even one?! Every world, and nothing reached you…`, 'Next ›'],
+        ['s', `MāshāAllāh! The whole Juz in your heart. Go well, little hafiz. I won’t trouble you again.`, 'Walk on ▶'],
+      ];
+    return [
+      ['s', `Halt! Let’s see if you deserve to go past ${world}!`, 'Next ›'],
+      ['t', `${nm} memorized every sūrah of ${world}. They’re strong in their heart: you can’t hurt them!`, '🛡️ Stand strong!'],
+      ['s', `What?! It didn’t even touch you!`, '🛡️ Stand strong!'],
+      ['s', `Impossible! Again…`, '🛡️ Stand strong!'],
+      ['s', `Oh wow… you are stronger than I thought!`, 'Walk on ▶'],
+    ];
+  }
+  V.stranger = () => {
+    const w = st.w,
+      wi = w === 7 ? 6 : w,
+      sc = strangerScript(w),
+      [who, words, btn] = sc[Math.min(st.step, sc.length - 1)],
+      s = S.find((x) => worldOf(x) === wi);
+    const last = st.step >= sc.length - 1,
+      mood = st.gone || (last && w === 7) ? 'happy' : st.hit || last ? 'hit' : '';
+    return `<div class="screen eldscr strscr" style="${cv(s.color)}">
+    ${eldWorld(s, w === 7 ? 'summit' : w)}
+    <div class="eldtop"><span class="eldtitle">${w === 7 ? 'The whole Juz ʿAmma' : `World ${w + 1} · ${WORLDS[w].name}`}</span></div>
+    <div class="arena">
+      <div class="eldbubble ${who === 's' ? 'fromright' : ''}"><b class="who">${who === 's' ? 'The Stranger' : 'Your Teacher'}</b>${words}</div>
+      <div class="foe"><div class="eldfig">${elderArt(who === 't' ? 'happy' : '')}</div></div>
+      <div class="me"><div class="mefig">${explorer({ view: 'front', mood: 'shine' })}</div><i class="strshield"></i></div>
+      <div class="strfoe ${st.gone ? 'gone' : ''}"><div class="strfig">${ART.stranger(mood)}</div></div>
+    </div>
+    <div class="row"><button class="btn go wide" data-act="strnext" ${st.phase === 'anim' ? 'disabled' : ''}>${btn}</button></div>
+  </div>`;
+  };
+  // one throw: the element flies from the Stranger and stops at the shield around the explorer
+  function strangerThrow(kind, wi, then) {
+    const arena = document.querySelector('.strscr .arena'),
+      from = document.querySelector('.strfig svg'),
+      me = document.querySelector('.strscr .mefig svg'),
+      shield = document.querySelector('.strshield');
+    if (!arena || !from || !me) return then();
+    const A = arena.getBoundingClientRect(),
+      a = from.getBoundingClientRect(),
+      b = me.getBoundingClientRect();
+    const x0 = a.left - A.left + a.width * 0.25,
+      y0 = a.top - A.top + a.height * 0.35,
+      x1 = b.left - A.left + b.width * 0.85,
+      y1 = b.top - A.top + b.height * 0.4;
+    const e = document.createElement('span');
+    e.className = 'eldproj';
+    e.textContent = throwIc(kind, wi);
+    e.style.left = x0 + 'px';
+    e.style.top = y0 + 'px';
+    arena.appendChild(e);
+    sfx.whoosh();
+    const fly = e.animate(
+      [
+        { transform: 'translate(0,0) rotate(0) scale(.8)' },
+        { transform: `translate(${(x1 - x0) / 2}px, ${(y1 - y0) / 2 - 60}px) rotate(-160deg) scale(1.1)`, offset: 0.5 },
+        { transform: `translate(${x1 - x0}px, ${y1 - y0}px) rotate(-320deg) scale(1)` },
+        { transform: `translate(${x1 - x0 + 40}px, ${y1 - y0 - 30}px) rotate(-400deg) scale(.4)`, opacity: 0 },
+      ],
+      { duration: reduceMotion ? 300 : 1000, easing: 'ease-in-out', fill: 'forwards' },
+    );
+    setTimeout(() => {
+      // it stops short: the shield glows, sparkles, and the Stranger is taken aback
+      sfx.boop();
+      if (shield && !reduceMotion) shield.animate([{ opacity: 0, transform: 'scale(.6)' }, { opacity: 0.85, transform: 'scale(1.05)', offset: 0.3 }, { opacity: 0, transform: 'scale(1.2)' }], { duration: 700, easing: 'ease-out' });
+      burstAt(me, 6, ['✨', '⭐']);
+    }, reduceMotion ? 150 : 660);
+    setTimeout(() => {
+      fly.cancel();
+      e.remove();
+      then();
+    }, reduceMotion ? 320 : 1020); // (a timer, not onfinish: it always comes)
+  }
+  function strangerNext() {
+    const sc = strangerScript(st.w),
+      w = st.w,
+      wi = w === 7 ? 6 : w;
+    if (st.phase === 'anim') return;
+    if (st.step >= sc.length - 1) {
+      // he goes (happy at the very last), and the walk goes on
+      const prof = P();
+      if (!prof.strangers.includes(w)) prof.strangers.push(w);
+      if (w === 7) WORLDS.forEach((_, x) => prof.strangers.includes(x) || prof.strangers.push(x)); // (never again)
+      save();
+      st.gone = true;
+      render();
+      sfx.chime();
+      setTimeout(() => st.view === 'stranger' && go('map'), reduceMotion ? 200 : 1100);
+      return;
+    }
+    // the steps after "Stand strong!" are throws: three of the world's elements, or every element at the end
+    const throwsNow = w === 7 ? (st.step === 1 ? ALL_THROWS : []) : st.step >= 1 ? [[WORLD_THROWS[wi][(st.step - 1) % 2], wi]] : [];
+    if (!throwsNow.length) {
+      sfx.tap();
+      st.step++;
+      render();
+      return;
+    }
+    st.phase = 'anim';
+    st.hit = false;
+    render();
+    let j = 0;
+    const one = () => {
+      if (st.view !== 'stranger') return;
+      if (j >= throwsNow.length) {
+        st.phase = 'talk';
+        st.hit = true;
+        st.step++;
+        render();
+        return;
+      }
+      const [k, kw] = throwsNow[j++];
+      strangerThrow(k, kw, () => setTimeout(one, 120));
+    };
+    one();
+  }
+
   /* ================= THE WISE ELDER =================
      Once the game has been open 7 minutes, every 7 minutes there is a 1 in 3 chance that, on the map, the Wise
      Elder (a kind old man who knows the whole Qur'an by heart) joins the explorer on the path and asks 3 questions from one memorized sūrah: what comes after an āyah, or
@@ -6012,13 +6189,13 @@
   function maybeElder() {
     const prof = P(),
       m = document.getElementById('modal');
-    if (!prefs.elder || st.view !== 'map' || m.classList.contains('show') || document.body.classList.contains('busy') || noExplorers() || !prof.made) return;
+    if (!prefs.teacher || st.view !== 'map' || m.classList.contains('show') || document.body.classList.contains('busy') || noExplorers() || !prof.made) return;
     // a rematch (once the things are back) comes on the usual timer too, not straight after revising
     const re = prof.rematchReady.length > 0;
     if (!re && !memorizedList(prof).length) return;
     if (window.__elderNow) return meetElder(false, re); // tests only: skip the waiting and the chance
     if (!re && memorizedList(prof).length < 3) return; // he starts coming once three sūrahs are memorized (enough to revise)
-    if (Date.now() - elderRoll < ELDER_EVERY || Date.now() - prof.elderAt < ELDER_EVERY) return;
+    if (Date.now() - elderRoll < ELDER_EVERY || Date.now() - prof.teacherAt < ELDER_EVERY) return;
     elderRoll = Date.now();
     // a campfire burning low or out: he comes more often (1 in 2 instead of 1 in 3)
     const cold = memorizedList(prof).some((x) => !prof.fix.includes(x.n) && fireOf(x, prof) <= 1);
@@ -6033,7 +6210,7 @@
     if (!rematch && !pool.length) return false;
     const s = rematch ? BYN[prof.rematchReady[0]] : pool[(Math.random() * pool.length) | 0];
     if (!s) return false;
-    prof.elderAt = Date.now();
+    prof.teacherAt = Date.now();
     save();
     elderPlan = { i: S.indexOf(s), anytime: !!anytime, rematch: !!rematch };
     sfx.whoosh();
@@ -6087,7 +6264,7 @@
   function maybeIntro() {
     const prof = P();
     if (st.view !== 'map' || noExplorers() || !prof.made || begun(prof) || document.getElementById('modal').classList.contains('show')) return;
-    if (!prefs.elder) {
+    if (!prefs.teacher) {
       prof.greeted = true;
       save();
       render();
@@ -6257,10 +6434,13 @@
   };
   /* the world they walk through: hills, a path running ahead to the right, the world's own things beside it.
      The scenery slides back a little with each question, as they walk on together. */
-  function eldWorld(s) {
+  // edge (the Stranger's screen): the border with the next world across the far right, its bridge, and that
+  // world's hills beyond (or, at the very end, the mountain top)
+  function eldWorld(s, edge) {
     const wi = worldOf(s),
       w = ART.WORLDS[wi],
-      pl = isNight() && w.dim ? Object.assign({}, w, w.dim) : w;
+      night = isNight(),
+      pl = night && w.dim ? Object.assign({}, w, w.dim) : w;
     const names = (ART.PROPS_BY_WORLD[wi] || []).filter((nm) => nm !== 'peak-summit');
     // [left %, bottom %, size px]: far ones small on the hill above their heads, bigger ones ahead on the right
     const spots = [[6, 68, 30], [30, 70, 26], [52, 68, 30], [74, 69, 28], [96, 68, 30], [118, 69, 28], [92, 44, 44], [84, 14, 64], [130, 20, 60]];
@@ -6269,9 +6449,19 @@
         const name = names[(s.n + j * 5) % names.length],
           svg = (name && ART.props[name]) || '',
           h = /viewBox="0 0 100 150"/.test(svg) ? p[2] * 1.5 : p[2];
-        return svg ? `<div class="eldprop" style="left:${p[0]}%;bottom:${p[1]}%;width:${p[2]}px;height:${h}px;z-index:${p[1] < 40 ? 2 : 0}">${svg}</div>` : '';
+        return svg && !(edge != null && p[0] > 50) ? `<div class="eldprop" style="left:${p[0]}%;bottom:${p[1]}%;width:${p[2]}px;height:${h}px;z-index:${p[1] < 40 ? 2 : 0}">${svg}</div>` : '';
       })
       .join('');
+    let far = '';
+    if (edge === 'summit') far = `<div class="eldsummit">${ART.props['peak-summit'] || ''}</div>`;
+    else if (edge != null) {
+      const nx = ART.WORLDS[edge + 1],
+        np = night && nx.dim ? Object.assign({}, nx, nx.dim) : nx;
+      far =
+        `<svg class="eldbeyond" viewBox="0 0 200 100" preserveAspectRatio="none" aria-hidden="true"><path d="M0 100L0 46C40 22 90 34 130 24S185 30 200 20V100Z" fill="${mixHex(np.ground[0], np.sky[1], 0.25)}"/><path d="M0 100L0 70C60 56 140 62 200 50V100Z" fill="${np.ground[0]}"/></svg>` +
+        `<div class="eldedge">${ART.border(edge, 240, { up: np.ground[0], down: pl.ground[0], night })}</div>` +
+        `<div class="eldbridge ${edge === 3 ? 'gate' : ''}"><div class="ebr-in">${ART.bridge(edge, night)}</div></div>`;
+    }
     // and a few close by, at the bottom of the screen
     const near = [[10, 58], [50, 44], [88, 62]]
       .map((p, j) => {
@@ -6280,9 +6470,9 @@
         return svg ? `<div class="eldprop" style="left:${p[0]}%;bottom:calc(14px + env(safe-area-inset-bottom, 0px));width:${p[1]}px;height:${h}px">${svg}</div>` : '';
       })
       .join('');
-    return `<div class="eldworld" style="background:linear-gradient(transparent 250px, ${pl.ground[1]} 250px);--walk:${-(st.q + (st.phase === 'end' ? 1 : 0)) * 4}%">
+    return `<div class="eldworld" style="background:linear-gradient(transparent 250px, ${pl.ground[1]} 250px);--walk:${-((st.q || 0) + (st.phase === 'end' ? 1 : 0)) * 4}%">
       <svg class="eldland" viewBox="0 0 400 240" preserveAspectRatio="none" aria-hidden="true"><path d="M0 70 C70 40 140 46 210 64 S330 84 400 52 V240 H0Z" fill="${mixHex(pl.ground[0], pl.sky[1], 0.35)}"/><path d="M0 112 C90 92 170 98 250 110 S350 120 400 100 V240 H0Z" fill="${pl.ground[0]}"/><path d="M0 170 C100 150 200 158 300 166 S370 168 400 156 V240 H0Z" fill="${pl.ground[1]}"/><path d="M-10 200 C120 186 260 168 410 128 L410 138 C330 170 160 214 -10 238Z" fill="${pl.path[0]}" stroke="${pl.path[1]}" stroke-width="2"/></svg>
-      <div class="eldprops">${props}</div>${near}
+      ${far}<div class="eldprops">${props}</div>${near}
     </div>`;
   }
   function elderAnswer(right) {
@@ -6490,8 +6680,8 @@
       let gift = '';
       // a test he was asked for (tapped on the map, or the Test button) brings one gift a day
       const asked = st.anytime && !st.rematch,
-        noGift = asked && prof.elderGift === today();
-      if (asked && !noGift) prof.elderGift = today();
+        noGift = asked && prof.teacherGift === today();
+      if (asked && !noGift) prof.teacherGift = today();
       const nextHero = !noGift && prof.feats.includes('once') ? HERO.map((id) => ITEM[id]).find((it) => !hasOrWaits(it, prof)) : null;
       if (noGift) gift = '';
       else if (nextHero) {

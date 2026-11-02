@@ -185,7 +185,7 @@
     ctx.surahs.forEach((s) => w.big((p.stime && p.stime[s.n]) || 0));
     // the extras block (v2.7.1): everything else, so the other phone shows the explorer exactly as they are
     w.num(EXTRAS, 8);
-    w.num(2, 8); // its version (2: v2.7.2 adds the comfy shoes' color)
+    w.num(3, 8); // its version (2: v2.7.2 adds the comfy shoes' color; 3: v2.7.24 the Stranger's visits)
     w.num(Math.max(0, p.at || 0), 6);
     w.bit(!!p.greeted);
     const kOf = (g) => (g.k === 'i' ? 'i:' : 's:') + g.id;
@@ -208,7 +208,7 @@
     }
     const sk = p.streak || ['', 0],
       dt = p.dayT || ['', 0];
-    [dayNum(p.daily), dayNum(p.elderGift), dayNum(sk[0]), sk[1] || 0, p.best || 0, dayNum(dt[0]), Math.round(dt[1] || 0), Math.floor((p.elderAt || 0) / 60000)].forEach((v) => w.big(v));
+    [dayNum(p.daily), dayNum(p.teacherGift), dayNum(sk[0]), sk[1] || 0, p.best || 0, dayNum(dt[0]), Math.round(dt[1] || 0), Math.floor((p.teacherAt || 0) / 60000)].forEach((v) => w.big(v));
     ctx.surahs.forEach((s) => {
       w.bit((p.rematch || []).includes(s.n));
       w.bit((p.rematchReady || []).includes(s.n));
@@ -234,6 +234,7 @@
     for (let wi = 0; wi < 7; wi++) w.bit((p.jdone || []).includes(wi));
     ctx.surahs.forEach((s) => s.P.forEach((_, q) => w.bit(p.prog[s.n] && p.prog[s.n].parts[q] && p.prog[s.n].parts[q].next)));
     w.num(p.look.feet || 0, 3);
+    for (let k = 0; k <= 7; k++) w.bit((p.strangers || []).includes(k));
     const body = w.done();
     const zip = CAN_ZIP ? await pipe(body, new CompressionStream('deflate-raw')) : body;
     return b64(new Uint8Array([FORMAT, CAN_ZIP ? 1 : 0, ...zip]));
@@ -331,7 +332,7 @@
         if (b && b.startsWith('s:')) p.stash.badge = b.slice(2);
       }
       const [daily, eg, sd, sn, best, td, ts, ea] = [0, 0, 0, 0, 0, 0, 0, 0].map(() => r.big());
-      Object.assign(p, { daily: dayStr(daily), elderGift: dayStr(eg), streak: [dayStr(sd), sn], best, dayT: [dayStr(td), ts], elderAt: ea * 60000 });
+      Object.assign(p, { daily: dayStr(daily), teacherGift: dayStr(eg), streak: [dayStr(sd), sn], best, dayT: [dayStr(td), ts], teacherAt: ea * 60000 });
       p.rematch = [];
       p.rematchReady = [];
       ctx.surahs.forEach((s) => {
@@ -357,6 +358,7 @@
       p.jdone = [0, 1, 2, 3, 4, 5, 6].filter(() => r.bit());
       ctx.surahs.forEach((s) => s.P.forEach((_, q) => r.bit() && p.prog[s.n] && (p.prog[s.n].parts[q].next = 1)));
       if (xv >= 2) p.look.feet = r.num(3);
+      if (xv >= 3) p.strangers = [0, 1, 2, 3, 4, 5, 6, 7].filter(() => r.bit());
     }
     p.made = true;
     p.sameThings = same;

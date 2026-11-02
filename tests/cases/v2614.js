@@ -30,7 +30,7 @@
   // the Wise Elder on the map, in the world he's in now
   L.go('map'); await wait(1500);
   const el = d.querySelector('#map .mpal[data-id="elder"]');
-  ok('the Wise Elder roams the map', !!el && +el.dataset.w === X.elder.world(), el && el.dataset.w);
+  ok('the Wise Elder roams the map', !!el && Math.abs(+el.dataset.w - X.elder.world()) <= 1 /* (he moves on every 4 minutes: the test may straddle it) */, el && el.dataset.w);
   ok('he is taller than the explorers there', !!el && el.offsetHeight > 108);
   // tap him: the test any time
   el.click(); await wait(1200);
@@ -53,7 +53,7 @@
   await answer([true, true, true]);
   ok('more wins that day: praise, no gift (gifts never run out)', prof.pending.length === before && /once a day/.test(d.querySelector('.eldend').textContent));
   // switched off: he's not on the map
-  L.store().prefs.elder = false; L.go('surah', { i: idx(113), p: 0 }); await wait(100); L.go('map'); await wait(1200);
+  L.store().prefs.teacher = false; L.go('surah', { i: idx(113), p: 0 }); await wait(100); L.go('map'); await wait(1200);
   ok('switched off: not on the map', !d.querySelector('#map .mpal[data-id="elder"]'));
   ok('no errors', !errs.length, errs.join(' | '));
   done();

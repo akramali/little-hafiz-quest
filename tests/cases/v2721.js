@@ -15,7 +15,7 @@
   ok('the cap is back, and that is the gift (nothing else waiting)', !p.lost.length && p.pending.length === 0, JSON.stringify(p.pending));
   // 2. the Teacher's own visit with every fire burning: he still comes
   for (const n in p.fire) p.fire[n][0] = Date.now() - 2 * 864e5;
-  p.fix = []; p.rematch = []; p.rematchReady = []; p.elderAt = 0;
+  p.fix = []; p.rematch = []; p.rematchReady = []; p.teacherAt = 0;
   L.go('map'); await wait(1200);
   w.__elderNow = true; X.maybe(); await wait(300); w.__elderNow = false;
   ok('every fire burning: he still comes now and then', !!d.querySelector('#modal.show .eldmeet'));

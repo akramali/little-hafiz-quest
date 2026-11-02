@@ -6,12 +6,12 @@
   const p = L.store().profiles[0], m = d.getElementById('modal'), day = 864e5;
   // 1. the timeline: strong for a week, half lit the second, embers the third, then out
   const words = [];
-  for (const age of [3, 10, 17, 25]) {
+  for (const age of [3.2, 10.2, 17, 25]) {
     p.fire[113] = [Date.now() - age * day, 0];
     L.go('surah', { i: idx(113), p: 0 }); await wait(150);
     words.push(d.querySelector('.herofire').textContent.trim());
   }
-  ok('3, 10, 17, 25 days: strong, half lit, low, out', words.join(',') === 'Strong,Half lit,Low,Out', words.join(','));
+  ok('3, 10, 17, 25 days: strong, low, embers, out (v2.7.24: a step every few days)', words.join(',') === 'Strong,Low,Embers,Out', words.join(','));
   // 2. on the map, only the low and out fires breathe
   p.fire[113] = [Date.now() - 17 * day, 0];
   p.fire[112] = [Date.now() - 2 * day, 0];
@@ -25,12 +25,12 @@
   // 4. the Teacher's own visits go to a cold fire; all burning, he only says hello
   for (const n in p.fire) p.fire[n][0] = Date.now() - 2 * day;
   p.fire[112][0] = Date.now() - 22 * day;
-  p.fix = []; p.rematch = []; p.rematchReady = []; p.elderAt = 0;
+  p.fix = []; p.rematch = []; p.rematchReady = []; p.teacherAt = 0;
   w.__elderNow = true; const R0 = w.Math.random; w.Math.random = () => 0.1; L.elder.maybe(); w.Math.random = R0; await wait(300);
   // (3 times in 4 to a cold fire: make the pick certain)
   ok('his visit is to the cold fire (Al-Ikhlāṣ)', !!d.querySelector('#modal.show .eldmeet') && /getting cold/.test(m.textContent) && /Al-Ikhlāṣ/.test(m.textContent), m.textContent.slice(0, 120));
   m.classList.remove('show');
-  p.fire[112][0] = Date.now() - 2 * day; p.elderAt = 0;
+  p.fire[112][0] = Date.now() - 2 * day; p.teacherAt = 0;
   L.elder.maybe(); await wait(300);
   ok('every fire burning: he still comes now and then (v2.7.21)', !!d.querySelector('#modal.show .eldmeet') && !/getting cold/.test(d.getElementById('modal').textContent));
   d.getElementById('modal').click(); await wait(200);
@@ -41,7 +41,7 @@
   for (let k = 0; k < 12 && L.st().view === 'path'; k++) { d.querySelector('.pathbtns [data-act=hop]').click(); await wait(900); }
   L.go('map'); await wait(1400);
   const fire = d.querySelector(`.node[data-i="${idx(113)}"] .nfire`);
-  ok('relit: strong again, and it flares up', fire.classList.contains('f3') && fire.getAnimations().some((a) => a instanceof w.CSSAnimation === false), fire.className);
+  ok('relit: roaring again, and it flares up', fire.classList.contains('f5') && fire.getAnimations().some((a) => a instanceof w.CSSAnimation === false), fire.className);
   ok('no errors', !errs.length, errs.join(' | '));
   done();
 })();

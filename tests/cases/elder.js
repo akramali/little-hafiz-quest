@@ -23,7 +23,7 @@
   }
   // 1. it appears on the way back to the map (forced: the 5-minute and chance rules are skipped by a test switch)
   w.__elderNow = true;
-  prof.elderAt = 0;
+  prof.teacherAt = 0;
   for (const n in prof.fire) prof.fire[n][0] = Date.now() - 15 * 864e5; // (his own visits go to campfires burning low)
   L.go('surah', { i: idx(113), p: 0 }); await wait(200);
   L.go('map'); await wait(2400);
@@ -113,7 +113,7 @@
   await answer([false, false, false]);
   ok('hero armor blocks everything: never hurt', !L.st().hurt);
   ok('golden gear holds: two stickers fall, then the golden gear itself (nothing else left)', prof.lostSt.length === 2 && prof.lost.length === 1, `stickers ${prof.lostSt.length}, items ${prof.lost.map((x) => x.id)}`);
-  ok('the setting can switch him off', 'elder' in L.store().prefs);
+  ok('the setting can switch him off', 'teacher' in L.store().prefs);
   ok('no game errors', !errs.length, errs.slice(0, 3).join('; '));
   done();
 })();

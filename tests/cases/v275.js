@@ -15,13 +15,13 @@
   p.fire[113] = [Date.now(), 2];
   p.items = ['explorer-cap']; p.outfit = { hat: 'explorer-cap' }; p.lost = [];
   d.querySelector('[data-act=eldans][data-ok="0"]').click(); await wait(2600);
-  const f = p.fire[113], r = (Date.now() - f[0]) / (7 * 864e5);
-  ok('a wrong answer: the campfire burns down a step (strong → half lit)', r >= 1 && r < 2, r.toFixed(2));
+  const f = p.fire[113], r = (Date.now() - f[0]) / 864e5;
+  ok('a wrong answer: the campfire burns down a step (roaring → strong, 3 days)', r >= 3 && r < 7, r.toFixed(2));
   // 3. the campfire on the sūrah page
   L.go('surah', { i: idx(113), p: 0 }); await wait(300);
-  ok('the sūrah page shows its campfire', /Half lit/.test((d.querySelector('.herofire') || {}).textContent || ''));
+  ok('the sūrah page shows its campfire', /Strong/.test((d.querySelector('.herofire') || {}).textContent || ''));
   d.querySelector('.herofire').click(); await wait(300);
-  ok('tap it: how fresh the sūrah is', /half lit/.test(d.querySelector('#modal.show .firecard h3').textContent) && /still warm/.test(d.querySelector('#modal.show .firecard').textContent));
+  ok('tap it: how fresh the sūrah is', /strong/.test(d.querySelector('#modal.show .firecard h3').textContent) && /fresh in your heart/.test(d.querySelector('#modal.show .firecard').textContent));
   d.querySelector('#modal [data-act=cno]').click(); await wait(200);
   p.fire[112] = [Date.now() - 3 * 7 * 864e5, 2];
   L.go('map'); await wait(1500);
