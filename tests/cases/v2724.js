@@ -28,16 +28,37 @@
   d.querySelector('[data-act=hop]').click(); await wait(1600);
   const cr = d.querySelector('.stone.cur').getBoundingClientRect();
   ok('the frog jumps to where its next stone will be', Math.abs(cr.left - want) < 6, `${Math.round(cr.left)} vs ${Math.round(want)}`);
-  // 5. the Stranger: comes when a world is memorized (once), with the Teacher; nothing lost
-  p.strangers = [0, 1]; // (worlds 1 and 2 already visited)
+  // 5. the Stranger (v2.8.1): never on the map; with Worlds 1-3 memorized, setting out for World 4 meets him once,
+  // then on to the sūrah chosen; nothing lost or won
+  p.strangers = [];
   const lostBefore = p.lost.length, itemsBefore = p.items.length;
   L.go('surah', { i: idx(100), p: 0 }); await wait(100); L.go('map'); await wait(1500);
-  ok('world 3 memorized: the Stranger comes', L.st().view === 'stranger' && L.st().w === 2 && /Shining Sands/.test(d.body.textContent), L.st().view + ' ' + L.st().w);
+  ok('back on the map: no Stranger there', L.st().view === 'map');
+  L.go('surah', { i: idx(96), p: 0 }); await wait(300);
+  ok('setting out for World 4: he meets you at the bridge of Shining Sands', L.st().view === 'stranger' && L.st().w === 2 && /Shining Sands/.test(d.body.textContent), L.st().view + ' ' + L.st().w);
   for (let k = 0; k < 8 && L.st().view === 'stranger'; k++) { d.querySelector('[data-act=strnext]').click(); for (let t = 0; t < 60 && d.querySelector('[data-act=strnext][disabled]'); t++) await wait(100); await wait(150); }
   await wait(1400);
-  ok('three tries, then he goes: back on the map, nothing lost or won', L.st().view === 'map' && p.strangers.includes(2) && p.lost.length === lostBefore && p.items.length === itemsBefore);
-  L.go('surah', { i: idx(100), p: 0 }); await wait(100); L.go('map'); await wait(1500);
-  ok('once per world', L.st().view === 'map');
+  ok('three tries, he goes, and on to the sūrah chosen: nothing lost or won', L.st().view === 'surah' && L.st().i === idx(96) && p.strangers.includes(2) && p.lost.length === lostBefore && p.items.length === itemsBefore, L.st().view);
+  L.go('map'); await wait(1200); L.go('surah', { i: idx(96), p: 0 }); await wait(300);
+  ok('once per gate', L.st().view === 'surah');
+  // gaps hold him back: World 6 memorized, World 4 not yet → no gate beyond
+  all(82); w.LHQ_DATA.surahs.filter((x) => x.n >= 91 && x.n <= 96).forEach((x) => delete p.prog[x.n]);
+  L.go('map'); await wait(1200); L.go('surah', { i: idx(80), p: 0 }); await wait(300);
+  ok('World 4 not memorized: he waits (even with Worlds 5 and 6 done)', L.st().view === 'surah');
+  const through = async () => { for (let k = 0; k < 8 && L.st().view === 'stranger'; k++) { d.querySelector('[data-act=strnext]').click(); for (let t = 0; t < 120 && d.querySelector('[data-act=strnext][disabled]'); t++) await wait(100); await wait(150); } await wait(1400); };
+  // several due at once: only the latest comes
+  p.strangers = []; all(86);
+  // (Worlds 1-6 memorized now: the Sky Kingdom's sūrahs from just above, Worlds 1-5 here)
+  L.go('map'); await wait(1000); L.go('surah', { i: idx(80), p: 0 }); await wait(300);
+  ok('Worlds 1-6 memorized at once: only the latest gate (Sky Kingdom)', L.st().view === 'stranger' && L.st().w === 5, L.st().view + ' ' + L.st().w);
+  await through();
+  ok('…and the ones before it are kept too', [2, 3, 4, 5].every((x) => p.strangers.includes(x)));
+  // the whole Juz: the last time, back on the map
+  all(78);
+  L.go('surah', { i: idx(78), p: 0 }); await wait(100); L.go('map'); await wait(1600);
+  ok('every sūrah memorized: back on the map, the last time', L.st().view === 'stranger' && L.st().w === 7, L.st().view + ' ' + L.st().w);
+  await through();
+  ok('…and never again', L.st().view === 'map' && p.strangers.includes(7));
   // the setting
   L.go('settings'); await wait(200);
   ok('the Grown-up Corner can switch him off', !!d.querySelector('[data-act=tog][data-k=stranger]'));

@@ -66,8 +66,9 @@ recite on their own.
 - **Four reciters**, adjustable speed (0.25×–2×) and loops; tap any word to hear it alone.
 - **Over 250 things to win and wear:** treasures, golden editions, patterned surprises, stickers, buddies, toy rides
   for golden worlds and summit awards, paced so new ones keep coming right up to the last star.
-- **The Stranger** waits at the border of each world you fully memorize and tries its elements on you, but with
-  your Teacher at your side they can't reach you: what's in your heart protects you. Nothing is lost.
+- **The Stranger** guards the bridges to the higher worlds. Once everything up to World 3 is memorized, he meets
+  you on your way up and tries that world's elements on you, but with your Teacher at your side they can't reach
+  you: what's in your heart protects you. Nothing is lost, and he's never on the map.
 - **Your Teacher:** a kind old man who roams the map; tap him, or he finds you, to walk together and test a memorized sūrah, with no help.
 - **Family friendly:** up to 10 explorers on one phone, family sync between phones by link or QR code, backups to a file.
 

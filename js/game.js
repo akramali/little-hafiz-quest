@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.8.0';
+  const VERSION = '2.8.1';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -1580,6 +1580,11 @@
       save();
     }
     document.querySelectorAll('.drag-ghost').forEach((g) => g.remove()); // a piece being dragged never follows to a new screen
+    // setting out from the map or the journal for a sūrah beyond a bridge he keeps: he meets you there first
+    if (view === 'surah' && ['map', 'journal'].includes(st.view) && S[params.i]) {
+      const gate = strangerGate(P(), worldOf(S[params.i]));
+      if (gate != null) return startStranger(gate, Object.assign({ view: 'surah' }, params));
+    }
     arriving = st.view !== view ? st.view : ''; // (the start screen and the map arrive with their own animation)
     st = Object.assign({ view }, params);
     if (GAMES.includes(view)) st.starsBefore = totalStars(); // a first finish (a new star) always brings a gift
@@ -4001,13 +4006,19 @@
     const d = new Date(t);
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   };
+  // the day before today, by the calendar (not 24 hours ago: the day the clocks change has 23 or 25 hours)
+  const yesterday = () => {
+    const x = new Date();
+    x.setDate(x.getDate() - 1);
+    return dayKey(x.getTime());
+  };
   function countDay(prof, dt) {
     const d = today();
     if (prof.dayT[0] !== d) prof.dayT = [d, 0];
     if (prof.dayT[1] >= 60) return;
     prof.dayT[1] += dt;
     if (prof.dayT[1] < 60 || prof.streak[0] === d) return;
-    prof.streak = [d, prof.streak[0] === dayKey(Date.now() - 864e5) ? prof.streak[1] + 1 : 1];
+    prof.streak = [d, prof.streak[0] === yesterday() ? prof.streak[1] + 1 : 1];
     prof.best = Math.max(prof.best, prof.streak[1]);
     // every 7 days in a row on the trail: a little gift
     if (prof.streak[1] % 7 === 0 && (giveSurprise(prof, false, true) || giveLevelGift(prof, true))) {
@@ -4029,7 +4040,7 @@
     m.classList.add('show');
   }
   // the streak still alive: learned today or yesterday
-  const streakNow = (prof) => (prof.streak[0] === today() || prof.streak[0] === dayKey(Date.now() - 864e5) ? prof.streak[1] : 0);
+  const streakNow = (prof) => (prof.streak[0] === today() || prof.streak[0] === yesterday() ? prof.streak[1] : 0);
   function tickTime() {
     const now = Date.now(),
       dt = Math.min(now - lastTick, 15000) / 1000; // never a long gap (a phone asleep doesn't count)
@@ -6010,29 +6021,45 @@
 
 
   /* ================= THE STRANGER =================
-     Once a world is fully memorized (every sūrah's Stepping Stones done), the Stranger comes, with your Teacher at
-     your side: "Let's see if you deserve to go past <world>!" He tries the world's elements three times; each one
-     stops short (the Qur'an in your heart protects you), he is taken aback, and at last: "You're stronger than I
-     thought!" and he goes. Nothing is lost and nothing is won (finishing the world already brings its rewards).
-     The seventh and last time, with the whole Juz memorized, he tries every element of every world, none reach
-     you, and he wishes you well and never comes again. prof.strangers: the worlds (0-6) he has come to, 7 = the last.
-     The Grown-up Corner can switch him off (prefs.stranger). */
+     Never on the map (that's the children's safe playground). He guards the bridges further up, from World 4 on:
+     once every sūrah from An-Nās through World 3 is memorized (green), the first time the explorer sets out from the
+     map or the journal for a sūrah in a later world, he meets them at the bridge, with your Teacher at their side:
+     "Let's see if you deserve to go past <world>!" He tries that world's elements three times; each one stops short
+     (the Qur'an in your heart protects you), he is taken aback, "You're stronger than I thought!", and he goes, and
+     on they walk to the sūrah they chose. He comes back once more each time the next world is complete counting from
+     the start (Worlds 4, 5 and 6): gaps hold him back, and when several are due at once only the latest comes.
+     Nothing is lost and nothing is won. With all 37 memorized, back on the map he comes one last time with every
+     element of every world, none reach you, and he wishes you well and never comes again.
+     prof.strangers: the gates he has kept (2-5: after Worlds 3-6), 7 = the last. Switch: prefs.stranger. */
   const worldMemorized = (wi, prof) => S.filter((s) => worldOf(s) === wi).every((s) => surahDone(s, prof));
   const allMemorized = (prof) => S.every((s) => surahDone(s, prof));
   const strangerDue = (prof) => WORLDS.map((_, wi) => wi).filter((wi) => worldMemorized(wi, prof));
+  // the last world memorized counting from the start, with every one before it memorized too (-1: not even World 1)
+  function memorizedUpTo(prof) {
+    let g = -1;
+    while (g < WORLDS.length - 1 && worldMemorized(g + 1, prof)) g++;
+    return g;
+  }
+  // the gate he keeps before a sūrah in world wi (the world memorized up to), or null
+  function strangerGate(prof, wi) {
+    if (!prefs.stranger || noExplorers() || !prof.made || !begun(prof)) return null;
+    const g = memorizedUpTo(prof);
+    if (g < 2 || g >= WORLDS.length - 1 || wi <= g || allMemorized(prof)) return null;
+    return prof.strangers.includes(g) ? null : g;
+  }
   // the last time: one of each element, as each world has it
   const ALL_THROWS = [['rock', 0], ['acorn', 0], ['vines', 1], ['acorn', 1], ['sand', 2], ['water', 2], ['wind', 4], ['ice', 6]];
+  // the last time: back on the map with the whole Juz memorized
   function maybeStranger() {
     const prof = P();
     if (!prefs.stranger || st.view !== 'map' || noExplorers() || !prof.made || !begun(prof) || document.getElementById('modal').classList.contains('show') || document.body.classList.contains('busy')) return;
-    if (allMemorized(prof) && !prof.strangers.includes(7)) return startStranger(7);
-    const wi = strangerDue(prof).find((w) => !prof.strangers.includes(w));
-    if (wi != null && !allMemorized(prof)) startStranger(wi);
+    if (allMemorized(prof) && !prof.strangers.includes(7)) startStranger(7);
   }
-  function startStranger(w) {
+  // then: where the explorer was going (the sūrah), to carry on there after he goes
+  function startStranger(w, then) {
     stopAudio();
     sfx.whoosh();
-    go('stranger', { w, step: 0, phase: 'talk', hits: 0 });
+    go('stranger', { w, step: 0, phase: 'talk', hits: 0, then: then || null });
   }
   // the lines, step by step: [who, words, button] (who: 's' the Stranger, 't' your Teacher)
   function strangerScript(w) {
@@ -6047,7 +6074,7 @@
       ];
     return [
       ['s', `Halt! Let’s see if you deserve to go past ${world}!`, 'Next ›'],
-      ['t', `${nm} memorized every sūrah of ${world}. They’re strong in their heart: you can’t hurt them!`, '🛡️ Stand strong!'],
+      ['t', `${nm} memorized every sūrah all the way through ${world}. They’re strong in their heart: you can’t hurt them!`, '🛡️ Stand strong!'],
       ['s', `What?! It didn’t even touch you!`, '🛡️ Stand strong!'],
       ['s', `Impossible! Again…`, '🛡️ Stand strong!'],
       ['s', `Oh wow… you are stronger than I thought!`, 'Walk on ▶'],
@@ -6123,13 +6150,15 @@
     if (st.step >= sc.length - 1) {
       // he goes (happy at the very last), and the walk goes on
       const prof = P();
+      // this gate kept, and any before it (when several came due at once, only the latest came); the last: all
+      for (let x = 0; x <= Math.min(w, WORLDS.length - 1); x++) prof.strangers.includes(x) || prof.strangers.push(x);
       if (!prof.strangers.includes(w)) prof.strangers.push(w);
-      if (w === 7) WORLDS.forEach((_, x) => prof.strangers.includes(x) || prof.strangers.push(x)); // (never again)
       save();
       st.gone = true;
       render();
       sfx.chime();
-      setTimeout(() => st.view === 'stranger' && go('map'), reduceMotion ? 200 : 1100);
+      const then = st.then;
+      setTimeout(() => st.view === 'stranger' && (then ? go(then.view, then) : go('map')), reduceMotion ? 200 : 1100);
       return;
     }
     // the steps after "Stand strong!" are throws: three of the world's elements, or every element at the end

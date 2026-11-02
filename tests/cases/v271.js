@@ -21,7 +21,7 @@
   p.look.feet = 2;
   p.greeted = true;
   p.daily = day(Date.now());
-  p.teacherGift = day(Date.now() - 864e5);
+  p.teacherGift = day((() => { const x = new Date(); x.setDate(x.getDate() - 1); return x.getTime(); })());
   p.streak = [day(Date.now()), 6]; p.best = 11; p.dayT = [day(Date.now()), 42];
   p.teacherAt = min(Date.now() - 3600e3);
   p.rematch = [113]; p.rematchReady = [];

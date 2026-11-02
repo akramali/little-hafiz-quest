@@ -23,7 +23,7 @@
   ok('…and no star-track prize pulled early', !p.pending.some((g) => (A.ITEMS.find((it) => it.id === g.id) || {}).track > 15));
   // a milestone still brings one (7 days in a row)
   const day = (t) => { const x = new Date(t); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0'); };
-  p.streak = [day(Date.now() - 864e5), 6]; p.dayT = [day(Date.now()), 50];
+  p.streak = [day((() => { const x = new Date(); x.setDate(x.getDate() - 1); return x.getTime(); })()), 6]; p.dayT = [day(Date.now()), 50];
   const b2 = p.pending.length;
   w.__lhq.countDay(p, 15);
   ok('a milestone (7 days in a row) still brings a gift', p.pending.length === b2 + 1);

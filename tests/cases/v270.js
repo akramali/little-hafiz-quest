@@ -85,7 +85,7 @@
   ok('the last thing of a page: the page is complete, a gift', p.jdone.includes(0) && p.pending.length > g0, `${p.jdone} gifts ${g0}→${p.pending.length}`);
   // 4. streaks
   const day = (t) => { const x = new Date(t); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0'); };
-  p.streak = [day(Date.now() - 864e5), 4]; p.best = 4; p.dayT = [day(Date.now()), 50];
+  p.streak = [day((() => { const x = new Date(); x.setDate(x.getDate() - 1); return x.getTime(); })()), 4]; p.best = 4; p.dayT = [day(Date.now()), 50];
   X.countDay(p, 15);
   ok('a minute of learning today adds to the streak', p.streak[1] === 5 && p.best === 5, JSON.stringify(p.streak));
   L.go('show'); await wait(400);
@@ -96,7 +96,7 @@
   ok('tap it: the streak and the best so far', /5 days on the trail/.test(d.querySelector('#modal.show .streakcard').textContent) && /best so far: 5 days/.test(d.querySelector('#modal.show .streakcard').textContent));
   d.getElementById('modal').click(); await wait(150);
   // 7 days in a row: a little gift
-  p.streak = [day(Date.now() - 864e5), 6]; p.dayT = [day(Date.now()), 50];
+  p.streak = [day((() => { const x = new Date(); x.setDate(x.getDate() - 1); return x.getTime(); })()), 6]; p.dayT = [day(Date.now()), 50];
   const g7 = p.pending.length;
   X.countDay(p, 15);
   ok('7 days in a row: a gift', p.streak[1] === 7 && p.pending.length === g7 + 1, `${p.streak[1]} · gifts ${g7}→${p.pending.length}`);

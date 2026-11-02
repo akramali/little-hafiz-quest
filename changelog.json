@@ -1,7 +1,11 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.8.0",
+ "latest": "2.8.1",
  "versions": [
+  { "v": "2.8.1", "notes": [
+   "The Stranger now guards the bridges to the higher worlds, from World 4 up, and is never on the map",
+   "Fixed: day streaks on the day the clocks change"
+  ] },
   { "v": "2.8.0", "notes": [
    "The Stranger returns: when you memorize a whole world, he tries its elements on you, and your Teacher shows him they can't hurt you",
    "Campfires burn down step by step: roaring, strong, steady, low, embers, out",
