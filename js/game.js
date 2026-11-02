@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.8.1';
+  const VERSION = '2.8.2';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;

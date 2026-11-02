@@ -2154,19 +2154,17 @@
         S('M30 6Q46 24 43 38Q41 50 30 50Q19 50 17 38Q14 24 30 6Z', '#ff7a3d', null, 'M24 40Q22 30 28 20Q26 32 28 42Z') + F('M30 22Q39 34 37 42Q35 49 30 49Q25 49 23 42Q21 34 30 22Z', '#ffd23f'),
         ' transform="translate(' + (30 + (dx || 0)) + ' 50) scale(' + k + ') translate(-30 -50)"',
       );
-    // a roaring fire: one big flame with three tongues, and tiny embers rising off the tips
-    const roar = (k) =>
-      G(
-        S('M30 0Q34 12 37 17Q41 7 46 9Q51 24 46 39Q42 50 30 50Q18 50 14 39Q9 24 14 9Q19 7 23 17Q26 12 30 0Z', '#ff6a2b', null, 'M21 40Q19 28 23 20Q22 32 24 42Z') +
-          F('M30 18Q33 26 35 29Q38 23 41 26Q43 36 38 44Q35 49 30 49Q25 49 22 44Q17 36 19 26Q22 23 25 29Q27 26 30 18Z', '#ffd23f') + F('M30 32Q34 38 33 44Q31 48 30 48Q29 48 27 44Q26 38 30 32Z', '#fff3b0'),
-        ' transform="translate(30 50) scale(' + k + ') translate(-30 -50)"',
-      );
-    const embers = [[30, -6, 0], [17, 2, 0.5], [43, 0, 0.9], [36, -12, 1.3], [23, -10, 0.25]].map(([x, y, d]) => '<circle class="cf-spark" cx="' + x + '" cy="' + y + '" r="1.5" fill="' + (d > 0.6 ? '#ffb347' : '#ffd23f') + '" stroke="none" style="animation-delay:' + d + 's"/>').join('');
+    // a roaring fire: the strong flame grown bigger, with a tall tip and a smaller second tip on its shoulder,
+    // and tiny embers rising off the tips
+    const roar = () =>
+      S('M32 -8Q18 14 16 33Q16 50 30 50Q44 50 45 33Q46 18 38.5 4.5Q37 13 32.8 12.8Q28.6 3 32 -8Z', '#ff7a3d', null, 'M22 40Q20 28 27 16Q24 30 26 42Z') +
+      F('M31 13Q42 28 39 40Q37 49 30 49Q23 49 21 40Q19 28 31 13Z', '#ffd23f');
+    const embers = [[31, -13], [41, 1], [20, 4], [35, -19], [25, -6]].map(([x, y], j) => '<circle class="cf-spark" cx="' + x + '" cy="' + y + '" r="1.5" fill="' + (j % 2 ? '#ffb347' : '#ffd23f') + '" stroke="none" style="animation-delay:' + [0, 0.5, 0.9, 1.3, 0.25][j] + 's"/>').join('');
     const glow = (ry, o) => EF(30, 50 - ry * 0.55, ry * 1.3, ry, '#ffb347', o);
     const smoke = (o) =>
       G(L('M27 40Q22 30 28 22Q33 15 27 6', '#a9a2b8', 2.6) + L('M34 38Q38 30 34 23Q31 17 36 10', '#bdb7c9', 2.2), cls('cf-smoke')) + (o ? G(EF(30, 4, 6, 4, '#c9c3d4', 0.7) + EF(36, -4, 4, 3, '#d6d1df', 0.6), cls('cf-smoke')) : '');
     let g;
-    if (lvl >= 5) g = glow(28, 0.38) + logs('#8a5a35', '#a86b3c') + G(roar(1.12), cls('cf-flick')) + embers;
+    if (lvl >= 5) g = glow(28, 0.38) + logs('#8a5a35', '#a86b3c') + G(roar(), cls('cf-flick')) + embers;
     else if (lvl === 4) g = glow(22, 0.3) + logs('#8a5a35', '#a86b3c') + G(flame(1), cls('cf-flick'));
     else if (lvl === 3) g = glow(17, 0.24) + logs('#8a5a35', '#a86b3c') + G(flame(0.8), cls('cf-flick'));
     else if (lvl === 2) g = glow(12, 0.18) + logs('#7f5438', '#9a6440') + G(flame(0.5), cls('cf-flick'));
