@@ -70,12 +70,38 @@
   log('tree', JSON.stringify({ size: info.size.toFixed(2), leaves: info.leaves, blossoms: info.blossoms.length, fruits: info.fruits.length }), '| hungry', JSON.stringify(hg));
   ok('my tree: fruit drawn, and a flower in the grass for every sūrah memorized', L.st().view === 'tree' && d.querySelectorAll('.tsvg .tfruit').length === info.fruits.length && info.fruits.length >= 2 && d.querySelectorAll('.tsvg [data-act=tflower]').length === info.flowers.length && info.flowers.length === info.memorized);
   ok('the buddies live around it, one hungry', d.querySelectorAll('.tsvg .tbud').length === 2 && d.querySelectorAll('.tsvg .tbud.m-hungry').length === 1);
+  { // two flowers tapped one after the other: one name showing, not a pile; the bar sits in the flow (no extra offset)
+    const fl = d.querySelectorAll('.tsvg [data-act=tflower]');
+    fl[0].dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await wait(150);
+    fl[1].dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await wait(150);
+    ok('my tree: one flower name at a time', d.querySelectorAll('.tftag').length === 1, d.querySelectorAll('.tftag').length);
+    ok('my tree: the note sits below the title bar', d.querySelector('.tnote').getBoundingClientRect().top >= d.querySelector('.treescr > .bar').getBoundingClientRect().bottom - 6 && w.getComputedStyle(d.querySelector('.treescr > .bar')).top === '0px');
+    const bud = d.querySelector('.tsvg .tbud');
+    if (bud) {
+      bud.classList.remove('m-asleep', 'hid'); // (awake and out in the open for this check)
+      bud.dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await wait(120);
+      const cs = w.getComputedStyle(bud.querySelector('.tbud-w'));
+      ok('my tree: a tapped buddy does a move, starting at once', /bm-/.test(bud.getAttribute('class')) && /^tb/.test(cs.animationName) && cs.animationDelay === '0s', cs.animationName + ' ' + cs.animationDelay);
+    }
+  }
   const want = hg.want, fr = [...d.querySelectorAll('.tsvg .tfruit')].find((f) => f.dataset.t === want);
-  fr.dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await wait(2000);
+  fr.dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await wait(4800);
   log('fed: buddy', JSON.stringify(prof.buddy), '| hungry now', JSON.stringify(L.hungry()));
   ok('tapping the fruit it wants: it falls, the buddy eats, fed for the day', prof.buddy[0] === today && prof.buddy[1] === 1 && !L.hungry());
   await wait(1200);
   ok('no other buddy hungry for 30 seconds', !d.querySelector('.tsvg .tbud.m-hungry'));
+  { // a fruit no one wanted falls and is nibbled away; drawn again, it stays off the tree (no jump back up)
+    const f2 = [...d.querySelectorAll('.tsvg .tfruit:not(.fall):not(.ground)')][0];
+    f2.dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await wait(1200);
+    L.go('tree', Object.assign({}, L.st())); await wait(300);
+    const again = d.querySelector('.tsvg .tfruit[data-j="' + f2.dataset.j + '"]');
+    ok('my tree: a fallen fruit no one wanted lies on the ground, also when the screen is drawn again (no jump back up)', again && again.classList.contains('fall') && !again.classList.contains('gone') && d.querySelector('.tsvg .tfruit[data-j="' + fr.dataset.j + '"]').classList.contains('gone'));
+    d.querySelectorAll('.tsvg .tcrit').forEach((c) => c.remove());
+    L.critterFor(again); await wait(200);
+    ok('…a squirrel or a rabbit comes for it', !!d.querySelector('.tsvg .tcrit'));
+    await wait(4800);
+    ok('…picks it up and runs off', again.classList.contains('gone'));
+  }
   // growing: a sūrah practised grows it once a day
   const g0 = prof.grow[0];
   const finishWords = async () => {

@@ -2325,7 +2325,10 @@
           o = n(0.35 + rnd() * 0.65);
         m += '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="#fff8d8" opacity="' + o + '"' + (i % 5 === 0 ? ' class="ttwk" style="animation-delay:-' + n(rnd() * 4) + 's"' : '') + '/>';
       }
-      m += '<g opacity="0.95">' + EF(336, -64, 30, 30, '#fff3b0', 0.12) + F(crescent(336, -64, 20, 20, -11, 6), '#fff3b0') + '</g>';
+      // (the moon's glow fades softly out into the night, like the sun's)
+      const mg = uid('tmoon');
+      m += '<defs><radialGradient id="' + mg + '"><stop offset="0.3" stop-color="#fff3b0" stop-opacity="0.3"/><stop offset="0.6" stop-color="#fff3b0" stop-opacity="0.12"/><stop offset="1" stop-color="#fff3b0" stop-opacity="0"/></radialGradient></defs>' +
+        '<g opacity="0.95">' + CF(336, -64, 48, 'url(#' + mg + ')') + F(crescent(336, -64, 20, 20, -11, 6), '#fff3b0') + '</g>';
     } else {
       // (the sun's glow fades softly out into the sky)
       const sg = uid('tsun');
@@ -2756,7 +2759,7 @@
       if (p) fruits.push({ x: p[0], y: p[1], t: tp, k: n((0.7 + 0.45 * smooth((size - 0.3) / 0.7)) * (0.88 + rnd() * 0.24) * (rnd() < 0.15 ? 1.2 : 1)) }); // (growing with the tree, each a little its own size, a few bigger)
     });
     g += fruits
-      .map((q, j) => '<g class="tfruit" data-act="tfruit" data-j="' + j + '" data-t="' + q.t + '" style="--dy:' + n(612 - q.y) + 'px">' + G(L('M' + q.x + ' ' + (q.y - 9) + 'L' + q.x + ' ' + (q.y - 4), '#6a4a2a', 1.4) + OUT(FRUIT[q.t](q.x, q.y), 1.4), ' transform="translate(' + q.x + ' ' + q.y + ') scale(' + q.k + ') translate(' + -q.x + ' ' + -q.y + ')"') + '</g>')
+      .map((q, j) => '<g class="tfruit" data-act="tfruit" data-j="' + j + '" data-t="' + q.t + '" style="--dy:' + n(612 - q.y) + 'px"><circle cx="' + q.x + '" cy="' + q.y + '" r="13" fill="transparent" stroke="none"/>' + G(L('M' + q.x + ' ' + (q.y - 9) + 'L' + q.x + ' ' + (q.y - 4), '#6a4a2a', 1.4) + OUT(FRUIT[q.t](q.x, q.y), 1.4), ' transform="translate(' + q.x + ' ' + q.y + ') scale(' + q.k + ') translate(' + -q.x + ' ' + -q.y + ')"') + '</g>')
       .join('');
     // where a leaf may fall from now and then: points in the crown (none on a young plant)
     const drop = area.slice(0, 40).map((b) => [n(b[0]), n(b[1])]);
@@ -2789,7 +2792,7 @@
       .concat([[118, 612, 0.15], [312, 608, 0.3], [150, 628, 0.45], [234, 632, 0.6], [392, 628, 0.75], [-14, 620, 0.85]].filter((q) => size >= q[2]).map((q, i) => [q[0], q[1], 0.8 + hsh(i + 20, 3) * 0.35, i + 20]))
       .filter((q) => treeBushes(size).every((b) => Math.abs(q[0] - b.x) > b.w / 2 + 8)) // (never out of a bush)
       .map((q) => ({ y: q[1], svg: OUT(tuft(q[0], q[1], q[2], q[3]), 1.1) })); // (drawn among the buddies, nearer ones in front)
-    return { svg: treeSky(o.night, o.seed) + treeFar(o.night) + ground + OUT(meadow, 1.4) + '<g class="tsway">' + OUT(g, 2) + '</g>' + OUT(mound, 2), tufts, fruits, lobes: li, drop };
+    return { svg: treeSky(o.night, o.seed) + treeFar(o.night) + ground + OUT(meadow, 1.4) + '<g class="tgustw"><g class="tsway">' + OUT(g, 2) + '</g></g>' + OUT(mound, 2), tufts, fruits, lobes: li, drop };
   }
 
   /* A campfire beside each memorized sūrah on the map (viewBox 0 0 60 60, standing on y=54). It burns down over

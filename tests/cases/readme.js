@@ -38,6 +38,20 @@
     L.go('surah', { i: idx(112), p: 0 }); await wait(200);
     d.querySelector('[data-act=words]').click(); await wait(1500);
     L.go('words', Object.assign({}, L.st(), { a: 0, w: 3, phase: 'build' }));
+  } else if (shot === 'tree') {
+    // My Tree well grown, with buddies around it
+    prof.items.push('kitten-buddy', 'elephant-buddy', 'turtle-buddy', 'bee-buddy', 'toy-car');
+    prof.strangers = [0, 1, 2, 3, 4, 5, 6, 7];
+    w.__treeSize = 0.72;
+    L.go('map'); await wait(800);
+    d.querySelector('[data-act=tree]').click();
+  } else if (shot === 'journal' || shot === 'riddle') {
+    // the journal with a few finds and today's riddle waiting; riddle: on the map, looking for it
+    prof.found = [...w.__lhq.journal].filter((k) => /forest/.test(k)).slice(0, 7).concat([...w.__lhq.journal].slice(0, 6)); // (some of World 2's, where the journal opens)
+    prof.riddle = ['', 0, 0, 0, 0];
+    L.go('map'); await wait(1200);
+    d.querySelector('[data-act=journal]').click(); await wait(800);
+    if (shot === 'riddle') { d.querySelector('[data-act=riddlego]').click(); await wait(1200); }
   } else if (shot === 'elder') {
     prof.prog[100] = full(2);
     L.go('elder', { i: idx(100), p: 0, qs: [{ k: 2, kind: 'next', cut: 0, throw: 'sand' }, { k: 4, kind: 'next', cut: 0, throw: 'water' }, { k: 6, kind: 'next', cut: 0, throw: 'sand' }], q: 1, marks: [true], hurt: false, fallen: [], phase: 'ask', anytime: false, rematch: false, result: null, ack: '' });

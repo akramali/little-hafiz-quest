@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.9.2';
+  const VERSION = '2.9.3';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -4608,11 +4608,7 @@
         flowerTag(b, b.dataset.n);
         break;
       case 'tbud':
-        // a gentle nudge (its zzz drift up, if it's asleep)
-        sfx.tap();
-        b.classList.remove('hop');
-        void b.getBoundingClientRect();
-        b.classList.add('hop');
+        budTap(b);
         break;
       case 'riddlego':
         startRiddle();
@@ -6009,15 +6005,16 @@
     svg.appendChild(g);
     setTimeout(() => g.remove(), 7000);
   }
-  // now and then a gust: the tree bends a little further with the wind, and a leaf or two comes down
+  // now and then a gust: the tree bends a little further with the wind, and a leaf or two comes down (a screen
+  // drawn again meanwhile keeps it going: treeGustTill)
+  let treeGustTill = 0;
   setInterval(() => {
     if (st.view !== 'tree' || document.hidden || reduceMotion || Math.random() > 0.35) return;
-    const sw = document.querySelector('.tsvg .tsway');
-    if (!sw) return;
-    sw.classList.remove('gust');
-    void sw.getBoundingClientRect();
+    const sw = document.querySelector('.tsvg .tgustw');
+    if (!sw || sw.classList.contains('gust')) return;
     sw.classList.add('gust');
-    setTimeout(() => sw.classList.remove('gust'), 4200);
+    treeGustTill = Date.now() + 6000;
+    setTimeout(() => sw.classList.remove('gust'), 6000);
     setTimeout(dropLeaf, 900);
     if (Math.random() < 0.6) setTimeout(dropLeaf, 1500);
   }, 20000);
@@ -6092,6 +6089,7 @@
   }
   function openTree() {
     sfx.tap();
+    treeFallen = {};
     const prof = P();
     let seen = null;
     try {
@@ -6137,8 +6135,11 @@
     const v = treeView(),
       x = +el.dataset.x,
       out = (x < 200 ? v.x0 - 60 : v.x1 + 60) - x;
+    // (a sleeper wakes first, eyes open and its 💤 fading, then walks off)
+    const sleepy = el.classList.contains('m-asleep');
+    if (sleepy) el.classList.replace('m-asleep', 'm-awake');
     el.style.setProperty('--out', out + 'px');
-    el.classList.add('leave');
+    setTimeout(() => el.classList.add('leave'), sleepy ? 1000 : 0);
     setTimeout(() => {
       if (st.view !== 'tree' || !el.isConnected) return;
       const nu = away[(Math.random() * away.length) | 0];
@@ -6147,10 +6148,11 @@
       tmp.innerHTML = treeBuddy(prof, nu, budSpots(shown.length, treeInfo(prof).size, shown)[j]);
       const g = tmp.firstElementChild;
       g.style.setProperty('--out', out + 'px');
+      if (g.classList.contains('m-asleep')) g.classList.replace('m-asleep', 'm-awake'); // (one walking in is awake)
       g.classList.add('enter');
       el.replaceWith(g);
       setTimeout(() => g.classList.remove('enter'), 3500);
-    }, 3500);
+    }, sleepy ? 4500 : 3500);
   }, 15000);
   // where all of them sit: one whose spot falls on the big or the tall bush hides in it (one a bush; its head peeks
   // out over the leaves, or a flier perches on top; never the turtle, green in the green), another there steps out
@@ -6209,7 +6211,7 @@
     const bubble = hungry
       ? `<g class="tb-want"><ellipse cx="${xx + 22}" cy="${y - size - 6}" rx="15" ry="13" fill="#fff" stroke="#2b2340" stroke-width="2"/><circle cx="${xx + 10}" cy="${y - size + 8}" r="3" fill="#fff" stroke="#2b2340" stroke-width="1.6"/>${ART.fruitIcon(treeHungry.want).replace('<svg ', `<svg x="${xx + 12}" y="${y - size - 17}" width="20" height="22" `)}</g>`
       : mood === 'asleep'
-        ? `<text class="tb-zz" x="${xx + 16}" y="${y - size + 8}" font-size="14">💤</text>`
+        ? `<text class="tb-zz" x="${Math.round(xx + size * 0.22)}" y="${Math.round(y - size * 0.68)}" font-size="14">💤</text>` // (close by its head)
         : '';
     const d = (seedOf(id) % 40) / 10;
     return `<g class="tbud m-${mood}${sp.at != null ? ' hid' : ''}" data-act="tbud" data-id="${id}" data-x="${xx}"${sp.at != null ? ` data-bush="${sp.at}"` : ''}><g class="tbud-in"><g class="tbud-w" style="animation-delay:-${d}s">${pic}</g></g>${bubble}</g>`;
@@ -6219,6 +6221,9 @@
       info = treeInfo(prof),
       night = isNight(),
       t = ART.tree({ seed: seedOf(prof.id), size: info.size, leaves: info.leaves, blossoms: info.blossoms, flowers: info.flowers, fruits: info.fruits, seen: st.seen, night });
+    // (a fruit that fell stays off the tree, also when the screen is drawn again, until it grows back)
+    if (Date.now() < treeGustTill) t.svg = t.svg.replace('<g class="tgustw">', '<g class="tgustw gust">');
+    t.svg = t.svg.replace(/<g class="tfruit" data-act="tfruit" data-j="(\d+)"/g, (m, j) => (treeFallen[j] ? '<g class="tfruit fall' + (treeFallen[j].gone ? ' gone' : '') + '" data-act="tfruit" data-j="' + j + '"' : m));
     treeDrop = t.drop;
     const buds = st.buds || [];
     // (the back row first, so the front row sits a little in front of it; a bush with a buddy in it drawn again
@@ -6234,46 +6239,131 @@
   </div>`;
   };
   // tap a fruit: it falls; the hungry buddy wanting it walks over, eats it, and walks back
+  // fruit that fell (eaten or nibbled away) grows back on its branch a little later (TREE_REGROW), small at first
+  let treeFallen = {}; // data-j → { at: when it fell, gone: picked up or eaten } (this visit)
+  const TREE_REGROW = 30000;
+  setInterval(() => {
+    if (st.view !== 'tree') return;
+    Object.keys(treeFallen).forEach((j) => {
+      if (Date.now() - treeFallen[j].at < TREE_REGROW) return;
+      delete treeFallen[j];
+      const el = document.querySelector(`.tsvg .tfruit[data-j="${j}"]:not(.ground)`);
+      if (el) el.classList.remove('fall', 'gone'), el.classList.add('regrow');
+    });
+  }, 3000);
   function treeFruit(el) {
     if (el.classList.contains('fall')) return;
     sfx.tap();
+    el.classList.remove('regrow');
+    void el.getBoundingClientRect();
     el.classList.add('fall'); // (one on the ground just stays where it is)
+    if (!el.classList.contains('ground')) treeFallen[el.dataset.j] = { at: Date.now(), gone: false };
     const prof = P(),
       want = treeHungry && treeHungry.want === el.dataset.t,
       bud = want && document.querySelector(`.tbud[data-id="${treeHungry.id}"]`);
     setTimeout(() => {
       if (!el.isConnected) return;
       if (!bud) {
-        el.classList.add('gone'); // (a little animal nibbles it away)
+        // (no one wanted it: it lies on the ground; sometimes a squirrel or a rabbit comes for it, else it fades)
+        if (Math.random() < 0.6) setTimeout(() => critterFor(el), 2500 + Math.random() * 6000);
+        setTimeout(() => fruitGone(el), 22000);
         return;
       }
       const bb = el.getBBox ? el.getBBox() : null,
-        fx = bb ? bb.x + bb.width / 2 : +bud.dataset.x;
+        fx = bb ? bb.x + bb.width / 2 : +bud.dataset.x,
+        inn = bud.querySelector('.tbud-in'),
+        walk = Math.min(3.5, Math.max(0.9, Math.abs(fx - +bud.dataset.x) / 70)); // (at a walk, not a dash)
+      if (inn) inn.style.transitionDuration = walk + 's';
       bud.style.setProperty('--go', fx - +bud.dataset.x + 'px');
       bud.classList.add('eat');
       setTimeout(() => {
-        el.classList.add('gone');
+        fruitGone(el);
         const fed = prof.buddy[0] === today() ? prof.buddy[1] : 0;
         prof.buddy = [today(), fed + 1, prof.buddy[2] + 1];
         treeFedAt = Date.now();
         treeHungry = null;
         save();
         sfx.chime();
-        burstAt(bud, 10, ['💛', '✨', '😋']);
+        burstAt(inn || bud, 10, ['💛', '✨', '😋']); // (where it is eating, by the fruit)
         bud.classList.add('fed');
         bud.classList.remove('m-hungry'); // (no longer hungry: its bubble goes at once)
-        setTimeout(() => bud.classList.remove('eat'), 700); // (back to its spot, smoothly)
+        setTimeout(() => bud.classList.remove('eat'), 900); // (then back to its spot, smoothly, at a walk)
         setTimeout(() => {
           if (st.view !== 'tree') return;
+          if (inn) inn.style.transitionDuration = '';
           pickHungry(P());
           render();
-        }, 1700);
-      }, 900);
+        }, 1100 + walk * 1000);
+      }, walk * 1000 + 250);
     }, 650);
+  }
+  // tap a buddy: like on My Explorer, it does something each time (turns around, looks about, jumps, a flip, a
+  // wiggle); one hiding in a bush peeks out; a sleeper stirs (its 💤 drift up)
+  const BUD_MOVES = ['flip', 'look', 'jump', 'spin', 'wiggle'];
+  function budTap(b) {
+    if (b.classList.contains('hid') || b.classList.contains('m-asleep')) {
+      sfx.tap();
+      b.classList.remove('hop');
+      void b.getBoundingClientRect();
+      b.classList.add('hop');
+      return;
+    }
+    const last = b.dataset.mv,
+      pool = BUD_MOVES.filter((m) => m !== last),
+      mv = pool[(Math.random() * pool.length) | 0];
+    BUD_MOVES.forEach((m) => b.classList.remove('bm-' + m));
+    void b.getBoundingClientRect();
+    b.dataset.mv = mv;
+    b.classList.add('bm-' + mv);
+    (mv === 'jump' || mv === 'spin' ? sfx.pop : sfx.tap)();
+    clearTimeout(b._mv);
+    b._mv = setTimeout(() => b.classList.remove('bm-' + mv), 1500);
+  }
+  // a fallen fruit is gone (eaten, picked up or faded): it stays off the tree until it grows back
+  function fruitGone(el) {
+    if (!el.isConnected || el.classList.contains('gone')) return;
+    el.classList.add('gone');
+    if (treeFallen[el.dataset.j]) treeFallen[el.dataset.j].gone = true;
+  }
+  // a squirrel or a rabbit runs in from the nearer side, picks up the fallen fruit and runs back off
+  function critterFor(f) {
+    const svg = document.querySelector('.tsvg'),
+      id = Math.random() < 0.5 ? 'forest-squirrel' : 'meadow-rabbit';
+    if (st.view !== 'tree' || reduceMotion || !svg || !f.isConnected || f.classList.contains('gone') || svg.querySelector('.tcrit') || !ART.props[id]) return;
+    const bb = f.getBBox(),
+      fx = bb.x + bb.width / 2,
+      v = treeView(),
+      dir = fx < 200 ? 1 : -1, // (coming from the left: heading right)
+      sx = dir > 0 ? v.x0 - 40 : v.x1 + 40,
+      c = document.createElementNS('http://www.w3.org/2000/svg', 'g'),
+      at = (x, d) => (c.style.transform = `translate(${x}px, 614px) scaleX(${d > 0 ? -1 : 1})`); // (drawn facing left)
+    c.setAttribute('class', 'tcrit');
+    c.innerHTML = `<g class="tcrit-in">${ART.props[id].replace('<svg ', '<svg x="-20" y="-36" width="40" height="40" ')}</g>`;
+    at(sx, dir);
+    svg.appendChild(c);
+    void c.getBoundingClientRect();
+    const t1 = Math.abs(fx - 14 * dir - sx) / 120;
+    c.style.transition = `transform ${t1}s linear`;
+    at(fx - 14 * dir, dir);
+    setTimeout(() => {
+      c.classList.add('stop'); // (it stops, picks it up…)
+      setTimeout(() => {
+        if (f.isConnected && !f.classList.contains('gone')) fruitGone(f);
+        sfx.tap();
+      }, 500);
+      setTimeout(() => {
+        // (…and scampers back the way it came, faster)
+        c.classList.remove('stop');
+        c.style.transition = `transform ${t1 * 0.6}s linear`;
+        at(sx, -dir);
+        setTimeout(() => c.remove(), t1 * 600 + 100);
+      }, 1100);
+    }, t1 * 1000);
   }
   // tap a blossom: its sūrah's name pops out of it, with a few petals
   function flowerTag(el, n) {
     sfx.tap();
+    document.querySelectorAll('.tftag').forEach((t) => t.remove()); // (one name at a time, never a pile)
     const r = el.getBoundingClientRect(),
       tag = document.createElement('div');
     tag.className = 'tftag';
@@ -7675,5 +7765,5 @@
   registerOffline();
   if (linkCode) setTimeout(() => openSync(linkCode, `${appURL()}#sync=${linkCode}`), 400);
   if (justUpdated) loadChangelog().then(() => st.view === 'splash' && render());
-  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder, world: elderWorld, size: testSize, tap: tapElder }, sunDown, journal: JKEYS, countDay, installSteps: showInstallSteps, cleanStore, cleanProfile, syncCtx, openSync, markNow, fabTarget, riddleNow, occasion, treeInfo, hungry: () => treeHungry, treeReset: () => (treeFedAt = 0) }; // for testing in the browser console
+  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder, world: elderWorld, size: testSize, tap: tapElder }, sunDown, journal: JKEYS, countDay, installSteps: showInstallSteps, cleanStore, cleanProfile, syncCtx, openSync, markNow, fabTarget, riddleNow, occasion, treeInfo, hungry: () => treeHungry, treeReset: () => (treeFedAt = 0), critterFor }; // for testing in the browser console
 })();

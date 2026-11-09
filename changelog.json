@@ -1,7 +1,12 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.9.2",
+ "latest": "2.9.3",
  "versions": [
+  { "v": "2.9.3", "notes": [
+   "Tap a buddy at your tree and it does a little trick",
+   "Fallen fruit stays on the ground for a squirrel or rabbit, then grows back",
+   "Small fixes and visual tweaks"
+  ] },
   { "v": "2.9.2", "notes": [
    "My Tree fills the screen and grows naturally from a tiny seedling",
    "More buddies around your tree; tap a flower in the grass to see its sūrah",

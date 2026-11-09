@@ -9588,6 +9588,7 @@ body:has(.wrail.open) .tbtn {
 }
 .treescr > .bar {
   position: relative;
+  top: 0; /* (not the sticky bar's offset: its padding already clears the phone's status bar) */
   z-index: 2;
   margin: 0;
   padding: calc(10px + env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-right, 0px)) 10px max(14px, env(safe-area-inset-left, 0px));
@@ -9642,7 +9643,7 @@ body:has(.wrail.open) .tbtn {
 .tsvg .tsway {
   transform-box: view-box;
   transform-origin: 200px 600px;
-  animation: tsway 11s ease-in-out infinite;
+  animation: tsway 15s ease-in-out infinite; /* (v2.9.3: slower, the big lean gentle) */
 }
 /* the wind: the top leans with it (the higher, the more), springs back a touch past straight, and settles */
 @keyframes tsway {
@@ -9663,9 +9664,14 @@ body:has(.wrail.open) .tbtn {
     transform: none;
   }
 }
-/* now and then a gust: further, then back */
-.tsvg .tsway.gust {
-  animation: tgust 4.2s ease-in-out;
+/* now and then a gust: further, then back. It plays on a layer of its own around the swaying tree, so the
+   sway never restarts (no jump back to straight) and the gust starts and ends at straight (v2.9.3) */
+.tsvg .tgustw {
+  transform-box: view-box;
+  transform-origin: 200px 600px;
+}
+.tsvg .tgustw.gust {
+  animation: tgust 6s ease-in-out;
 }
 @keyframes tgust {
   30% {
@@ -9729,6 +9735,19 @@ body:has(.wrail.open) .tbtn {
   opacity: 0;
   pointer-events: none;
 }
+/* a fruit growing back on its branch: straight back up while unseen, then swelling from small (v2.9.3) */
+.tsvg .tfruit.regrow {
+  transition: none;
+  transform-box: fill-box;
+  transform-origin: 50% 30%;
+  animation: tfruitgrow 1.6s ease-out;
+}
+@keyframes tfruitgrow {
+  from {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+}
 .tsvg .tbird.fly .tbird-in {
   animation: tbirdfly 2.2s ease-in-out;
 }
@@ -9763,6 +9782,18 @@ body:has(.wrail.open) .tbtn {
 }
 .tsvg .tb-zz {
   animation: tzz 3.4s ease-in-out infinite;
+  transition: opacity 0.8s;
+}
+/* (v2.9.3) awake again, walking off or going to eat: its 💤 fade away; asleep: eyes closed (those that blink) */
+.tsvg .tbud:not(.m-asleep) .tb-zz,
+.tsvg .tbud.leave .tb-zz,
+.tsvg .tbud.eat .tb-zz {
+  animation: none;
+  opacity: 0;
+}
+.tsvg .tbud.m-asleep .lhq-blink {
+  animation: none;
+  transform: scaleY(0.12);
 }
 .tsvg .tbud.hop .tbud-w,
 .tsvg .tanimal.hop {
@@ -9820,6 +9851,7 @@ body:has(.wrail.open) .tbtn {
 }
 @media (prefers-reduced-motion: reduce) {
   .tsvg .tsway,
+  .tsvg .tgustw,
   .tsvg .tbud .tbud-in,
   .tsvg .tb-want {
     animation: none;
@@ -9894,6 +9926,16 @@ body:has(.wrail.open) .tbtn {
     animation: none;
     box-shadow: 0 2px 0 var(--edge), 0 0 0 3px var(--gold);
   }
+}
+/* my tree: a squirrel or rabbit come for a fallen fruit (v2.9.3), hopping while it runs */
+.tsvg .tcrit {
+  pointer-events: none;
+}
+.tsvg .tcrit .tcrit-in {
+  animation: tbudhop 0.4s ease-in-out infinite;
+}
+.tsvg .tcrit.stop .tcrit-in {
+  animation: none;
 }
 /* my tree: a squirrel scampering across the ground now and then */
 .tsvg .tsq {
@@ -10031,5 +10073,64 @@ body.v-tree {
   30%,
   70% {
     transform: translateY(-22px);
+  }
+}
+
+/* ---------- 2026-11-09 · v2.9.3: tapping a buddy at my tree: a move each time, turning about its own feet ---------- */
+.tsvg .tbud .tbud-w {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+.tsvg .tbud.bm-flip .tbud-w {
+  animation: tbFlip 1.3s ease-in-out;
+}
+.tsvg .tbud.bm-look .tbud-w {
+  animation: tbLook 1.4s ease-in-out;
+}
+.tsvg .tbud.bm-jump .tbud-w {
+  animation: tbJump 1s ease-out;
+}
+.tsvg .tbud.bm-spin .tbud-w {
+  animation: tbSpin 1.2s ease-out;
+}
+.tsvg .tbud.bm-wiggle .tbud-w {
+  animation: tbWiggle 1s ease-in-out;
+}
+@keyframes tbFlip {
+  20% { transform: scaleX(0.05); }
+  40%, 60% { transform: scaleX(-1); }
+  80% { transform: scaleX(0.05); }
+}
+@keyframes tbLook {
+  12%, 38% { transform: scaleX(-1) translateY(-2px); }
+  50%, 76% { transform: none; }
+  86% { transform: scale(1.04, 0.96); }
+}
+@keyframes tbJump {
+  0% { transform: scale(1.1, 0.9); }
+  30% { transform: translateY(-34px) scale(0.95, 1.06); }
+  58% { transform: translateY(0) scale(1.1, 0.9); }
+  75% { transform: none; }
+}
+@keyframes tbSpin {
+  0% { transform: scale(1.1, 0.9); }
+  35% { transform: translateY(-40px) rotate(-180deg); }
+  70% { transform: translateY(0) rotate(-360deg) scale(1.08, 0.92); }
+  100% { transform: rotate(-360deg); }
+}
+@keyframes tbWiggle {
+  15% { transform: rotate(-9deg); }
+  35% { transform: rotate(8deg); }
+  55% { transform: rotate(-6deg); }
+  75% { transform: rotate(4deg); }
+}
+/* (each buddy's idle motion starts at its own point, a negative delay on .tbud-w: a tap's move starts at once) */
+.tsvg .tbud[class*='bm-'] .tbud-w,
+.tsvg .tbud.hop .tbud-w {
+  animation-delay: 0s !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tsvg .tbud[class*='bm-'] .tbud-w {
+    animation: none;
   }
 }

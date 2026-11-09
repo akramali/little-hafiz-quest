@@ -35,6 +35,15 @@
     if (Q.get('placed')) { st.say = +Q.get('placed').split(',')[0]; L.go('order', st); }
   }
   else if (v === 'syncshare') { L.go('explorers'); await wait(100); d.querySelector('[data-act=syncshare]').click(); await wait(1200); }
+  // tree&s=<size 0–1>&pets=<item>,<item>: My Tree at that size with those buddies (theme=dim: at night)
+  else if (v === 'tree') {
+    const pr = L.store().profiles[0];
+    (Q.get('pets') || 'ladybug-buddy,kitten-buddy,elephant-buddy,turtle-buddy,bee-buddy,toy-car').split(',').forEach((id) => pr.items.includes(id) || pr.items.push(id));
+    pr.strangers = [0, 1, 2, 3, 4, 5, 6, 7];
+    w.__treeSize = +(Q.get('s') || 0.6);
+    L.go('map'); await wait(800);
+    d.querySelector('[data-act=tree]').click(); await wait(1500);
+  }
   else if (v === 'splash') { L.go('splash'); await wait(1500); if (Q.get('whatsnew')) { const dt = d.querySelector('.updnote details'); if (dt) dt.open = true; } }
   else if (v === 'bag') L.go('bag', { tab: Q.get('tab') || 'look' });
   else if (v === 'done') L.go('done', { i, p, msg: Q.get('msg') || 'You put all of it in order!', stars: 1, allStars: !!Q.get('all'), memorized: !!Q.get('memo') });

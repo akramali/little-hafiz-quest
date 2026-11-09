@@ -47,6 +47,16 @@ recite on their own.
     <td align="center">Build it word by word</td>
     <td align="center">Walk with your Teacher</td>
   </tr>
+  <tr>
+    <td align="center"><img src="screenshots/tree.png" width="200" alt="My Tree: a big leafy tree with fruit, buddies around it in the garden, a flower in the grass for each sūrah, hills and a river far off"></td>
+    <td align="center"><img src="screenshots/journal.png" width="200" alt="My Journal: today's riddle at the top, and the things found on the map and in the sūrahs' pictures"></td>
+    <td align="center"><img src="screenshots/riddle.png" width="200" alt="A riddle on the map: its clue at the bottom while the explorer looks for the answer"></td>
+  </tr>
+  <tr>
+    <td align="center">Grow your tree</td>
+    <td align="center">Fill the journal</td>
+    <td align="center">Solve the riddle</td>
+  </tr>
 </table>
 
 > [!IMPORTANT]
