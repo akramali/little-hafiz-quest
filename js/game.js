@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.9.4';
+  const VERSION = '2.9.5';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -1668,6 +1668,7 @@
       const gate = strangerGate(P(), worldOf(S[params.i]));
       if (gate != null) return startStranger(gate, Object.assign({ view: 'surah' }, params));
     }
+    oopsAt = 0; // (a new screen: a frog's misstep there is a new one)
     arriving = st.view !== view ? st.view : ''; // (the start screen and the map arrive with their own animation)
     st = Object.assign({ view }, params);
     if (GAMES.includes(view)) st.starsBefore = totalStars(); // a first finish (a new star) always brings a gift
@@ -1701,7 +1702,7 @@
       document.documentElement.style.setProperty('--pagebg', SPLASH_GROUND[+night]);
     } else if (st.view === 'tree') {
       setTopColor(night ? '#141a3f' : '#8fd0ff'); // (my tree's sky, right up under the status bar)
-      document.documentElement.style.setProperty('--pagebg', '#69bb59');
+      document.documentElement.style.setProperty('--pagebg', night ? '#4d8456' : '#69bb59'); // (the grass, darker at night)
     } else if (st.view === 'map') {
       const g = ART.WORLDS[0]; // the map's bottom is the first world's meadow
       document.documentElement.style.setProperty('--pagebg', night && g.dim ? g.dim.ground[1] : g.ground[1]);
@@ -2183,16 +2184,19 @@
     const nextIdx = steps.findIndex((x) => !x.done);
     let stepsHTML = '',
       reviewShown = false;
+    // (the hearts left in each review game here, as it would start: the same keys as startPath / startOrder)
+    const gameHearts = (key) => (key === 'pathpick' ? heartsFor('path', st.i, p != null ? p : 0) : heartsFor('order', st.i, p === 'all' && multi(s) ? 'all' : pnum(p)));
     steps.forEach((x, j) => {
       if (x.review && !reviewShown) {
         reviewShown = true;
-        stepsHTML += `<div class="qsep"><span>Review games</span>${prefs.hearts && learned() ? `<small>${ART.heart(true).repeat(maxHearts(P()))} careful, ${maxHearts(P())} hearts!</small>` : ''}</div>`;
+        stepsHTML += `<div class="qsep"><span>Review games</span></div>`;
       }
       const isNext = j === nextIdx;
-      stepsHTML += `<button class="qstep ${x.done ? 'done' : ''} ${isNext && !x.locked ? 'next' : ''} ${x.locked ? 'locked' : ''}" data-act="${x.key}" ${p === 'all' ? 'data-p="all"' : ''}>
+      // (no Start button: the next learning step glows softly instead; review games never glow, v2.9.5)
+      stepsHTML += `<button class="qstep ${x.done ? 'done' : ''} ${isNext && !x.locked ? 'next' : ''} ${isNext && !x.locked && !x.review ? 'glow' : ''} ${x.locked ? 'locked' : ''}" data-act="${x.key}" ${p === 'all' ? 'data-p="all"' : ''}>
         <span class="qn">${x.done ? '✓' : j + 1}</span><span class="qico">${x.ico}</span>
-        <span class="qtx"><b>${x.t}</b><small>${x.d}</small><span class="st">${starRow(x.stars[0], x.stars[1])}</span></span>
-        ${isNext && !x.locked ? '<span class="qgo">Start ▶</span>' : x.locked ? '<span class="qgo lock">🔒</span>' : ''}</button>`;
+        <span class="qtx"><b>${x.t}</b><small>${x.d}</small><span class="st">${starRow(x.stars[0], x.stars[1])}${x.review && !x.locked && prefs.hearts && learned() ? `<span class="qhearts" aria-label="${gameHearts(x.key)} hearts">${ART.heart(true).repeat(gameHearts(x.key))}</span>` : ''}</span></span>
+        ${x.locked ? '<span class="qgo lock">🔒</span>' : ''}</button>`; // (each review game's hearts left, on its star line, v2.9.5)
     });
     return `<div class="screen ${st.enter ? 'zoomin' : ''}" style="${cv(s.color)}">
     ${bar(`${s.n}. ${s.name}`, `World ${wi + 1} · ${WORLDS[wi].name}`, 'map')}
@@ -5234,20 +5238,28 @@
         st.hints++;
         render();
         break;
-      case 'oops':
-        // a mistake: lose a heart and show one more clue (in Stepping Stones, the frog slips in and climbs back)
-        if (st.view === 'path') slipFrog();
-        if (loseHeart() && st.hearts > 0) {
-          const cl = pathClues(S[st.i], range(ctx())[st.k], st.L, st.hint);
-          if (!cl.full) {
-            st.hint++;
-            st.hints++;
+      case 'oops': {
+        // a mistake: the frog misses its hop and falls in, and only then a heart goes and one more clue shows
+        // (v2.9.5: the heart after the fall, not before the jump)
+        if (oopsAt && Date.now() - oopsAt < 2300) break; // (one misstep at a time)
+        oopsAt = Date.now();
+        const lose = () => {
+          if (st.view !== 'path') return;
+          if (loseHeart() && st.hearts > 0) {
+            const cl = pathClues(S[st.i], range(ctx())[st.k], st.L, st.hint);
+            if (!cl.full) {
+              st.hint++;
+              st.hints++;
+            }
+            setTimeout(() => {
+              if (st.view === 'path' && st.hearts > 0) render();
+            }, 1100);
           }
-          setTimeout(() => {
-            if (st.view === 'path' && st.hearts > 0) render();
-          }, 1050);
-        }
+        };
+        if (st.view === 'path' && slipFrog()) setTimeout(lose, 1100);
+        else lose();
         break;
+      }
       case 'hop':
         hopFrog();
         break;
@@ -5807,23 +5819,35 @@
       dir = r.left + r.width / 2 < innerWidth / 2 ? -1 : 1, // off the nearest side
       out = (dir > 0 ? innerWidth - r.left + 30 : -(r.right + 30)) / k,
       peek = (dir > 0 ? innerWidth - r.left - r.width * 0.55 : -r.left - r.width * 0.45) / k;
-    const at = (offset, x, y) => ({ offset, transform: `translate(${Math.round(x)}px, ${y || 0}px)` });
+    // (it runs facing the way it goes, never backwards: from where its stroll had it, turned the right way; it
+    // peeks back and comes home facing in; its stroll waits meanwhile, v2.9.5)
+    const strolls = who.getAnimations().filter((x) => x instanceof CSSAnimation);
+    strolls.forEach((x) => x.pause());
+    const cs = getComputedStyle(who).transform,
+      m0 = cs && cs !== 'none' ? new DOMMatrixReadOnly(cs) : new DOMMatrixReadOnly(),
+      x0 = m0.m41,
+      face0 = m0.a < 0 ? -1 : 1,
+      nat = ART.FACE_LEFT.includes(el.dataset.k) ? -1 : 1, // (which way the picture faces)
+      fo = dir * nat,
+      at = (offset, x, y, f) => ({ offset, transform: `translate(${Math.round(x0 + x)}px, ${y || 0}px) scaleX(${f})` });
     const run = who.animate(
       [
-        at(0, 0),
-        at(0.05, out * 0.18, -16),
-        at(0.1, out * 0.4),
-        at(0.15, out * 0.66, -12),
-        at(0.2, out),
-        at(0.42, out), // gone…
-        at(0.5, peek), // …peeks in from the edge
-        at(0.55, peek, -5),
-        at(0.6, peek),
-        at(0.65, peek, -5),
-        at(0.7, peek),
-        at(0.92, 0), // and comes home
-        at(0.96, 0, -10),
-        at(1, 0),
+        at(0, 0, 0, face0),
+        at(0.03, 0, 0, fo),
+        at(0.05, out * 0.18, -16, fo),
+        at(0.1, out * 0.4, 0, fo),
+        at(0.15, out * 0.66, -12, fo),
+        at(0.2, out, 0, fo),
+        at(0.42, out, 0, -fo), // gone…
+        at(0.5, peek, 0, -fo), // …peeks in from the edge
+        at(0.55, peek, -5, -fo),
+        at(0.6, peek, 0, -fo),
+        at(0.65, peek, -5, -fo),
+        at(0.7, peek, 0, -fo),
+        at(0.92, 0, 0, -fo), // and comes home
+        at(0.96, 0, -10, -fo),
+        at(0.99, 0, 0, -fo),
+        at(1, 0, 0, face0),
       ],
       { duration: 5600 },
     );
@@ -5831,6 +5855,7 @@
     const t = setTimeout(() => sfx.pop(), 5600 * 0.5);
     run.onfinish = run.oncancel = () => {
       clearTimeout(t);
+      strolls.forEach((x) => x.play());
       el._away = false;
       if (el.isConnected) burstAt(el, 5, ['💕', '✨']);
     };
@@ -5938,9 +5963,10 @@
   }
   // a mistake: a misstep. The frog tries to hop, loses its footing halfway, worried, and drops into the water with a
   // splash; a moment under, then it pops back up onto its stone, smiling again (v2.9.4)
+  let oopsAt = 0;
   function slipFrog() {
     const fr = $app.querySelector('.stone.cur .frog');
-    if (!fr || reduceMotion) return;
+    if (!fr || reduceMotion) return false;
     fr.animate(
       [
         { transform: 'translate(0,0) rotate(0)', opacity: 1 },
@@ -5962,6 +5988,7 @@
       burstAt(fr, 8, ['💦', '💧']);
     }, 1100);
     setTimeout(() => fr.classList.remove('sad'), 1800); // (back on its stone, smiling)
+    return true;
   }
 
   /* ================= CAMPFIRES =================
@@ -6282,10 +6309,15 @@
   }
   // a buddy on the ground: awake (shuffling a little), playing or asleep, or hungry (a bubble shows what it wants);
   // rides never dance about
+  // at night most buddies sleep, but now and then one or two are still up (a few each ten minutes, v2.9.5)
+  const nightOwls = (prof) => {
+    const win = Math.floor(Date.now() / 600000);
+    return buddiesOf(prof).filter((id) => seedOf(id + 'n' + win) % 4 === 0).slice(0, 2);
+  };
   function treeBuddy(prof, id, sp) {
     const { x: xx, y, size } = sp;
     const hungry = treeHungry && treeHungry.id === id,
-      mood = hungry ? 'hungry' : isNight() || seedOf(id + Math.floor(Date.now() / 600000)) % 5 === 0 ? 'asleep' : animalBuddy(id) && seedOf(id + 'p' + Math.floor(Date.now() / 600000)) % 3 === 0 ? 'play' : 'awake';
+      mood = hungry ? 'hungry' : (isNight() && !nightOwls(prof).includes(id)) || (!isNight() && seedOf(id + Math.floor(Date.now() / 600000)) % 5 === 0) ? 'asleep' : animalBuddy(id) && seedOf(id + 'p' + Math.floor(Date.now() / 600000)) % 3 === 0 ? 'play' : 'awake';
     const pic = ART.item(id).replace('<svg ', `<svg x="${xx - size / 2}" y="${y - size + 6}" width="${size}" height="${size}" `);
     const bubble = hungry
       ? `<g class="tb-want"><ellipse cx="${xx + 22}" cy="${y - size - 6}" rx="15" ry="13" fill="#fff" stroke="#2b2340" stroke-width="2"/><circle cx="${xx + 10}" cy="${y - size + 8}" r="3" fill="#fff" stroke="#2b2340" stroke-width="1.6"/>${ART.fruitIcon(treeHungry.want).replace('<svg ', `<svg x="${xx + 12}" y="${y - size - 17}" width="20" height="22" `)}</g>`
@@ -6314,7 +6346,7 @@
     return `<div class="screen treescr${night ? ' night' : ''}">
     ${bar('My Tree', sub, 'map')}
     <p class="tnote">${info.size >= 0.999 ? 'MāshāAllāh! Your tree is fully grown, with a flower for every sūrah.' : 'It grows as you learn and bears fruit as you practise. A flower in the grass for each sūrah.'}</p>
-    <div class="tstage"><svg class="tsvg" viewBox="0 -200 400 900" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg">${t.svg}${order.filter((j) => spots[j].at != null).map((j) => treeBuddy(prof, buds[j], spots[j])).join('')}<g class="tbushfront" pointer-events="none">${hide.map((i) => ART.treeBush(i, info.size)).join('')}</g>${order.filter((j) => spots[j].at == null).map((j) => ({ y: spots[j].y, svg: treeBuddy(prof, buds[j], spots[j]) })).concat(t.tufts).sort((p, q) => p.y - q.y).map((e) => e.svg).join('')}</svg></div>
+    <div class="tstage"><svg class="tsvg" viewBox="0 -200 400 900" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg">${t.svg}${order.filter((j) => spots[j].at != null).map((j) => treeBuddy(prof, buds[j], spots[j])).join('')}<g class="tbushfront" pointer-events="none">${hide.map((i) => ART.treeBush(i, info.size, night)).join('')}</g>${order.filter((j) => spots[j].at == null).map((j) => ({ y: spots[j].y, svg: treeBuddy(prof, buds[j], spots[j]) })).concat(t.tufts).sort((p, q) => p.y - q.y).map((e) => e.svg).join('')}</svg></div>
   </div>`;
   };
   // tap a fruit: it falls; the hungry buddy wanting it walks over, eats it, and walks back

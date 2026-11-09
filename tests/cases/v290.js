@@ -187,6 +187,15 @@
     log('piece colours', fills.join(' '));
     ok('puzzle pieces take a light tint of their pictures', fills.length > 2 && fills.some((f) => !['#ffd9e4', '#d5efff', '#ddf7d2', '#fff0c2', '#e8dcff', '#ffe2c8'].includes(f)));
   }
+  { // (v2.9.5) no Start button; the next learning step glows, review games never do
+    const r = prof.prog[112] = { parts: [{ learn: 1, words: 0, order: 0, next: 0, path: 0, la: 0, wa: 0 }], all: 0 };
+    L.go('surah', { i: idx(112), p: 0 }); await wait(300);
+    const g1 = [...d.querySelectorAll('.qstep.glow')].map((b) => b.dataset.act);
+    r.parts[0].words = 1;
+    L.go('surah', { i: idx(112), p: 0 }); await wait(300);
+    const g2 = d.querySelectorAll('.qstep.glow').length;
+    ok('no Start button; the next learning step glows, a review game never', !d.querySelector('.qgo:not(.lock)') && g1.join() === 'words' && g2 === 0, g1.join() + ' / ' + g2);
+  }
   ok('no game errors', !errs.length, errs.slice(0, 3).join('; ')); log('errors', errs);
   done();
 })();

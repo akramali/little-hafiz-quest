@@ -20,7 +20,7 @@
   const all = (n) => w.LHQ_DATA.surahs.filter((s) => s.n >= n).forEach((s) => (p.prog[s.n] = { parts: s.parts.map(() => ({ learn: 1, words: 1, order: 1, next: 1, path: 3, la: 0, wa: 0 })), all: s.parts.length > 1 ? 3 : 0 }));
   all(97); // the first three worlds
   L.go('surah', { i: idx(100), p: 0 }); await wait(200);
-  ok('three worlds done: still 3 hearts', /3 hearts/.test(d.body.textContent), (d.body.textContent.match(/\d hearts/) || [''])[0]);
+  { const qh = d.querySelector('.qhearts'); ok('three worlds done: still 3 hearts', !!qh && qh.getAttribute('aria-label') === '3 hearts' && qh.querySelectorAll('svg').length === 3, qh && qh.getAttribute('aria-label')); } // (on each review game's box since v2.9.5)
   // 4. the frog onto the next set of stones: lands right on its stone
   L.go('path', { i: idx(100), p: 'all', L: 2, k: 9, hint: 0, hints: 0, hearts: 3, maxH: 3 }); await wait(600);
   const sets = d.getElementById('stsets'), nx = d.querySelector('.stone[data-j="10"]'), nr = nx.getBoundingClientRect();

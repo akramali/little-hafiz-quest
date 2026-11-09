@@ -26,12 +26,12 @@
   // 4. hearts note: only with both quests done
   const r = prof.prog[112] = { parts: [{ learn: 1, words: 0, order: 0, next: 0, path: 0, la: 0, wa: 0 }], all: 0 };
   L.go('surah', { i: idx(112), p: 0 }); await wait(200);
-  const note1 = /careful/.test(d.querySelector('.qsep').textContent);
+  const note1 = !!d.querySelector('.qhearts'); // (the hearts on the review games' boxes since v2.9.5)
   r.parts[0].words = 1;
   L.go('surah', { i: idx(112), p: 0 }); await wait(200);
-  const note2 = /careful/.test(d.querySelector('.qsep').textContent);
+  const note2 = !!d.querySelector('.qhearts');
   log('hearts note: Look & Repeat only', note1, '| both quests', note2);
-  ok('hearts note only once both quests are done', !note1 && note2);
+  ok('the review games show their hearts only once both quests are done', !note1 && note2);
   // 5. Read focus closes with the card shrinking and the page unblurring
   L.go('mushaf', { i: idx(112), p: 0, sel: 1, focus: true }); await wait(400);
   d.querySelector('.mfx').click(); await wait(60);

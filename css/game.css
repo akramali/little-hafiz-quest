@@ -9835,7 +9835,7 @@ body:has(.wrail.open) .tbtn {
   padding: 10px 12px;
   border-radius: 18px;
   background: var(--card);
-  box-shadow: 0 4px 0 var(--shd), 0 0 0 3px var(--gold);
+  box-shadow: 0 4px 0 var(--shd);
 }
 .mriddle .mr-ic {
   font-size: 26px;
@@ -9874,20 +9874,21 @@ body:has(.wrail.open) .tbtn {
   color: var(--ink);
 }
 /* the riddle glows softly, breathing slowly in and out (in the journal and on the map) */
+/* (v2.9.5: the gold outline itself breathes in and out, from none to bright with a soft glow) */
 @keyframes rbreathe {
   from {
-    box-shadow: 0 2px 0 var(--edge), 0 0 0 2px var(--gold), 0 0 6px rgba(255, 196, 60, 0.18);
+    box-shadow: 0 2px 0 var(--edge), 0 0 0 3px rgba(255, 196, 60, 0), 0 0 0 rgba(255, 196, 60, 0);
   }
   to {
-    box-shadow: 0 2px 0 var(--edge), 0 0 0 3px var(--gold), 0 0 20px rgba(255, 196, 60, 0.55);
+    box-shadow: 0 2px 0 var(--edge), 0 0 0 3px rgba(255, 196, 60, 1), 0 0 16px rgba(255, 196, 60, 0.5);
   }
 }
 @keyframes mrbreathe {
   from {
-    box-shadow: 0 4px 0 var(--shd), 0 0 0 3px var(--gold), 0 0 6px rgba(255, 196, 60, 0.2);
+    box-shadow: 0 4px 0 var(--shd), 0 0 0 3px rgba(255, 196, 60, 0), 0 0 0 rgba(255, 196, 60, 0);
   }
   to {
-    box-shadow: 0 4px 0 var(--shd), 0 0 0 3px var(--gold), 0 0 24px rgba(255, 196, 60, 0.6);
+    box-shadow: 0 4px 0 var(--shd), 0 0 0 3px rgba(255, 196, 60, 1), 0 0 18px rgba(255, 196, 60, 0.55);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -10183,4 +10184,47 @@ body.v-elder .scn-amb {
 }
 .frog.sad .lhq-frog-m {
   opacity: 0;
+}
+
+/* ---------- 2026-11-09 · v2.9.5: each review game's hearts left, on its star line ---------- */
+.qhearts {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: 10px;
+  vertical-align: middle;
+  line-height: 0;
+}
+.qhearts svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* ---------- 2026-11-09 · v2.9.5: the next learning step breathes a soft glow (no Start button) ---------- */
+.qstep.glow {
+  animation: qglow 4.5s ease-in-out infinite alternate;
+}
+@keyframes qglow {
+  from {
+    box-shadow:
+      0 5px 0 var(--cd),
+      0 10px 18px var(--shd),
+      0 0 0 3px rgba(255, 196, 60, 0),
+      0 0 0 rgba(255, 196, 60, 0);
+  }
+  to {
+    box-shadow:
+      0 5px 0 var(--cd),
+      0 10px 18px var(--shd),
+      0 0 0 3px rgba(255, 196, 60, 0.95),
+      0 0 18px rgba(255, 196, 60, 0.45);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .qstep.glow {
+    animation: none;
+    box-shadow:
+      0 5px 0 var(--cd),
+      0 10px 18px var(--shd),
+      0 0 0 3px rgba(255, 196, 60, 0.9);
+  }
 }

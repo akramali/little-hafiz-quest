@@ -2402,6 +2402,9 @@
   }
   // the garden's three bushes (each its own shape), growing with the tree: the big flowering one, a tall leafy one
   // with a smaller clump at its side, and a little one in flower. x, w, top: where a buddy can hide in it or peek round
+  // the garden by night: its greens and browns a little darker and bluer (the ground, the bushes, the mound, the
+  // grass tufts; v2.9.5), like the far hills in the dark
+  const nightTint = (svg, night) => (night ? svg.replace(/#[0-9a-fA-F]{6}\b/g, (c) => mix(c, '#1b2350', 0.36)) : svg);
   function treeBushes(size) {
     const grow = (s0) => (size < s0 ? 0 : 0.3 + 0.7 * Math.min(1, (size - s0) / 0.7)), // (none at first; each comes up in its turn)
       bud = (x, y, r, c) => CF(n(x), n(y), r, c) + CF(n(x), n(y), r * 0.4, '#ffd23f');
@@ -2498,7 +2501,8 @@
     const live = nodes.filter((nd) => nd.seg);
     // the ground and two bushes (still), then the plant (swaying a little in the wind), from a soil mound
     const ground = OUT(F('M-800 606Q-300 590 -40 604Q100 586 200 600Q300 586 440 604Q700 590 1200 606L1200 1100L-800 1100Z', '#7acb6a') + F('M-800 642Q-300 628 -40 640Q120 624 230 640Q330 628 440 642Q700 630 1200 644L1200 1100L-800 1100Z', '#69bb59') +
-      treeBushes(size).map((b) => b.d).join(''), 2);
+      treeBushes(size).map((b) => b.d).join(''), 2),
+      groundN = nightTint(ground, o.night);
     // a flower in the grass for every sūrah memorized (its own colour; tap: its name), from the very first
     // (three loose rows, wide enough apart that each is easy to tap on its own)
     const meadow = (o.flowers || [])
@@ -2711,7 +2715,7 @@
         return L('M' + n(w[0]) + ' ' + n(w[1]) + 'L' + n(w[0] + Math.cos(w[2]) * d) + ' ' + n(w[1] + Math.sin(w[2]) * d), c, 2);
       }).join('');
     };
-    const nLeaves = Math.max(4, Math.min(564, Math.round(o.leaves || 0))); // a leaf for every āyah learned
+    const nLeaves = o.leaves > 0 ? Math.max(2, Math.min(564, Math.round(o.leaves))) : 0; // a leaf for every āyah learned (none yet: just the seed in its mound)
     // the area kept for blossoms and fruit (the leafy patches at the branch ends)
     const area = cr > 0.02 ? ends.map((nd) => [nd.seg[2], nd.seg[3], 9 + (14 + 6 * (4 - nd.depth)) * cr, nd.back]) : [];
     // 1. the wood behind (darker), 2. the darker leaves behind, 3. the trunk and the wood in front, 4. the fresh
@@ -2792,8 +2796,8 @@
       .map((q, i) => [n(cx + Math.sign(q[0]) * Math.max(Math.min(Math.abs(q[0]) * Math.max(8, Wb), Wb * 0.5 + 24), mound ? hw + 4 + i * 2 : 0)), 604 + q[1], 0.75 + 0.35 * t + hsh(i, 3) * 0.25, i])
       .concat([[118, 612, 0.15], [312, 608, 0.3], [150, 628, 0.45], [234, 632, 0.6], [392, 628, 0.75], [-14, 620, 0.85]].filter((q) => size >= q[2]).map((q, i) => [q[0], q[1], 0.8 + hsh(i + 20, 3) * 0.35, i + 20]))
       .filter((q) => treeBushes(size).every((b) => Math.abs(q[0] - b.x) > b.w / 2 + 8)) // (never out of a bush)
-      .map((q) => ({ y: q[1], svg: OUT(tuft(q[0], q[1], q[2], q[3]), 1.1) })); // (drawn among the buddies, nearer ones in front)
-    return { svg: treeSky(o.night, o.seed) + treeFar(o.night) + ground + OUT(meadow, 1.4) + '<g class="tgustw"><g class="tsway">' + OUT(g, 2) + '</g></g>' + OUT(mound, 2), tufts, fruits, lobes: li, drop };
+      .map((q) => ({ y: q[1], svg: nightTint(OUT(tuft(q[0], q[1], q[2], q[3]), 1.1), o.night) })); // (drawn among the buddies, nearer ones in front)
+    return { svg: treeSky(o.night, o.seed) + treeFar(o.night) + groundN + OUT(meadow, 1.4) + '<g class="tgustw"><g class="tsway">' + OUT(g, 2) + '</g></g>' + nightTint(OUT(mound, 2), o.night), tufts, fruits, lobes: li, drop };
   }
 
   /* A campfire beside each memorized sūrah on the map (viewBox 0 0 60 60, standing on y=54). It burns down over
@@ -3623,7 +3627,7 @@
     garland,
     festSky,
     tree,
-    treeBush: (i, size) => OUT(treeBushes(size)[i].d, 2),
+    treeBush: (i, size, night) => nightTint(OUT(treeBushes(size)[i].d, 2), night),
     treeBushes,
     treeFoot,
     fruitIcon,

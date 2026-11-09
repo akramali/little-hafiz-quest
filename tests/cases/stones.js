@@ -34,7 +34,7 @@
     L.go('surah', { i: idx(113), p: 0 }); await wait(300);
     (d.querySelector('[data-act=pathpick][data-p="0"]') || d.querySelector('[data-act=pathpick]')).click(); await wait(400);
     const h0 = L.st().hearts, max = L.st().maxH;
-    d.querySelector('[data-act=oops]').click(); await wait(300);
+    d.querySelector('[data-act=oops]').click(); await wait(1500); // (the heart goes once the frog has fallen in)
     L.go('surah', { i: idx(113), p: 0 }); await wait(300);
     (d.querySelector('[data-act=pathpick][data-p="0"]') || d.querySelector('[data-act=pathpick]')).click(); await wait(400);
     ok('hearts lost stay lost after stepping out and back in', h0 === max && L.st().hearts === max - 1, `${h0} ${L.st().hearts} of ${max}`);
