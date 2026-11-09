@@ -712,6 +712,11 @@
     ['polo-shirt', 'top', 'Polo shirt'], ['square-specs', 'glasses', 'Square glasses'],
     ['pixel-shades', 'glasses', 'Pixel shades'], ['aviator-shades', 'glasses', 'Aviator shades'], ['visor-shades', 'glasses', 'Sport visor'],
     ['star-shades', 'glasses', 'Star shades'], ['heart-shades', 'glasses', 'Heart shades'],
+    // v2.8.4: more pants and watches
+    ['cargo-pants', 'pants', 'Cargo pants'], ['track-pants', 'pants', 'Track pants'], ['patch-jeans', 'pants', 'Patched jeans'], ['joggers', 'pants', 'Cozy joggers'],
+    ['flower-watch', 'watch', 'Flower watch'], ['sun-watch', 'watch', 'Sunny watch'], ['smile-watch', 'watch', 'Smiley watch'], ['leaf-watch', 'watch', 'Leaf watch'],
+    ['neon-watch', 'watch', 'Glowing neon watch', 2], ['galaxy-watch', 'watch', 'Glowing galaxy watch', 2], ['lava-watch', 'watch', 'Glowing lava watch', 2], ['moon-watch', 'watch', 'Glowing moon watch', 2],
+    ['rainbow-watch', 'watch', 'Rainbow watch'], ['rocket-watch', 'watch', 'Rocket watch'], ['crystal-watch', 'watch', 'Glowing crystal watch', 2], ['ball-watch', 'watch', 'Football watch'],
   ];
   const DROP_COLORS = [
     ['red', 'basic-shirt', 153], ['teal', 'basic-shirt', 330], ['olive', 'basic-pants', 199], ['purple', 'basic-shoes', 252], ['green', 'hoodie', 229],
@@ -719,6 +724,17 @@
     ['blue', 'polo-shirt', 65], ['red', 'polo-shirt', 205], ['pink', 'sun-visor', 149], ['purple', 'sun-visor', 90], ['blue', 'earflap-hat', 211], ['green', 'earflap-hat', 136],
     ['pink', 'sandals', 160], ['blue', 'frog-boots', 95], ['red', 'drawstring-sack', 143], ['orange', 'drawstring-sack', 170], ['red', 'buckle-satchel', 338], ['blue', 'buckle-satchel', 190],
     ['orange', 'round-pouch', 130], ['pink', 'band-watch', 113], ['yellow', 'band-watch', 188], ['blue', 'scarf-cape', 185], ['purple', 'scarf-cape', 245], ['red', 'knob-cane', 139],
+    // v2.8.4: more of the things there were only a few of (pants, watches, glasses, capes, sticks, shields, hijabs, kufis)
+    ['red', 'cargo-pants', 300], ['green', 'cargo-pants', 60], ['red', 'track-pants', 130], ['green', 'track-pants', 250], ['purple', 'joggers', 45],
+    ['teal', 'patch-jeans', 320], ['pink', 'joggers', 100], ['brown', 'track-pants', 165],
+    ['teal', 'flower-watch', 210], ['blue', 'sun-watch', 175], ['purple', 'smile-watch', 140], ['purple', 'leaf-watch', 260], ['red', 'sport-watch', 345], ['green', 'band-watch', 250],
+    ['pink', 'neon-watch', 170], ['blue', 'lava-watch', 200], ['green', 'galaxy-watch', 250], ['purple', 'rocket-watch', 60], ['blue', 'ball-watch', 70],
+    ['teal', 'round-specs', 150], ['purple', 'star-shades', 250], ['blue', 'heart-shades', 210], ['red', 'goggles', 160],
+    ['purple', 'leaf-cape', 150], ['green', 'night-cape', 250], ['pink', 'scarf-cape', 120], ['yellow', 'scarf-cape', 30],
+    ['blue', 'knobbly-branch', 180], ['blue', 'flower-stick', 110], ['purple', 'bamboo-stick', 220], ['green', 'umbrella-stick', 150], ['pink', 'shepherd-crook', 300], ['blue', 'knob-cane', 40],
+    ['red', 'star-buckler', 330], ['green', 'round-shield', 90], ['blue', 'sun-shield', 180],
+    ['aqua', 'hijab-rose', 200], ['purple', 'hijab-dots', 120], ['green', 'hijab-stripes', 260], ['blue', 'hijab-flowers', 160], ['red', 'hijab-waves', 140], ['pink', 'hijab-lace', 50],
+    ['blue', 'kufi-green', 100], ['red', 'kufi-blue', 140], ['purple', 'kufi-blue', 60], ['green', 'kufi-maroon', 120],
   ];
   /* Pattern versions (v2.7.22): the same shape with a pattern over it (dots, stripes, stars, stitching, checks,
      zigzags) and its own color, so a surprise looks like a new thing, not just a new color. Two for each of these.
@@ -729,14 +745,15 @@
     'basic-shoes', 'rain-boots', 'comfy-sneakers', 'sandals', 'frog-boots', 'trail-boots',
     'little-backpack', 'drawstring-sack', 'buckle-satchel', 'book-pouch', 'gallop-boots',
     'leaf-cape', 'scarf-cape', 'sturdy-shield', 'round-shield', 'star-buckler', 'sun-shield',
+    'basic-pants', 'cargo-pants', 'joggers', 'night-cape', // v2.8.4 (always added at the end: saved ids stay the same)
   ]; // (not sticks or the little pouch, too thin for a pattern to show, nor white things, where it wouldn't)
   const PATS = Object.keys(PAT_NAME);
   const DROP_PATTERNS = [];
   PAT_BASES.forEach((base, j) => [0, 1].forEach((k) => DROP_PATTERNS.push([PATS[(j * 2 + k * 3) % PATS.length], base, ((j * 97 + k * 151) % 300) + 30])));
-  DROP_NEW.forEach((r) => ITEMS.push({ id: r[0], slot: r[1], name: r[2], tier: 1, from: null, drop: true }));
+  DROP_NEW.forEach((r) => ITEMS.push({ id: r[0], slot: r[1], name: r[2], tier: r[3] || 1, from: null, drop: true })); // (glowing things: tier 2, shiny)
   DROP_COLORS.forEach(([c, base, deg]) => {
     const b = ITEMS.find((i) => i.id === base);
-    ITEMS.push({ id: c + '-' + base, slot: b.slot, name: colorName(c, base), tier: 1, from: null, drop: true, vof: base, deg });
+    ITEMS.push(Object.assign({ id: c + '-' + base, slot: b.slot, name: colorName(c, base), tier: (b.drop && b.tier) || 1, from: null, drop: true, vof: base, deg }, b.for ? { for: b.for } : {}));
   });
   DROP_PATTERNS.forEach(([pat, base, deg]) => {
     const b = ITEMS.find((i) => i.id === base) || { slot: (TRACK_NEW.find((x) => x[0] === base) || [])[1] };
@@ -1176,6 +1193,11 @@
   /* ---------- pants ---------- */
   ART['basic-pants'] = { pants: '#3d5a99', box: [44, 202, 140, 286] };
   ART['astro-pants'] = { pants: '#e6ebf3', box: [44, 202, 140, 286] };
+  // v2.8.4: pants with a detail drawn on each leg (leg(): the left leg; the right one is its mirror)
+  ART['cargo-pants'] = { pants: '#8d8a4f', box: [44, 202, 140, 286], leg: () => S(rr(69.6, 236, 9.4, 12, 2.2), '#76733f') + L('M70 240.4L79 240.4', '#5f5c31', 1.6) };
+  ART['track-pants'] = { pants: '#3a4a8f', box: [44, 202, 140, 286], leg: () => L('M72.4 223L71.8 264', '#ffffff', 2.8) };
+  ART['patch-jeans'] = { pants: '#5b86c9', box: [44, 202, 140, 286], leg: () => S(rr(75.5, 239, 11, 10, 2.6), '#f2b866') + P(rr(77.4, 240.9, 7.2, 6.2, 1.6), 'none', ' stroke="#ffffff" stroke-width="1" stroke-dasharray="2 1.6"') + L('M84 222L83.4 234', '#4670ad', 1.4) };
+  ART['joggers'] = { pants: '#8a9ad6', box: [44, 202, 140, 286], leg: () => S(rr(70, 257, 21.4, 7.4, 3.4), '#6f7fbd') + L('M75 258.6L75 263M80.6 258.6L80.6 263M86.2 258.6L86.2 263', '#5a69a3', 1.2) };
   /* Starter colors: the comfy shirt and pants come in a few soft everyday colors (look.tee, look.legs), so no
      two explorers start out the same. None of them is a prize color: the prizes are bright hue turns. */
   const TEES = ['#7cc8f5', '#f3e6cc', '#c3c8d4', '#a9c79f', '#f7b2cf'];
@@ -1718,8 +1740,10 @@
 
   /* ---------- watches: ex = small band on the wrist, ic = big icon ---------- */
   function watch(band, face, inner, big) {
-    if (!big) return P(rr(-9.6, -4.6, 19.2, 9.2, 3.4), band) + ball(0, 0, 6, 6, face.rim, { sh: false, hl: false }) + C(0, 0, 3.8, face.c, sw(1.4)) + (face.mini || '');
-    return S(rr(-12, -44, 24, 88, 10), band, rr(4, -44, 8, 88, 4)) + [-34, -26, 26, 34].map((y) => CF(0, y, 2, dk(band, 0.4))).join('') +
+    // a glowing watch (face.glow): a soft halo around its face that breathes (v2.8.4)
+    const halo = (r) => (face.glow ? G(CF(0, 0, r, face.glow, 0.22) + CF(0, 0, r * 0.8, face.glow, 0.3), cls('wglow')) : '');
+    if (!big) return halo(11) + P(rr(-9.6, -4.6, 19.2, 9.2, 3.4), band) + ball(0, 0, 6, 6, face.rim, { sh: false, hl: false }) + C(0, 0, 3.8, face.c, sw(1.4)) + (face.mini || '');
+    return halo(36) + S(rr(-12, -44, 24, 88, 10), band, rr(4, -44, 8, 88, 4)) + [-34, -26, 26, 34].map((y) => CF(0, y, 2, dk(band, 0.4))).join('') +
       ball(0, 0, 24, 24, face.rim, { hl: false }) + C(0, 0, 18, face.c) + inner + F('M-14 -8Q-12 -14 -6 -16Q-11 -9 -12 -2Z', '#fff', 0.55);
   }
   const WATCH_AT = ' transform="translate(48.6 202) rotate(25) scale(1.15)"';
@@ -1741,6 +1765,57 @@
     box: [-27, -46, 27, 46],
     w: (big) => watch('#4a8cff', { rim: '#e4e1ec', c: '#fff', mini: L('M0 0L0 -2.6M0 0L2 0.6', INK, 1) }, [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((a) => CF(n(14.6 * Math.cos((a * Math.PI) / 180)), n(14.6 * Math.sin((a * Math.PI) / 180)), a % 90 ? 1.1 : 1.8, INK)).join('') +
       L('M0 0L0 -10.5', INK, 2.6) + L('M0 0L6.6 3.4', INK, 2.6) + CF(0, 0, 2.2, '#ff5d5d'), big),
+  };
+  // v2.8.4: four more faces
+  ART['flower-watch'] = {
+    box: [-27, -46, 27, 46],
+    w: (big) => watch('#ff8fcf', { rim: '#ffffff', c: '#fff6fb', mini: CF(0, 0, 1.6, '#ffd23f') }, [0, 72, 144, 216, 288].map((a) => { const r = ((a - 90) * Math.PI) / 180; return ball(n(9 * Math.cos(r)), n(9 * Math.sin(r)), 6, 6, '#ff8fcf', { hl: false, sh: false }); }).join('') + ball(0, 0, 5.6, 5.6, '#ffd23f', { hl: false, sh: false }), big),
+  };
+  ART['sun-watch'] = {
+    box: [-27, -46, 27, 46],
+    w: (big) => watch('#ffb23d', { rim: '#ff8a3d', c: '#fff3c4', mini: CF(0, 0, 2, '#ff9f1c') }, P(raysD(0, 0, 9, 15.5, 10, 10), '#ff9f1c') + ball(0, 0, 9, 9, '#ffd23f', { hl: false, sh: false }) + CF(-3, -1.4, 1.3, INK) + CF(3, -1.4, 1.3, INK) + L('M-3.2 2.6Q0 5 3.2 2.6', INK, 1.4), big),
+  };
+  ART['smile-watch'] = {
+    box: [-27, -46, 27, 46],
+    w: (big) => watch('#5fd27a', { rim: '#3d9a57', c: '#ffe066', mini: L('M-2 0.6Q0 2.2 2 0.6', INK, 0.9) }, EF(-5.6, -4.4, 2.2, 3, INK) + EF(5.6, -4.4, 2.2, 3, INK) + L('M-8.6 3.4Q0 11.6 8.6 3.4', INK, 2.4) + EF(-10, 3, 2.6, 1.6, '#ff8fa3', 0.8) + EF(10, 3, 2.6, 1.6, '#ff8fa3', 0.8), big),
+  };
+  ART['leaf-watch'] = {
+    box: [-27, -46, 27, 46],
+    w: (big) => watch('#9a6b44', { rim: '#c9a25a', c: '#eef8e6', mini: F('M-2 2Q-2 -2 2 -2Q2 2 -2 2Z', '#45b45e') }, S('M-10 10Q-12 -8 10 -10Q12 8 -10 10Z', '#5fd27a', 'M10 -10Q12 8 -10 10Q6 4 10 -10Z') + L('M-8 8L8 -8', '#3d9a57', 1.6), big),
+  };
+  // cool ones and glowing ones (v2.8.4)
+  const seg7 = (x, c) => F(rr(x - 3, -7, 6, 1.8, 0.8), c) + F(rr(x - 3, -0.9, 6, 1.8, 0.8), c) + F(rr(x - 3, 5.2, 6, 1.8, 0.8), c) + F(rr(x + 2.2, -6.4, 1.8, 6, 0.8), c) + F(rr(x + 2.2, 0.4, 1.8, 6, 0.8), c);
+  ART['neon-watch'] = {
+    box: [-37, -46, 37, 46],
+    w: (big) => watch('#3a3f52', { rim: '#2b2340', c: '#14162b', glow: '#3fffb0', mini: F(rr(-2.4, -0.8, 4.8, 1.6, 0.8), '#3fffb0') }, seg7(-7, '#3fffb0') + CF(0, -2.6, 1.2, '#3fffb0') + CF(0, 2.6, 1.2, '#3fffb0') + seg7(7, '#3fffb0'), big),
+  };
+  ART['galaxy-watch'] = {
+    box: [-37, -46, 37, 46],
+    w: (big) => watch('#5b3fd0', { rim: '#b48cff', c: '#1d1650', glow: '#b48cff', mini: F(star4(0, 0, 2.4), '#fff') }, L('M-10 6Q-12 -8 2 -10Q12 -8 10 2Q6 10 -2 6Q-6 0 0 -2', '#b48cff', 2.6) + F(star4(6, -8, 3), '#fff') + F(star4(-8, -6, 2.2), '#ffe066') + CF(8, 8, 1.4, '#fff') + CF(-6, 10, 1.1, '#9fd8ff') + CF(0, 0, 2.2, '#ffe066'), big),
+  };
+  ART['lava-watch'] = {
+    box: [-37, -46, 37, 46],
+    w: (big) => watch('#4a3434', { rim: '#ff7a2b', c: '#2a1414', glow: '#ff7a2b', mini: CF(0, 0, 2, '#ff9f1c') }, S('M-12 10Q-14 -2 -6 -6Q-6 2 0 -12Q8 -2 6 4Q10 0 12 -4Q14 8 6 12Q-6 16 -12 10Z', '#ff5d2b', null, 'M-6 8Q-6 0 0 -6Q4 2 2 8Z') + F('M-4 9Q-4 3 0 -1Q3 4 2 9Z', '#ffd23f'), big),
+  };
+  ART['moon-watch'] = {
+    box: [-37, -46, 37, 46],
+    w: (big) => watch('#2c2f7a', { rim: '#ffe27a', c: '#151a4a', glow: '#ffe27a', mini: CF(0, 0, 1.8, '#ffe27a') }, S(crescent(-2, 0, 12, 12, -6, 4), '#ffe27a') + F(star4(9, -8, 2.6), '#fff') + F(star4(8, 9, 2), '#fff') + CF(12, 1, 1, '#fff'), big),
+  };
+  ART['rainbow-watch'] = {
+    box: [-27, -46, 27, 46],
+    w: (big) => watch('#ff6b6b', { rim: '#ffd23f', c: '#e9f6ff', mini: F('M-2.6 1A2.6 2.6 0 0 1 2.6 1Z', '#ff6b6b') }, ['#ff6b6b', '#ffb43d', '#ffe066', '#5fd27a', '#5fb2ff'].map((c, i) => { const r = 14 - i * 2.4; return L('M' + n(-r) + ' 6A' + n(r) + ' ' + n(r) + ' 0 0 1 ' + n(r) + ' 6', c, 2.6); }).join('') + EF(-9, 8, 5, 3, '#fff') + EF(9, 8, 5, 3, '#fff'), big),
+  };
+  ART['rocket-watch'] = {
+    box: [-27, -46, 27, 46],
+    w: (big) => watch('#4a8cff', { rim: '#c3c8d4', c: '#0f1a3d', mini: F('M0 -3L1.6 1.6L-1.6 1.6Z', '#fff') }, G(S('M0 -13Q6 -6 5 4L-5 4Q-6 -6 0 -13Z', '#f3f3f7') + C(0, -4, 2.4, '#5fb2ff', sw(1.4)) + S('M-5 0L-9 7L-5 5Z', '#ff5d5d') + S('M5 0L9 7L5 5Z', '#ff5d5d') + F('M-3 5Q0 14 3 5Z', '#ffb23d'), ' transform="rotate(30)"') + CF(-9, -6, 1, '#fff') + CF(10, -9, 1.2, '#fff') + CF(-7, 10, 0.9, '#fff'), big),
+  };
+  ART['crystal-watch'] = {
+    box: [-37, -46, 37, 46],
+    w: (big) => watch('#7fd8ff', { rim: '#e8fbff', c: '#e8fbff', glow: '#7fe3ff', mini: F('M0 -2.6L2.2 0L0 2.6L-2.2 0Z', '#5fc9e8') }, S('M-9 -3L-4 -10L4 -10L9 -3L0 11Z', '#7fe3ff', 'M4 -10L9 -3L0 11Z', 'M-4 -10L-1 -3L-9 -3Z') + L('M-9 -3L9 -3M-1 -3L0 11M-1 -3L-4 -10M-1 -3L4 -10', '#4aaecd', 1.2), big),
+  };
+  ART['ball-watch'] = {
+    box: [-27, -46, 27, 46],
+    w: (big) => watch('#2fbf71', { rim: '#ffffff', c: '#ffffff', mini: CF(0, 0, 1.6, INK) }, F('M0 -5L4.8 -1.6L3 4L-3 4L-4.8 -1.6Z', INK) + L('M0 -5L0 -12M4.8 -1.6L11.4 -3.8M3 4L7 10M-3 4L-7 10M-4.8 -1.6L-11.4 -3.8', INK, 1.6) + F('M-2 -17L2 -17L3.6 -12.6L0 -11L-3.6 -12.6Z', INK) + F('M16 -4L17 2L13 3L11.6 -1.6Z', INK) + F('M-16 -4L-17 2L-13 3L-11.6 -1.6Z', INK), big),
   };
   const WATCHES = () => Object.keys(ART).filter((id) => ART[id].w);
   WATCHES().forEach((id) => {
@@ -1999,7 +2074,13 @@
   function patternOf(v, pat) {
     const o = {};
     for (const k in v) o[k] = DRAWS.includes(k) && typeof v[k] === 'function' ? ((f) => (...a) => patterned(f(...a), pat))(v[k]) : v[k];
+    if (v.pants) o.pat = pat; // pants are a color on the leg: legOf lays the pattern over it
     return o;
+  }
+  // one leg of the pants: its color, its detail (pockets, a stripe…), and its pattern
+  function legOf(a) {
+    const m = S(LEG, a.pants, LEG_SH) + (a.leg ? a.leg() : '');
+    return a.pat ? patterned(m, a.pat) : m;
   }
   ITEMS.filter((it) => it.pat).forEach((it) => (ART[it.id] = patternOf(ART[it.id], it.pat)));
   ITEMS.filter((it) => it.gold).forEach((it) => {
@@ -2047,7 +2128,7 @@
       else if (s === 'stick' && back) a = [184 - a[0], a[1], a[2], a[3]];
       auras += aura(n(a[0]), n(a[1]), n(a[2]), n(a[3]));
     });
-    const leg = S(LEG, ART[o.pants].pants, LEG_SH) + ART[o.shoes].shoe(sk) + fxOf('shoes');
+    const leg = legOf(ART[o.pants]) + ART[o.shoes].shoe(sk) + fxOf('shoes');
     const legs = back ? G(leg, cls('ex-leg-l')) + G(G(leg, MIR), cls('ex-leg-r')) : G(leg, cls('ex-leg-r')) + G(G(leg, MIR), cls('ex-leg-l'));
     const sleeve = S(SLEEVE, top.sl, SLEEVE_SH) + S(CUFF, top.cf);
     const hand = ball(HAND[0], HAND[1], HAND[2], HAND[2], sk, { hl: false, dx: 0.2, dy: 0.25 });
@@ -2188,7 +2269,7 @@
       case 'top':
         return topIcon(a.top);
       case 'pants':
-        return S(LEG, a.pants, LEG_SH) + G(S(LEG, a.pants, LEG_SH), MIR) + S(rr(66, 207, 52, 13, 5), a.pants) + L('M76 208L76 219M108 208L108 219', dk(a.pants, 0.3), 2) + P(rr(87, 210, 10, 7, 2), GOLD, sw(1.6));
+        return legOf(a) + G(legOf(a), MIR) + S(rr(66, 207, 52, 13, 5), a.pants) + L('M76 208L76 219M108 208L108 219', dk(a.pants, 0.3), 2) + P(rr(87, 210, 10, 7, 2), GOLD, sw(1.6));
       case 'shoes':
         return G(a.shoe(), ' transform="translate(-7 0)"') + G(G(a.shoe(), MIR), ' transform="translate(7 0)"');
       case 'pet':
@@ -2283,6 +2364,18 @@
     ['apple', 'Apple', () => L('M50 26Q50 16 56 10', '#8a5a35', 3.6) + S('M54 20Q62 8 76 12Q68 24 54 20Z', '#5fd27a') + S('M50 26Q30 16 18 32Q8 52 22 74Q34 92 50 84Q66 92 78 74Q92 52 82 32Q70 16 50 26Z', '#ff5d5d', 'M78 34Q90 54 78 74Q66 90 50 84Q72 76 78 34Z', 'M24 40Q28 30 38 28Q30 36 28 46Z') + face2(50, 54, 3)],
     ['heart', 'Heart', () => S('M50 86C34 74 10 60 10 38C10 22 22 12 34 12C42 12 48 18 50 24C52 18 58 12 66 12C78 12 90 22 90 38C90 60 66 74 50 86Z', '#ff5d8f', 'M70 14C82 18 90 26 90 38C90 60 66 74 50 86C64 70 76 50 70 14Z', 'M18 34Q20 22 30 20Q24 28 24 38Z') + face2(50, 46, 3)],
   ];
+  // v2.8.4: sixteen more, drawn from the map's own animals and things (props, defined further down: drawn when needed)
+  const propSticker = (k) => () => {
+    const svg = props[k],
+      h = +(svg.match(/viewBox="0 0 100 (\d+)"/) || [0, 100])[1],
+      sc = Math.min(1, 94 / h);
+    const inner = svg.replace(/^<svg[^>]*>|<\/svg>$/g, '').replace(new RegExp('<ellipse[^>]*fill="' + INK + '" stroke="none" opacity="0?\\.1[0-9]*"/>', 'g'), ''); // (not its shadow)
+    return G(inner, ' transform="translate(' + n(50 - 50 * sc) + ' ' + n(50 - (h * sc) / 2) + ') scale(' + n(sc) + ')"');
+  };
+  [['p-sheep', 'Sheep', 'meadow-sheep'], ['p-rabbit', 'Rabbit', 'meadow-rabbit'], ['p-fox', 'Fox', 'forest-fox'], ['p-owl', 'Owl', 'forest-owl'], ['p-squirrel', 'Squirrel', 'forest-squirrel'],
+    ['p-mushroom', 'Mushroom', 'forest-mushroom'], ['p-crab', 'Crab', 'sands-crab'], ['p-starfish', 'Starfish', 'sands-starfish'], ['p-castle', 'Sandcastle', 'sands-castle'], ['p-shell', 'Shell', 'sands-shell'],
+    ['p-cactus', 'Cactus', 'canyon-cactus'], ['p-snowman', 'Snowman', 'peak-snowman'], ['p-igloo', 'Igloo', 'peak-igloo'], ['p-balloon', 'Hot-air balloon', 'sky-balloon'], ['p-goat', 'Mountain goat', 'peak-goat'], ['p-windmill', 'Windmill', 'meadow-windmill'],
+  ].forEach(([id, name, k]) => STK.push([id, name, propSticker(k)]));
   const STICKERS = STK.map((s) => ({ id: s[0], name: s[1] }));
   // stickers stay still (only buddies move): drop the flapping, blinking and swaying from their art
   const stillArt = (m) => m.replace(/ class="(lhq-(blink|flap|wave|wing-l|bounce|hover|wobble|frog-b)|pr-(bob|flap|sway|ripple))"/g, '');

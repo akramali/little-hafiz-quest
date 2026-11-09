@@ -18,7 +18,7 @@
  * they are, gifts waiting, the order things were won and which are new, the comfy-clothes swap, the daily
  * dates, streaks, campfires, the journal, and the Wise Elder's rematches and stickers he holds), so the other
  * phone shows the explorer exactly as they are. Phones from before v2.7.1 stop reading before it, and still
- * get the rest.
+ * get the rest. Since v2.8.4 it ends with the game version (codes from before have none: an older version).
  */
 (function () {
   'use strict';
@@ -185,7 +185,7 @@
     ctx.surahs.forEach((s) => w.big((p.stime && p.stime[s.n]) || 0));
     // the extras block (v2.7.1): everything else, so the other phone shows the explorer exactly as they are
     w.num(EXTRAS, 8);
-    w.num(3, 8); // its version (2: v2.7.2 adds the comfy shoes' color; 3: v2.7.24 the Stranger's visits)
+    w.num(4, 8); // its version (2: v2.7.2 adds the comfy shoes' color; 3: v2.7.24 the Stranger's visits; 4: v2.8.4 the app version)
     w.num(Math.max(0, p.at || 0), 6);
     w.bit(!!p.greeted);
     const kOf = (g) => (g.k === 'i' ? 'i:' : 's:') + g.id;
@@ -235,6 +235,8 @@
     ctx.surahs.forEach((s) => s.P.forEach((_, q) => w.bit(p.prog[s.n] && p.prog[s.n].parts[q] && p.prog[s.n].parts[q].next)));
     w.num(p.look.feet || 0, 3);
     for (let k = 0; k <= 7; k++) w.bit((p.strangers || []).includes(k));
+    // the game version that made the code, so a phone on another version can ask for an update first
+    String(ctx.version || '0.0.0').split('.').slice(0, 3).forEach((x) => w.num(Math.min(255, parseInt(x, 10) || 0), 8));
     const body = w.done();
     const zip = CAN_ZIP ? await pipe(body, new CompressionStream('deflate-raw')) : body;
     return b64(new Uint8Array([FORMAT, CAN_ZIP ? 1 : 0, ...zip]));
@@ -359,6 +361,7 @@
       ctx.surahs.forEach((s) => s.P.forEach((_, q) => r.bit() && p.prog[s.n] && (p.prog[s.n].parts[q].next = 1)));
       if (xv >= 2) p.look.feet = r.num(3);
       if (xv >= 3) p.strangers = [0, 1, 2, 3, 4, 5, 6, 7].filter(() => r.bit());
+      if (xv >= 4) p.appV = [r.num(8), r.num(8), r.num(8)].join('.');
     }
     p.made = true;
     p.sameThings = same;

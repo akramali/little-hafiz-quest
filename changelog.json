@@ -1,7 +1,14 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.8.3",
+ "latest": "2.8.4",
  "versions": [
+  { "v": "2.8.4", "notes": [
+   "Your Teacher asks up to 7 questions in longer sūrahs, 15 seconds each, and rests once every sūrah is roaring for the day",
+   "Word Steps: Listen lights up each word as it's recited",
+   "Lots more to win: pants, watches (some glow!), stickers and more. Memorize every sūrah to unlock every design",
+   "The Summit crown now comes once every sūrah is memorized, and journal pictures from steps you've finished",
+   "My Achievements shows how many things are left to win; speeds now 0.5× to 2×, with 1.25×"
+  ] },
   { "v": "2.8.3", "notes": [
    "The sūrahs list shows which sūrahs are green or golden",
    "Stars shows just the stars, with room for every sūrah's meaning"

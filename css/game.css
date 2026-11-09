@@ -9215,3 +9215,174 @@ body:has(.wrail.open) .jbtn {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ---------- v2.8.4 ---------- */
+/* the campfire burning up to roaring, a step at a time (after practising, and after the Teacher's test) */
+.firerise {
+  display: inline-block;
+  position: relative;
+  width: 64px;
+  height: 64px;
+  vertical-align: middle;
+}
+.trophy-stars .firerise,
+.firerise .fr-st {
+  animation: none;
+}
+.firerise .fr-st {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  animation: frIn 0.25s var(--d) both, frOut 0.25s calc(var(--d) + 0.4s) forwards;
+}
+.firerise .fr-st.first {
+  opacity: 1;
+  animation: frOut 0.25s calc(var(--d) + 0.4s) forwards;
+}
+.firerise .fr-st.last {
+  animation: frLast 0.6s var(--d) both;
+}
+.firerise .fr-st.first.last {
+  opacity: 1;
+  animation: none;
+}
+.firerise svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+@keyframes frIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes frOut {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes frLast {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .firerise .fr-st,
+  .firerise .fr-st.first {
+    animation: none;
+    opacity: 0;
+  }
+  .firerise .fr-st.last {
+    animation: none;
+    opacity: 1;
+  }
+}
+.eldend .firerise {
+  display: block;
+  margin: 0 auto 2px;
+}
+/* a journal picture from a checkpoint with no step finished yet */
+.jchip.locked {
+  background: var(--card2);
+  color: var(--soft);
+}
+/* Word Steps while the whole āyah plays: the words recited so far show (even those not revealed yet), and the one
+   being recited lights up; all back to how they were when it ends */
+.wflow .wbox.heard {
+  background: var(--wc12);
+  color: var(--ink);
+  outline: 0;
+  box-shadow: none;
+  border-bottom-color: var(--wc);
+}
+.wflow .wbox.heard .wtx,
+.wflow .wbox.heard .wtl,
+.wflow .wbox.heard .wen {
+  visibility: visible;
+}
+.wflow .wbox.heard .wnum {
+  display: none;
+}
+.beads .bead.heard {
+  background: var(--wc);
+}
+.wflow .wbox.speak {
+  z-index: 1;
+  background: var(--wc22);
+  color: var(--ink);
+  box-shadow: 0 0 0 3px var(--wc);
+  border-bottom-color: var(--wc);
+  outline: 0;
+  transform: scale(1.14);
+}
+.wflow .wbox.speak .wtx,
+.wflow .wbox.speak .wtl,
+.wflow .wbox.speak .wen {
+  visibility: visible;
+}
+.wflow .wbox.speak .wnum {
+  display: none;
+}
+.beads .bead.speak {
+  background: var(--wc);
+  transform: scale(1.3);
+}
+/* glowing watches: their halo breathes */
+.lhq-art .wglow {
+  animation: wglow 2.4s ease-in-out infinite;
+}
+@keyframes wglow {
+  50% {
+    opacity: 0.45;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lhq-art .wglow {
+    animation: none;
+  }
+}
+/* the Teacher's test: 15 seconds to answer, a bar shrinking under the question */
+.eldtime {
+  height: 6px;
+  margin-top: 8px;
+  border-radius: 99px;
+  background: var(--line);
+  overflow: hidden;
+}
+.eldtime i {
+  display: block;
+  height: 100%;
+  background: var(--gold);
+  transform-origin: left;
+  animation: eldtime var(--t) linear forwards;
+}
+@keyframes eldtime {
+  to {
+    transform: scaleX(0);
+  }
+}
+/* the test's dots stay round however many there are (6 or 7 for long sūrahs: a little smaller) */
+.elddot {
+  flex: none;
+}
+.elddots.many {
+  gap: 4px;
+}
+.elddots.many .elddot {
+  width: 24px;
+  height: 24px;
+  font-size: 12px;
+}

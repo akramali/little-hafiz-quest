@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.8.3';
+  const VERSION = '2.8.4';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -70,6 +70,7 @@
   const ITEM = Object.create(null);
   ITEMS.forEach((it) => (ITEM[it.id] = it));
   const SURAH_ITEM = Object.create(null); // sūrah number -> the item it gives (first star)
+  const CROWN_N = 78; // An-Naba': its treasure, the Summit crown, comes once every sūrah is memorized
   const GOLD_ITEM = Object.create(null); // sūrah number -> its golden edition (every star)
   ITEMS.forEach((it) => {
     if (it.from) (it.gold ? GOLD_ITEM : SURAH_ITEM)[it.from] = it;
@@ -199,7 +200,7 @@
     pzrtl: false, // Picture Puzzle from right to left
     wordmean: false, // the meaning of each word (Word Steps, the muṣḥaf)
   };
-  const SPEEDS = [0.25, 0.5, 0.75, 1, 1.5, 2];
+  const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2]; // (v2.8.4: 1.25× in, 0.25× out, too slow)
   const CHAINS = [1, 3, 4, 5]; // Look & Repeat: chain the āyāt after every new one, or every 3, 4 or 5
   const MAX_EXPLORERS = 10;
   let store = null;
@@ -315,9 +316,12 @@
     p.prog = cleanProg(o.prog);
     const uniq = (a) => [...new Set(a)];
     p.items = uniq((Array.isArray(o.items) ? o.items : []).filter((id) => ITEM[id] && !starter(ITEM[id])));
+    // the Summit crown came with An-Naba's first star before v2.8.4: it waits for the whole Juz memorized now
+    const early = (id) => ITEM[id] && ITEM[id].from === CROWN_N && !allMemorized(p);
+    p.items = p.items.filter((id) => !early(id));
     p.stickers = uniq((Array.isArray(o.stickers) ? o.stickers : []).filter((id) => STICKER[id]));
     p.pending = (Array.isArray(o.pending) ? o.pending : [])
-      .filter((g) => g && ((g.k === 'i' && ITEM[g.id] && !p.items.includes(g.id)) || (g.k === 's' && STICKER[g.id])))
+      .filter((g) => g && ((g.k === 'i' && ITEM[g.id] && !p.items.includes(g.id) && !early(g.id)) || (g.k === 's' && STICKER[g.id])))
       .map((g) => (g.m ? { k: g.k, id: g.id, m: 1 } : { k: g.k, id: g.id }))
       .slice(0, 60);
     p.lost = (Array.isArray(o.lost) ? o.lost : [])
@@ -379,7 +383,8 @@
       const f = f0[s.n];
       p.fire[s.n] = Array.isArray(f) && isFinite(f[0]) && f[0] > 0 ? [Math.min(+f[0], Date.now()), int(f[1], 0, 4, 0)] : [Date.now(), 2];
     });
-    p.found = uniq((Array.isArray(o.found) ? o.found : []).filter((k) => JKEYS.has(k)));
+    // (pictures from checkpoints with no step finished came in before v2.8.4: they go)
+    p.found = uniq((Array.isArray(o.found) ? o.found : []).filter((k) => JKEYS.has(k) && (k[0] !== 'e' || jEarnable(k, p))));
     p.jdone = uniq((Array.isArray(o.jdone) ? o.jdone : []).filter((w) => Number.isInteger(w) && w >= 0 && w < WORLDS.length));
     const day = (v) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '');
     if (Array.isArray(o.streak)) p.streak = [day(o.streak[0]), int(o.streak[1], 0, 1e5, 0)];
@@ -403,6 +408,7 @@
     if ('teacher' in o && bool(o.stranger)) out.stranger = o.stranger;
     if (['auto', 'light', 'dim'].includes(o.theme)) out.theme = o.theme;
     if (SPEEDS.includes(o.speed)) out.speed = o.speed;
+    else if (o.speed === 0.25) out.speed = 0.5; // the slowest now
     if (o.chainSet === true && CHAINS.includes(o.chain)) Object.assign(out, { chain: o.chain, chainSet: true });
     else if (o.slow === true) out.speed = 0.75; // "slower recitation" (80%) before v2.5.2
     if (typeof o.reciter === 'string' && /^[a-z0-9-]{2,32}$/.test(o.reciter)) out.reciter = o.reciter;
@@ -545,6 +551,7 @@
       giveTrackPrizes(prof);
       giveStarBadges(prof);
       giveWorldRides(prof);
+      unlockDesigns(prof);
     });
     prefs = store.prefs;
   }
@@ -642,6 +649,8 @@
       prof.pending.push({ k: 'i', id: it.id });
       return true;
     };
+    // An-Naba's treasure is the Summit crown: it waits for the whole Juz memorized (v2.8.4; it came with its first star)
+    if (s.n === CROWN_N && !allMemorized(prof)) return '';
     const got = surahStars(s, prof);
     if (got > 0 && give(SURAH_ITEM[s.n])) given = 'item';
     if (got >= surahMax(s) && give(GOLD_ITEM[s.n])) given = given ? 'both' : 'gold';
@@ -707,7 +716,30 @@
     prof.got.push(key);
     if (!prof.fresh.includes(key)) prof.fresh.push(key); // "new" until seen in My Explorer
   }
+  /* Every sūrah memorized (v2.8.4): every design is theirs at once (the everyday things and star-track prizes, and
+     every sticker); their colour and pattern versions keep coming as gifts (new stars, the Teacher's tests) until every
+     one is won. Returns how many were unlocked (none when not all memorized, or nothing left). */
+  function unlockDesigns(prof) {
+    if (!allMemorized(prof)) return 0;
+    let n = 0;
+    ITEMS.filter((it) => (it.drop || it.track) && !it.vof && forKid(it, prof) && !prof.items.includes(it.id)).forEach((it) => {
+      prof.items.push(it.id);
+      prof.pending = prof.pending.filter((g) => !(g.k === 'i' && g.id === it.id));
+      gotIt(prof, 'i:' + it.id);
+      n++;
+    });
+    ART.STICKERS.forEach((x) => {
+      if (prof.stickers.includes(x.id) || prof.lostSt.some((l) => l.id === x.id)) return; // (the Teacher's held ones come back by revising)
+      prof.stickers.push(x.id);
+      prof.pending = prof.pending.filter((g) => !(g.k === 's' && g.id === x.id));
+      gotIt(prof, 's:' + x.id);
+      n++;
+    });
+    return n;
+  }
   const NEWDOT = '<i class="newdot" aria-label="new"></i>';
+  // everything there is to win for this explorer, stickers aside (golden editions, rides and specials included)
+  const winnable = (prof, slot) => ITEMS.filter((it) => !starter(it) && forKid(it, prof) && (!slot || it.slot === slot));
   // the journal: a little book with a bookmark
   const BOOK_IC =
     '<svg class="wr-mapic" viewBox="0 0 48 40" aria-hidden="true"><g stroke="#2b2340" stroke-width="2.4" stroke-linejoin="round"><path d="M9 4H38Q41 4 41 7V36H12Q9 36 9 33Z" fill="#c0703a"/><path d="M12 30H41V36H12Q9 36 9 33Q9 30 12 30Z" fill="#fff6dc"/></g>' +
@@ -1045,7 +1077,11 @@
         // after its stated end, so it plays to the end of the āyah.
         const lastW = wz === ay[2].length - 1;
         seg = { start: Math.max(0, w[0] - (it[2] === 0 ? 0.03 : 0)), end: lastW ? ay[1] + 0.06 : we[1], word: !lastW };
-      } else seg = { start: Math.max(0, ay[0] - 0.05), end: ay[1] + 0.15 };
+      } else {
+        seg = { start: Math.max(0, ay[0] - 0.05), end: ay[1] + 0.15 };
+        // Word Steps: the whole āyah plays, and each word lights up as it's recited (v2.8.4)
+        if (st.view === 'words' && ay[2] && S[st.i].n === it[0] && st.a === it[1] - 1) seg.ws = ay[2];
+      }
       curSeg = seg;
       markNow(it);
       const url = fileUrls.get(fileKey(id, it[0])) || `audio/${id}/${pad(it[0])}.mp3`;
@@ -1071,6 +1107,11 @@
         // a timer is more precise than 'timeupdate' (~4 per second)
         if (!playing || !curSeg) return;
         if (!player.seeking && player.currentTime >= curSeg.start - 0.1) player.muted = false;
+        if (curSeg.ws) {
+          const t = player.currentTime,
+            j = curSeg.ws.findIndex((w) => t >= w[0] - 0.02 && t < w[1]);
+          if (j >= 0) speakWord(j); // (between two words the last one stays lit)
+        }
         // a single word stops a moment early: the check runs every 30 ms and the sound already on its way
         // out still plays, so the next word never slips in
         const stopAt = curSeg.end - (curSeg.word ? 0.03 : 0);
@@ -1083,7 +1124,24 @@
       stopAudio();
     }
   }
+  /* Word Steps while the whole āyah plays: the words are revealed one by one as they're recited (`heard`, even
+     those not revealed yet) and the one being recited lights up with its bead (`speak`); when the āyah ends
+     (j = -1) every word goes back to how it was. */
+  function speakWord(j) {
+    const boxes = document.querySelectorAll('.wflow > .wbox'),
+      beads = document.querySelectorAll('.beads > .bead');
+    if (j >= 0 && boxes[j] && boxes[j].classList.contains('speak')) return;
+    boxes.forEach((el, i) => {
+      el.classList.toggle('speak', i === j);
+      el.classList.toggle('heard', i <= j);
+    });
+    beads.forEach((el, i) => {
+      el.classList.toggle('speak', i === j);
+      el.classList.toggle('heard', i <= j);
+    });
+  }
   function finishSeg() {
+    speakWord(-1);
     clearInterval(segTimer);
     segTimer = null;
     curSeg = null;
@@ -1126,6 +1184,7 @@
       navigator.wakeLock.request('screen').then((l) => (wakeLock = l), () => {});
   });
   function stopAudio() {
+    speakWord(-1);
     playing = false;
     keepAwake(false);
     queue = [];
@@ -2664,6 +2723,14 @@
     if (!n) return '';
     return `<button class="icon-btn giftico ${cls || ''}" data-act="opengift" aria-label="${n} gift${n > 1 ? 's' : ''} to open"><span class="rattle">${giftArt(prof.pending[0])}</span><span class="badge">${n}</span></button>`;
   }
+  /* The campfire burning up from where it was to roaring, a step at a time (v2.8.4): after practising a memorized
+     sūrah, and after passing the Teacher's test. */
+  function fireRise(from) {
+    if (from < 0) return '';
+    const lv = [];
+    for (let l = Math.min(5, from); l <= 5; l++) lv.push(l);
+    return `<span class="firerise" role="img" aria-label="Campfire: Roaring">${lv.map((l, j) => `<span class="fr-st ${j === lv.length - 1 ? 'last' : ''} ${j === 0 ? 'first' : ''}" style="--d:${0.3 + j * 0.4}s">${ART.campfire(l)}</span>`).join('')}</span>`;
+  }
   function nextPrizeNote(prof) {
     const nx = nextPrize(prof);
     if (!nx) return '';
@@ -2704,9 +2771,10 @@
     ${plain ? `<div class="medal"><span>★</span></div>` : `<div class="big">${st.big || '🎉'}</div>`}
     <h2>MāshāAllāh!</h2>
     <p>${st.msg}</p>
-    <div class="trophy-stars">${stars}</div>
+    <div class="trophy-stars">${st.noStar ? '' : stars}${st.fireFrom >= 0 && (st.noStar || st.fireFrom < 5) ? fireRise(st.fireFrom) : ''}</div>
     </div>
     <div class="dbody">
+    ${st.designs ? `<div class="memo gold">🌟 Every sūrah memorized! All ${st.designs} designs are yours. Their colours and patterns keep coming as gifts.</div>` : ''}
     ${st.allStars ? `<div class="memo gold">🌟 Every star in <b>${s.name}</b>! A golden treasure is waiting for you.</div>` : ''}
     ${found}
     ${world}
@@ -2714,7 +2782,7 @@
     ${st.prizes ? `<div class="memo">⭐ ${totalStars()} stars! ${st.prizes > 1 ? st.prizes + ' prizes' : 'A prize'} for you.</div>` : ''}
     ${st.badge ? `<div class="memo gold">🏅 ${st.badge}! A special badge for you.</div>` : ''}
     ${st.rides ? `<div class="memo gold">🚀 A whole world all golden! A special ride is waiting for you.</div>` : ''}
-    ${nextPrizeNote(prof)}
+    ${st.noStar ? '' : nextPrizeNote(prof)}
     ${g ? `<button class="giftbtn dgift" data-act="opengift"><span class="rattle">${giftArt(g)}</span>${prof.pending.length > 1 ? `<span class="badge">${prof.pending.length}</span>` : ''}<b>${prof.pending.length > 1 ? prof.pending.length + ' gifts' : 'A gift'} for you!</b><small>Tap to open</small></button>` : ''}
     <div class="row drow">
       ${st.nextAct ? `<button class="btn go wide" data-act="${st.nextAct}" ${st.nextP != null ? `data-p="${st.nextP}"` : ''}>${st.nextLabel}</button>` : ''}
@@ -2736,7 +2804,7 @@
       return `<button class="icell lost" data-act="goto" data-i="${BYN[lost.n].idx}"><span class="iart">${itemPic(it.id)}</span><span class="lostbadge">${ART.lostMarker()}</span><small>Lost at ${BYN[lost.n].name}!</small></button>`;
     if (owned)
       return `<button class="icell t${it.tier || 0} ${it.gold ? 'gold' : ''} ${on ? 'on' : ''}" data-act="equip" data-id="${it.id}" aria-pressed="${on}"><span class="iart">${itemPic(it.id)}</span><small>${itemName(it.id)}</small>${prefs.teacher && blocksOf(it.id).length ? `<span class="iblk" aria-label="Blocks ${blocksOf(it.id).map((k) => THROW[k].name).join(', ')}">${blocksOf(it.id).map((k) => THROW[k].ic).join('')}</span>` : ''}${prof.fresh.includes('i:' + it.id) ? NEWDOT : ''}</button>`;
-    return `<div class="icell locked ${it.gold || it.wgold ? 'goldlock' : ''}"><span class="iart">${ART.silhouette(it.id, P().look)}</span><small>${it.wgold ? `World ${it.wgold} all golden` : it.quest === 'staff' ? 'At the summit' : it.quest ? 'Pass your Teacher’s test' : it.feat ? FEAT_HINT[it.feat] : it.drop ? 'A surprise gift' : it.track ? `At ${it.track} ⭐` : it.gold ? `Every star in ${BYN[it.from].name}` : `A star in ${BYN[it.from].name}`}</small></div>`;
+    return `<div class="icell locked ${it.gold || it.wgold ? 'goldlock' : ''}"><span class="iart">${ART.silhouette(it.id, P().look)}</span><small>${it.wgold ? `World ${it.wgold} all golden` : it.quest === 'staff' ? 'At the summit' : it.quest ? 'Pass your Teacher’s test' : it.feat ? FEAT_HINT[it.feat] : it.drop ? 'A surprise gift' : it.track ? `At ${it.track} ⭐` : it.from === CROWN_N ? (it.gold ? `Every star in ${BYN[it.from].name}, all memorized` : 'Every sūrah memorized') : it.gold ? `Every star in ${BYN[it.from].name}` : `A star in ${BYN[it.from].name}`}</small></div>`;
   }
   function stickerCell(id, prof) {
     const on = prof.badge === id;
@@ -2772,7 +2840,7 @@
       const won = list.filter((it) => !starter(it) && prof.items.includes(it.id)).sort((a, b) => gotAt(prof, 'i:' + b.id) - gotAt(prof, 'i:' + a.id));
       const rank = (it) => (starter(it) ? 0 : it.drop ? 1500 : it.track ? 2000 + it.track : 1000); // to find: sūrah treasures, surprises, the star track
       const rest = list.filter((it) => !won.includes(it)).sort((a, b) => rank(a) - rank(b));
-      body = `<div class="wrow">${[...won, ...rest].map((it) => itemCell(it, prof, worn)).join('')}</div><p class="wnote2">${SLOT_INFO[tab][1]} · tap to wear, tap again to take off${nextPrize(prof) ? ` · next prize at ${nextPrize(prof).track} ⭐` : ''}</p>`;
+      body = `<div class="wrow">${[...won, ...rest].map((it) => itemCell(it, prof, worn)).join('')}</div><p class="wnote2">${SLOT_INFO[tab][1]} · won ${winnable(prof, tab).filter((it) => prof.items.includes(it.id)).length} of ${winnable(prof, tab).length} · tap to wear${nextPrize(prof) ? ` · next prize at ${nextPrize(prof).track} ⭐` : ''}</p>`;
     }
     const fancy = Object.values(worn).some((id) => !starter(ITEM[id])) || prof.badge;
     const comfy = prof.stash
@@ -2833,7 +2901,8 @@
       memorized: S.filter((s) => surahDone(s, prof)).length,
       ayat,
       allAyat: S.reduce((t, s) => t + s.ayat.length, 0),
-      items: prof.items.length,
+      items: prof.items.filter((id) => ITEM[id] && !starter(ITEM[id])).length + prof.stickers.filter((id) => !STICKER[id].stars).length,
+      allItems: winnable(prof).length + ART.STICKERS.length, // (v2.8.4: so a child can aim for 100%)
       badges: prof.stickers.filter((id) => STICKER[id].stars).length,
       time: prof.time || 0,
       streak: streakNow(prof),
@@ -2852,7 +2921,7 @@
     ['📔', `${a.found}`, `of ${JKEYS.size} journal finds`],
     ['🏆', `${a.memorized}`, 'sūrahs memorized'],
     ['🗣️', `${a.ayat}`, `of ${a.allAyat} āyāt learned`],
-    ['🎁', `${a.items}`, 'treasures found'],
+    ['🎁', `${a.items}`, `of ${a.allItems} things won`],
     ['🏅', `${a.badges}`, a.badges === 1 ? 'star badge' : 'star badges'],
     ['⏱️', fmtTime(a.time), 'spent learning'],
     ['🏃', `${a.streak} ${a.streak === 1 ? 'day' : 'days'}`, `in a row · best ${a.best}`],
@@ -3075,7 +3144,7 @@
 
   /* ---------- FAMILY SYNC: one explorer, as a link or a QR code (js/sync.js) ---------- */
   const SYNC = window.LHQ_SYNC;
-  const syncCtx = () => ({ surahs: S, items: ITEMS, stickers: [...ART.STICKERS, ...ART.BADGES], looks: ART.LOOKS, slots: SLOTS, journal: [...JKEYS] });
+  const syncCtx = () => ({ surahs: S, items: ITEMS, stickers: [...ART.STICKERS, ...ART.BADGES], looks: ART.LOOKS, slots: SLOTS, journal: [...JKEYS], version: VERSION });
   const appURL = () => location.origin + location.pathname.replace(/index\.html$/, '');
   function qrSVG(text) {
     const q = window.qrcode(0, 'L');
@@ -3129,7 +3198,7 @@
         if (!from) throw new Error('bad');
         from.made = true;
         const match = store.profiles.find((p) => p.id === from.id) || store.profiles.find((p) => p.name && p.name === from.name);
-        incoming = { from, link, sameThings: raw.sameThings, noColors: raw.look.tee == null, target: match ? match.id : store.profiles.length ? '' : 'new' };
+        incoming = { from, link, appV: raw.appV || '', sameThings: raw.sameThings, noColors: raw.look.tee == null, target: match ? match.id : store.profiles.length ? '' : 'new' };
         showSync();
       })
       .catch((e) => toast(e && e.message === 'nozip' ? 'This browser is too old to read it. Please update the browser.' : "That progress link didn't work. Ask for a new one."));
@@ -3148,15 +3217,18 @@
       from = incoming.from,
       nm = from.name ? esc(from.name) : 'An explorer';
     const choices = [...store.profiles.map((p) => [p.id, p.name ? esc(p.name) : 'Explorer', p]), ...(store.profiles.length < MAX_EXPLORERS ? [['new', '➕ New explorer', null]] : [])];
-    const pick = incoming.target;
+    // both phones should run the same version (v2.8.4): a newer link waits for this phone's update; an older one
+    // still syncs (this phone tidies what it brings), but the other phone should update too
+    const vs = incoming.appV ? vnum(incoming.appV) - vnum(VERSION) : -1;
+    const pick = vs > 0 ? '' : incoming.target;
     const pv = pick ? preview(pick) : null;
     m.innerHTML = `<div class="card synccard">
       <div class="syncwho big"><span class="phead">${ART.explorer(from.look, Object.assign({}, from.outfit, { sticker: from.badge }), { view: 'front', cls: 'mini' })}</span><span><b>Sync ${nm}'s progress?</b><small>⭐ ${totalStars(from)} stars from another phone</small></span></div>
-      ${store.profiles.length ? `<p class="saveinfo">Which explorer on this phone is ${nm}?</p><div class="synclist">${choices.map(([id, label, p]) => `<button class="syncopt ${pick === id ? 'on' : ''}" data-act="synctarget" data-id="${id}">${p ? `<span class="phead">${explorer({ view: 'front', cls: 'mini' }, p)}</span>` : ''}<span>${label}${p ? `<small>⭐ ${totalStars(p)}</small>` : ''}</span></button>`).join('')}</div>` : ''}
+      ${store.profiles.length && vs <= 0 ? `<p class="saveinfo">Which explorer on this phone is ${nm}?</p><div class="synclist">${choices.map(([id, label, p]) => `<button class="syncopt ${pick === id ? 'on' : ''}" data-act="synctarget" data-id="${id}">${p ? `<span class="phead">${explorer({ view: 'front', cls: 'mini' }, p)}</span>` : ''}<span>${label}${p ? `<small>⭐ ${totalStars(p)}</small>` : ''}</span></button>`).join('')}</div>` : ''}
       ${pv ? `<p class="syncsum">${pick === 'new' ? `A new explorer with ⭐ ${pv.stars} stars` : pv.plus > 0 || pv.things > 0 ? `+${pv.plus} star${pv.plus === 1 ? '' : 's'} · ${pv.things} new treasure${pv.things === 1 ? '' : 's'} · ⭐ ${pv.stars} in all` : 'Already up to date: nothing new'}</p>` : ''}
-      ${!incoming.sameThings ? '<p class="saveinfo">The two phones are on different versions: treasures won from stars come along; update both phones to bring the rest.</p>' : ''}
+      ${vs > 0 ? `<p class="saveinfo syncver">⬆️ This link is from a newer version (v${incoming.appV}). Update this phone first, then open the link again.</p>` : vs < 0 ? `<p class="saveinfo syncver">⬆️ The other phone has an older version${incoming.appV ? ` (v${incoming.appV})` : ''}. Update it too, then send a new link, so both phones match.</p>` : ''}
       ${incoming.link && !STANDALONE ? `<p class="saveinfo">Using the game from your Home Screen? <button class="linkbtn" data-act="synccopyin">Copy this</button>, open the game there, and tap <b>Paste from family</b>.</p>` : ''}
-      <div class="row"><button class="btn wide" data-act="cno">Not now</button><button class="btn go wide" data-act="syncdo" ${pick ? '' : 'disabled'}>✨ Sync</button></div></div>`;
+      <div class="row"><button class="btn wide" data-act="cno">Not now</button>${vs > 0 ? '<button class="btn go wide" data-act="syncupd">⬆️ Update</button>' : `<button class="btn go wide" data-act="syncdo" ${pick ? '' : 'disabled'}>✨ ${vs < 0 ? 'Sync anyway' : 'Sync'}</button>`}</div></div>`;
     m.classList.add('show');
   }
   /* the best of both phones: stars and āyāt practiced, every treasure, sticker and gift waiting, everything
@@ -3220,6 +3292,7 @@
     giveTrackPrizes(into);
     giveStarBadges(into);
     giveWorldRides(into);
+    unlockDesigns(into);
   }
   function doSync() {
     const from = incoming.from;
@@ -3233,6 +3306,7 @@
       giveTrackPrizes(into);
       giveStarBadges(into);
       giveWorldRides(into);
+      unlockDesigns(into);
     } else {
       into = store.profiles.find((p) => p.id === incoming.target);
       const before = { stars: totalStars(into), things: thingsOf(into) };
@@ -3690,9 +3764,12 @@
     }
     // memorized = Stepping Stones level 3 (the whole sūrah, for one with checkpoints)
     if (st.view === 'path' && (!multi(s) || st.p === 'all') && surahDone(s)) extra.memorized = true;
-    if (surahDone(s) && stokeFire(s, prof)) setTimeout(() => toast('🔥 You relit the campfire!'), 1200);
+    if (st.starsBefore != null && !newStar) extra.noStar = true; // a revision: no star this time
+    extra.fireFrom = fireOf(s, prof); // the campfire before (it burns up on the done page)
+    if (surahDone(s)) stokeFire(s, prof);
     const given = giveSurahGift(s);
     if (given === 'gold' || given === 'both') extra.allStars = true;
+    if (s.n !== CROWN_N) giveSurahGift(BYN[CROWN_N]); // the last sūrah memorized brings the Summit crown
     // a world with a star in every sūrah: celebrate once (worlds 5 and 6 bring an extra heart)
     const wi = worldOf(s);
     if (!prof.wdone.includes(wi) && worldDone(wi, prof)) {
@@ -3734,6 +3811,7 @@
       if (f === 'once') giveStaff(prof);
     });
     if (feats.length) prof.pending = prof.pending.filter((g) => g.k !== 's' || !prof.stickers.includes(g.id));
+    extra.designs = unlockDesigns(prof); // every sūrah memorized: every design at once
     // a checkpoint of a long sūrah: on to the next checkpoint (or the whole sūrah), not the next game
     if (multi(s) && st.p !== 'all' && GAMES.includes(st.view)) {
       Object.assign(extra, nextSuggestion(s, st.p));
@@ -3887,7 +3965,7 @@
           ? totalStars(prof) < it.track
             ? `An early prize from the star track, for all your hard work!`
             : `A prize for collecting ${it.track} stars!`
-          : TIER_LABEL[it.tier || 1] + ` From ${BYN[it.from].name}.`;
+          : TIER_LABEL[it.tier || 1] + (it.from === CROWN_N && !it.gold ? ' For memorizing the whole Juz!' : ` From ${BYN[it.from].name}.`);
       wear = true;
     } else {
       if (!prof.stickers.includes(g.id)) prof.stickers.push(g.id);
@@ -4272,6 +4350,11 @@
         break;
       case 'syncdo':
         if (incoming && incoming.target) doSync();
+        break;
+      case 'syncupd':
+        sfx.tap();
+        showUpdates();
+        checkUpdates(false);
         break;
       case 'synccopyin':
         if (incoming && incoming.link) copyText(incoming.link, 'Copied: now open the game from your Home Screen and tap Paste from family');
@@ -4663,7 +4746,7 @@
         break;
       case 'challenge':
         sfx.tap();
-        if (heroReady(P())) meetElder(true);
+        if (heroReady(P()) && !meetElder(true)) teacherBusy(P());
         break;
       case 'intro': {
         const k = +b.dataset.k,
@@ -4719,6 +4802,7 @@
         sfx.tap();
         st.phase = 'ask';
         render();
+        armAsk();
         break;
       case 'eldans':
         elderAnswer(b.dataset.ok === '1');
@@ -5834,6 +5918,13 @@
   const JKEYS = new Set(JPAGE.keys());
   const pageKeys = (wi) => [...JPAGE].filter(([, w]) => w === wi).map(([k]) => k);
   const jName = (k) => (k[0] === 'p' ? PROP_NAME[k.slice(2)] : k.slice(2));
+  /* A picture goes into the journal only from a checkpoint (the whole of a short sūrah) with a step finished there
+     (v2.8.4): the first Look & Repeat of it doesn't count until it's done. */
+  const partBegun = (s, q, prof) => {
+    const r = (prof || P()).prog[s.n];
+    return !!(r && partStars(r.parts[q]) > 0);
+  };
+  const jEarnable = (key, prof) => S.some((s) => s.P.some((x, q) => partBegun(s, q, prof) && s.ayat.slice(x.from, x.to + 1).some((a) => a.scene.includes(key.slice(2)))));
   function jot(key, el) {
     const prof = P();
     if (!JKEYS.has(key)) return;
@@ -5890,14 +5981,15 @@
       if (!el || (el.classList.contains('mprop') ? st.view !== 'map' : st.view !== 'learn' || st.phase === 'chain')) return;
       const key = el.classList.contains('mprop') ? 'p:' + el.dataset.k : 'e:' + el.textContent.trim();
       if (!JKEYS.has(key) || P().found.includes(key)) return; // not in the journal, or already in it: nothing
+      const locked = key[0] === 'e' && !partBegun(S[st.i], st.p || 0); // its checkpoint has no step finished yet
       const r = el.getBoundingClientRect(),
         c = document.createElement('button');
-      c.className = 'jchip';
-      c.innerHTML = `${BOOK_IC}<span>Add to journal</span>`;
+      c.className = 'jchip' + (locked ? ' locked' : '');
+      c.innerHTML = locked ? `${BOOK_IC}<span>Finish a step here first</span>` : `${BOOK_IC}<span>Add to journal</span>`;
       c.style.left = Math.max(90, Math.min(innerWidth - 90, r.left + r.width / 2)) + 'px';
       c.style.top = Math.max(120, r.top - 6) + 'px';
       c.addEventListener('click', () => {
-        jot(key, c);
+        if (!locked) jot(key, c);
         dropChip();
       });
       document.body.appendChild(c);
@@ -6232,9 +6324,28 @@
     const cold = memorizedList(prof).some((x) => !prof.fix.includes(x.n) && fireOf(x, prof) <= 1);
     if (Math.random() < (cold ? 1 / 2 : 1 / 3)) meetElder(false, re);
   }
+  // practised today (a game finished there, or his test passed): his round skips it until tomorrow (v2.8.4)
+  const practisedToday = (s, prof) => !!prof.fire[s.n] && dayKey(prof.fire[s.n][0]) === today();
+  /* His test grows with the sūrah (v2.8.4): 3 questions for the shortest, up to 7 for the longest (by words). */
+  function testSize(s) {
+    const w = s.ayat.reduce((t, a) => t + wordsOf(a.ar).length, 0);
+    return w < 30 ? 3 : w < 50 ? 4 : w < 80 ? 5 : w < 120 ? 6 : 7;
+  }
+  const NUM_WORD = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven'];
+  // what he says in a card of his own (a bubble on the map would run off the screen)
+  function teacherNote(text) {
+    const m = document.getElementById('modal');
+    m.innerHTML = `<div class="card eldmeet"><div class="eldart">${elderArt('happy')}</div><p class="eldsay">“${text}”</p><div class="row"><button class="btn go wide" data-act="cno">👍 OK</button></div></div>`;
+    m.classList.add('show');
+  }
+  // asked for a test with none to give: everything left is waiting to be won back, or practised already today
+  function teacherBusy(prof) {
+    const free = memorizedList(prof).filter((x) => !prof.fix.includes(x.n));
+    teacherNote(free.length ? 'MāshāAllāh! Every sūrah you know is roaring in your heart today. Come back tomorrow!' : 'Win back your things first, then show me!');
+  }
   function meetElder(anytime, rematch) {
     const prof = P(),
-      free = memorizedList(prof).filter((x) => !prof.fix.includes(x.n)), // not where things are already waiting
+      free = memorizedList(prof).filter((x) => !prof.fix.includes(x.n) && !practisedToday(x, prof)), // not where things are waiting, nor practised today
       cold = free.filter((x) => fireOf(x, prof) <= 1); // campfires burning low or out
     // mostly to a cold campfire (3 times in 4 on his own visits; always when you call him), else any sūrah
     const pool = cold.length && (anytime || Math.random() < 0.75) ? cold : free;
@@ -6248,7 +6359,7 @@
     const m = document.getElementById('modal');
     m.innerHTML = `<div class="card eldmeet"><div class="eldart">${elderArt(rematch ? 'happy' : '')}</div>
       <h3>${rematch ? 'Your Teacher is back!' : anytime ? 'You call your Teacher…' : 'Your Teacher joins you on the path!'}</h3>
-      <p class="eldsay">“${rematch ? `You found your things! Shall we walk the <b>${s.name}</b> path again?` : fireOf(s, prof) <= 1 ? `Your campfire at <b>${s.name}</b> is getting cold. Show me <b>${s.name}</b>: three questions, no help!` : `Let’s walk this stretch together. Show me <b>${s.name}</b>: three questions, no help!`}”</p>
+      <p class="eldsay">“${rematch ? `You found your things! Shall we walk the <b>${s.name}</b> path again?` : fireOf(s, prof) <= 1 ? `Your campfire at <b>${s.name}</b> is getting cold. Show me <b>${s.name}</b>: ${NUM_WORD[testSize(s)]} questions, no help!` : `Let’s walk this stretch together. Show me <b>${s.name}</b>: ${NUM_WORD[testSize(s)]} questions, no help!`}”</p>
       <div class="row"><button class="btn go wide" data-act="eldface">✅ I'm ready!</button><button class="btn wide" data-act="eldrun">🏃 Not now</button></div></div>`;
     m.classList.add('show');
     return true;
@@ -6263,10 +6374,10 @@
   function tapElder(el) {
     const prof = P();
     sfx.tap();
-    if (!memorizedList(prof).length && !prof.rematchReady.length) return sayOnMap(el, 'As-salāmu ʿalaykum! Learn a sūrah by heart, then show me 😊', 3600);
+    if (!memorizedList(prof).length && !prof.rematchReady.length) return teacherNote('As-salāmu ʿalaykum! Learn a sūrah by heart, then show me 😊');
     sayOnMap(el, 'As-salāmu ʿalaykum! 😊', 1400);
     setTimeout(() => {
-      if (st.view === 'map' && !meetElder(true, prof.rematchReady.length > 0)) sayOnMap(el, 'Win back your things first, then show me!', 3200);
+      if (st.view === 'map' && !meetElder(true, prof.rematchReady.length > 0)) teacherBusy(prof);
     }, 700);
   }
   let elderPlan = null;
@@ -6396,10 +6507,11 @@
     const A = s.ayat.length,
       ks = shuffle(range({ from: 0, to: A - 1 })),
       wt = WORLD_THROWS[worldOf(s)] || ['rock'],
-      qs = [];
+      qs = [],
+      n = testSize(s);
     const pick = () => wt[(Math.random() * wt.length) | 0];
     for (const k of ks) {
-      if (qs.length === 3) break;
+      if (qs.length === n) break;
       const words = wordsOf(s.ayat[k].ar);
       const canNext = k < A - 1,
         canFinish = words.length >= 4;
@@ -6407,7 +6519,7 @@
       const kind = canNext && (!canFinish || Math.random() < 0.5) ? 'next' : 'finish';
       qs.push({ k, kind, cut: kind === 'finish' ? Math.ceil(words.length / 2) : 0, throw: pick() });
     }
-    while (qs.length < 3) qs.push(Object.assign({}, qs[qs.length % Math.max(1, qs.length)] || { k: 0, kind: 'finish', cut: 1 }, { throw: pick() }));
+    while (qs.length < n) qs.push(Object.assign({}, qs[qs.length % Math.max(1, qs.length)] || { k: 0, kind: 'finish', cut: 1 }, { throw: pick() }));
     return qs;
   }
   function startElder() {
@@ -6444,6 +6556,7 @@
         <div class="ar sm" lang="ar">${shown}</div>
         ${q.kind === 'next' ? `<div class="eldpics">${a.scene.join(' ')}</div>` : ''}
         <details class="adult"><summary>👁️ Grown-up check (the answer)</summary><div class="ar sm" lang="ar">${answer}</div></details>
+        ${st.phase === 'ask' ? `<div class="eldtime" data-q="${st.q}" style="--t:${ASK_MS / 1000}s" aria-hidden="true"><i></i></div>` : ''}
       </div>
       <div class="row"><button class="btn wide" data-act="eldans" data-ok="0" ${st.phase !== 'ask' ? 'disabled' : ''}>🙈 Not quite</button><button class="btn go wide" data-act="eldans" data-ok="1" ${st.phase !== 'ask' ? 'disabled' : ''}>✅ Said it!</button></div>`;
     }
@@ -6452,7 +6565,7 @@
       .map((f, j) => `<span class="eldfallen" style="--j:${j}">${thingPic(f)}</span>`)
       .join('');
     return `<div class="screen eldscr" style="${cv(s.color)}">
-    <div class="eldtop"><span class="eldtitle">Test · ${s.name}<span class="elddots">${dots}</span></span>${LISTEN}</div>
+    <div class="eldtop"><span class="eldtitle">Test · ${s.name}<span class="elddots ${st.qs.length > 5 ? 'many' : ''}">${dots}</span></span>${LISTEN}</div>
     ${eldWorld(s)}
     <div class="arena">
       <div class="eldbubble ${st.ack ? 'ack' : ''}">${say}</div>
@@ -6506,8 +6619,22 @@
       ${far}<div class="eldprops">${props}</div>${near}
     </div>`;
   }
+  /* 15 seconds for each answer (v2.8.4): no answer by then counts as "Not quite". The bar under the question
+     shrinks meanwhile; a phone put away (the page hidden) gets a fresh 15 seconds on coming back. */
+  const ASK_MS = 15000;
+  let askT = 0;
+  function armAsk() {
+    clearTimeout(askT);
+    const q = st.q;
+    askT = setTimeout(() => {
+      if (st.view !== 'elder' || st.phase !== 'ask' || st.q !== q) return;
+      if (document.hidden) return armAsk();
+      elderAnswer(false);
+    }, ASK_MS);
+  }
   function elderAnswer(right) {
     if (st.view !== 'elder' || st.phase !== 'ask') return;
+    clearTimeout(askT);
     const q = st.qs[st.q],
       s = S[st.i];
     st.marks[st.q] = right;
@@ -6516,10 +6643,11 @@
       if (st.view !== 'elder') return;
       st.glad = false;
       st.ack = '';
-      if (st.q < 2) {
+      if (st.q < st.qs.length - 1) {
         st.q++;
         st.phase = 'ask';
         render();
+        armAsk();
       } else endElder();
     };
     if (right) {
@@ -6704,10 +6832,11 @@
   function endElder() {
     const s = S[st.i],
       prof = P(),
-      right = st.marks.filter(Boolean).length;
+      right = st.marks.filter(Boolean).length,
+      all = st.qs.length;
     let r;
-    if (right === 3) {
-      // all three: safe, and a gift (a rematch or a hero win: a special one)
+    if (right === all) {
+      // all right: safe, and a gift (a rematch or a hero win: a special one)
       let gift = '';
       // a test he was asked for (tapped on the map, or the Test button) brings one gift a day
       const asked = st.anytime && !st.rematch,
@@ -6723,17 +6852,19 @@
         prof.rematch = prof.rematch.filter((n) => n !== s.n);
         prof.rematchReady = prof.rematchReady.filter((n) => n !== s.n);
       }
+      const from = fireOf(s, prof);
       stokeFire(s, prof);
+      relit = null; // (he shows it burning up right here)
       save();
       sfx.win();
-      r = { win: true, say: 'You know it well. The Qur’an is safe in your heart. Walk on!', html: `<p class="memo gold">🏆 All three right!${gift ? ` He left ${gift} for you.` : noGift ? ' (His gift comes once a day.)' : ''}</p>` };
+      r = { win: true, say: 'You know it well. The Qur’an is safe in your heart. Walk on!', html: `${fireRise(from)}<p class="memo gold">🏆 All ${NUM_WORD[all]} right!${gift ? ` He left ${gift} for you.` : noGift ? ' (His gift comes once a day.)' : ''}</p>` };
     } else {
       const fell = st.fallen;
       sfx.boop();
       r = {
         win: false,
         took: fell.length,
-        say: right ? `${right} out of 3. Let’s practise <b>${s.name}</b> together, then walk this path again!` : `Let’s practise <b>${s.name}</b> together. You’ll get it!`,
+        say: right ? `${right} out of ${all}. Let’s practise <b>${s.name}</b> together, then walk this path again!` : `Let’s practise <b>${s.name}</b> together. You’ll get it!`,
         html: fell.length
           ? `<p class="memo">💔 ${elderLoss(fell)} ${fell.length > 1 ? 'They are' : 'It is'} waiting at <b>${s.name}</b>: finish a review game there to win ${fell.length > 1 ? 'them' : 'it'} back. Then you can walk this path with him again!</p>`
           : `<p class="memo">Nothing was lost this time. Practise <b>${s.name}</b> again!</p>`,
@@ -6893,5 +7024,5 @@
   registerOffline();
   if (linkCode) setTimeout(() => openSync(linkCode, `${appURL()}#sync=${linkCode}`), 400);
   if (justUpdated) loadChangelog().then(() => st.view === 'splash' && render());
-  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder, world: elderWorld }, sunDown, journal: JKEYS, countDay, installSteps: showInstallSteps, cleanStore, cleanProfile, syncCtx, markNow, fabTarget }; // for testing in the browser console
+  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder, world: elderWorld, size: testSize, tap: tapElder }, sunDown, journal: JKEYS, countDay, installSteps: showInstallSteps, cleanStore, cleanProfile, syncCtx, openSync, markNow, fabTarget }; // for testing in the browser console
 })();

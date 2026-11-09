@@ -7,18 +7,20 @@
   const pr = L.store().prefs;
   log('after update: speed', pr.speed, '| slow kept?', 'slow' in pr, '| repeat kept?', 'repeat' in pr);
   ok('old “slower” becomes 0.75×', pr.speed === 0.75 && !('slow' in pr) && !('repeat' in pr));
+  ok('a saved 0.25× (gone since v2.8.4) becomes 0.5×', w.__lhq.cleanStore({ v: 2, profiles: [], prefs: { speed: 0.25 } }).prefs.speed === 0.5);
   L.go('settings'); await wait(300);
   log('settings: speed slider', !!d.getElementById('speed'), '| labels', [...d.querySelectorAll('.speedticks button')].map((b) => b.textContent + (b.classList.contains('on') ? '*' : '')).join(' '), '| repeat row', /Repeat each/.test(d.body.textContent), '| slower row', /Slower recitation/.test(d.body.textContent));
   const sl = d.getElementById('speed'); sl.value = 5; sl.dispatchEvent(new w.Event('input', { bubbles: true })); await wait(100);
   log('slider to the end: speed', L.store().prefs.speed, '| player rate', L.player.playbackRate, '| on', d.querySelector('.speedticks .on').textContent);
   ok('slider sets the speed', L.store().prefs.speed === 2 && L.player.playbackRate === 2);
-  d.querySelector('.speedticks button[data-v="0.25"]').click(); await wait(200);
-  log('tap 0.25×: speed', L.store().prefs.speed, '| slider at', d.getElementById('speed').value);
+  ok('the speeds: 0.5× to 2×, with 1.25× (v2.8.4)', [...d.querySelectorAll('.speedticks button')].map((b) => b.dataset.v).join(',') === '0.5,0.75,1,1.25,1.5,2');
+  d.querySelector('.speedticks button[data-v="1.25"]').click(); await wait(200);
+  log('tap 1.25×: speed', L.store().prefs.speed, '| slider at', d.getElementById('speed').value);
   // plays at that speed
   L.go('learn', { i: idx(112), p: 0, a: 0, phase: 'repeat', popped: [false, false, false], peek: false, chain: 0, saidA: [], savedA: [] }); await wait(200);
   d.querySelector('.listen').click(); await wait(1500);
   log('playing at', L.player.playbackRate, '| repeat badge on Listen', !!d.querySelector('.listen .rep'));
-  ok('plays at the chosen speed', L.player.playbackRate === 0.25);
+  ok('plays at the chosen speed', L.player.playbackRate === 1.25);
   d.querySelector('.listen').click();
   // the info button and How to play
   L.go('settings'); await wait(200);
