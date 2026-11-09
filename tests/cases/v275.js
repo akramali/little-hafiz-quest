@@ -11,17 +11,17 @@
   ok('finish the āyah: Listen plays only the words shown', !!d.querySelector('.eldtop .listen.show') && JSON.stringify(X.fabTarget().items) === JSON.stringify([[113, 2, 0, 1]]), JSON.stringify(X.fabTarget()));
   ask([{ k: 0, kind: 'next', cut: 0, throw: 'rock' }, { k: 1, kind: 'next', cut: 0, throw: 'rock' }, { k: 2, kind: 'next', cut: 0, throw: 'rock' }]); await wait(300);
   ok('what comes after: Listen plays only the āyah shown', JSON.stringify(X.fabTarget().items) === JSON.stringify([[113, 1]]), JSON.stringify(X.fabTarget()));
-  // 2. a miss burns the fire down a step
+  // 2. a miss sends the fire down to Low (v2.9.0; a step before)
   p.fire[113] = [Date.now(), 2];
   p.items = ['explorer-cap']; p.outfit = { hat: 'explorer-cap' }; p.lost = [];
   d.querySelector('[data-act=eldans][data-ok="0"]').click(); await wait(2600);
   const f = p.fire[113], r = (Date.now() - f[0]) / 864e5;
-  ok('a wrong answer: the campfire burns down a step (roaring → strong, 3 days)', r >= 3 && r < 7, r.toFixed(2));
+  ok('a wrong answer: the campfire goes down to Low (10 days)', r >= 10 && r < 14, r.toFixed(2));
   // 3. the campfire on the sūrah page
   L.go('surah', { i: idx(113), p: 0 }); await wait(300);
-  ok('the sūrah page shows its campfire', /Strong/.test((d.querySelector('.herofire') || {}).textContent || ''));
+  ok('the sūrah page shows its campfire', /Low/.test((d.querySelector('.herofire') || {}).textContent || ''));
   d.querySelector('.herofire').click(); await wait(300);
-  ok('tap it: how fresh the sūrah is', /strong/.test(d.querySelector('#modal.show .firecard h3').textContent) && /fresh in your heart/.test(d.querySelector('#modal.show .firecard').textContent));
+  ok('tap it: how fresh the sūrah is', /low/.test(d.querySelector('#modal.show .firecard h3').textContent) && /fading/.test(d.querySelector('#modal.show .firecard').textContent));
   d.querySelector('#modal [data-act=cno]').click(); await wait(200);
   p.fire[112] = [Date.now() - 3 * 7 * 864e5, 2];
   L.go('map'); await wait(1500);

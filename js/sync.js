@@ -185,7 +185,7 @@
     ctx.surahs.forEach((s) => w.big((p.stime && p.stime[s.n]) || 0));
     // the extras block (v2.7.1): everything else, so the other phone shows the explorer exactly as they are
     w.num(EXTRAS, 8);
-    w.num(4, 8); // its version (2: v2.7.2 adds the comfy shoes' color; 3: v2.7.24 the Stranger's visits; 4: v2.8.4 the app version)
+    w.num(5, 8); // its version (2: v2.7.2 adds the comfy shoes' color; 3: v2.7.24 the Stranger's visits; 4: v2.8.4 the app version; 5: v2.9.0 the riddle and the buddy)
     w.num(Math.max(0, p.at || 0), 6);
     w.bit(!!p.greeted);
     const kOf = (g) => (g.k === 'i' ? 'i:' : 's:') + g.id;
@@ -237,6 +237,9 @@
     for (let k = 0; k <= 7; k++) w.bit((p.strangers || []).includes(k));
     // the game version that made the code, so a phone on another version can ask for an update first
     String(ctx.version || '0.0.0').split('.').slice(0, 3).forEach((x) => w.num(Math.min(255, parseInt(x, 10) || 0), 8));
+    const rd = p.riddle || ['', 0],
+      bd = p.buddy || ['', 0];
+    [dayNum(rd[0]), rd[1] || 0, dayNum(bd[0]), bd[1] || 0].forEach((v) => w.big(v));
     const body = w.done();
     const zip = CAN_ZIP ? await pipe(body, new CompressionStream('deflate-raw')) : body;
     return b64(new Uint8Array([FORMAT, CAN_ZIP ? 1 : 0, ...zip]));
@@ -362,6 +365,10 @@
       if (xv >= 2) p.look.feet = r.num(3);
       if (xv >= 3) p.strangers = [0, 1, 2, 3, 4, 5, 6, 7].filter(() => r.bit());
       if (xv >= 4) p.appV = [r.num(8), r.num(8), r.num(8)].join('.');
+      if (xv >= 5) {
+        const [rd, rn, bd, bn] = [0, 0, 0, 0].map(() => r.big());
+        Object.assign(p, { riddle: [dayStr(rd), rn], buddy: [dayStr(bd), bn] });
+      }
     }
     p.made = true;
     p.sameThings = same;

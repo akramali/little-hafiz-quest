@@ -61,15 +61,17 @@ recite on their own.
 - **Campfires** beside memorized sūrahs burn down over three weeks (roaring, strong, steady, low, embers, out).
   Low ones glow on the map, your Teacher comes to test the cold ones, and practising lights them up again.
 - **A journal to fill:** a book of the animals and things to find on the map and in the āyāt's pictures; tap one to add it.
+- **Little daily extras:** a riddle from your Teacher, a buddy to feed, a garden that grows at each memorized
+  sūrah, and garlands and stickers for Ramadan, Eid and Jumuʿah.
 - **Daily streaks** (🏃 days on the trail, a little gift every 7 days in a row), and a welcome from your Teacher, who hands each new explorer their walking stick.
 - **Read mode** for children who can read the muṣḥaf, following the recitation āyah by āyah.
-- **Four reciters**, adjustable speed (0.5×–2×) and loops; tap any word to hear it alone.
+- **Four reciters**, adjustable speed (0.5×–1.5×) and loops; tap any word to hear it alone.
 - **Over 350 things to win and wear:** treasures, golden editions, patterned surprises, stickers, buddies, toy rides
   for golden worlds and summit awards, paced so new ones keep coming right up to the last star.
 - **The Stranger** guards the bridges to the higher worlds. Once everything up to World 3 is memorized, he meets
   you on your way up and tries that world's elements on you, but with your Teacher at your side they can't reach
   you: what's in your heart protects you. Nothing is lost, and he's never on the map.
-- **Your Teacher:** a kind old man who roams the map; tap him, or he finds you, to walk together and test a memorized sūrah, with no help (3 to 7 questions, 15 seconds each).
+- **Your Teacher:** a kind old man who roams the map; tap him, or he finds you, to walk together and test a memorized sūrah, with no help (3 to 7 questions, 30 seconds each).
 - **Family friendly:** up to 10 explorers on one phone, family sync between phones by link or QR code, backups to a file.
 
 Five to ten minutes a day is plenty. Stop while it's still fun.

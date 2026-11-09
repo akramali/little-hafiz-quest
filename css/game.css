@@ -9386,3 +9386,245 @@ body:has(.wrail.open) .jbtn {
   height: 24px;
   font-size: 12px;
 }
+
+/* ---------- v2.9.0 ---------- */
+/* the garden: a little plant at each memorized stop, beside its campfire */
+.ngarden {
+  position: absolute;
+  bottom: -36px;
+  width: 30px;
+  height: 30px;
+  z-index: 1;
+}
+.ngarden.fl {
+  left: -34px;
+}
+.ngarden.fr {
+  right: -34px;
+}
+.ngarden svg,
+.fg-art svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+.fgarden {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+}
+.fg-art {
+  flex: none;
+  width: 40px;
+  height: 40px;
+}
+/* special days: a garland across the top of the map, behind the top buttons */
+.festive {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 54px);
+  left: 0;
+  right: 0;
+  height: 50px;
+  z-index: 11;
+  pointer-events: none;
+}
+.festive svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+/* the buddy's mood: a little bubble above it (tap it for its card) */
+.budmood {
+  cursor: pointer;
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: budBob 2.2s ease-in-out infinite;
+}
+.budmood.m-hungry {
+  animation: budAsk 1.6s ease-in-out infinite;
+}
+@keyframes budBob {
+  50% {
+    transform: translateY(-3px);
+  }
+}
+@keyframes budAsk {
+  0%,
+  60%,
+  100% {
+    transform: none;
+  }
+  70% {
+    transform: rotate(-10deg) scale(1.1);
+  }
+  80% {
+    transform: rotate(10deg) scale(1.1);
+  }
+}
+.budcard .budart {
+  width: 96px;
+  height: 96px;
+  margin: 0 auto;
+}
+.budcard .budart svg {
+  width: 100%;
+  height: 100%;
+}
+.budtricks {
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+/* the buddy's tricks */
+.ex[class*='tr-'] .ex-pet {
+  transform-box: view-box;
+  transform-origin: 164px 280px;
+}
+.ex.tr-hop .ex-pet {
+  transform-origin: 164px 291px;
+  animation: mvPet 1.2s ease-out;
+}
+.ex.tr-spin .ex-pet {
+  animation: trSpin 1s ease-in-out;
+}
+.ex.tr-flip .ex-pet {
+  animation: trFlip 1.2s ease-in-out;
+}
+.ex.tr-dance .ex-pet {
+  animation: trDance 1.4s ease-in-out;
+}
+@keyframes trSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes trFlip {
+  0% {
+    transform: none;
+  }
+  40% {
+    transform: translateY(-70px) rotate(180deg);
+  }
+  80% {
+    transform: translateY(0) rotate(360deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+@keyframes trDance {
+  0%,
+  100% {
+    transform: none;
+  }
+  15%,
+  55% {
+    transform: rotate(-16deg) translateX(-6px);
+  }
+  35%,
+  75% {
+    transform: rotate(16deg) translateX(6px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .budmood {
+    animation: none;
+  }
+}
+/* the Teacher's riddle of the day, at the top of the journal */
+.jriddle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 12px 8px;
+  padding: 8px 12px;
+  border-radius: 16px;
+  background: var(--card);
+  box-shadow: 0 2px 0 var(--edge);
+}
+.jriddle .jr-ic {
+  flex: none;
+  font-size: 26px;
+}
+.jriddle .jr-tx {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.2;
+}
+.jriddle .jr-tx b {
+  display: block;
+  font-size: 14px;
+}
+.jriddle .jr-tx small {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--soft);
+}
+.jriddle .jr-st {
+  flex: none;
+  font-weight: 800;
+}
+.jriddle.done {
+  opacity: 0.85;
+}
+/* the start screen and done pages on Ramadan and the Eids: a hilal and lamps (or fireworks) in the corners */
+.festsky-wrap {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 40px);
+  left: 0;
+  right: 0;
+  height: 300px;
+  z-index: 1;
+  pointer-events: none;
+}
+.festsky-wrap svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+.festsky .fs-sway {
+  animation: fsSway 4s ease-in-out infinite;
+}
+.festsky .fs-sway.fs-b {
+  animation-delay: -1.6s;
+}
+.festsky .fs-pop {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: fsPop 2.6s ease-out infinite;
+}
+@keyframes fsSway {
+  50% {
+    transform: rotate(4deg);
+  }
+}
+@keyframes fsPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  25% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.15);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .festsky .fs-sway,
+  .festsky .fs-pop {
+    animation: none;
+  }
+}
+/* out of hearts: the campfire burning down a step */
+.dropfire {
+  text-align: center;
+  margin: -4px 0 6px;
+}

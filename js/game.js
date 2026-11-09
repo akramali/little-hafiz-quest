@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.8.4';
+  const VERSION = '2.9.0';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -86,6 +86,7 @@
   const STICKER = Object.create(null);
   ART.STICKERS.forEach((x) => (STICKER[x.id] = x));
   ART.BADGES.forEach((x) => (STICKER[x.id] = x)); // star badges: one for every 100 stars, never given at random
+  ART.SEASONS.forEach((x) => (STICKER[x.id] = x)); // special days' stickers (v2.9.0): given on the day, never at random
   const SLOTS = ['hat', 'hijab', 'glasses', 'top', 'pants', 'shoes', 'cape', 'bag', 'stick', 'shield', 'watch', 'pet'];
   const SLOT_INFO = {
     hat: ['🧢', 'Hats'],
@@ -200,7 +201,7 @@
     pzrtl: false, // Picture Puzzle from right to left
     wordmean: false, // the meaning of each word (Word Steps, the muṣḥaf)
   };
-  const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2]; // (v2.8.4: 1.25× in, 0.25× out, too slow)
+  const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5]; // (v2.8.4: 1.25× in, 0.25× out, too slow; v2.9.0: 2× out)
   const CHAINS = [1, 3, 4, 5]; // Look & Repeat: chain the āyāt after every new one, or every 3, 4 or 5
   const MAX_EXPLORERS = 10;
   let store = null;
@@ -240,13 +241,15 @@
       daily: '',
       teacherGift: '', // the day a test the explorer asked the Wise Elder for last brought a gift (one a day)
       greeted: false, // the Wise Elder has welcomed them and given them their walking stick
-      fire: {}, // campfires: sūrah number -> [last revised (ms), level 0-4]
+      fire: {}, // campfires: sūrah number -> [last revised (ms), different days practised 0-7: its garden (v2.9.0)]
       found: [], // the journal: things found ('p:<map thing>' or 'e:<emoji>')
       jdone: [], // journal pages (worlds) completed (a gift each)
       streak: ['', 0], // [the last day with a minute of learning, days in a row]
       best: 0, // the longest streak
       dayT: ['', 0], // [today, seconds learned today] (a day counts after a minute)
       strangers: [], // worlds where the Stranger has come (0-6), and 7: the last time, with the whole Juz memorized
+      riddle: ['', 0], // the Teacher's riddle of the day: [the last day one was solved, stamps won] (v2.9.0)
+      buddy: ['', 0], // the buddy's care: [the last day it was fed, days fed] (v2.9.0)
       at: 0,
       made: false,
       time: 0, // seconds spent learning (for grown-ups)
@@ -381,7 +384,7 @@
     S.forEach((s) => {
       if (!surahDone(s, p)) return;
       const f = f0[s.n];
-      p.fire[s.n] = Array.isArray(f) && isFinite(f[0]) && f[0] > 0 ? [Math.min(+f[0], Date.now()), int(f[1], 0, 4, 0)] : [Date.now(), 2];
+      p.fire[s.n] = Array.isArray(f) && isFinite(f[0]) && f[0] > 0 ? [Math.min(+f[0], Date.now()), int(f[1], 0, 7, 0)] : [Date.now(), 2];
     });
     // (pictures from checkpoints with no step finished came in before v2.8.4: they go)
     p.found = uniq((Array.isArray(o.found) ? o.found : []).filter((k) => JKEYS.has(k) && (k[0] !== 'e' || jEarnable(k, p))));
@@ -390,6 +393,8 @@
     if (Array.isArray(o.streak)) p.streak = [day(o.streak[0]), int(o.streak[1], 0, 1e5, 0)];
     p.best = Math.max(p.streak[1], int(o.best, 0, 1e5, 0));
     if (Array.isArray(o.dayT) && day(o.dayT[0])) p.dayT = [o.dayT[0], Math.min(86400, Math.max(0, +o.dayT[1] || 0))];
+    if (Array.isArray(o.riddle)) p.riddle = [day(o.riddle[0]), int(o.riddle[1], 0, 1e5, 0)];
+    if (Array.isArray(o.buddy)) p.buddy = [day(o.buddy[0]), int(o.buddy[1], 0, 1e5, 0)];
     return p;
   }
   function cleanPrefs(o) {
@@ -409,6 +414,7 @@
     if (['auto', 'light', 'dim'].includes(o.theme)) out.theme = o.theme;
     if (SPEEDS.includes(o.speed)) out.speed = o.speed;
     else if (o.speed === 0.25) out.speed = 0.5; // the slowest now
+    else if (o.speed === 2) out.speed = 1.5; // the fastest now
     if (o.chainSet === true && CHAINS.includes(o.chain)) Object.assign(out, { chain: o.chain, chainSet: true });
     else if (o.slow === true) out.speed = 0.75; // "slower recitation" (80%) before v2.5.2
     if (typeof o.reciter === 'string' && /^[a-z0-9-]{2,32}$/.test(o.reciter)) out.reciter = o.reciter;
@@ -709,7 +715,8 @@
     prof = prof || P();
     opts = Object.assign({ view: 'front' }, opts);
     if (opts.mood == null) opts.mood = prof.lost.length || (prof.lostSt || []).length ? 'sad' : '';
-    return ART.explorer(prof.look, Object.assign(drawnOutfit(prof), { sticker: prof.badge }), opts);
+    const svg = ART.explorer(prof.look, Object.assign(drawnOutfit(prof), { sticker: prof.badge }), opts);
+    return opts.buddy ? svg.replace(/<\/svg>$/, moodBubble(prof, opts.buddy === 'map') + '</svg>') : svg; // the buddy's mood (v2.9.0)
   }
   function gotIt(prof, key) {
     prof.got = prof.got.filter((k) => k !== key);
@@ -1591,6 +1598,10 @@
     const cand = prof.items.filter((id) => !isLost(id)).slice(-1)[0];
     // a broken heart marks this sūrah on the map until a review game here is finished
     if (!prof.fix.includes(s.n)) prof.fix.push(s.n);
+    // and its campfire goes down to Low, or out if it was low already (v2.9.0), until a review game here relights it
+    const f0 = fireOf(s, prof);
+    lowFire(s, prof);
+    const down = f0 > fireOf(s, prof) ? `<div class="dropfire">${fireRise(f0, fireOf(s, prof))}</div>` : '';
     save();
     let body;
     if (cand) {
@@ -1605,7 +1616,7 @@
     stopAudio();
     pendingRestart = restart;
     const m = document.getElementById('modal');
-    m.innerHTML = `<div class="card dropcard">${body}<div class="row"><button class="btn wide" data-act="dropnext">Next time</button><button class="btn go wide" data-act="retry">🔁 Try again</button></div></div>`;
+    m.innerHTML = `<div class="card dropcard">${body}${down}<div class="row"><button class="btn wide" data-act="dropnext">Next time</button><button class="btn go wide" data-act="retry">🔁 Try again</button></div></div>`;
     m.classList.add('show');
   }
   let pendingRestart = null;
@@ -1632,6 +1643,7 @@
     if (view === 'map' && ['surah', 'done', 'learn', 'words', 'path', 'order', 'mushaf'].includes(st.view)) setTimeout(maybeElder, 1400);
     if (view === 'map' && !noExplorers() && P().made && !begun(P())) setTimeout(maybeIntro, 900);
     if (view === 'map' && relit) setTimeout(flareFire, 1100); // a campfire just relit flares up
+    if (view === 'map') setTimeout(maybeFestive, 1600); // a special day: a greeting and its sticker
     if (view === 'map' && ['done', 'surah', 'path', 'order', 'learn', 'words', 'summit'].includes(st.view)) setTimeout(maybeStranger, 900);
     // leaving My Explorer: everything new there has been seen
     if (st.view === 'bag' && view !== 'bag' && P().fresh.length) {
@@ -1753,7 +1765,7 @@
     if (st.view === 'splash' || st.view === 'map' || st.view === 'summit') setScene(null);
     else if (s && st.i != null && !['settings', 'bag', 'create', 'show'].includes(st.view)) setScene(worldOf(s));
     else setScene(worldOf(S[P().at] || S[0]));
-    const html = V[st.view](),
+    const html = V[st.view]() + festiveBar(), // (special days: a garland, v2.9.0)
       key = st.view + ':' + st.i + ':' + st.p + ':' + (st.L || '');
     // the map is always drawn afresh: it adds elements of its own (the horizon) that an in-place update
     // would mistake for the map itself, leaving a blank map after, say, the last gift was opened there
@@ -1924,6 +1936,7 @@
       lost: prof.lost.filter((x) => x.n === s.n).map((x) => x.id),
       fix: prof.fix.includes(s.n),
       fire: fireOf(s, prof),
+      garden: gardenOf(s, prof),
     };
   }
   function suggestIdx() {
@@ -1940,7 +1953,7 @@
       ${giftIcon(prof)}
       <button class="icon-btn hud-bag hud-me" data-act="bag" aria-label="My explorer: dress up, collection and achievements"><span class="phead">${explorer({ cls: 'mini' })}</span>${prof.fresh.length ? NEWDOT : ''}</button>
     </div>
-    <button class="wr-toggle jbtn" data-act="journal" aria-label="My journal: ${prof.found.length} of ${JKEYS.size} found">${BOOK_IC}<span class="wr-cur">Journal</span></button>
+    <button class="wr-toggle jbtn" data-act="journal" aria-label="My journal: ${prof.found.length} of ${JKEYS.size} found">${BOOK_IC}<span class="wr-cur">Journal</span>${riddleOpen(prof) ? NEWDOT : ''}</button>
     ${heroReady(prof) && prefs.teacher ? `<div class="mapfoot"><button class="btn small eldtest" data-act="challenge" aria-label="Take your Teacher’s test"><span class="eldtest-ic">${elderArt('')}</span>Test</button></div>` : ''}
     <div id="map" class="mroot"></div>
   </div>`;
@@ -1961,7 +1974,7 @@
       reached,
       suggest: suggestIdx(),
       status: surahStatus,
-      explorerSVG: () => explorer({ view: 'front' }),
+      explorerSVG: () => explorer({ view: 'front', buddy: 'map' }),
       // everyone else on this phone, standing in the world of the sūrah they're on
       others: store.profiles
         .filter((p) => p.id !== store.cur && p.made)
@@ -2196,6 +2209,7 @@
     m.innerHTML = `<div class="card firecard"><button class="cardx" data-act="cno" aria-label="Close">✕</button>
       <div class="fireart f${lvl}">${ART.campfire(lvl)}</div><h3>${['Your campfire is out', 'Only embers are left', 'Your campfire is low', 'Your campfire burns steady', 'Your campfire is strong', 'Your campfire is roaring!'][lvl]}</h3>
       <p class="eldsay">${say}</p>
+      ${gardenOf(s, prof) >= 0 ? `<p class="saveinfo center fgarden"><span class="fg-art">${ART.plant(gardenOf(s, prof))}</span>${gardenLine(s, prof)}</p>` : ''}
       <div class="row">${st.view === 'map' ? `<button class="btn ${lvl <= 1 ? 'go' : ''} wide" data-act="firego" data-i="${S.indexOf(s)}">${lvl <= 1 ? '🔥 Practise now' : 'Go there'}</button>` : `<button class="btn go wide" data-act="cno">${lvl <= 1 ? '🔥 Let’s practise!' : 'OK'}</button>`}</div></div>`;
     m.classList.add('show');
   }
@@ -2724,12 +2738,13 @@
     return `<button class="icon-btn giftico ${cls || ''}" data-act="opengift" aria-label="${n} gift${n > 1 ? 's' : ''} to open"><span class="rattle">${giftArt(prof.pending[0])}</span><span class="badge">${n}</span></button>`;
   }
   /* The campfire burning up from where it was to roaring, a step at a time (v2.8.4): after practising a memorized
-     sūrah, and after passing the Teacher's test. */
-  function fireRise(from) {
+     sūrah, and after passing the Teacher's test; or burning down (to < from, v2.9.0): a test with mistakes. */
+  function fireRise(from, to) {
     if (from < 0) return '';
+    to = to == null ? 5 : to;
     const lv = [];
-    for (let l = Math.min(5, from); l <= 5; l++) lv.push(l);
-    return `<span class="firerise" role="img" aria-label="Campfire: Roaring">${lv.map((l, j) => `<span class="fr-st ${j === lv.length - 1 ? 'last' : ''} ${j === 0 ? 'first' : ''}" style="--d:${0.3 + j * 0.4}s">${ART.campfire(l)}</span>`).join('')}</span>`;
+    for (let l = Math.min(5, from); to >= from ? l <= to : l >= to; l += to >= from ? 1 : -1) lv.push(l);
+    return `<span class="firerise" role="img" aria-label="Campfire: ${FIRE_WORD[to]}">${lv.map((l, j) => `<span class="fr-st ${j === lv.length - 1 ? 'last' : ''} ${j === 0 ? 'first' : ''}" style="--d:${0.3 + j * 0.4}s">${ART.campfire(l)}</span>`).join('')}</span>`;
   }
   function nextPrizeNote(prof) {
     const nx = nextPrize(prof);
@@ -2768,12 +2783,15 @@
     const g = prof.pending[0];
     return `<div class="screen donescr" style="${cv(s.color)}">
     <div class="dtop">
-    ${plain ? `<div class="medal"><span>★</span></div>` : `<div class="big">${st.big || '🎉'}</div>`}
+    ${plain ? `<div class="medal"><span>★</span></div>` : `<div class="big">${st.big || FEST_BIG[occasion()] || '🎉'}</div>`}
     <h2>MāshāAllāh!</h2>
     <p>${st.msg}</p>
     <div class="trophy-stars">${st.noStar ? '' : stars}${st.fireFrom >= 0 && (st.noStar || st.fireFrom < 5) ? fireRise(st.fireFrom) : ''}</div>
     </div>
     <div class="dbody">
+    ${occasion() ? `<div class="memo gold">${GREET[occasion()]}</div>` : ''}
+    ${st.fed ? `<div class="memo">${st.fed.ride ? `⛽ Your ${esc(st.fed.name)} is filled up and ready to go!` : `🍎 Your ${esc(st.fed.name)} is fed and happy!`}${st.fed.trick ? ` It learned a new trick: <b>${st.fed.trick}</b>!` : ''}</div>` : ''}
+    ${st.grew ? `<div class="memo">🌱 Your garden at <b>${s.name}</b> grew into ${st.grew}!</div>` : ''}
     ${st.designs ? `<div class="memo gold">🌟 Every sūrah memorized! All ${st.designs} designs are yours. Their colours and patterns keep coming as gifts.</div>` : ''}
     ${st.allStars ? `<div class="memo gold">🌟 Every star in <b>${s.name}</b>! A golden treasure is waiting for you.</div>` : ''}
     ${found}
@@ -2832,8 +2850,9 @@
       const locked = ART.STICKERS.filter((x) => !prof.stickers.includes(x.id));
       // the ones still to win: the same tiles as things still to find (a shadow of a badge, a ? for a sticker)
       const badges = ART.BADGES.map((b) => (prof.stickers.includes(b.id) ? stickerCell(b.id, prof) : `<div class="icell locked goldlock"><span class="iart sil">${ART.sticker(b.id)}</span><small>At ${b.stars} ⭐</small></div>`)).join('');
-      body = `<div class="wrow">${mine.filter((id) => !STICKER[id].stars).map((id) => stickerCell(id, prof)).join('')}${locked.map(() => `<div class="icell locked"><span class="iart"><span class="lockq">?</span></span><small>A gift to win</small></div>`).join('')}${badges}</div>
-      <p class="wnote2">${mine.length ? 'Tap a sticker to stick it on. Tap again to take it off.' : 'Finish games to win stickers.'} ${prof.stickers.filter((id) => !STICKER[id].stars).length} of ${ART.STICKERS.length} stickers · 🏅 a badge every 100 stars</p>`;
+      const seasons = nextSeasons().filter((x) => !prof.stickers.includes(x.id)).map((x) => `<div class="icell locked goldlock"><span class="iart sil">${ART.sticker(x.id)}</span><small>${x.season}</small></div>`).join(''); // (v2.9.0)
+      body = `<div class="wrow">${mine.filter((id) => !STICKER[id].stars).map((id) => stickerCell(id, prof)).join('')}${locked.map(() => `<div class="icell locked"><span class="iart"><span class="lockq">?</span></span><small>A gift to win</small></div>`).join('')}${seasons}${badges}</div>
+      <p class="wnote2">${mine.length ? 'Tap a sticker to stick it on. Tap again to take it off.' : 'Finish games to win stickers.'} ${prof.stickers.filter((id) => !STICKER[id].stars && !STICKER[id].season).length} of ${ART.STICKERS.length} stickers · 🏅 a badge every 100 stars</p>`;
     } else {
       // won things newest first, then the starting clothes, then the ones still to find
       const list = ITEMS.filter((it) => it.slot === tab && forKid(it, prof) && (!it.gold || prof.items.includes(it.id) || prof.items.includes(it.base)));
@@ -2848,7 +2867,7 @@
       : `<button class="wd-side wd-comfy" data-act="comfy" ${fancy ? '' : 'disabled'} aria-label="Just comfy clothes">👕<small>Comfy</small></button>`;
     return `<div class="screen bagscr">
     ${bar(whoBtn(prof, 'My Explorer'), prof.name || store.profiles.filter((p) => p.made).length > 1 ? 'My Explorer' : '', 'map', giftIcon(prof, 'inbar') + `<button class="btn small editme" data-act="editme" aria-label="Change your explorer: name and look">✏️</button>`)}
-    <div class="wd-stage"><button class="wd-ex" data-act="exmove" aria-label="Tap your explorer">${explorer({ view: st.backView && tab !== 'look' ? 'back' : 'front' })}</button>${tab === 'look' ? '' : `${comfy}<button class="wd-side wd-turn" data-act="turn" aria-label="Turn around">↻<small>Turn</small></button><button class="wd-side wd-show" data-act="show" aria-label="My achievements">🏆<small>Awards</small></button>`}</div>
+    <div class="wd-stage"><button class="wd-ex" data-act="exmove" aria-label="Tap your explorer">${explorer({ view: st.backView && tab !== 'look' ? 'back' : 'front', buddy: st.backView && tab !== 'look' ? '' : 'me' })}</button>${tab === 'look' ? '' : `${comfy}<button class="wd-side wd-turn" data-act="turn" aria-label="Turn around">↻<small>Turn</small></button><button class="wd-side wd-show" data-act="show" aria-label="My achievements">🏆<small>Awards</small></button>`}</div>
     ${tab === 'look' ? '' : `<div class="wtwrap"><div class="wtabs" id="wtabs">${tabs}</div><button class="cpmore cpless" data-act="wtscroll" data-d="-1" aria-label="Earlier categories">‹</button><button class="cpmore" data-act="wtscroll" data-d="1" aria-label="More categories">›</button></div>`}
     <div class="wbody">${body}</div>
   </div>`;
@@ -2901,8 +2920,8 @@
       memorized: S.filter((s) => surahDone(s, prof)).length,
       ayat,
       allAyat: S.reduce((t, s) => t + s.ayat.length, 0),
-      items: prof.items.filter((id) => ITEM[id] && !starter(ITEM[id])).length + prof.stickers.filter((id) => !STICKER[id].stars).length,
-      allItems: winnable(prof).length + ART.STICKERS.length, // (v2.8.4: so a child can aim for 100%)
+      items: prof.items.filter((id) => ITEM[id] && !starter(ITEM[id])).length + prof.stickers.filter((id) => !STICKER[id].stars && !STICKER[id].year).length,
+      allItems: winnable(prof).length + ART.STICKERS.length + ART.SEASONS.filter((x) => !x.year).length, // (v2.8.4: so a child can aim for 100%; a year's special-day stickers are a bonus)
       badges: prof.stickers.filter((id) => STICKER[id].stars).length,
       time: prof.time || 0,
       streak: streakNow(prof),
@@ -3144,7 +3163,7 @@
 
   /* ---------- FAMILY SYNC: one explorer, as a link or a QR code (js/sync.js) ---------- */
   const SYNC = window.LHQ_SYNC;
-  const syncCtx = () => ({ surahs: S, items: ITEMS, stickers: [...ART.STICKERS, ...ART.BADGES], looks: ART.LOOKS, slots: SLOTS, journal: [...JKEYS], version: VERSION });
+  const syncCtx = () => ({ surahs: S, items: ITEMS, stickers: [...ART.STICKERS, ...ART.BADGES, ...ART.SEASONS], looks: ART.LOOKS, slots: SLOTS, journal: [...JKEYS], version: VERSION });
   const appURL = () => location.origin + location.pathname.replace(/index\.html$/, '');
   function qrSVG(text) {
     const q = window.qrcode(0, 'L');
@@ -3281,11 +3300,13 @@
     ['wdone', 'feats', 'cpg'].forEach((k) => (into[k] = [...new Set([...into[k], ...from[k]])]));
     into.time = Math.max(into.time || 0, from.time || 0);
     for (const n in from.stime) into.stime[n] = Math.max(into.stime[n] || 0, from.stime[n]);
-    for (const n in from.fire || {}) if (!into.fire[n] || from.fire[n][0] > into.fire[n][0]) into.fire[n] = from.fire[n].slice();
+    for (const n in from.fire || {}) if (!into.fire[n] || from.fire[n][0] > into.fire[n][0]) into.fire[n] = [from.fire[n][0], Math.max(from.fire[n][1], (into.fire[n] || [0, 0])[1])];
     into.found = [...new Set([...into.found, ...(from.found || [])])];
     into.best = Math.max(into.best || 0, from.best || 0);
     if (from.streak[0] > into.streak[0] || (from.streak[0] === into.streak[0] && from.streak[1] > into.streak[1])) into.streak = from.streak.slice();
     into.greeted = into.greeted || !!from.greeted;
+    // the riddle and the buddy: the later day, the higher count
+    ['riddle', 'buddy'].forEach((k) => (into[k] = [(from[k][0] || '') > (into[k][0] || '') ? from[k][0] : into[k][0], Math.max(into[k][1], from[k][1])]));
     into.touched = Math.max(into.touched || 0, from.touched || 0);
     into.pending = into.pending.filter((g) => (g.k === 'i' ? !into.items.includes(g.id) : !into.stickers.includes(g.id)));
     S.forEach((s) => giveSurahGift(s, into));
@@ -3766,7 +3787,10 @@
     if (st.view === 'path' && (!multi(s) || st.p === 'all') && surahDone(s)) extra.memorized = true;
     if (st.starsBefore != null && !newStar) extra.noStar = true; // a revision: no star this time
     extra.fireFrom = fireOf(s, prof); // the campfire before (it burns up on the done page)
+    const g0 = gardenOf(s, prof);
     if (surahDone(s)) stokeFire(s, prof);
+    if (g0 >= 0 && gardenOf(s, prof) > g0) extra.grew = GARDEN_WORD[gardenOf(s, prof)]; // the garden grew
+    extra.fed = feedBuddy(prof); // the buddy's food (or fuel) for the day
     const given = giveSurahGift(s);
     if (given === 'gold' || given === 'both') extra.allStars = true;
     if (s.n !== CROWN_N) giveSurahGift(BYN[CROWN_N]); // the last sūrah memorized brings the Summit crown
@@ -3824,7 +3848,7 @@
       return;
     }
     if (extra.plain) bigParty(['★', '✦', '●']);
-    else bigParty();
+    else bigParty(FEST_SET[occasion()]);
     go('done', done);
   }
   /* prizes on the star track: everything up to the explorer's star count goes into the gift box */
@@ -4554,6 +4578,13 @@
         sayOnMap(b, `${p.name || 'Explorer'} · ⭐ ${totalStars(p)}`, 3200);
         break;
       }
+      case 'buddy':
+        sfx.tap();
+        showBuddy();
+        break;
+      case 'trick':
+        doTrick(b.dataset.t);
+        break;
       case 'exmove':
         if (Date.now() - swiped < 400) break; // that was a swipe, not a tap
         explorerMove(b.querySelector('svg.ex'));
@@ -5837,22 +5868,24 @@
     const days = (Date.now() - f[0]) / 864e5;
     return 5 - FIRE_STEPS.filter((d) => days >= d).length;
   }
-  // a miss in the Teacher's test: the fire burns down one step (strong → half → embers → out)
-  function dimFire(s, prof) {
+  // a mistake in the Teacher's test, or out of hearts in a review game (v2.9.0): the fire goes down to Low from
+  // wherever it was; one already low or in embers burns out. Practising relights it.
+  function lowFire(s, prof) {
     const f = prof.fire[s.n],
       lvl = fireOf(s, prof);
     if (!f || lvl <= 0) return;
-    f[0] = Math.min(f[0], Date.now() - FIRE_STEPS[5 - lvl] * 864e5 - 1000); // just past the next step down
+    f[0] = Math.min(f[0], Date.now() - FIRE_STEPS[lvl > 2 ? 2 : 4] * 864e5 - 1000); // just past the step down to low (or out)
   }
   let relit = null; // a sūrah whose fire was just relit: it flares up when the map is back
   // practised: the fire burns strong again; true when it had burned low (so the explorer relit it)
   function stokeFire(s, prof) {
     const f = prof.fire[s.n];
     if (!f) {
-      prof.fire[s.n] = [Date.now(), 0];
+      prof.fire[s.n] = [Date.now(), 1];
       return false;
     }
     const low = fireOf(s, prof) <= 1;
+    if (dayKey(f[0]) !== today()) f[1] = Math.min(7, (f[1] || 0) + 1); // another day practised: the garden grows
     f[0] = Date.now();
     if (low) relit = s.n;
     return low;
@@ -5872,6 +5905,229 @@
       { duration: 1100, easing: 'ease-out' },
     );
     burstAt(el, 10, ['🔥', '✨', '⭐']);
+  }
+
+  /* ================= THE GARDEN (v2.9.0) =================
+     A little plant at each memorized sūrah's stop, beside its campfire: it grows with the different days the sūrah
+     is practised (the second number of its campfire record, counted by stokeFire, at most 7): a seed (1 day), a
+     sprout (2-3), a flower (4-6), a small tree (7). It never wilts: the campfire shows how fresh it is, the garden how
+     long it has been kept. */
+  const GARDEN_WORD = ['a seed', 'a sprout', 'a flower', 'a little tree'];
+  function gardenOf(s, prof) {
+    prof = prof || P();
+    const f = prof.fire[s.n];
+    if (!f || !surahDone(s, prof)) return -1;
+    const c = f[1] || 0;
+    return c <= 1 ? 0 : c <= 3 ? 1 : c <= 6 ? 2 : 3;
+  }
+  // a line for the campfire card: the garden, and when it grows next
+  function gardenLine(s, prof) {
+    const g = gardenOf(s, prof),
+      c = prof.fire[s.n][1] || 0,
+      next = [2, 4, 7][g];
+    return g < 0 ? '' : `🌱 Your garden here is ${GARDEN_WORD[g]}${next ? `: practise on ${next - c} more ${next - c === 1 ? 'day' : 'days'} and it grows into ${GARDEN_WORD[g + 1]}` : ', all grown'}.`;
+  }
+
+  /* ================= THE BUDDY (v2.9.0) =================
+     The buddy worn (any pet) has a small mood: hungry each new day until a step is finished in any sūrah (that feeds
+     it), then happy, and asleep at night once fed. Rides (a car, a helicopter…) need fuel instead of food. The days it
+     has been looked after teach it tricks (2, 5, 10 and 20 days), done on a tap in its card. prof.buddy = [the last
+     day fed, days fed]. The mood shows as a little bubble by the buddy, in My Explorer, and on the map when it needs
+     something. */
+  const TRICKS = [[2, 'hop', 'Hop', 'Bounce'], [5, 'spin', 'Spin', 'Zoom'], [10, 'flip', 'Flip', 'Loop'], [20, 'dance', 'Dance', 'Wiggle']];
+  const buddyOf = (prof) => wornOutfit(prof).pet || '';
+  const isRide = (id) => RIDE_PET.test(id);
+  const trickName = (t, id) => (isRide(id) ? t[3] : t[2]);
+  function buddyMood(prof) {
+    if (!buddyOf(prof)) return '';
+    return prof.buddy[0] === today() ? (isNight() ? 'sleepy' : 'happy') : 'hungry';
+  }
+  const MOOD_IC = { hungry: ['🍎', '⛽'], happy: ['💛', '✨'], sleepy: ['💤', '💤'] };
+  // finishing a step: the buddy's food (or fuel) for the day; returns what to tell, the first time today
+  function feedBuddy(prof) {
+    const id = buddyOf(prof);
+    if (!id || prof.buddy[0] === today()) return null;
+    prof.buddy = [today(), prof.buddy[1] + 1];
+    const t = TRICKS.find((x) => x[0] === prof.buddy[1]);
+    return { name: itemName(id), ride: isRide(id), trick: t ? trickName(t, id) : '' };
+  }
+  // the mood bubble, drawn inside the explorer's picture above the buddy (on the map only when it needs something)
+  function moodBubble(prof, onMap) {
+    const mood = buddyMood(prof);
+    if (!mood || (onMap && mood === 'happy')) return '';
+    const ic = MOOD_IC[mood][isRide(buddyOf(prof)) ? 1 : 0];
+    return `<g class="budmood m-${mood}" data-act="buddy" role="button" aria-label="Your buddy"><path d="M150 186a16 14 0 1 1 1 0z" fill="#fff" stroke="#2b2340" stroke-width="2.4"/><circle cx="158" cy="206" r="3.6" fill="#fff" stroke="#2b2340" stroke-width="2"/><text x="150" y="173" font-size="18" text-anchor="middle" dominant-baseline="central">${ic}</text></g>`;
+  }
+  function showBuddy() {
+    const prof = P(),
+      id = buddyOf(prof);
+    if (!id) return;
+    const mood = buddyMood(prof),
+      ride = isRide(id),
+      nm = itemName(id),
+      days = prof.buddy[1],
+      known = TRICKS.filter((t) => days >= t[0]),
+      next = TRICKS.find((t) => days < t[0]);
+    const say = {
+      hungry: ride ? `needs fuel! Finish a step in any sūrah to fill it up.` : `is hungry! Finish a step in any sūrah to feed it.`,
+      happy: ride ? `is shiny and full of fuel. Thank you for practising today!` : `is happy and full. Thank you for practising today!`,
+      sleepy: ride ? `is parked for the night after a good day.` : `is fast asleep after a good day.`,
+    }[mood];
+    const m = document.getElementById('modal');
+    m.innerHTML = `<div class="card budcard"><button class="cardx" data-act="cno" aria-label="Close">✕</button>
+      <div class="budart">${itemPic(id)}</div><h3>${MOOD_IC[mood][ride ? 1 : 0]} Your ${esc(nm)}</h3>
+      <p class="eldsay">Your ${esc(nm)} ${say}</p>
+      <p class="saveinfo center">${ride ? '⛽ Filled up' : '🍎 Fed'} on ${days} ${days === 1 ? 'day' : 'days'}${next ? ` · a new trick at ${next[0]}` : ' · every trick learned!'}</p>
+      ${known.length ? `<div class="row budtricks">${known.map((t) => `<button class="btn small" data-act="trick" data-t="${t[1]}">✨ ${trickName(t, id)}</button>`).join('')}</div>` : ''}
+    </div>`;
+    m.classList.add('show');
+  }
+  // the buddy does its trick, on the explorer in view
+  function doTrick(t) {
+    hideModal();
+    const svg = document.querySelector('.wd-ex svg.ex, .mex svg.ex');
+    if (!svg || reduceMotion) return;
+    sfx.chime();
+    TRICKS.forEach((x) => svg.classList.remove('tr-' + x[1]));
+    void svg.getBoundingClientRect();
+    svg.classList.add('tr-' + t);
+    clearTimeout(svg._tr);
+    svg._tr = setTimeout(() => svg.classList.remove('tr-' + t), 1600);
+  }
+
+  /* ================= THE TEACHER'S RIDDLE (v2.9.0) =================
+     One riddle a day about a thing on the map, in the worlds reached so far (the same all day, another tomorrow;
+     not the same for every explorer). The journal shows it at the top, and its button has a dot until it's solved.
+     Tapping the answer on the map solves it: a stamp, and every 7 stamps a gift. prof.riddle = [the last day solved,
+     stamps]. */
+  const RIDDLES = {
+    'meadow-grass': 'Green and soft, sheep love to munch it.', 'meadow-flower-yellow': 'A yellow flower that smiles at the sun.',
+    'meadow-bush': 'A round bush with little red berries.', 'meadow-tree': 'A tree with red apples to pick.',
+    'meadow-fence': 'Wooden posts in a row, to keep the sheep in.', 'meadow-sign': 'It points the way with an arrow.',
+    'meadow-sheep': 'Fluffy and white, it says baa!', 'meadow-rabbit': 'Long ears and a fluffy tail: it hops!',
+    'meadow-pond': 'A little water where ducks swim.', 'meadow-cottage': 'A little house with a red roof.',
+    'meadow-windmill': 'Its big arms turn round and round in the wind.', 'forest-pine': 'A tall tree shaped like a triangle, green all year.',
+    'forest-mushroom': 'Red with white spots, it grows on the forest floor.', 'forest-log': 'An old tree lying down on the ground.',
+    'forest-fox': 'Orange, with a bushy tail and pointy ears.', 'forest-owl': 'Big round eyes, it hoots at night.',
+    'forest-deer': 'It has antlers and soft spots.', 'forest-squirrel': 'It hides nuts away for the winter.',
+    'forest-berries': 'Tiny blue fruits on a bush.', 'forest-bigtree': 'The biggest, oldest tree in the forest.',
+    'sands-palm': 'A tall tree by the sea, with big leaves at the top.', 'sands-shell': 'Hold it to your ear to hear the sea.',
+    'sands-starfish': 'It lives in the sea and has five arms.', 'sands-castle': 'A castle you build with sand.',
+    'sands-crab': 'It walks sideways and has two claws.', 'sands-umbrella': 'It keeps the sun off you at the beach.',
+    'sands-turtle': 'It carries its house on its back.', 'sands-lighthouse': 'A tall tower with a light, to guide the boats.',
+    'sands-boat': 'It sails on the water with a white sail.', 'canyon-cactus': 'A spiky plant that needs very little water.',
+    'canyon-dune': 'A hill made of sand.', 'canyon-lantern': 'It glows to light the way at night.',
+    'canyon-flower': 'A flower that grows in the desert.', 'canyon-camel': 'It carries heavy loads across the desert, with a hump on its back.',
+    'canyon-tent': 'A cloth house for sleeping in the desert.', 'canyon-lizard': 'A little reptile that loves the hot sun.',
+    'canyon-tumbleweed': 'A dry ball of twigs that rolls in the wind.', 'canyon-arch': 'A bridge of rock, shaped by the wind.',
+    'starry-mushroom': 'A mushroom that glows in the dark.', 'starry-crystal': 'A shiny stone that sparkles.',
+    'starry-lantern': 'A lantern shaped like a star.', 'starry-moon': 'It shines in the night sky and changes its shape.',
+    'starry-owl': 'A night bird that is awake while you sleep.', 'starry-star': 'It twinkles high in the night sky.',
+    'starry-pond': 'Water that shows the stars.', 'starry-observatory': 'A building with a big telescope for looking at the stars.',
+    'sky-island': 'Land floating in the sky.', 'sky-rainbow': 'Seven colours across the sky after the rain.',
+    'sky-kite': 'It flies on a string in the wind.', 'sky-balloon': 'A big balloon with a basket that carries people up.',
+    'sky-cloud': 'Soft and white, it floats in the sky.', 'sky-airship': 'A flying ship, shaped like a long balloon.',
+    'sky-castle': 'A castle up in the clouds.', 'peak-pine': 'A tree with snow on its branches.',
+    'peak-snowman': 'Made of snow, with a carrot nose.', 'peak-crystal': 'A shiny piece of ice.',
+    'peak-flag': 'It waves at the top of the mountain.', 'peak-igloo': 'A round house made of snow blocks.',
+    'peak-goat': 'It climbs steep mountains with strong hooves.', 'peak-cabin': 'A wooden house in the snow, with a warm window.',
+  };
+  function riddleKey(prof) {
+    const top = Math.max(0, worldOf(S[prof.at] || S[0]));
+    const pool = Object.keys(RIDDLES).filter((k) => JPAGE.has('p:' + k) && JPAGE.get('p:' + k) <= top);
+    if (!pool.length) return '';
+    let h = 7;
+    for (const ch of today() + prof.id) h = (Math.imul(h, 31) + ch.charCodeAt(0)) >>> 0;
+    return pool[h % pool.length];
+  }
+  const riddleOpen = (prof) => prof.made && prof.riddle[0] !== today() && !!riddleKey(prof);
+  function riddleStrip(prof) {
+    const k = riddleKey(prof);
+    if (!k) return '';
+    const done = prof.riddle[0] === today();
+    return `<div class="jriddle ${done ? 'done' : ''}"><span class="jr-ic">${done ? '✅' : '🔎'}</span><span class="jr-tx"><b>Riddle of the day</b><small>${done ? 'Solved! A new riddle tomorrow.' : `${RIDDLES[k]} Find it on the map!`}</small></span><span class="jr-st" aria-label="${prof.riddle[1]} stamps">🔖 ${prof.riddle[1]}</span></div>`;
+  }
+  function solveRiddle(el, k) {
+    const prof = P();
+    prof.riddle = [today(), prof.riddle[1] + 1];
+    const n = prof.riddle[1],
+      gift = n % 7 === 0 && (giveSurprise(prof, false, true) || giveLevelGift(prof, true));
+    save();
+    sfx.win();
+    burstAt(el, 12, ['🔎', '✨', '⭐']);
+    const text = `MāshāAllāh, you found it: the <b>${PROP_NAME[k]}</b>! A stamp for you: 🔖 ${n}. ${gift ? 'Seven stamps: a gift for you! 🎁' : `${7 - (n % 7)} more for a gift.`}`;
+    setTimeout(() => {
+      if (st.view !== 'map') return;
+      if (prefs.teacher) teacherNote(text);
+      else toast('🔎 ' + text.replace(/<[^>]+>/g, ''));
+      if (gift) render();
+    }, 700);
+  }
+
+  /* ================= SPECIAL DAYS (v2.9.0) =================
+     Ramadan, Eid al-Fiṭr (1-3 Shawwāl), Eid al-Aḍḥā (10-13 Dhū al-Ḥijjah) and Jumuʿah (Friday), by the phone's own
+     Islamic (Umm al-Qurā) calendar: a garland across the top of the start screen, the map and done pages, a greeting once a day, the Teacher's greeting, a moon or party on the done page with its own confetti,
+     and that day's sticker: Jumuʿah's once, Ramadan's and each Eid's once a Hijri year (missed if the game isn't
+     opened then). Phones that can't tell the Islamic date just get the Fridays. */
+  const FESTIVE_VIEWS = ['splash', 'map', 'done']; // (not a sūrah page: its header would hide it)
+  const festiveBar = () => {
+    const k = FESTIVE_VIEWS.includes(st.view) && occasion();
+    // (the start screen and done pages also get the hilal and lamps, or fireworks, in the corners)
+    return k ? `<div class="festive f-${k}" aria-hidden="true">${ART.garland(k)}</div>${st.view !== 'map' && ART.festSky(k) ? `<div class="festsky-wrap" aria-hidden="true">${ART.festSky(k)}</div>` : ''}` : '';
+  };
+  const FEST_BIG = { ramadan: '🌙', eid: '🎉', 'eid-adha': '🎉', jumuah: '' };
+  const FEST_SET = { ramadan: ['🌙', '⭐', '✨'], eid: ['🎉', '🎈', '✨'], 'eid-adha': ['🎉', '🐑', '✨'] };
+  // today's Islamic date { y, m, d } (null when the phone can't tell)
+  function hijri(d) {
+    for (const cal of ['islamic-umalqura', 'islamic']) {
+      try {
+        const parts = new Intl.DateTimeFormat('en-u-ca-' + cal + '-nu-latn', { year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(d || new Date());
+        const v = (t) => parseInt((parts.find((x) => x.type === t) || {}).value, 10) || 0;
+        if (v('month')) return { y: v('year') || v('relatedYear'), m: v('month'), d: v('day') };
+      } catch (e) {}
+    }
+    return null;
+  }
+  function occasion(d) {
+    if (window.__occasion != null) return window.__occasion; // (tests only)
+    d = d || new Date();
+    const h = hijri(d) || { m: 0, d: 0 },
+      mo = h.m,
+      dy = h.d;
+    if (mo === 10 && dy <= 3) return 'eid';
+    if (mo === 12 && dy >= 10 && dy <= 12) return 'eid-adha'; // (both Eids: three days)
+    if (mo === 9) return 'ramadan';
+    return d.getDay() === 5 ? 'jumuah' : '';
+  }
+  // the special days' stickers still to come: Jumuʿah's, and the next Ramadan and Eids (this Hijri year's, or next)
+  function nextSeasons() {
+    const h = hijri() || { y: 0, m: 0, d: 0 },
+      after = { ramadan: h.m > 9, eid: h.m > 10 || (h.m === 10 && h.d > 3), 'eid-adha': h.m === 12 && h.d > 12 };
+    return ART.SEASONS.filter((x) => !x.year || x.year === h.y + (after[x.kind] ? 1 : 0));
+  }
+  const GREET = { ramadan: '🌙 Ramadan Mubārak!', eid: '🎉 Eid Mubārak!', 'eid-adha': '🐑 Eid Mubārak!', jumuah: '🕌 Jumuʿah Mubārak!' };
+  function maybeFestive() {
+    const k = occasion(),
+      prof = P();
+    if (!k || st.view !== 'map' || noExplorers() || !prof.made) return;
+    let seen = '';
+    try {
+      seen = localStorage.getItem('lhq_greet') || '';
+    } catch (e) {}
+    if (seen === today() + k) return;
+    try {
+      localStorage.setItem('lhq_greet', today() + k);
+    } catch (e) {}
+    // this year's sticker for Ramadan and the Eids (missed if the game isn't opened then); Jumuʿah's comes once
+    const h = hijri(),
+      id = k === 'jumuah' ? k : h && h.y ? k + '-' + h.y : '';
+    const gift = !!STICKER[id] && !prof.stickers.includes(id) && !prof.pending.some((g) => g.k === 's' && g.id === id);
+    if (gift) {
+      prof.pending.push({ k: 's', id });
+      save();
+      render();
+    }
+    toast(GREET[k] + (gift ? ' A special sticker for you 🎁' : ''));
   }
 
   /* ================= THE JOURNAL =================
@@ -5980,6 +6236,7 @@
       // things on the map; pictures only in Look & Repeat itself (not chain time or the other games)
       if (!el || (el.classList.contains('mprop') ? st.view !== 'map' : st.view !== 'learn' || st.phase === 'chain')) return;
       const key = el.classList.contains('mprop') ? 'p:' + el.dataset.k : 'e:' + el.textContent.trim();
+      if (el.classList.contains('mprop') && riddleOpen(P()) && el.dataset.k === riddleKey(P())) return solveRiddle(el, el.dataset.k); // today's riddle!
       if (!JKEYS.has(key) || P().found.includes(key)) return; // not in the journal, or already in it: nothing
       const locked = key[0] === 'e' && !partBegun(S[st.i], st.p || 0); // its checkpoint has no step finished yet
       const r = el.getBoundingClientRect(),
@@ -6017,6 +6274,7 @@
       .join('');
     return `<div class="screen jscr">
     ${bar('My Journal', `${prof.found.length} of ${JKEYS.size} found`, 'map')}
+    ${riddleStrip(prof)}
     <div class="jtabs">${tabs}</div>
     <div class="jbook">
       <div class="jpage" data-w="${wi}">
@@ -6359,7 +6617,7 @@
     const m = document.getElementById('modal');
     m.innerHTML = `<div class="card eldmeet"><div class="eldart">${elderArt(rematch ? 'happy' : '')}</div>
       <h3>${rematch ? 'Your Teacher is back!' : anytime ? 'You call your Teacher…' : 'Your Teacher joins you on the path!'}</h3>
-      <p class="eldsay">“${rematch ? `You found your things! Shall we walk the <b>${s.name}</b> path again?` : fireOf(s, prof) <= 1 ? `Your campfire at <b>${s.name}</b> is getting cold. Show me <b>${s.name}</b>: ${NUM_WORD[testSize(s)]} questions, no help!` : `Let’s walk this stretch together. Show me <b>${s.name}</b>: ${NUM_WORD[testSize(s)]} questions, no help!`}”</p>
+      <p class="eldsay">“${occasion() ? GREET[occasion()].replace(/^\S+ /, '') + ' ' : ''}${rematch ? `You found your things! Shall we walk the <b>${s.name}</b> path again?` : fireOf(s, prof) <= 1 ? `Your campfire at <b>${s.name}</b> is getting cold. Show me <b>${s.name}</b>: ${NUM_WORD[testSize(s)]} questions, no help!` : `Let’s walk this stretch together. Show me <b>${s.name}</b>: ${NUM_WORD[testSize(s)]} questions, no help!`}”</p>
       <div class="row"><button class="btn go wide" data-act="eldface">✅ I'm ready!</button><button class="btn wide" data-act="eldrun">🏃 Not now</button></div></div>`;
     m.classList.add('show');
     return true;
@@ -6478,7 +6736,8 @@
     const best = (list) => list.filter(ok).sort((a, b) => rank(b) - rank(a))[0];
     const w = best(worn) || best(prof.items);
     if (w) return { k: 'i', id: w };
-    const stk = (prof.badge && STICKER[prof.badge] && !STICKER[prof.badge].stars ? prof.badge : '') || prof.stickers.filter((id) => !STICKER[id].stars).slice(-1)[0];
+    const keepS = (id) => STICKER[id].stars || STICKER[id].season; // (star badges and special days' stickers stay)
+    const stk = (prof.badge && STICKER[prof.badge] && !keepS(prof.badge) ? prof.badge : '') || prof.stickers.filter((id) => !keepS(id)).slice(-1)[0];
     if (stk) return { k: 's', id: stk };
     // nothing else left: golden things too (worn first), and last of all the one protecting
     const g = [...worn, ...prof.items].find(canGo) || (keep && canGo2(keep) ? keep : null);
@@ -6526,7 +6785,7 @@
     const p = elderPlan;
     if (!p) return;
     stopAudio();
-    go('elder', { i: p.i, p: 0, qs: elderQuestions(S[p.i]), q: 0, marks: [], hurt: false, fallen: [], phase: 'intro', anytime: p.anytime, rematch: p.rematch, result: null, ack: '' });
+    go('elder', { i: p.i, p: 0, fire0: fireOf(S[p.i], P()), qs: elderQuestions(S[p.i]), q: 0, marks: [], hurt: false, fallen: [], phase: 'intro', anytime: p.anytime, rematch: p.rematch, result: null, ack: '' });
   }
   // he walks with you: glad when you know it, comforting when the path is rough
   const ACKS = ['Well done!', 'MāshāAllāh!', 'Good job!', 'Nice!', 'Well remembered!', 'MāshāAllāh, that’s right!', 'Beautiful!'];
@@ -6619,9 +6878,9 @@
       ${far}<div class="eldprops">${props}</div>${near}
     </div>`;
   }
-  /* 15 seconds for each answer (v2.8.4): no answer by then counts as "Not quite". The bar under the question
-     shrinks meanwhile; a phone put away (the page hidden) gets a fresh 15 seconds on coming back. */
-  const ASK_MS = 15000;
+  /* 30 seconds for each answer (v2.8.4: 15; v2.9.0: 30): no answer by then counts as "Not quite". The bar under the
+     question shrinks meanwhile; a phone put away (the page hidden) gets a fresh 30 seconds on coming back. */
+  const ASK_MS = 30000;
   let askT = 0;
   function armAsk() {
     clearTimeout(askT);
@@ -6772,7 +7031,8 @@
         if (!reduceMotion) meBox.animate([{ transform: 'rotate(0)' }, { transform: 'rotate(-4deg)' }, { transform: 'rotate(3deg)' }, { transform: 'rotate(0)' }], { duration: 600, easing: 'ease-in-out' });
       }
       if (f) dropThing(prof, f, s.n);
-      dimFire(s, prof);
+      if (!st.fireHit) lowFire(s, prof); // (once a test: by where it was before it)
+      st.fireHit = true;
       save();
       const name = f ? thingName(f) : '';
       const ran = f && f.k === 'i' && animalBuddy(f.id) && f.id === strike.blocker;
@@ -6859,15 +7119,17 @@
       sfx.win();
       r = { win: true, say: 'You know it well. The Qur’an is safe in your heart. Walk on!', html: `${fireRise(from)}<p class="memo gold">🏆 All ${NUM_WORD[all]} right!${gift ? ` He left ${gift} for you.` : noGift ? ' (His gift comes once a day.)' : ''}</p>` };
     } else {
-      const fell = st.fallen;
+      const fell = st.fallen,
+        fireNow = fireOf(s, prof),
+        down = st.fire0 != null && st.fire0 > fireNow ? fireRise(st.fire0, fireNow) : ''; // a miss sent it down to Low
       sfx.boop();
       r = {
         win: false,
         took: fell.length,
         say: right ? `${right} out of ${all}. Let’s practise <b>${s.name}</b> together, then walk this path again!` : `Let’s practise <b>${s.name}</b> together. You’ll get it!`,
-        html: fell.length
+        html: down + (fell.length
           ? `<p class="memo">💔 ${elderLoss(fell)} ${fell.length > 1 ? 'They are' : 'It is'} waiting at <b>${s.name}</b>: finish a review game there to win ${fell.length > 1 ? 'them' : 'it'} back. Then you can walk this path with him again!</p>`
-          : `<p class="memo">Nothing was lost this time. Practise <b>${s.name}</b> again!</p>`,
+          : `<p class="memo">Nothing was lost this time. Practise <b>${s.name}</b> again!</p>`),
       };
     }
     st.phase = 'end';
@@ -7024,5 +7286,5 @@
   registerOffline();
   if (linkCode) setTimeout(() => openSync(linkCode, `${appURL()}#sync=${linkCode}`), 400);
   if (justUpdated) loadChangelog().then(() => st.view === 'splash' && render());
-  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder, world: elderWorld, size: testSize, tap: tapElder }, sunDown, journal: JKEYS, countDay, installSteps: showInstallSteps, cleanStore, cleanProfile, syncCtx, openSync, markNow, fabTarget }; // for testing in the browser console
+  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder, world: elderWorld, size: testSize, tap: tapElder }, sunDown, journal: JKEYS, countDay, installSteps: showInstallSteps, cleanStore, cleanProfile, syncCtx, openSync, markNow, fabTarget, riddleKey, occasion, gardenOf, buddyMood }; // for testing in the browser console
 })();

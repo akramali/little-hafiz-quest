@@ -47,16 +47,16 @@
     ok('all practised today: he says so in a card (no test)', !!d.querySelector('#modal.show .eldmeet') && /roaring in your heart/.test(m.textContent) && !d.querySelector('[data-act=eldface]'));
     d.querySelector('#modal [data-act=cno]').click(); await wait(200);
   } else log('(the Teacher is not on this map: skipped)');
-  // 5. 15 seconds per answer: no answer counts as "Not quite"
+  // 5. 30 seconds per answer (15 in v2.8.4): no answer counts as "Not quite"
   for (const n in prof.fire) prof.fire[n][0] = Date.now() - 2 * 864e5;
   prof.teacherAt = 0;
   L.elder.maybe(); await wait(400);
   d.querySelector('[data-act=eldface]').click(); await wait(300);
   d.querySelector('[data-act=eldgo]').click(); await wait(300);
   ok('a timer bar under the question', !!d.querySelector('.eldq .eldtime'));
-  await wait(15600);
-  log('after 15.6 s: marks', JSON.stringify(L.st().marks), '| q', L.st().q);
-  ok('no answer in 15 s: "Not quite"', L.st().marks[0] === false);
+  await wait(30600);
+  log('after 30.6 s: marks', JSON.stringify(L.st().marks), '| q', L.st().q);
+  ok('no answer in 30 s: "Not quite"', L.st().marks[0] === false);
   // 6. a revision: no star, no "stars to your next prize"; the campfire burns up instead
   prof.fire[113][0] = Date.now() - 12 * 864e5;
   L.go('done', { i: idx(113), p: 0, msg: 'Revised', stars: 1, noStar: true, fireFrom: 2 }); await wait(300);

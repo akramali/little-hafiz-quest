@@ -2225,6 +2225,78 @@
     return '<svg class="lhq-art stranger ' + (mood || '') + '" viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' + OUT(g) + '</svg>';
   }
 
+  /* A little garden at each memorized sūrah's stop (v2.9.0; viewBox 0 0 60 60, on the ground at y=54): it grows with
+     the different days the sūrah is practised: 0 a seed in the soil, 1 a sprout, 2 a flower, 3 a small tree. */
+  function plant(stage) {
+    const soil = S('M10 56Q30 42 50 56Z', '#9a6b44', null, 'M18 52Q26 47 34 47Q26 50 22 54Z');
+    let g;
+    if (stage <= 0) g = soil + S('M27 47Q30 41 33 47Q30 50 27 47Z', '#c98a4b');
+    else if (stage === 1) g = L('M30 50L30 36', '#45b45e', 3) + S('M30 40Q20 40 18 30Q28 30 30 40Z', '#5fd27a') + S('M30 38Q38 34 42 26Q32 26 30 38Z', '#5fd27a') + soil;
+    else if (stage === 2)
+      g = L('M30 50L30 26', '#45b45e', 3) + S('M30 42Q20 42 18 34Q28 34 30 42Z', '#5fd27a') + S('M30 38Q40 36 42 28Q32 28 30 38Z', '#5fd27a') +
+        [0, 72, 144, 216, 288].map((a) => { const r = ((a - 90) * Math.PI) / 180; return ball(n(30 + 7 * Math.cos(r)), n(20 + 7 * Math.sin(r)), 5.4, 5.4, '#ff8fcf', { hl: false, sh: false }); }).join('') + ball(30, 20, 4.6, 4.6, '#ffd23f', { hl: false, sh: false }) + soil;
+    else
+      g = S('M27 52Q28 40 26 30L34 30Q32 40 33 52Z', '#a86b3c') + S(cloudD(30, 30, 40, 26, 5), '#5fbf4a', 'M44 18Q52 26 48 36Q40 42 30 40Q44 34 44 18Z') +
+        [[22, 24], [36, 18], [38, 32], [24, 34]].map((p) => ball(p[0], p[1], 3, 3, '#ff5d6c', { sh: false })).join('') + soil;
+    return '<svg class="lhq-art plant" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' + OUT(g, 2) + '</svg>';
+  }
+  /* Special days (v2.9.0): the art of Ramadan and the Eids. A fanous (the Ramadan lamp, glass panes in a brass
+     frame), the hilal (the new crescent with a star), and the eight-pointed star (two squares, as in the Rub el Hizb). */
+  function star8(cx, cy, r) {
+    let d = '';
+    for (let i = 0; i < 16; i++) {
+      const a = (i * Math.PI) / 8 - Math.PI / 2,
+        rr2 = i % 2 ? r * 0.765 : r;
+      d += (i ? 'L' : 'M') + n(cx + rr2 * Math.cos(a + (i % 2 ? 0 : 0))) + ' ' + n(cy + rr2 * Math.sin(a));
+    }
+    return d + 'Z';
+  }
+  // a fanous hanging from (0 0), about 40 tall at size 1
+  const fanous = (glass, k) =>
+    G(L('M0 0L0 5', INK, 1.4) + C(0, 6.6, 1.8, 'none', sw(1.4)) + S('M-6.5 16Q-6 10.5 0 8.6Q6 10.5 6.5 16Z', '#e8a23a') + S(rr(-8, 15.4, 16, 3, 1.2), '#c8862a') +
+      EF(0, 24, 13, 13, glass, 0.25) + S('M-8 18.4L8 18.4L6.4 31L-6.4 31Z', glass, null, 'M-6 20L-4.6 20L-4 29L-5.4 29Z') + L('M-2.6 18.4L-2.2 31M2.6 18.4L2.2 31', '#c8862a', 1.2) +
+      S(rr(-7.4, 30.4, 14.8, 2.8, 1.2), '#c8862a') + S('M-5.4 33.2L5.4 33.2L0 40Z', '#e8a23a'), k ? ' transform="scale(' + k + ')"' : '');
+  const hilal = (r, c) => S(crescent(0, 0, r, r, -r * 0.55, r * 0.35), c || '#ffd84d') + P(star5(r * 0.62, -r * 0.2, r * 0.3, r * 0.13), c || '#ffd84d', sw(1.4));
+  const GLASS = ['#ff8f6b', '#7fd8ff', '#ffd23f', '#9df07a', '#ff8fcf'];
+  /* the garland across the top of the screen (viewBox 0 0 400 60): fanous lamps, eight-pointed stars and little
+     hilals with a big hilal in the middle in Ramadan; bunting with hilals and stars on the Eids; gold stars on a Friday */
+  function garland(kind) {
+    const yAt = (x) => {
+      const t = (x % 200) / 200;
+      return (1 - t) * (1 - t) * 4 + 2 * (1 - t) * t * 26 + t * t * 4;
+    };
+    const xs = [];
+    for (let x = 14; x < 400; x += 28) xs.push(x);
+    let g = L('M0 4Q100 48 200 4Q300 48 400 4', INK, 1.6);
+    const hang = (x, m) => G(m, ' transform="translate(' + x + ' ' + n(yAt(x)) + ')"');
+    const drop = (len, m) => L('M0 0L0 ' + len, INK, 1.2) + G(m, ' transform="translate(0 ' + len + ')"');
+    if (kind === 'ramadan')
+      g += xs.map((x, j) => (Math.abs(x - 200) < 20 ? '' : hang(x, j % 3 === 0 ? fanous(GLASS[(j / 3) % GLASS.length | 0], 0.62) : j % 3 === 1 ? drop(5, P(star8(0, 6, 6), '#ffd23f', sw(1.4))) : drop(7, G(hilal(5.4), ' transform="translate(0 5)"'))))).join('') +
+        hang(200, drop(4, G(hilal(11), ' transform="translate(0 12)"')));
+    else if (kind === 'jumuah') g += xs.map((x, j) => hang(x, L('M0 0L0 ' + (j % 2 ? 4 : 9), INK, 1.2) + P(star5(0, j % 2 ? 9 : 14, 5, 2.2), '#ffd23f', sw(1.4)))).join('');
+    else {
+      const cs = kind === 'eid-adha' ? ['#3fae6a', '#ffd23f', '#ffffff', '#5fc9b6'] : ['#ff6b6b', '#ffd23f', '#5fb2ff', '#5fd27a', '#ff8fcf'];
+      g += xs.map((x, j) => hang(x, j % 2 ? (j % 4 === 1 ? drop(6, G(hilal(5.4), ' transform="translate(0 5)"')) : drop(4, P(star8(0, 6, 6), '#ffd23f', sw(1.4)))) : P('M-9 0L9 0L0 16Z', cs[(j / 2) % cs.length | 0], sw(1.4)))).join('');
+    }
+    return '<svg class="lhq-art garland" viewBox="0 0 400 60" preserveAspectRatio="xMidYMin slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' + OUT(g, 1.6) + '</svg>';
+  }
+  /* the corners of the start screen and done pages on Ramadan and the Eids (viewBox 0 0 400 300, drawn over the
+     sky): a glowing hilal with stars, and two fanous lamps hanging down the sides in Ramadan; small fireworks on Eid */
+  function festSky(kind) {
+    if (kind !== 'ramadan' && kind !== 'eid' && kind !== 'eid-adha') return '';
+    let g = EF(52, 74, 30, 30, '#fff3b0', 0.35) + G(hilal(20), ' transform="translate(52 74)"') + [[96, 52, 3.4], [22, 120, 2.6], [110, 104, 2.2]].map((p) => F(star4(p[0], p[1], p[2]), '#fff3b0')).join('');
+    if (kind === 'ramadan')
+      // (each sways from where it hangs: the swaying group sits inside the one that places it)
+      g += [[12, 60, '#ff8f6b', 1, ''], [386, 40, '#7fd8ff', 1.1, ' fs-b'], [360, 30, '#ffd23f', 0.8, '']]
+        .map(([x, len, c, k, b]) => G(G(L('M0 0L0 ' + len, INK, 1.4) + G(fanous(c, k), ' transform="translate(0 ' + len + ')"'), ' class="fs-sway' + b + '"'), ' transform="translate(' + x + ' 0)"'))
+        .join('');
+    else {
+      const burst = (x, y, r, c) => G([0, 45, 90, 135, 180, 225, 270, 315].map((a) => { const t = (a * Math.PI) / 180; return L('M' + n(x + r * 0.35 * Math.cos(t)) + ' ' + n(y + r * 0.35 * Math.sin(t)) + 'L' + n(x + r * Math.cos(t)) + ' ' + n(y + r * Math.sin(t)), c, 2.6); }).join('') + CF(x, y, 2.4, c), ' class="fs-pop"');
+      g += burst(340, 60, 26, '#ff8fcf') + burst(372, 118, 18, '#ffd23f') + burst(306, 112, 14, '#7fd8ff') + P(star8(370, 30, 8), '#ffd23f', sw(1.4));
+    }
+    return '<svg class="lhq-art festsky" viewBox="0 0 400 300" preserveAspectRatio="xMidYMin meet" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' + OUT(g, 1.6) + '</svg>';
+  }
+
   /* A campfire beside each memorized sūrah on the map (viewBox 0 0 60 60, standing on y=54). It burns down over
      three weeks until the sūrah is practised: 5 roaring (a big fire, side flames, sparks), 4 strong, 3 steady,
      2 low, 1 embers, 0 out (grey logs, a wisp of smoke). */
@@ -2387,14 +2459,47 @@
     P(star5(50, 31, 8.5, 3.8), '#fff', sw(2)) +
     '<text x="50" y="59" text-anchor="middle" font-family="\'Baloo 2\', ui-rounded, system-ui, sans-serif" font-weight="800" font-size="' + (m >= 1000 ? 17 : 21) + '" fill="#2b2340" stroke="none">' + m + '</text>';
   const BADGES = BADGE_C.map((c, j) => ({ id: 'stars' + (j + 1) * 100, name: (j + 1) * 100 + ' stars', stars: (j + 1) * 100, c }));
+  /* Special days (v2.9.0): one sticker each, given on the day (never at random): Ramadan, the two Eids, Jumuʿah. */
+  const SEASON_ART = {
+    ramadan: () =>
+      S(crescent(40, 46, 30, 30, -18, 12), '#ffd84d') + L('M30 54Q34 58 38 54', INK, 2.2) + EF(26, 62, 3.6, 2.2, '#ff8fa3', 0.6) +
+      L('M72 8L72 30', INK, 2.4) + S('M62 34Q72 26 82 34L80 38L64 38Z', '#e8a23a') + S('M64 38L80 38Q86 54 80 70L64 70Q58 54 64 38Z', '#ffcf5a', null, 'M66 42Q63 54 66 66Q63 54 66 42Z') +
+      F('M67 44Q72 41 77 44L77 64Q72 67 67 64Z', '#fff6c8', 0.9) + S(rr(62, 70, 20, 6, 2.4), '#e8a23a') + P(star5(20, 22, 6), '#fff3b0', sw(2)) + P(star5(84, 84, 5), '#fff3b0', sw(2)),
+    eid: () =>
+      [[34, 40, '#ff6b6b'], [66, 36, '#5fb2ff'], [50, 28, '#ffd23f']].map(([x, y, c]) => L('M' + x + ' ' + (y + 22) + 'Q' + (x + 4) + ' ' + (y + 40) + ' 50 92', INK, 1.8) + ball(x, y, 15, 19, c) + P('M' + (x - 3) + ' ' + (y + 19) + 'L' + (x + 3) + ' ' + (y + 19) + 'L' + x + ' ' + (y + 24) + 'Z', c, sw(1.6))).join('') +
+      P(star5(16, 18, 6), '#ffd23f', sw(2)) + P(star5(86, 64, 5), '#ff8fcf', sw(2)),
+    'eid-adha': () => {
+      const w = '#f6f3ee';
+      return L('M36 70L34 92M48 72L48 92M62 72L62 92M74 70L76 92', '#5a4a52', 4.4) +
+        S(cloudD(56, 62, 50, 30, 7), w) + ball(26, 52, 12, 13, '#5a4a52', { hl: false }) + EF(17, 46, 6, 3.4, '#5a4a52') + cuteEyes(22, 50, 31, 50, 2.2) + EF(26, 58, 3.4, 2, '#ff8fa3', 0.7) +
+        S('M36 58Q42 52 46 60Q42 66 36 58Z', '#ff5d6c') + S('M46 60Q52 52 56 58Q52 66 46 60Z', '#ff5d6c') + C(46, 60, 3, '#ff8f9a', sw(1.8)) + P(star5(80, 22, 6), '#ffd23f', sw(2));
+    },
+    jumuah: () =>
+      S(rr(22, 10, 56, 80, 6), '#3fae6a', rr(62, 10, 16, 80, 6)) + S('M32 84L32 40Q32 24 50 20Q68 24 68 40L68 84Z', '#2f8a53') + P('M38 78L38 42Q38 30 50 27Q62 30 62 42L62 78Z', 'none', ' stroke="#ffd23f" stroke-width="2.2"') +
+      F(star4(50, 46, 5), '#ffd23f') + L('M26 92L26 97M34 92L34 97M42 92L42 97M50 92L50 97M58 92L58 97M66 92L66 97M74 92L74 97', '#e8c48f', 2.2) + L('M28 16L72 16', '#ffd23f', 1.6, ' stroke-dasharray="3 3"'),
+  };
+  // Jumuʿah's sticker comes once; Ramadan and the two Eids have one for each Hijri year ('ramadan-1448'…), in that
+  // year's own colours with the year on a ribbon: only on the day (or month) itself, missed until next year's
+  const SEASON_NAME = { ramadan: ['Ramadan', 'In Ramadan'], eid: ['Eid al-Fiṭr', 'On Eid al-Fiṭr'], 'eid-adha': ['Eid al-Aḍḥā', 'On Eid al-Aḍḥā'] };
+  const SEASONS = [{ id: 'jumuah', name: 'Jumuʿah prayer mat', season: 'On a Friday' }];
+  // the next ten years from v2.9.0 (1448-1458 AH, a little over ten solar years); after that no more drops (the game
+  // goes on working) until a later version adds more
+  for (let y = 1448; y <= 1458; y++)
+    Object.keys(SEASON_NAME).forEach((k) => SEASONS.push({ id: k + '-' + y, name: SEASON_NAME[k][0] + ' ' + y, season: SEASON_NAME[k][1] + ' ' + y, kind: k, year: y }));
+  const yearArt = (k, y) => {
+    const deg = ((y - 1448) * 67 + 360 * 4) % 360;
+    return SEASON_ART[k]().replace(/#[0-9a-fA-F]{6}\b/g, (c) => hueTurn(c.toLowerCase(), deg)) +
+      S(rr(24, 80, 52, 17, 7), '#ffffff') + '<text x="50" y="93.6" text-anchor="middle" font-family="\'Baloo 2\', ui-rounded, system-ui, sans-serif" font-weight="800" font-size="15" fill="#2b2340" stroke="none">' + y + '</text>';
+  };
   const STKBY = Object.create(null);
   STK.forEach((s) => (STKBY[s[0]] = s[2]));
   BADGES.forEach((b) => (STKBY[b.id] = () => badgeArt(b.stars, b.c)));
+  SEASONS.forEach((x) => (STKBY[x.id] = x.year ? () => yearArt(x.kind, x.year) : SEASON_ART[x.id]));
   function sticker(id) {
     const f = STKBY[id];
     if (!f) return '';
     const art = stillArt(OUT(f()));
-    return svg100('lhq-sticker', G(flat(art, INK, 12), ' opacity=".16" transform="translate(1.5 3)"') + flat(art, '#ffffff', 11) + art, (STICKERS.find((s) => s.id === id) || BADGES.find((s) => s.id === id) || {}).name);
+    return svg100('lhq-sticker', G(flat(art, INK, 12), ' opacity=".16" transform="translate(1.5 3)"') + flat(art, '#ffffff', 11) + art, (STICKERS.find((s) => s.id === id) || BADGES.find((s) => s.id === id) || SEASONS.find((s) => s.id === id) || {}).name);
   }
 
   /* ---------- gifts, hearts, markers, flags, frog, stepping stones ---------- */
@@ -2988,6 +3093,7 @@
     silhouette,
     STICKERS,
     BADGES,
+    SEASONS,
     sticker,
     gift,
     heart,
@@ -3011,6 +3117,9 @@
     elder,
     stranger,
     campfire,
+    plant,
+    garland,
+    festSky,
     horizon,
     splash,
   };
