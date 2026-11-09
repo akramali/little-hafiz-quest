@@ -1,7 +1,12 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.9.3",
+ "latest": "2.9.4",
  "versions": [
+  { "v": "2.9.4", "notes": [
+   "Hearts in a review game no longer refill by stepping out and back in",
+   "The riddle box glows softly and is easier to close",
+   "Small visual tweaks"
+  ] },
   { "v": "2.9.3", "notes": [
    "Tap a buddy at your tree and it does a little trick",
    "Fallen fruit stays on the ground for a squirrel or rabbit, then grows back",

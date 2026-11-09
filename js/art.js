@@ -2315,7 +2315,8 @@
     const rnd = () => (seed = (Math.imul(seed, 1103515245) + 12345) >>> 0) / 4294967296;
     const gid = uid('tsky'),
       cs = night ? ['#141a3f', '#262d68', '#3d4a72'] : ['#8fd0ff', '#cdeeff', '#f2fbea'];
-    let m = '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + cs[0] + '"/><stop offset="0.6" stop-color="' + cs[1] + '"/><stop offset="1" stop-color="' + cs[2] + '"/></linearGradient></defs>' +
+    // (one solid colour from the picture's top up, the screen's own background and the phone's status bar the same)
+    let m = '<defs><linearGradient id="' + gid + '" gradientUnits="userSpaceOnUse" x1="0" y1="-200" x2="0" y2="620"><stop offset="0" stop-color="' + cs[0] + '"/><stop offset="0.6" stop-color="' + cs[1] + '"/><stop offset="1" stop-color="' + cs[2] + '"/></linearGradient></defs>' +
       '<rect x="-800" y="-900" width="2000" height="1520" fill="url(#' + gid + ')"/>';
     if (night) {
       for (let i = 0; i < 46; i++) {
@@ -2328,12 +2329,12 @@
       // (the moon's glow fades softly out into the night, like the sun's)
       const mg = uid('tmoon');
       m += '<defs><radialGradient id="' + mg + '"><stop offset="0.3" stop-color="#fff3b0" stop-opacity="0.3"/><stop offset="0.6" stop-color="#fff3b0" stop-opacity="0.12"/><stop offset="1" stop-color="#fff3b0" stop-opacity="0"/></radialGradient></defs>' +
-        '<g opacity="0.95">' + CF(336, -64, 48, 'url(#' + mg + ')') + F(crescent(336, -64, 20, 20, -11, 6), '#fff3b0') + '</g>';
+        '<g class="tsun" opacity="0.95">' + CF(336, -64, 48, 'url(#' + mg + ')') + G(F(crescent(336, -64, 20, 20, -11, 6), '#fff3b0'), ' class="tsun-c"') + '</g>';
     } else {
       // (the sun's glow fades softly out into the sky)
       const sg = uid('tsun');
       m += '<defs><radialGradient id="' + sg + '"><stop offset="0.3" stop-color="#fff6c0" stop-opacity="0.95"/><stop offset="0.6" stop-color="#fff6c0" stop-opacity="0.45"/><stop offset="1" stop-color="#fff6c0" stop-opacity="0"/></radialGradient></defs>' +
-        CF(338, -64, 60, 'url(#' + sg + ')') + CF(338, -64, 22, '#ffe066');
+        '<g class="tsun">' + CF(338, -64, 60, 'url(#' + sg + ')') + G(CF(338, -64, 22, '#ffe066'), ' class="tsun-c"') + '</g>';
       // a few birds, far and near, flapping slowly across
       [[0.5, 40, 34, 0], [0.7, 160, 46, 14], [0.4, -40, 40, 27]].forEach(([k, y, d, dl]) => {
         m += '<g class="tflyb" style="--y:' + y + 'px;animation-duration:' + d + 's;animation-delay:-' + dl + 's"><g transform="scale(' + k + ')"><path class="tflap" d="M-10 0Q-5 -6 0 0Q5 -6 10 0" fill="none" stroke="#2b2340" stroke-width="2.2" stroke-linecap="round"/></g></g>';
@@ -3044,7 +3045,8 @@
       S('M20 82Q16 46 50 42Q84 46 80 82Q78 92 50 92Q22 92 20 82Z', g, 'M72 52Q82 62 80 82Q78 92 50 92Q70 84 72 52Z') + EF(50, 76, 18, 12, b) +
       S('M14 52Q12 32 30 28Q36 18 44 26Q50 24 56 26Q64 18 70 28Q88 32 86 52Q84 66 50 66Q16 66 14 52Z', g, 'M76 34Q88 40 86 52Q84 66 50 66Q74 58 76 34Z') +
       ball(34, 28, 11, 11, g, { sh: false }) + ball(66, 28, 11, 11, g, { sh: false }) + C(34, 28, 7.2, '#fff', sw(2)) + C(66, 28, 7.2, '#fff', sw(2)) + G(CF(35, 29, 4.4, INK) + CF(67, 29, 4.4, INK) + CF(36.6, 27, 1.6, '#fff') + CF(68.6, 27, 1.6, '#fff'), cls('lhq-blink')) +
-      L('M38 50Q50 58 62 50', INK, 2.6) + EF(26, 48, 5, 3, '#ff8fa3', 0.6) + EF(74, 48, 5, 3, '#ff8fa3', 0.6) +
+      // (its smile, and a worried face kept hidden for a misstep: a frown and tilted brows, v2.9.4)
+      G(L('M38 50Q50 58 62 50', INK, 2.6), cls('lhq-frog-m')) + G(L('M40 55Q50 48 60 55', INK, 2.6) + L('M24 18L36 13M76 18L64 13', INK, 2.4), cls('lhq-frog-sad')) + EF(26, 48, 5, 3, '#ff8fa3', 0.6) + EF(74, 48, 5, 3, '#ff8fa3', 0.6) +
       S('M30 90Q24 80 34 78Q40 84 38 90Z', g) + S('M70 90Q76 80 66 78Q60 84 62 90Z', g) + F('M24 40Q26 32 32 30Q28 36 28 42Z', '#fff', 0.6), cls('lhq-frog-b'))));
   }
   // Stepping stones: viewBox 0 0 100 60, top surface centered at (50, 28) (where the frog lands).

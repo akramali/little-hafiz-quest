@@ -18,6 +18,27 @@
   d.querySelector('.pathbtns [data-act=hop]').click(); await wait(1200);
   log('after hop k=', L.st().k, 'back at set', Math.round(d.getElementById('stsets').scrollLeft / s2.clientWidth));
   ok('the frog hops on and the stones follow', L.st().k === 11);
+  { // (v2.9.4) a misstep: worried as it falls in, smiling again back on its stone
+    L.go('surah', { i: idx(112), p: 0 }); await wait(300);
+    (d.querySelector('[data-act=pathpick][data-p="0"]') || d.querySelector('[data-act=pathpick]')).click(); await wait(400);
+    const nq = d.querySelector('[data-act=oops]');
+    if (nq) {
+      nq.click(); await wait(1000);
+      const fr = d.querySelector('.stone.cur .frog');
+      const sadNow = !!fr && fr.classList.contains('sad') && w.getComputedStyle(fr.querySelector('.lhq-frog-sad')).opacity === '1';
+      await wait(1400);
+      ok('a misstep: the frog looks worried as it falls, and smiles again on its stone', sadNow && !d.querySelector('.stone.cur .frog.sad'));
+    }
+  }
+  { // (v2.9.4) hearts lost stay lost when stepping out of the game and back in (until it's finished)
+    L.go('surah', { i: idx(113), p: 0 }); await wait(300);
+    (d.querySelector('[data-act=pathpick][data-p="0"]') || d.querySelector('[data-act=pathpick]')).click(); await wait(400);
+    const h0 = L.st().hearts, max = L.st().maxH;
+    d.querySelector('[data-act=oops]').click(); await wait(300);
+    L.go('surah', { i: idx(113), p: 0 }); await wait(300);
+    (d.querySelector('[data-act=pathpick][data-p="0"]') || d.querySelector('[data-act=pathpick]')).click(); await wait(400);
+    ok('hearts lost stay lost after stepping out and back in', h0 === max && L.st().hearts === max - 1, `${h0} ${L.st().hearts} of ${max}`);
+  }
   ok('no game errors', !errs.length, errs.slice(0, 3).join('; ')); log('errors', errs);
   done();
 })();

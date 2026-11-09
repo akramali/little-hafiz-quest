@@ -30,7 +30,7 @@
   d.querySelector('[data-act=oops]').click(); await wait(200);
   ok('a mistake: the frog slips into the water', fr.getAnimations().length > 0);
   // room above the stones for "tap me!"
-  await wait(1200);
+  await wait(2400); // (after the misstep: 2.2 s since v2.9.4)
   const lb = d.querySelector('.stream > .taplbl'), lr = lb.getBoundingClientRect(), sr = d.querySelector('.stream').getBoundingClientRect(), fq = d.querySelector('.stone.cur .frog').getBoundingClientRect();
   ok('"tap me!" shows whole, above the frog', lb.style.display !== 'none' && lr.top >= sr.top && lr.bottom <= fq.top + 6 && Math.abs((lr.left + lr.right) / 2 - (fq.left + fq.right) / 2) < 6, `${Math.round(lr.top)}-${Math.round(lr.bottom)} stream ${Math.round(sr.top)} frog ${Math.round(fq.top)}`);
   ok('no errors', !errs.length, errs.join(' | '));

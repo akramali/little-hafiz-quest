@@ -26,6 +26,13 @@
   const other = [...d.querySelectorAll('.mprop')].find((e) => e.dataset.k !== k);
   if (other) { other.dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await wait(300); }
   ok('a wrong tap: nothing lost, still looking', !!d.querySelector('.mriddle') && prof.riddle[1] === 0);
+  { // ✕: the clue slides away (a finger-sized target), then back in the journal; open it again from there
+    const x = d.querySelector('.mriddle .mr-x'), r = x.getBoundingClientRect(), hit = w.getComputedStyle(x, '::after');
+    x.click(); await wait(60);
+    ok('closing the clue: it slides away, then it is gone', !!d.querySelector('.mriddle.closing') && r.width >= 40 && hit.inset === '-10px' && (await wait(400), !d.querySelector('.mriddle')));
+    L.go('journal', { w: 0 }); await wait(300);
+    d.querySelector('.jriddle.on').click(); await wait(1600);
+  }
   const el = d.querySelector(`.mprop[data-k="${k}"]`);
   log('answer', k, '| on the map', !!el);
   el.scrollIntoView({ block: 'center' }); await wait(300);
@@ -76,6 +83,9 @@
     fl[1].dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await wait(150);
     ok('my tree: one flower name at a time', d.querySelectorAll('.tftag').length === 1, d.querySelectorAll('.tftag').length);
     ok('my tree: the note sits below the title bar', d.querySelector('.tnote').getBoundingClientRect().top >= d.querySelector('.treescr > .bar').getBoundingClientRect().bottom - 6 && w.getComputedStyle(d.querySelector('.treescr > .bar')).top === '0px');
+    { const nr = d.querySelector('.tnote').getBoundingClientRect(), cr = d.querySelector('.tsvg .tsun-c').getBoundingClientRect();
+      ok('my tree: the sun (or moon) is never under the note', cr.top >= nr.bottom || cr.left >= nr.right - 8, JSON.stringify([nr.bottom, cr.top]));
+      ok('my tree: the sky shows under the status bar (no bar colour there)', w.getComputedStyle(d.body, '::before').backgroundColor === 'rgba(0, 0, 0, 0)'); }
     const bud = d.querySelector('.tsvg .tbud');
     if (bud) {
       bud.classList.remove('m-asleep', 'hid'); // (awake and out in the open for this check)
@@ -165,6 +175,18 @@
   L.go('map'); await wait(2400);
   ok('only once', prof.pending.length === n0);
   ok('a normal day: no garland', (w.__occasion = '', L.go('map'), await wait(400), !d.querySelector('.festive')));
+  { // (v2.9.4) inside a step no drifting animals behind the card (a swipe showed them); the sūrah's page keeps them
+    L.go('learn', { i: idx(113), p: 0, a: 0, phase: 'repeat', popped: [false, false, false], peek: false, chain: 0, saidA: [], savedA: [] }); await wait(400);
+    const amb = d.querySelector('.scn-amb');
+    ok('inside a step: the world\'s animals stay on the sūrah page', !amb || w.getComputedStyle(amb).display === 'none');
+    L.go('surah', { i: idx(113), p: 0 }); await wait(400);
+    ok('…and on the sūrah page they drift as before', !!d.querySelector('.scn-amb') && w.getComputedStyle(d.querySelector('.scn-amb')).display !== 'none');
+    // (v2.9.4) puzzle pieces tinted from their pictures
+    L.go('order', { i: idx(78), p: 1, deck: [0, 1, 2, 3, 4, 5], placed: {}, say: 0, sel: null, hearts: 4, maxH: 4 }); await wait(500);
+    const fills = [...d.querySelectorAll('.pz-svg path')].map((p) => p.getAttribute('fill'));
+    log('piece colours', fills.join(' '));
+    ok('puzzle pieces take a light tint of their pictures', fills.length > 2 && fills.some((f) => !['#ffd9e4', '#d5efff', '#ddf7d2', '#fff0c2', '#e8dcff', '#ffe2c8'].includes(f)));
+  }
   ok('no game errors', !errs.length, errs.slice(0, 3).join('; ')); log('errors', errs);
   done();
 })();

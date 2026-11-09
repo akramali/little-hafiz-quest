@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.9.3';
+  const VERSION = '2.9.4';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -1576,9 +1576,19 @@
     return `<div class="hearts" aria-label="${st.hearts} of ${all} hearts left"><span class="phead hface">${explorer({ cls: 'mini', mood })}</span>${Array.from({ length: all }, (_, j) => `<span class="hrt ${j < st.hearts ? '' : 'gone'}">${ART.heart(j < st.hearts)}</span>`).join('')}</div>`;
   }
   /* a mistake in a review game: lose a heart; at zero, drop the newest item here */
+  // the hearts left in a review game stay with it until it's finished (or the app is closed): stepping out to the
+  // sūrah or the map and back in doesn't refill them (v2.9.4). Kept in memory only, never saved.
+  const heartsLeft = {};
+  const heartKey = (view, i, p) => P().id + ':' + view + ':' + i + ':' + p;
+  const heartsFor = (view, i, p) => {
+    const h = heartsLeft[heartKey(view, i, p)];
+    return h > 0 ? Math.min(h, maxHearts(P())) : maxHearts(P());
+  };
   function loseHeart() {
     if (!heartsOn()) return false;
     st.hearts = Math.max(0, st.hearts - 1);
+    if (st.hearts > 0) heartsLeft[heartKey(st.view, st.i, st.p)] = st.hearts;
+    else delete heartsLeft[heartKey(st.view, st.i, st.p)]; // (out of hearts: the next try starts full)
     sfx.heart();
     const hs = $app.querySelectorAll('.hearts .hrt');
     const el = hs[st.hearts];
@@ -1689,6 +1699,9 @@
     if (st.view === 'splash' || st.view === 'summit') {
       setTopColor(SPLASH_SKY[+night]);
       document.documentElement.style.setProperty('--pagebg', SPLASH_GROUND[+night]);
+    } else if (st.view === 'tree') {
+      setTopColor(night ? '#141a3f' : '#8fd0ff'); // (my tree's sky, right up under the status bar)
+      document.documentElement.style.setProperty('--pagebg', '#69bb59');
     } else if (st.view === 'map') {
       const g = ART.WORLDS[0]; // the map's bottom is the first world's meadow
       document.documentElement.style.setProperty('--pagebg', night && g.dim ? g.dim.ground[1] : g.ground[1]);
@@ -1755,7 +1768,8 @@
     });
     for (let j = b.length; j < a.length; j++) a[j].remove();
   }
-  let drawn = '';
+  let drawn = '',
+    lastAyah = null; // the āyah drawn last (Look & Repeat, Word Steps), to slide the next one in
   function render(scroll) {
     if (mapCtl && st.view !== 'map') {
       mapCtl.destroy();
@@ -1780,6 +1794,13 @@
     if (st.view === 'map') mountMap();
     else if (scroll) window.scrollTo({ top: 0, behavior: 'auto' });
     if (st.view === 'surah') showSelectedCheckpoint();
+    if (st.view === 'tree') placeSun();
+    // a new āyah in Look & Repeat or Word Steps slides in from its side, however it came (a swipe, a popped bubble,
+    // its number, Next), like turning a page (v2.9.4)
+    const ak = st.view + ':' + st.i + ':' + st.p;
+    if ((st.view === 'learn' || st.view === 'words') && lastAyah && lastAyah.k === ak && typeof st.a === 'number' && lastAyah.a !== st.a)
+      slideIn($app.querySelector(st.view === 'learn' ? '.lcard' : '.wstage'), st.a > lastAyah.a ? 1 : -1);
+    lastAyah = { k: ak, a: st.a };
     if (st.view === 'path') {
       showStoneSet(false);
       placeTap();
@@ -2534,8 +2555,11 @@
     const lb = $app.querySelector('.stream > .taplbl'),
       fr = $app.querySelector('.stone.cur:not(.empty) .frog');
     if (!lb) return;
+    // (where the frog sits, not where it is in a hop, a bob or a misstep just now: its move taken off)
     const sets = document.getElementById('stsets'),
-      r = fr && fr.getBoundingClientRect(),
+      r0 = fr && fr.getBoundingClientRect(),
+      mv = fr && new DOMMatrixReadOnly(getComputedStyle(fr).transform === 'none' ? undefined : getComputedStyle(fr).transform),
+      r = r0 && { left: r0.left - mv.e, right: r0.right - mv.e, top: r0.top - mv.f, width: r0.width },
       box = sets && sets.getBoundingClientRect();
     if (!r || (box && (r.left < box.left - 4 || r.right > box.right + 4))) {
       lb.style.display = 'none';
@@ -2586,6 +2610,43 @@
      each checkpoint becomes one big piece, and the big pieces fit together the same way. */
   const PZ_M = 24; // room around a 100-unit piece for its knobs
   const PZ_FILL = ['#ffd9e4', '#d5efff', '#ddf7d2', '#fff0c2', '#e8dcff', '#ffe2c8'];
+  /* a piece's colour (v2.9.4): a light tint of the main colour of its pictures, as this phone draws them (each
+     phone's emoji look their own): each is drawn small on a hidden canvas, its strong colours counted by hue (not
+     greys, outlines or white), and the hue most of it is gets lightened; no colour to go by: the usual pastels */
+  const tintCache = {};
+  function emojiTint(ems, fallback) {
+    const key = ems.join('');
+    if (!(key in tintCache)) {
+      let out = null;
+      try {
+        const c = document.createElement('canvas');
+        c.width = c.height = 40;
+        const g = c.getContext('2d', { willReadFrequently: true }),
+          bins = {};
+        g.textAlign = 'center';
+        g.textBaseline = 'middle';
+        g.font = '30px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+        ems.forEach((e) => {
+          g.clearRect(0, 0, 40, 40);
+          g.fillText(e, 20, 22);
+          const d = g.getImageData(0, 0, 40, 40).data;
+          for (let i = 0; i < d.length; i += 4) {
+            const r = d[i], gr = d[i + 1], b = d[i + 2], mx = Math.max(r, gr, b), mn = Math.min(r, gr, b);
+            if (d[i + 3] < 160 || mx < 70 || (mx - mn) / mx < 0.28) continue;
+            const h = mx === r ? ((gr - b) / (mx - mn) + 6) % 6 : mx === gr ? (b - r) / (mx - mn) + 2 : (r - gr) / (mx - mn) + 4,
+              k = Math.floor(h * 2) % 12,
+              x = bins[k] || (bins[k] = [0, 0, 0, 0]);
+            x[0] += r, x[1] += gr, x[2] += b, x[3]++;
+          }
+        });
+        const best = Object.values(bins).sort((p, q) => q[3] - p[3])[0];
+        if (best && best[3] > 20) out = mixHex('#' + [0, 1, 2].map((i) => Math.round(best[i] / best[3]).toString(16).padStart(2, '0')).join(''), '#ffffff', 0.72);
+      } catch (e) {}
+      tintCache[key] = out;
+    }
+    return tintCache[key] || fallback;
+  }
+  const pzFill = (item, j) => emojiTint(item.ems || [], PZ_FILL[j % PZ_FILL.length]);
   function seeded(n) {
     let a = n >>> 0;
     return () => {
@@ -2675,14 +2736,15 @@
     if (st.p === 'all')
       return bigGroups(s).map((ks) =>
         ks.length === 1
-          ? { html: fit(s.ayat[ks[0]]), say: ks, label: `āyah ${ks[0] + 1}` }
+          ? { html: fit(s.ayat[ks[0]]), say: ks, label: `āyah ${ks[0] + 1}`, ems: s.ayat[ks[0]].scene }
           : {
               html: `<span class="pzgroup"><span class="gm">${ks.map((k) => s.ayat[k].scene[0]).join('')}</span><b>${groupLabel(ks)}</b></span>`,
               say: ks,
               label: `āyāt ${groupLabel(ks)}`,
+              ems: ks.map((k) => s.ayat[k].scene[0]),
             },
       );
-    return range(ctx()).map((k) => ({ html: fit(s.ayat[k]), say: [k], label: `āyah ${k + 1}`, ar: s.ayat[k].ar }));
+    return range(ctx()).map((k) => ({ html: fit(s.ayat[k]), say: [k], label: `āyah ${k + 1}`, ar: s.ayat[k].ar, ems: s.ayat[k].scene }));
   }
   V.order = () => {
     const s = S[st.i],
@@ -2699,7 +2761,7 @@
     const slots = J.cells
       .map((cl, j) =>
         st.placed[j]
-          ? `<button class="pzp" style="${box(cl.c, cl.r, 0)}" data-act="pzsay" data-j="${j}" aria-label="Hear ${items[j].label}">${pieceSVG(cl.path, PZ_FILL[j % PZ_FILL.length])}<span class="pzbody">${items[j].html}</span></button>`
+          ? `<button class="pzp" style="${box(cl.c, cl.r, 0)}" data-act="pzsay" data-j="${j}" aria-label="Hear ${items[j].label}">${pieceSVG(cl.path, pzFill(items[j], j))}<span class="pzbody">${items[j].html}</span></button>`
           : `<button class="slot pzslot ${st.sel != null ? 'ready' : ''}" style="${box(cl.c, cl.r, PZ_M)}" data-act="slot" data-j="${j}" aria-label="Place for ${items[j].label}"></button>`,
       )
       .join('');
@@ -2726,7 +2788,7 @@
       <svg class="pz-holes" viewBox="${-PZ_M} ${-PZ_M} ${J.W} ${J.H}" aria-hidden="true">${outlines}</svg>
       ${slots}
     </div>
-    <div class="deck pzdeck">${left.map((j) => `<div class="pcard pzt ${st.sel === j ? 'sel' : ''}" data-k="${j}" role="button" aria-label="Puzzle piece">${pieceSVG(J.cells[j].path, PZ_FILL[j % PZ_FILL.length])}<span class="pzbody">${items[j].html}</span></div>`).join('')}</div>
+    <div class="deck pzdeck">${left.map((j) => `<div class="pcard pzt ${st.sel === j ? 'sel' : ''}" data-k="${j}" role="button" aria-label="Puzzle piece">${pieceSVG(J.cells[j].path, pzFill(items[j], j))}<span class="pzbody">${items[j].html}</span></div>`).join('')}</div>
     ${saying && !big ? `<details class="adult"><summary>👁️ Grown-up check · ${saying.label}</summary><div class="ar sm" lang="ar">${s.ayat[saying.say[0]].ar}</div></details>` : ''}
   </div>`;
   };
@@ -2821,7 +2883,7 @@
     if (lost)
       return `<button class="icell lost" data-act="goto" data-i="${BYN[lost.n].idx}"><span class="iart">${itemPic(it.id)}</span><span class="lostbadge">${ART.lostMarker()}</span><small>Lost at ${BYN[lost.n].name}!</small></button>`;
     if (owned)
-      return `<button class="icell t${it.tier || 0} ${it.gold ? 'gold' : ''} ${on ? 'on' : ''}" data-act="equip" data-id="${it.id}" aria-pressed="${on}"><span class="iart">${itemPic(it.id)}</span><small>${itemName(it.id)}</small>${prefs.teacher && blocksOf(it.id).length ? `<span class="iblk" aria-label="Blocks ${blocksOf(it.id).map((k) => THROW[k].name).join(', ')}">${blocksOf(it.id).map(blockIc).join('')}</span>` : ''}${prof.fresh.includes('i:' + it.id) ? NEWDOT : ''}</button>`;
+      return `<button class="icell t${it.tier || 0} ${it.gold ? 'gold' : ''} ${on ? 'on' : ''}" data-act="equip" data-id="${it.id}" aria-pressed="${on}"><span class="iart">${itemPic(it.id)}</span><small>${itemName(it.id)}</small>${prefs.teacher && blocksOf(it.id).length ? `<span class="iblk" aria-label="Blocks ${blocksOf(it.id).map((k) => THROW[k].name).join(', ')}">${blockIcons(blocksOf(it.id))}</span>` : ''}${prof.fresh.includes('i:' + it.id) ? NEWDOT : ''}</button>`;
     return `<div class="icell locked ${it.gold || it.wgold ? 'goldlock' : ''}"><span class="iart">${ART.silhouette(it.id, P().look)}</span><small>${it.wgold ? `World ${it.wgold} all golden` : it.quest === 'staff' ? 'At the summit' : it.quest ? 'Pass your Teacher’s test' : it.feat ? FEAT_HINT[it.feat] : it.drop ? 'A surprise gift' : it.track ? `At ${it.track} ⭐` : it.from === CROWN_N ? (it.gold ? `Every star in ${BYN[it.from].name}, all memorized` : 'Every sūrah memorized') : it.gold ? `Every star in ${BYN[it.from].name}` : `A star in ${BYN[it.from].name}`}</small></div>`;
   }
   function stickerCell(id, prof) {
@@ -3532,7 +3594,7 @@
   // recitation speed: a slider with a stop for each speed (tap a label to jump to it)
   const speedLabel = (v) => v + '×';
   const speedSlider = () =>
-    `<div class="speed"><input type="range" id="speed" min="0" max="${SPEEDS.length - 1}" step="1" value="${SPEEDS.indexOf(prefs.speed)}" aria-label="Recitation speed" aria-valuetext="${prefs.speed} times">
+    `<div class="speed" style="--n:${SPEEDS.length}"><input type="range" id="speed" min="0" max="${SPEEDS.length - 1}" step="1" value="${SPEEDS.indexOf(prefs.speed)}" aria-label="Recitation speed" aria-valuetext="${prefs.speed} times">
       <div class="speedticks">${SPEEDS.map((v) => `<button class="${v === prefs.speed ? 'on' : ''}" data-act="set" data-k="speed" data-v="${v}">${speedLabel(v)}</button>`).join('')}</div></div>`;
   document.addEventListener('input', (e) => {
     if (e.target.id !== 'speed') return;
@@ -3775,6 +3837,7 @@
 
   /* ================= actions ================= */
   function finish(extra) {
+    delete heartsLeft[heartKey(st.view, st.i, st.p)]; // (a review game finished: full hearts next time)
     const s = S[st.i];
     const prof = P();
     const giftsBefore = prof.pending.length,
@@ -4025,7 +4088,8 @@
   }
   function startPath() {
     sfx.tap();
-    go('path', { i: st.i, p: st.p != null ? st.p : 0, L: 2, k: 0, hint: 0, hints: 0, hearts: maxHearts(P()), maxH: maxHearts(P()) });
+    const p = st.p != null ? st.p : 0;
+    go('path', { i: st.i, p, L: 2, k: 0, hint: 0, hints: 0, hearts: heartsFor('path', st.i, p), maxH: maxHearts(P()) });
   }
   function startOrder() {
     sfx.tap();
@@ -4036,7 +4100,7 @@
     const order = range({ from: 0, to: n - 1 });
     let deck = shuffle(order);
     while (n > 1 && deck.every((v, j) => v === order[j])) deck = shuffle(order);
-    go('order', { i: st.i, p, deck, placed: {}, say: null, sel: null, hearts: maxHearts(P()), maxH: maxHearts(P()) });
+    go('order', { i: st.i, p, deck, placed: {}, say: null, sel: null, hearts: heartsFor('order', st.i, p), maxH: maxHearts(P()) });
   }
   /* the Big Puzzle opens once every checkpoint's Picture Puzzle is done */
   const bigReady = (s) => multi(s) && s.P.every((_, p) => P().prog[s.n] && P().prog[s.n].parts[p] && P().prog[s.n].parts[p].order);
@@ -4613,11 +4677,17 @@
       case 'riddlego':
         startRiddle();
         break;
-      case 'riddleoff':
+      case 'riddleoff': {
+        // (the clue slides away like a card closing, then it's back in the journal)
         sfx.tap();
-        riddleOn = null;
-        render();
+        const box = b.closest('.mriddle');
+        if (box) box.classList.add('closing');
+        setTimeout(() => {
+          riddleOn = null;
+          render();
+        }, box && !reduceMotion ? 220 : 0);
         break;
+      }
       case 'exmove':
         if (Date.now() - swiped < 400) break; // that was a swipe, not a tap
         explorerMove(b.querySelector('svg.ex'));
@@ -5866,23 +5936,32 @@
       advance();
     };
   }
-  // a mistake: the frog slips into the water with a splash, then climbs back up onto its stone
+  // a mistake: a misstep. The frog tries to hop, loses its footing halfway, worried, and drops into the water with a
+  // splash; a moment under, then it pops back up onto its stone, smiling again (v2.9.4)
   function slipFrog() {
     const fr = $app.querySelector('.stone.cur .frog');
     if (!fr || reduceMotion) return;
-    sfx.splash();
     fr.animate(
       [
         { transform: 'translate(0,0) rotate(0)', opacity: 1 },
-        { transform: 'translate(8px,10px) rotate(28deg)', opacity: 1, offset: 0.2 },
-        { transform: 'translate(10px,30px) rotate(40deg) scale(.8)', opacity: 0.15, offset: 0.4 },
-        { transform: 'translate(0,24px) scale(.8)', opacity: 0.15, offset: 0.6 },
-        { transform: 'translate(0,-26px) scale(1.05)', opacity: 1, offset: 0.82 },
+        { transform: 'translate(0,4px) scale(1.08,.9)', opacity: 1, offset: 0.08 },
+        { transform: 'translate(14px,-30px) rotate(-6deg)', opacity: 1, offset: 0.24 },
+        { transform: 'translate(24px,-22px) rotate(18deg)', opacity: 1, offset: 0.34 },
+        { transform: 'translate(30px,34px) rotate(40deg) scale(.8)', opacity: 0.15, offset: 0.52 },
+        { transform: 'translate(18px,40px) scale(.75)', opacity: 0, offset: 0.66 },
+        { transform: 'translate(0,24px) scale(.8)', opacity: 0.2, offset: 0.74 },
+        { transform: 'translate(0,-26px) scale(1.05)', opacity: 1, offset: 0.88 },
         { transform: 'translate(0,0) rotate(0)', opacity: 1 },
       ],
-      { duration: 1000, easing: 'ease-in-out' },
+      { duration: 2200, easing: 'ease-in-out' },
     );
-    setTimeout(() => fr.isConnected && burstAt(fr, 8, ['💦', '💧']), 380);
+    setTimeout(() => fr.classList.add('sad'), 600); // (it sees it won't make it)
+    setTimeout(() => {
+      if (!fr.isConnected) return;
+      sfx.splash();
+      burstAt(fr, 8, ['💦', '💧']);
+    }, 1100);
+    setTimeout(() => fr.classList.remove('sad'), 1800); // (back on its stone, smiling)
   }
 
   /* ================= CAMPFIRES =================
@@ -6319,6 +6398,22 @@
     clearTimeout(b._mv);
     b._mv = setTimeout(() => b.classList.remove('bm-' + mv), 1500);
   }
+  // the sun (or moon) never under the note: how much sky shows above the picture depends on the phone's shape, so
+  // where the note would cover it, it moves down just clear of it
+  function placeSun() {
+    const svg = $app.querySelector('.tsvg'),
+      sun = svg && svg.querySelector('.tsun'),
+      core = sun && sun.querySelector('.tsun-c'),
+      note = $app.querySelector('.tnote'),
+      m = svg && svg.getScreenCTM();
+    if (!core || !note || !m) return;
+    sun.removeAttribute('transform');
+    const nr = note.getBoundingClientRect(),
+      cr = core.getBoundingClientRect(),
+      gap = nr.bottom + 10 - cr.top;
+    if (gap > 0 && cr.left < nr.right - 8) sun.setAttribute('transform', `translate(0 ${Math.round(gap / m.d)})`);
+  }
+  addEventListener('resize', () => st.view === 'tree' && placeSun());
   // a fallen fruit is gone (eaten, picked up or faded): it stays off the tree until it grows back
   function fruitGone(el) {
     if (!el.isConnected || el.classList.contains('gone')) return;
@@ -6798,7 +6893,9 @@
   document.addEventListener('pointerdown', (e) => e.pointerType !== 'touch' && swipeStart(e.target, e.clientX, e.clientY), true);
   document.addEventListener('pointerup', (e) => e.pointerType !== 'touch' && swipeEnd(e.clientX, e.clientY), true);
   // the page slides in from the side it came from
-  const slideIn = (el, dir) => el && !reduceMotion && el.animate([{ transform: `translateX(${dir * 60}px)`, opacity: 0.3 }, { transform: 'none', opacity: 1 }], { duration: 260, easing: 'ease-out' });
+  function slideIn(el, dir) {
+    if (el && !reduceMotion) el.animate([{ transform: `translateX(${dir * 60}px)`, opacity: 0.3 }, { transform: 'none', opacity: 1 }], { duration: 260, easing: 'ease-out' });
+  }
   // Look & Repeat: the next āyah or the one before (like tapping the numbers)
   onSwipe(
     (t) => st.view === 'learn' && st.phase !== 'chain' && !!t.closest('.lcard'),
@@ -6808,8 +6905,7 @@
       if (k < c.from || k > c.to) return;
       sfx.tap();
       Object.assign(st, { a: k, phase: 'repeat', popped: [false, false, false], peek: false, chain: 0 });
-      render(true);
-      slideIn(document.querySelector('.lcard'), dir);
+      render(true); // (it slides in: render)
     },
   );
   // Word Steps: the same, from the āyah's picture, beads and words
@@ -6821,8 +6917,7 @@
       if (k < c.from || k > c.to) return;
       sfx.tap();
       Object.assign(st, { a: k, w: 1, phase: 'build', shown: [] });
-      render(true);
-      slideIn(document.querySelector('.wstage'), dir);
+      render(true); // (it slides in: render)
     },
   );
   // the journal: turn the page
@@ -7174,11 +7269,14 @@
   const THROW_IC = { 0: { acorn: '🍎' } };
   const throwName = (k, wi) => (THROW_AS[wi] && THROW_AS[wi][k]) || THROW[k].name;
   const throwIc = (k, wi) => (THROW_IC[wi] && THROW_IC[wi][k]) || THROW[k].ic;
-  // what a thing blocks, on its tile: a throw that looks different in some worlds (acorns, apples in the Meadow)
-  // shows its looks in turn in the same spot (v2.9.1)
-  function blockIc(k) {
-    const ics = [...new Set([THROW[k].ic, ...Object.values(THROW_IC).map((x) => x[k]).filter(Boolean)])];
-    return ics.length > 1 ? `<span class="icflip">${ics.map((ic, j) => `<i style="--n:${ics.length};--j:${j}">${ic}</i>`).join('')}</span>` : ics[0];
+  // what a thing blocks, in its tile's corner, all still (v2.9.4): its throw, a second one beside it, and the same
+  // throw as another world has it under the first (acorns, and apples in the Meadow); never more than three; a thing
+  // that blocks everything shows a sparkle
+  function blockIcons(kinds) {
+    if (kinds.length > 2) return '<i>✨</i>';
+    const ks = kinds.slice().sort((a, b) => (b === 'acorn') - (a === 'acorn')), // (the acorn first: its apple goes under it)
+      alt = (k) => Object.values(THROW_IC).map((x) => x[k]).filter((ic) => ic && ic !== THROW[k].ic)[0];
+    return ks.map((k, j) => `<i style="grid-area:1/${j + 1}">${THROW[k].ic}</i>`).join('') + (alt(ks[0]) ? `<i style="grid-area:2/1">${alt(ks[0])}</i>` : '');
   }
   const worldThrowIcons = (wi) => (WORLD_THROWS[wi] || []).map((k) => throwIc(k, wi)).join(' ');
   const WINTER_HATS = /beanie|earflap/; // the hats that keep off the hail
