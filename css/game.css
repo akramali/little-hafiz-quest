@@ -9388,38 +9388,6 @@ body:has(.wrail.open) .jbtn {
 }
 
 /* ---------- v2.9.0 ---------- */
-/* the garden: a little plant at each memorized stop, beside its campfire */
-.ngarden {
-  position: absolute;
-  bottom: -36px;
-  width: 30px;
-  height: 30px;
-  z-index: 1;
-}
-.ngarden.fl {
-  left: -34px;
-}
-.ngarden.fr {
-  right: -34px;
-}
-.ngarden svg,
-.fg-art svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-  overflow: visible;
-}
-.fgarden {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  text-align: left;
-}
-.fg-art {
-  flex: none;
-  width: 40px;
-  height: 40px;
-}
 /* special days: a garland across the top of the map, behind the top buttons */
 .festive {
   position: fixed;
@@ -9435,83 +9403,9 @@ body:has(.wrail.open) .jbtn {
   height: 100%;
   display: block;
 }
-/* the buddy's mood: a little bubble above it (tap it for its card) */
-.budmood {
-  cursor: pointer;
-  transform-box: fill-box;
-  transform-origin: 50% 100%;
-  animation: budBob 2.2s ease-in-out infinite;
-}
-.budmood.m-hungry {
-  animation: budAsk 1.6s ease-in-out infinite;
-}
 @keyframes budBob {
   50% {
     transform: translateY(-3px);
-  }
-}
-@keyframes budAsk {
-  0%,
-  60%,
-  100% {
-    transform: none;
-  }
-  70% {
-    transform: rotate(-10deg) scale(1.1);
-  }
-  80% {
-    transform: rotate(10deg) scale(1.1);
-  }
-}
-.budcard .budart {
-  width: 96px;
-  height: 96px;
-  margin: 0 auto;
-}
-.budcard .budart svg {
-  width: 100%;
-  height: 100%;
-}
-.budtricks {
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px;
-}
-/* the buddy's tricks */
-.ex[class*='tr-'] .ex-pet {
-  transform-box: view-box;
-  transform-origin: 164px 280px;
-}
-.ex.tr-hop .ex-pet {
-  transform-origin: 164px 291px;
-  animation: mvPet 1.2s ease-out;
-}
-.ex.tr-spin .ex-pet {
-  animation: trSpin 1s ease-in-out;
-}
-.ex.tr-flip .ex-pet {
-  animation: trFlip 1.2s ease-in-out;
-}
-.ex.tr-dance .ex-pet {
-  animation: trDance 1.4s ease-in-out;
-}
-@keyframes trSpin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-@keyframes trFlip {
-  0% {
-    transform: none;
-  }
-  40% {
-    transform: translateY(-70px) rotate(180deg);
-  }
-  80% {
-    transform: translateY(0) rotate(360deg);
-  }
-  100% {
-    transform: rotate(360deg);
   }
 }
 @keyframes trDance {
@@ -9526,11 +9420,6 @@ body:has(.wrail.open) .jbtn {
   35%,
   75% {
     transform: rotate(16deg) translateX(6px);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .budmood {
-    animation: none;
   }
 }
 /* the Teacher's riddle of the day, at the top of the journal */
@@ -9627,4 +9516,318 @@ body:has(.wrail.open) .jbtn {
 .dropfire {
   text-align: center;
   margin: -4px 0 6px;
+}
+
+/* ---------- v2.9.1 ---------- */
+/* a throw that looks different in some worlds (acorns; apples in the Meadow): its looks in turn, in one spot */
+.icflip {
+  position: relative;
+  display: inline-block;
+  width: 1.2em;
+  height: 1em;
+  vertical-align: top;
+}
+.icflip i {
+  position: absolute;
+  inset: 0;
+  font-style: normal;
+  text-align: center;
+  opacity: 0;
+  animation: icflip calc(var(--n) * 2.4s) infinite;
+  animation-delay: calc(var(--j) * 2.4s);
+}
+@keyframes icflip {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .icflip i {
+    animation: none;
+  }
+  .icflip i:first-child {
+    opacity: 1;
+  }
+}
+/* my tree: its button under the journal's, and its own screen */
+.tbtn {
+  position: fixed;
+  right: max(10px, env(safe-area-inset-right, 0px));
+  top: calc(max(10px, env(safe-area-inset-top, 0px)) + 66px + 148px);
+  z-index: 10;
+  font-size: inherit;
+}
+.wrail.open ~ .tbtn,
+body:has(.wrail.open) .tbtn {
+  visibility: hidden;
+}
+.tbtn-ic {
+  display: block;
+  width: 30px;
+  height: 34px;
+}
+.tbtn-ic svg {
+  width: 100%;
+  height: 100%;
+}
+.treescr {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(#bfe6ff, #e6f6ff 55%, #f4fbe9);
+}
+.treescr.night {
+  background: linear-gradient(#20244f, #3a3f7a 60%, #4a5a6a);
+}
+.tstage {
+  position: relative;
+  flex: 1;
+  min-height: 420px;
+}
+.tsvg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.tnote {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  margin: 0;
+  text-align: center;
+  font-weight: 700;
+  font-size: 13px;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+.tsvg .tsway {
+  transform-box: view-box;
+  transform-origin: 200px 600px;
+  animation: tsway 9s ease-in-out infinite;
+}
+@keyframes tsway {
+  25% {
+    transform: rotate(0.5deg);
+  }
+  60% {
+    transform: rotate(-0.3deg);
+  }
+}
+/* a leaf drifting down now and then */
+.tsvg .tfall {
+  pointer-events: none;
+  animation: tfall 6.5s ease-in forwards;
+}
+@keyframes tfall {
+  0% {
+    transform: translate(var(--x), var(--y)) rotate(0deg);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  35% {
+    transform: translate(calc(var(--x) + var(--dx) * 0.6), calc(var(--y) + var(--dy) * 0.3)) rotate(90deg);
+  }
+  70% {
+    transform: translate(calc(var(--x) - var(--dx) * 0.2), calc(var(--y) + var(--dy) * 0.7)) rotate(200deg);
+  }
+  100% {
+    transform: translate(calc(var(--x) + var(--dx)), calc(var(--y) + var(--dy))) rotate(300deg);
+    opacity: 0;
+  }
+}
+.tsvg .tnew {
+  animation: tnew 0.8s ease-out both;
+}
+@keyframes tnew {
+  from {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+    filter: brightness(1.5);
+  }
+}
+.tsvg [data-act] {
+  cursor: pointer;
+}
+.tsvg .tfruit {
+  transition:
+    transform 0.6s cubic-bezier(0.5, 0, 0.9, 0.6),
+    opacity 0.5s;
+}
+.tsvg .tfruit.fall {
+  transform: translateY(var(--dy));
+}
+.tsvg .tfruit.gone {
+  opacity: 0;
+  pointer-events: none;
+}
+.tsvg .tbird.fly .tbird-in {
+  animation: tbirdfly 2.2s ease-in-out;
+}
+@keyframes tbirdfly {
+  40% {
+    transform: translate(60px, -120px);
+    opacity: 0;
+  }
+  60% {
+    transform: translate(-60px, -120px);
+    opacity: 0;
+  }
+}
+.tsvg .tbud-in,
+.tsvg .tanimal {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  transition: transform 0.8s ease-in-out;
+}
+.tsvg .tbud.hop .tbud-in,
+.tsvg .tanimal.hop {
+  animation: tbudhop 0.6s ease-out;
+}
+.tsvg .tbud.m-play .tbud-in {
+  animation: trDance 2.8s ease-in-out infinite;
+}
+.tsvg .tbud.m-asleep .tbud-in {
+  animation: tsleep 3.4s ease-in-out infinite;
+}
+.tsvg .tbud.m-hungry .tb-want {
+  animation: budBob 2s ease-in-out infinite;
+}
+.tsvg .tbud.eat .tbud-in {
+  transform: translateX(var(--go));
+}
+.tsvg .tbud.eat .tb-want {
+  opacity: 0;
+}
+@keyframes tbudhop {
+  40% {
+    transform: translateY(-16px);
+  }
+}
+@keyframes tsleep {
+  50% {
+    transform: scale(1.03, 0.97);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tsvg .tsway,
+  .tsvg .tbud .tbud-in,
+  .tsvg .tb-want {
+    animation: none;
+  }
+}
+/* the riddle opened, on the map: its clue at the bottom */
+.mriddle {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: 0 4px 0 var(--shd), 0 0 0 3px var(--gold);
+}
+.mriddle .mr-ic {
+  font-size: 26px;
+}
+.mriddle .mr-tx {
+  flex: 1;
+  font-weight: 800;
+  font-size: 14px;
+  line-height: 1.2;
+}
+.mriddle .mr-tx small {
+  display: block;
+  font-weight: 600;
+  color: var(--soft);
+}
+.mriddle .mr-x {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--card2);
+  font: inherit;
+}
+/* the riddle in the journal: tap to look for it; its outline pulses now and then */
+.jriddle.on {
+  width: calc(100% - 24px);
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  animation: jrpulse 5s ease-in-out infinite;
+}
+.jriddle.on u {
+  text-decoration-thickness: 2px;
+  color: var(--ink);
+}
+@keyframes jrpulse {
+  0%,
+  70%,
+  100% {
+    box-shadow: 0 2px 0 var(--edge);
+  }
+  80% {
+    box-shadow: 0 2px 0 var(--edge), 0 0 0 4px var(--gold);
+  }
+  90% {
+    box-shadow: 0 2px 0 var(--edge), 0 0 0 1px var(--gold);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .jriddle.on {
+    animation: none;
+    box-shadow: 0 2px 0 var(--edge), 0 0 0 3px var(--gold);
+  }
+}
+/* my tree: a squirrel scampering across the ground now and then */
+.tsvg .tsq {
+  pointer-events: none;
+  transform: translate(440px, 606px) scaleX(1);
+  animation: tsq 6.4s linear forwards;
+}
+.tsvg .tsq.ltr {
+  animation-name: tsqr;
+}
+.tsvg .tsq .tsq-in {
+  animation: tbudhop 0.45s ease-in-out infinite;
+}
+@keyframes tsq {
+  from {
+    transform: translate(440px, 606px);
+  }
+  to {
+    transform: translate(-40px, 606px);
+  }
+}
+@keyframes tsqr {
+  from {
+    transform: translate(-40px, 606px) scaleX(-1);
+  }
+  to {
+    transform: translate(440px, 606px) scaleX(-1);
+  }
+}
+.tsvg .tfruit.ground.fall {
+  transform: none;
 }

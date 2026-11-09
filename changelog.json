@@ -1,11 +1,13 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.9.0",
+ "latest": "2.9.1",
  "versions": [
+  { "v": "2.9.1", "notes": [
+   "My Tree: one tree that grows with every āyah, sūrah and day of practice; your buddies live around it and love its fruit",
+   "Up to seven riddles a day from all over the map: open one in your journal, then find it",
+   "Small fixes: things that block both acorns and apples show both, and shorter messages when things fall"
+  ] },
   { "v": "2.9.0", "notes": [
-   "A riddle from your Teacher every day: find the answer on the map for a stamp (a gift every 7)",
-   "Look after your buddy: finish a step to feed it (or fill up a ride), and it learns tricks",
-   "A little garden grows by each memorized sūrah, the more days you practise it",
    "Ramadan, the Eids and Jumuʿah bring garlands, greetings and a special sticker, a new one each Hijri year",
    "A mistake in the Teacher's test or losing all your hearts lets a campfire go low (or out); 30 seconds per question; speeds 0.5× to 1.5×"
   ] },

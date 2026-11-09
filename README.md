@@ -61,8 +61,8 @@ recite on their own.
 - **Campfires** beside memorized sūrahs burn down over three weeks (roaring, strong, steady, low, embers, out).
   Low ones glow on the map, your Teacher comes to test the cold ones, and practising lights them up again.
 - **A journal to fill:** a book of the animals and things to find on the map and in the āyāt's pictures; tap one to add it.
-- **Little daily extras:** a riddle from your Teacher, a buddy to feed, a garden that grows at each memorized
-  sūrah, and garlands and stickers for Ramadan, Eid and Jumuʿah.
+- **Little daily extras:** riddles from your Teacher, My Tree that grows with every āyah and sūrah (your buddies
+  live around it), and garlands and stickers for Ramadan, Eid and Jumuʿah.
 - **Daily streaks** (🏃 days on the trail, a little gift every 7 days in a row), and a welcome from your Teacher, who hands each new explorer their walking stick.
 - **Read mode** for children who can read the muṣḥaf, following the recitation āyah by āyah.
 - **Four reciters**, adjustable speed (0.5×–1.5×) and loops; tap any word to hear it alone.

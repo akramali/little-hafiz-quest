@@ -233,6 +233,12 @@
       boxes.push({ x0: L.summit.x - szS * 0.42, x1: L.summit.x + szS * 0.42, y0: L.summit.y + 60 - szS * 0.8, y1: L.summit.y + 66 });
       const exAt = exPos();
       boxes.push(boxOf(exAt.x, exAt.y, 72, 108));
+      // each stop's campfire burns on its outer side once the sūrah is memorized: scenery keeps clear of that spot
+      // from the start, so nothing moves when a fire is lit (v2.9.1)
+      L.nodes.forEach((nd) => {
+        const fx = nd.x > L.cx ? nd.x + 61 : nd.x - 61;
+        boxes.push({ x0: fx - 28, x1: fx + 28, y0: nd.y - 24, y1: nd.y + 50 });
+      });
       const pals = cfg.others || [];
       L.bands.forEach((b) => {
         const rnd = seeded(97 + b.wi * 131),
@@ -357,7 +363,6 @@
             ${st.done ? '<span class="ncheck">✓</span>' : ''}
             ${st.fix ? '<span class="nfix" title="Needs fixing">💔</span>' : ''}
             ${st.fire >= 0 && ART.campfire ? `<span class="nfire ${nd.x > L.cx ? 'fr' : 'fl'} f${st.fire}" data-act="fireinfo" data-n="${s.n}" role="button" aria-label="Campfire">${ART.campfire(st.fire)}</span>` : ''}
-            ${st.garden >= 0 && ART.plant ? `<span class="ngarden ${nd.x > L.cx ? 'fr' : 'fl'}" data-act="fireinfo" data-n="${s.n}" aria-hidden="true">${ART.plant(st.garden)}</span>` : ''}
             ${st.gift ? `<span class="ngift">${ART.gift({ tier: st.giftTier || 1, open: false, kind: 'item' })}</span>` : ''}
             <span class="nlab"><b>${s.name}</b><small>${st.done ? `✓ ⭐ ${st.stars}/${st.max}` : `⭐ ${st.stars}/${st.max}`}</small></span>
           </button>`,

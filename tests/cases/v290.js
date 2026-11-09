@@ -1,5 +1,5 @@
-// v2.9.0: the Teacher's riddle of the day, the buddy's care (food, or fuel for rides) and its tricks, the garden at
-// each memorized stop, and special days (a garland, a greeting and a sticker)
+// v2.9.0/v2.9.1: the Teacher's riddles (seven a day, opened from the journal), my tree with the buddies around it,
+// the campfire going low (or out) on a mistake, and special days (a garland, a greeting and a sticker)
 (async () => {
   fixture({ items: ['ladybug-buddy', 'toy-car'], outfit: { pet: 'ladybug-buddy' } });
   const { w, d, L, idx } = await openGame();
@@ -8,79 +8,88 @@
     m = d.getElementById('modal'),
     today = (() => { const x = new Date(); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0'); })();
   w.__occasion = '';
-  // 1. the riddle: in the journal, a dot on its button; tapping the answer on the map solves it
+  // 1. riddles (v2.9.1): opened from the journal, looked for on the map; seven a day, a minute apart
   L.go('map'); await wait(1500);
-  ok('the journal button has a dot while the riddle is open', !!d.querySelector('.jbtn .newdot'));
+  ok('the journal button has a dot while a riddle waits', !!d.querySelector('.jbtn .newdot'));
+  const k = L.riddleNow(prof)[0];
+  // tapping the answer on the map without opening the riddle solves nothing
+  const el0 = d.querySelector(`.mprop[data-k="${k}"]`);
+  if (el0) { el0.dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await wait(400); }
+  ok('a tap on the answer before opening the riddle solves nothing', prof.riddle[1] === 0);
   L.go('journal', { w: 0 }); await wait(300);
-  const strip = d.querySelector('.jriddle');
+  const strip = d.querySelector('.jriddle.on');
   log('riddle:', strip && strip.textContent.replace(/\s+/g, ' '));
-  ok('the riddle of the day at the top of the journal', !!strip && /Riddle of the day/.test(strip.textContent) && !strip.classList.contains('done'));
-  const k = L.riddleKey(prof);
-  L.go('map'); await wait(1500);
+  ok('the riddle at the top of the journal (1 of 7)', !!strip && /Riddle 1 of 7/.test(strip.textContent));
+  strip.click(); await wait(1600);
+  ok('tapping it goes to the map, the clue at the bottom', L.st().view === 'map' && !!d.querySelector('.mriddle'));
+  // a wrong thing: nothing lost, the riddle stays open
+  const other = [...d.querySelectorAll('.mprop')].find((e) => e.dataset.k !== k);
+  if (other) { other.dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await wait(300); }
+  ok('a wrong tap: nothing lost, still looking', !!d.querySelector('.mriddle') && prof.riddle[1] === 0);
   const el = d.querySelector(`.mprop[data-k="${k}"]`);
   log('answer', k, '| on the map', !!el);
-  if (el) {
-    el.scrollIntoView({ block: 'center' }); await wait(400);
-    el.dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await wait(1300);
-    log('after the tap: riddle', JSON.stringify(prof.riddle), '| card', m.textContent.trim().slice(0, 80));
-    ok('tapping the answer solves it: a stamp', prof.riddle[0] === today && prof.riddle[1] === 1 && /you found it/.test(m.textContent));
-    m.querySelector('[data-act=cno]') && m.querySelector('[data-act=cno]').click(); await wait(200);
-    L.go('map'); await wait(800);
-    ok('no dot once solved', !d.querySelector('.jbtn .newdot'));
-  }
-  // 7 stamps: a gift
-  prof.riddle = ['2000-01-01', 6];
+  el.scrollIntoView({ block: 'center' }); await wait(300);
+  el.dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await wait(1300);
+  log('after: riddle', JSON.stringify(prof.riddle), '| card', m.textContent.trim().slice(0, 90));
+  ok('found: a stamp, the next in a minute', prof.riddle[0] === today && prof.riddle[1] === 1 && prof.riddle[2] === 1 && prof.riddle[3] > Date.now() + 50000 && /you found it/.test(m.textContent));
+  m.querySelector('[data-act=cno]') && m.querySelector('[data-act=cno]').click(); await wait(200);
+  L.go('journal', { w: 0 }); await wait(300);
+  ok('the next waits a minute', !!d.querySelector('.jriddle.done') && /in a minute/.test(d.querySelector('.jriddle').textContent));
+  // seven a day, all different; a gift with the 7th stamp, one a day at most
+  const day7 = [0, 1, 2, 3, 4, 5, 6].map((j) => { prof.riddle = [today, 0, j, 0, 0]; return L.riddleNow(prof)[0]; });
+  log('today\'s seven:', day7.join(' '));
+  ok('seven different riddles today', new Set(day7).size === 7);
+  prof.riddle = [today, 13, 6, 0, 0];
   const before = prof.pending.length;
+  L.go('journal', { w: 0 }); await wait(200);
+  d.querySelector('.jriddle.on').click(); await wait(1600);
+  const k7 = L.riddleNow(prof) ? L.riddleNow(prof)[0] : day7[6];
+  const el7 = d.querySelector(`.mprop[data-k="${k7}"]`);
+  el7 && el7.dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await wait(1300);
+  ok('the 7th riddle (14th stamp) brings a gift', prof.riddle[1] === 14 && prof.pending.length > before && prof.riddle[4] === 1);
+  m.querySelector('[data-act=cno]') && m.querySelector('[data-act=cno]').click(); await wait(200);
+  L.go('journal', { w: 0 }); await wait(200);
+  ok('all seven done: come back tomorrow', /Come back tomorrow/.test(d.querySelector('.jriddle').textContent) && !L.riddleNow(prof));
+  // 2. my tree: its button under the journal's, a screen of its own
   L.go('map'); await wait(1500);
-  const el2 = d.querySelector(`.mprop[data-k="${k}"]`);
-  if (el2) {
-    el2.dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await wait(1300);
-    ok('the 7th stamp brings a gift', prof.riddle[1] === 7 && prof.pending.length > before, prof.pending.length + ' vs ' + before);
-    m.querySelector('[data-act=cno]') && m.querySelector('[data-act=cno]').click(); await wait(200);
-  }
-  // 2. the buddy: hungry until a step is finished, then fed (a line on the done page), and its card
-  prof.buddy = ['2000-01-01', 1];
-  log('mood before', L.buddyMood(prof));
-  ok('a new day: the buddy is hungry', L.buddyMood(prof) === 'hungry');
-  L.go('map'); await wait(1500);
-  ok('on the map, a bubble by the hungry buddy', !!d.querySelector('.mex .budmood.m-hungry'));
-  // finishing a step feeds it (Word Steps of Al-Ikhlāṣ, its last āyah)
-  const S112 = w.LHQ_DATA.surahs[idx(112)], last = S112.ayat.length - 1;
-  L.go('words', { i: idx(112), p: 0, a: last, w: 1, phase: 'recall', shown: [], doneA: [...Array(last).keys()], savedA: [] }); await wait(300);
-  const nW = d.querySelectorAll('.wflow > .wbox').length;
-  L.go('words', Object.assign({}, L.st(), { shown: [...Array(nW).keys()] })); await wait(300);
-  const wd = d.querySelector('[data-act=wdone]');
-  log('finish button', !!wd);
-  if (wd) { wd.click(); await wait(1200); }
-  log('view', L.st().view, '| buddy', JSON.stringify(prof.buddy), '| memo', [...d.querySelectorAll('.dbody .memo')].map((x) => x.textContent).join(' / ').slice(0, 120));
-  ok('finishing a step feeds it, and the done page says so', prof.buddy[0] === today && prof.buddy[1] === 2 && /fed and happy/.test(d.body.textContent));
-  ok('…and it learned its first trick (2 days)', /learned a new trick: Hop/.test(d.body.textContent));
-  prof.buddy = ['2000-01-01', 1];
-  L.go('bag', { tab: 'pet' }); await wait(400);
-  ok('My Explorer: the mood bubble by the buddy', !!d.querySelector('.wd-ex .budmood'));
-  d.querySelector('.wd-ex .budmood').dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await wait(300);
-  log('buddy card:', m.textContent.replace(/\s+/g, ' ').slice(0, 140));
-  ok('its card: hungry, how to feed it', !!d.querySelector('#modal.show .budcard') && /hungry/.test(m.textContent));
-  m.querySelector('[data-act=cno]').click(); await wait(200);
-  prof.buddy = [today, 2];
-  L.go('bag', { tab: 'pet' }); await wait(300);
-  d.querySelector('.wd-ex .budmood') && d.querySelector('.wd-ex .budmood').dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await wait(300);
-  ok('fed today: happy (or asleep at night), with its trick', /happy and full|fast asleep/.test(m.textContent) && !!m.querySelector('[data-act=trick][data-t=hop]'));
-  m.querySelector('[data-act=trick]') && m.querySelector('[data-act=trick]').click(); await wait(200);
-  ok('the trick plays on the explorer', !!d.querySelector('.wd-ex svg.ex.tr-hop'));
-  // a ride needs fuel
-  prof.outfit.pet = 'toy-car'; prof.buddy = ['2000-01-01', 0];
-  L.go('bag', { tab: 'pet' }); await wait(300);
-  d.querySelector('.wd-ex .budmood').dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await wait(300);
-  log('ride card:', m.textContent.replace(/\s+/g, ' ').slice(0, 100));
-  ok('a ride needs fuel, not food', /needs fuel/.test(m.textContent) && /⛽/.test(m.textContent));
-  m.querySelector('[data-act=cno]').click(); await wait(200);
-  // 3. the garden grows with the different days a sūrah is practised
-  prof.fire[113] = [Date.now() - 3 * 864e5, 3];
-  log('garden at 3 days', L.gardenOf(w.LHQ_DATA.surahs[idx(113)], prof));
-  ok('3 days practised: a sprout', L.gardenOf(w.LHQ_DATA.surahs[idx(113)], prof) === 1);
-  L.go('map'); await wait(1500);
-  ok('a plant at each memorized stop', d.querySelectorAll('.node .ngarden').length >= 3);
+  ok('the My Tree button on the map', !!d.querySelector('.tbtn[data-act=tree]'));
+  ok('no plants at the stops any more (one tree instead)', !d.querySelector('.node .ngarden'));
+  // (no fruit yet on a young tree: no one's hungry)
+  prof.grow = [0, '', []];
+  prof.buddy = ['2000-01-01', 0, 0];
+  L.treeReset();
+  d.querySelector('[data-act=tree]').click(); await wait(800);
+  log('young tree', JSON.stringify({ size: L.treeInfo(prof).size.toFixed(3), fruits: L.treeInfo(prof).fruits.length }), '| hungry', JSON.stringify(L.hungry()));
+  ok('a young tree with no fruit: no buddy hungry yet', L.treeInfo(prof).fruits.length === 0 && !L.hungry() && !d.querySelector('.tsvg .tbud.m-hungry'));
+  L.go('map'); await wait(1200);
+  // (a tree with fruit: fifteen sūrahs golden, and plenty of practice)
+  w.LHQ_DATA.surahs.slice().sort((x, y) => y.n - x.n).slice(0, 15).forEach((x) => (prof.prog[x.n] = { parts: x.P.map(() => ({ learn: 1, words: 1, order: 1, next: 0, path: 3, la: 0, wa: 0 })), all: x.P.length > 1 ? 3 : 0 }));
+  prof.grow = [200, '', []];
+  d.querySelector('[data-act=tree]').click(); await wait(800);
+  const info = L.treeInfo(prof), hg = L.hungry();
+  log('tree', JSON.stringify({ size: info.size.toFixed(2), leaves: info.leaves, blossoms: info.blossoms.length, fruits: info.fruits.length }), '| hungry', JSON.stringify(hg));
+  ok('my tree: fruit (and blossoms) drawn', L.st().view === 'tree' && d.querySelectorAll('.tsvg .tfruit').length === info.fruits.length && info.fruits.length >= 2 && d.querySelectorAll('.tsvg [data-act=tflower]').length === info.blossoms.length);
+  ok('the buddies live around it, one hungry', d.querySelectorAll('.tsvg .tbud').length === 2 && d.querySelectorAll('.tsvg .tbud.m-hungry').length === 1);
+  const want = hg.want, fr = [...d.querySelectorAll('.tsvg .tfruit')].find((f) => f.dataset.t === want);
+  fr.dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await wait(2000);
+  log('fed: buddy', JSON.stringify(prof.buddy), '| hungry now', JSON.stringify(L.hungry()));
+  ok('tapping the fruit it wants: it falls, the buddy eats, fed for the day', prof.buddy[0] === today && prof.buddy[1] === 1 && !L.hungry());
+  await wait(1200);
+  ok('no other buddy hungry for 30 seconds', !d.querySelector('.tsvg .tbud.m-hungry'));
+  // growing: a sūrah practised grows it once a day
+  const g0 = prof.grow[0];
+  const finishWords = async () => {
+    const S112 = w.LHQ_DATA.surahs[idx(112)], last = S112.ayat.length - 1;
+    L.go('words', { i: idx(112), p: 0, a: last, w: 1, phase: 'recall', shown: [], doneA: [...Array(last).keys()], savedA: [] }); await wait(300);
+    const nW = d.querySelectorAll('.wflow > .wbox').length;
+    L.go('words', Object.assign({}, L.st(), { shown: [...Array(nW).keys()] })); await wait(300);
+    const wd = d.querySelector('[data-act=wdone]');
+    if (wd) { wd.click(); await wait(1200); }
+  };
+  await finishWords();
+  await finishWords();
+  log('grow', g0, '→', JSON.stringify(prof.grow));
+  ok('practising a sūrah grows the tree, once a day', prof.grow[0] === g0 + 1 && prof.grow[2].includes(112));
   // the Teacher's test with a miss: at the end, the campfire burns down from where it was
   prof.fire[113] = [Date.now() - 2 * 864e5, 3];
   L.go('elder', { i: idx(113), p: 0, fire0: 5, qs: [{ k: 0, kind: 'next', cut: 0, throw: 'rock' }], q: 0, marks: [], hurt: false, fallen: [], phase: 'ask', anytime: true, rematch: false, result: null, ack: '' }); await wait(300);
@@ -89,12 +98,12 @@
   const steps = d.querySelectorAll('.eldend .firerise .fr-st').length;
   log('after a miss: fire steps shown', steps, '| now', JSON.stringify(prof.fire[113]));
   ok('a test with a miss ends with the campfire going down to Low (roaring → low)', steps === 4);
-  // out of hearts in a review game: the campfire burns down a step, shown on the card
+  // out of hearts in a review game: the campfire goes down to Low, shown on the card
   prof.fire[113] = [Date.now() - 2 * 864e5, 3];
   L.go('path', { i: idx(113), p: 0, L: 2, k: 0, hint: 0, hints: 0, hearts: 1, maxH: 3 }); await wait(300);
   d.querySelector('[data-act=oops]') && d.querySelector('[data-act=oops]').click();
   for (let t = 0; t < 30 && !d.querySelector('#modal.show .dropcard'); t++) await wait(100);
-  log('out of hearts: fire', L.gardenOf && JSON.stringify(prof.fire[113]), '| steps', d.querySelectorAll('#modal .dropfire .fr-st').length);
+  log('out of hearts: fire', JSON.stringify(prof.fire[113]), '| steps', d.querySelectorAll('#modal .dropfire .fr-st').length);
   ok('out of hearts: the campfire goes down to Low (roaring → low), shown on the card', d.querySelectorAll('#modal .dropfire .fr-st').length === 4);
   d.querySelector('#modal [data-act=dropnext]') && d.querySelector('#modal [data-act=dropnext]').click(); await wait(300);
   // already low (or embers): it burns out
@@ -106,6 +115,17 @@
   log('already low, out of hearts: days', daysNow.toFixed(1), '| steps', d.querySelectorAll('#modal .dropfire .fr-st').length);
   ok('already low: a mistake burns it out', daysNow >= 21 && d.querySelectorAll('#modal .dropfire .fr-st').length === 3);
   d.querySelector('#modal [data-act=dropnext]') && d.querySelector('#modal [data-act=dropnext]').click(); await wait(300);
+  // the map keeps scenery clear of every stop's campfire (v2.9.1)
+  w.LHQ_DATA.surahs.forEach((x) => { prof.prog[x.n] = { parts: x.P.map(() => ({ learn: 1, words: 1, order: 1, next: 0, path: 3, la: 0, wa: 0 })), all: x.P.length > 1 ? 3 : 0 }; prof.fire[x.n] = [Date.now() - 864e5, 1]; });
+  prof.strangers = [0, 1, 2, 3, 4, 5, 6, 7]; // (every sūrah memorized: the Stranger has said his farewell already)
+  L.go('surah', { i: idx(113), p: 0 }); await wait(100);
+  L.go('map'); await wait(1500);
+  const fires = [...d.querySelectorAll('.nfire')].map((f) => f.getBoundingClientRect()),
+    scen = [...d.querySelectorAll('.mprop')].map((m) => ({ k: m.dataset.k, r: m.getBoundingClientRect() })),
+    over = [];
+  fires.forEach((f, i) => scen.forEach((q) => { const r = q.r, ix = Math.min(f.right, r.right - r.width * 0.15) - Math.max(f.left, r.left + r.width * 0.15), iy = Math.min(f.bottom, r.bottom) - Math.max(f.top, r.top + r.height * 0.1); if (ix > 6 && iy > 6) over.push(i + ':' + q.k); }));
+  log('campfires', fires.length, '| covered by scenery:', over.join(' ') || 'none');
+  ok('no campfire is covered by trees or other scenery', fires.length === 37 && !over.length);
   // 4. special days: a garland, a greeting and the sticker (once)
   w.__occasion = 'ramadan';
   try { w.localStorage.removeItem('lhq_greet'); } catch (e) {}

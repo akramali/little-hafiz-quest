@@ -31,7 +31,8 @@
   p.found = [...X.journal].slice(0, 9);
   p.jdone = [3];
   p.time = 4321; p.stime = { 113: 600, 112: 300 };
-  p.riddle = [day(Date.now()), 9]; p.buddy = [day((() => { const x = new Date(); x.setDate(x.getDate() - 1); return x.getTime(); })()), 6]; // (v2.9.0)
+  p.riddle = [day(Date.now()), 9, 3, Math.round(Date.now() / 1000) * 1000 + 60000, 1]; p.buddy = [day((() => { const x = new Date(); x.setDate(x.getDate() - 1); return x.getTime(); })()), 2, 6]; // (v2.9.1)
+  p.grow = [17, day(Date.now()), [112, 113]]; // (v2.9.1: my tree)
   p.touched = Math.round(Date.now() / 1000) * 1000;
   const want = JSON.parse(JSON.stringify(p));
   // (lists that are sets compare in any order; got keeps its order: it's the order things were won)

@@ -2225,21 +2225,6 @@
     return '<svg class="lhq-art stranger ' + (mood || '') + '" viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' + OUT(g) + '</svg>';
   }
 
-  /* A little garden at each memorized sūrah's stop (v2.9.0; viewBox 0 0 60 60, on the ground at y=54): it grows with
-     the different days the sūrah is practised: 0 a seed in the soil, 1 a sprout, 2 a flower, 3 a small tree. */
-  function plant(stage) {
-    const soil = S('M10 56Q30 42 50 56Z', '#9a6b44', null, 'M18 52Q26 47 34 47Q26 50 22 54Z');
-    let g;
-    if (stage <= 0) g = soil + S('M27 47Q30 41 33 47Q30 50 27 47Z', '#c98a4b');
-    else if (stage === 1) g = L('M30 50L30 36', '#45b45e', 3) + S('M30 40Q20 40 18 30Q28 30 30 40Z', '#5fd27a') + S('M30 38Q38 34 42 26Q32 26 30 38Z', '#5fd27a') + soil;
-    else if (stage === 2)
-      g = L('M30 50L30 26', '#45b45e', 3) + S('M30 42Q20 42 18 34Q28 34 30 42Z', '#5fd27a') + S('M30 38Q40 36 42 28Q32 28 30 38Z', '#5fd27a') +
-        [0, 72, 144, 216, 288].map((a) => { const r = ((a - 90) * Math.PI) / 180; return ball(n(30 + 7 * Math.cos(r)), n(20 + 7 * Math.sin(r)), 5.4, 5.4, '#ff8fcf', { hl: false, sh: false }); }).join('') + ball(30, 20, 4.6, 4.6, '#ffd23f', { hl: false, sh: false }) + soil;
-    else
-      g = S('M27 52Q28 40 26 30L34 30Q32 40 33 52Z', '#a86b3c') + S(cloudD(30, 30, 40, 26, 5), '#5fbf4a', 'M44 18Q52 26 48 36Q40 42 30 40Q44 34 44 18Z') +
-        [[22, 24], [36, 18], [38, 32], [24, 34]].map((p) => ball(p[0], p[1], 3, 3, '#ff5d6c', { sh: false })).join('') + soil;
-    return '<svg class="lhq-art plant" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' + OUT(g, 2) + '</svg>';
-  }
   /* Special days (v2.9.0): the art of Ramadan and the Eids. A fanous (the Ramadan lamp, glass panes in a brass
      frame), the hilal (the new crescent with a star), and the eight-pointed star (two squares, as in the Rub el Hizb). */
   function star8(cx, cy, r) {
@@ -2295,6 +2280,219 @@
       g += burst(340, 60, 26, '#ff8fcf') + burst(372, 118, 18, '#ffd23f') + burst(306, 112, 14, '#7fd8ff') + P(star8(370, 30, 8), '#ffd23f', sw(1.4));
     }
     return '<svg class="lhq-art festsky" viewBox="0 0 400 300" preserveAspectRatio="xMidYMin meet" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' + OUT(g, 1.6) + '</svg>';
+  }
+
+  /* My tree (v2.9.1): one tree for the whole journey, like the tree promised in Jannah for good deeds and the Qur'an.
+     viewBox 0 0 400 700, the ground at y=600. o = { seed, size (0-1: a sapling to a big full tree), leaves (one an
+     āyah learned), flowers: [{ n, c }] (one a sūrah memorized, its own colour), fruits: [type] (practice), birds,
+     decor: [sticker ids hung on it], seen: { leaves, flowers, fruits } (how many there were last time: the rest pop
+     in) }. Returns { svg, fruits: [{ x, y, t }] } (the berries on the two bushes come first: food from the start). */
+  const FRUIT = {
+    date: (x, y) => [[-3, -2], [3, -1], [0, 3]].map((d) => S('M' + n(x + d[0]) + ' ' + n(y + d[1] - 4.4) + 'Q' + n(x + d[0] + 3) + ' ' + n(y + d[1]) + ' ' + n(x + d[0]) + ' ' + n(y + d[1] + 4.4) + 'Q' + n(x + d[0] - 3) + ' ' + n(y + d[1]) + ' ' + n(x + d[0]) + ' ' + n(y + d[1] - 4.4) + 'Z', '#9a5a2e')).join(''),
+    fig: (x, y) => S('M' + x + ' ' + (y - 6) + 'Q' + (x + 7.5) + ' ' + (y + 2) + ' ' + x + ' ' + (y + 7) + 'Q' + (x - 7.5) + ' ' + (y + 2) + ' ' + x + ' ' + (y - 6) + 'Z', '#7a3f8a', null, 'M' + (x - 3) + ' ' + y + 'Q' + (x - 3) + ' ' + (y - 3) + ' ' + (x - 1) + ' ' + (y - 4) + 'Z'),
+    olive: (x, y) => ball(x, y, 4, 5.4, '#7fa63a', { sh: false }),
+    pomegranate: (x, y) => ball(x, y + 1, 6.4, 6, '#d63a4a') + S('M' + (x - 2.6) + ' ' + (y - 4) + 'L' + (x - 3) + ' ' + (y - 8) + 'L' + (x - 1) + ' ' + (y - 6) + 'L' + x + ' ' + (y - 8.6) + 'L' + (x + 1) + ' ' + (y - 6) + 'L' + (x + 3) + ' ' + (y - 8) + 'L' + (x + 2.6) + ' ' + (y - 4) + 'Z', '#b02a3a'),
+    grape: (x, y) => [[-3, -3], [0, -3.6], [3, -3], [-1.6, 0.4], [1.6, 0.4], [0, 3.8]].map((d) => ball(x + d[0], y + d[1], 2.6, 2.6, '#7b4fc4', { sh: false })).join(''),
+    apple: (x, y) => ball(x, y + 1, 6.2, 5.8, '#ef4b4b') + S('M' + (x + 1) + ' ' + (y - 5) + 'Q' + (x + 6) + ' ' + (y - 9) + ' ' + (x + 7) + ' ' + (y - 5) + 'Q' + (x + 4) + ' ' + (y - 3) + ' ' + (x + 1) + ' ' + (y - 5) + 'Z', '#5fbf4a'),
+    orange: (x, y) => ball(x, y + 1, 6.2, 6.2, '#ff9a2b') + S('M' + x + ' ' + (y - 5) + 'Q' + (x - 5) + ' ' + (y - 9) + ' ' + (x - 6) + ' ' + (y - 5) + 'Q' + (x - 3) + ' ' + (y - 3) + ' ' + x + ' ' + (y - 5) + 'Z', '#5fbf4a'),
+    berry: (x, y) => ball(x, y, 3.6, 3.6, '#5b6fd8', { sh: false }),
+  };
+  const FRUIT_TYPES = ['date', 'fig', 'olive', 'pomegranate', 'grape', 'apple', 'orange']; // the order they come in
+  const fruitIcon = (t) => '<svg class="lhq-art" viewBox="-10 -12 20 22" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' + OUT(FRUIT[t](0, 0), 1.6) + '</svg>';
+  /* My tree grows as one plant, from a seed to a full tree, every part only ever getting bigger: one structure, the
+     same at every size (seeded by the explorer), that it grows into. The stem lengthens and thickens into a trunk;
+     side branches bud along it, each at its own time, and lengthen; leaves grow along them (never smaller than the
+     sprout's first two); the oldest wood drops its leaves as it matures; leafy clusters swell at the branch tips and
+     merge into a crown; blossoms come once the crown forms (one a sūrah memorized), then fruit. size 0-1 (from the
+     explorer's progress) is eased into growth g = size^0.6, so the early steps show. TREE_STAGE: the sizes where
+     blossoms and fruit begin. */
+  const TREE_STAGE = { flowers: 0.2, fruit: 0.3 };
+  function tree(o) {
+    let seed = o.seed >>> 0 || 7;
+    const rnd = () => (seed = (Math.imul(seed, 1103515245) + 12345) >>> 0) / 4294967296;
+    const size = Math.max(0, Math.min(1, o.size || 0)),
+      t = Math.pow(size, 0.6),
+      seen = o.seen || {},
+      GY = 600,
+      cx = 200;
+    const clamp = (x) => Math.max(0, Math.min(1, x)),
+      ease = (x) => 1 - Math.pow(1 - clamp(x), 2),
+      smooth = (x) => clamp(x) * clamp(x) * (3 - 2 * clamp(x));
+    const isNew = (j, was) => (j >= (was == null ? 9999 : was) ? ' class="tnew"' : '');
+    // the structure: a leader carrying on at the tip of each branch, side branches along it (some skipped, each its
+    // own length, angle and bend), and whether it grows in front of the crown or behind it
+    const nodes = [];
+    const make = (parent, at, ang, lenF, wF, depth, birth, back) => {
+      // (the trunk nearly straight, a leader a little bent, the side branches each their own bend, some a lot)
+      const nd = { parent, at, ang, lenF, wF, depth, birth, back, bend: (rnd() - 0.5) * (depth === 0 ? 0.06 : at === 1 ? 0.16 : 0.25 + rnd() * 0.6) };
+      nodes.push(nd);
+      if (depth >= 4) return;
+      make(nd, 1, ang + (rnd() - 0.5) * 0.22, lenF * (0.62 + rnd() * 0.16), wF * 0.68, depth + 1, birth + 0.1 + rnd() * 0.05, back);
+      const sides = depth === 0 ? 4 : 2;
+      for (let i = 0; i < sides; i++) {
+        if (depth >= 2 && rnd() < 0.25) continue;
+        const side = (i + depth) % 2 ? 1 : -1,
+          a2 = 0.38 + (0.5 * (i + 1)) / (sides + 1) + (rnd() - 0.5) * 0.1;
+        make(nd, a2, ang + side * (0.55 + rnd() * 0.5), lenF * (0.42 + rnd() * 0.3), wF * 0.5, depth + 1, birth + 0.06 + a2 * 0.14 + depth * 0.03 + rnd() * 0.05, back || (depth >= 1 && rnd() < 0.35));
+      }
+    };
+    make(null, 0, -Math.PI / 2 + (rnd() - 0.5) * 0.03, 180, 44, 0, 0, false);
+    // the crown's rough outline at this growth: a branch reaching past it stops short, each at its own point inside,
+    // so the crown is round and uneven, never cut straight
+    const Ht = 40 + 420 * ease(t * 1.05),
+      ex = { cx: cx, cy: GY - Ht * 0.6, rx: Math.min(168, 30 + 150 * t), ry: Ht * 0.44 };
+    const inside = (x, y, lim) => Math.pow((x - ex.cx) / ex.rx, 2) + Math.pow((y - ex.cy) / ex.ry, 2) <= lim;
+    // a point along a branch: a gentle curve from its foot to its tip
+    const along = (q, f) => {
+      const u = 1 - f;
+      return [u * u * q[0] + 2 * u * f * q[6] + f * f * q[2], u * u * q[1] + 2 * u * f * q[7] + f * f * q[3]];
+    };
+    nodes.forEach((nd) => {
+      const p = (t - nd.birth) / 0.5;
+      if ((nd.depth && p <= 0) || (nd.parent && !nd.parent.seg)) return (nd.seg = null); // (the stem is always there)
+      let len = (nd.depth ? 6 : 14) + (nd.lenF - (nd.depth ? 6 : 14)) * ease(p);
+      const w1 = Math.max(nd.depth ? 1.4 : 2.6, nd.wF * (0.06 + 0.94 * Math.pow(clamp((t - nd.birth) / 0.95), 1.8))); // (slim for long, thickening as it matures)
+      // (a branch starts a little inside its parent, so they join without a seam)
+      const [px, py] = nd.parent ? along(nd.parent.seg, nd.at) : [cx, GY],
+        x1 = nd.parent ? px - Math.cos(nd.ang) * w1 * 0.45 : px,
+        y1 = nd.parent ? py - Math.sin(nd.ang) * w1 * 0.45 : py;
+      const lim = 0.72 + rnd() * 0.28;
+      let x2 = x1 + len * Math.cos(nd.ang),
+        y2 = y1 + len * Math.sin(nd.ang);
+      for (let k = 0; k < 12 && nd.depth && t > 0.2 && !inside(x2, y2, lim); k++) {
+        len *= 0.86;
+        x2 = x1 + len * Math.cos(nd.ang);
+        y2 = y1 + len * Math.sin(nd.ang);
+      }
+      const nx = -(y2 - y1) / (len || 1),
+        ny = (x2 - x1) / (len || 1),
+        b = nd.bend * len;
+      nd.seg = [x1, y1, x2, y2, w1, Math.max(1, w1 * 0.6), (x1 + x2) / 2 + nx * b, (y1 + y2) / 2 + ny * b];
+      nd.len = len;
+      nd.dir = nd.ang;
+    });
+    const live = nodes.filter((nd) => nd.seg);
+    // the ground and two bushes (still), then the plant (swaying a little in the wind), from a soil mound
+    const ground = OUT(F('M-40 604Q100 586 200 600Q300 586 440 604L440 760L-40 760Z', '#7acb6a') + F('M-40 640Q120 624 230 640Q330 628 440 642L440 760L-40 760Z', '#69bb59') +
+      [[52, 606], [348, 606]].map(([x, y]) => S(cloudD(x, y - 14, 60, 30, 5), '#5fbf4a', 'M' + (x + 14) + ' ' + (y - 26) + 'Q' + (x + 32) + ' ' + (y - 18) + ' ' + (x + 26) + ' ' + (y - 2) + 'Z')).join(''), 2);
+    let g = '';
+    if (t < 0.45) g += G(S('M150 604Q200 566 250 604Z', '#9a6b44', null, 'M168 596Q182 584 196 584Q184 590 176 600Z'), t > 0.3 ? ' opacity="' + n(1 - (t - 0.3) / 0.15) + '"' : '');
+    // the wood: each branch a curved tapering shape, shaded on the side away from the light (the right), each drawn
+    // with its shade before the branches growing from it; the ones behind the crown darker
+    const shape = (q) => {
+      const dx = q[2] - q[0],
+        dy = q[3] - q[1],
+        L0 = Math.hypot(dx, dy) || 1,
+        nx = -dy / L0,
+        ny = dx / L0,
+        a = q[4] / 2,
+        b = q[5] / 2;
+      return 'M' + n(q[0] + nx * a) + ' ' + n(q[1] + ny * a) + 'Q' + n(q[6] + nx * (a + b) / 2) + ' ' + n(q[7] + ny * (a + b) / 2) + ' ' + n(q[2] + nx * b) + ' ' + n(q[3] + ny * b) + 'A' + n(b) + ' ' + n(b) + ' 0 0 1 ' + n(q[2] - nx * b) + ' ' + n(q[3] - ny * b) +
+        'Q' + n(q[6] - nx * (a + b) / 2) + ' ' + n(q[7] - ny * (a + b) / 2) + ' ' + n(q[0] - nx * a) + ' ' + n(q[1] - ny * a) + 'A' + n(a) + ' ' + n(a) + ' 0 0 1 ' + n(q[0] + nx * a) + ' ' + n(q[1] + ny * a) + 'Z';
+    };
+    const shade = (q) => {
+      const dx = q[2] - q[0],
+        dy = q[3] - q[1],
+        L0 = Math.hypot(dx, dy) || 1,
+        sg = -dy / L0 >= 0 ? 1 : -1,
+        nx = (sg * -dy) / L0,
+        ny = (sg * dx) / L0,
+        a = q[4] / 2,
+        b = q[5] / 2;
+      return 'M' + n(q[0] + nx * a * 0.12) + ' ' + n(q[1] + ny * a * 0.12) + 'Q' + n(q[6] + nx * (a + b) * 0.06) + ' ' + n(q[7] + ny * (a + b) * 0.06) + ' ' + n(q[2] + nx * b * 0.12) + ' ' + n(q[3] + ny * b * 0.12) +
+        'L' + n(q[2] + nx * b * 0.92) + ' ' + n(q[3] + ny * b * 0.92) + 'Q' + n(q[6] + nx * (a + b) * 0.46) + ' ' + n(q[7] + ny * (a + b) * 0.46) + ' ' + n(q[0] + nx * a * 0.92) + ' ' + n(q[1] + ny * a * 0.92) + 'Z';
+    };
+    const wood = (list, c, sh) => {
+      const ok = list.filter((nd) => nd.seg);
+      return ok.map((nd) => P(shape(nd.seg), INK, ' stroke="' + INK + '" stroke-width="3.4"')).join('') +
+        ok.map((nd) => (nd.seg[4] < 4 ? F(shape(nd.seg), '#6fae3a') : F(shape(nd.seg), c) + F(shade(nd.seg), sh, 0.85))).join('');
+    };
+    const W0 = live[0].seg[4],
+      roots = W0 > 10 ? 'M' + n(cx - W0 * 1.3) + ' 602Q' + n(cx - W0 * 0.5) + ' 598 ' + n(cx - W0 * 0.5) + ' ' + n(600 - W0 * 1.1) + 'L' + n(cx + W0 * 0.5) + ' ' + n(600 - W0 * 1.1) + 'Q' + n(cx + W0 * 0.5) + ' 598 ' + n(cx + W0 * 1.3) + ' 602Z' : '';
+    const backW = live.filter((nd) => nd.back),
+      frontW = live.filter((nd) => !nd.back);
+    // the crown's growth: leaf clusters swelling at the branch ends
+    const cr = smooth((t - 0.3) / 0.45);
+    const ends = live.filter((nd) => nd.depth >= 2);
+    const clR = (nd) => cr * (16 + 9 * (4 - nd.depth)) * (0.55 + 0.45 * rnd()) * (0.6 + 0.4 * ease((t - nd.birth) / 0.4));
+    const area = cr > 0.02 ? ends.map((nd) => [nd.seg[2], nd.seg[3], clR(nd), nd.back]).filter((b) => b[2] > 3) : [];
+    // (a grown tree's top fills in: more clusters across the upper crown)
+    for (let k = 0, m = Math.round(clamp((cr - 0.35) / 0.65) * 18); k < m; k++) {
+      const x = ex.cx + (rnd() * 2 - 1) * ex.rx * 0.8,
+        y = ex.cy - ex.ry * (0.05 + rnd() * 0.75);
+      if (inside(x, y, 0.75)) area.push([x, y, (16 + 12 * rnd()) * cr, false]);
+    }
+    const leafAt = (x, y, a, len, c, out) => G(F('M0 0Q' + n(len * 0.45) + ' ' + n(-len * 0.36) + ' ' + n(len) + ' 0Q' + n(len * 0.45) + ' ' + n(len * 0.36) + ' 0 0Z', c) + (out ? P('M0 0Q' + n(len * 0.45) + ' ' + n(-len * 0.36) + ' ' + n(len) + ' 0Q' + n(len * 0.45) + ' ' + n(len * 0.36) + ' 0 0Z', 'none', ' stroke-width="1.4"') + L('M' + n(len * 0.12) + ' 0L' + n(len * 0.72) + ' 0', '#3f9a35', 1) : ''), ' transform="translate(' + n(x) + ' ' + n(y) + ') rotate(' + n((a * 180) / Math.PI) + ')"');
+    const cluster = (b, k, cs, out) => {
+      let m = '';
+      const cnt = Math.round(k * (4 + b[2] / 5));
+      for (let i = 0; i < cnt; i++) {
+        const a = rnd() * Math.PI * 2,
+          r = Math.sqrt(rnd()) * b[2] * 0.95;
+        m += leafAt(b[0] + Math.cos(a) * r - 10, b[1] + Math.sin(a) * r, a + (rnd() - 0.5) * 0.9, 18 + rnd() * 12, cs[i % cs.length], out);
+      }
+      return m;
+    };
+    // 1. the wood behind (darker), 2. the darker leaves behind, 3. the trunk and the wood in front, 4. the leaves
+    // along the young branches, 5. the fresh light leaves in front (with gaps), 6. a few twigs poking through
+    g += wood(backW, '#7a5536', '#5f412a');
+    g += '<g class="tleaves">' + area.map((b) => cluster(b, 1.25, ['#2f7a2a', '#3a8a32', '#33802e'], false)).join('');
+    g += (roots ? P(roots, INK, ' stroke="' + INK + '" stroke-width="4.4"') + F(roots, '#9a6a40') + F('M' + n(cx + W0 * 0.1) + ' ' + n(600 - W0 * 1.1) + 'L' + n(cx + W0 * 0.5) + ' ' + n(600 - W0 * 1.1) + 'Q' + n(cx + W0 * 0.5) + ' 598 ' + n(cx + W0 * 1.3) + ' 602L' + n(cx + W0 * 0.3) + ' 602Z', '#7a5232') : '') + wood(frontW, '#9a6a40', '#7a5232');
+    const Lf = 24 + 10 * clamp(t * 2.5),
+      bare = Math.floor(t * 4.2) - 1; // the branches up to this depth have dropped their leaves
+    let lv = '',
+      li = 0;
+    live.forEach((nd) => {
+      if (nd.depth <= bare) return;
+      const q = nd.seg,
+        cnt = Math.floor(nd.len / 26);
+      for (let k = 0; k < cnt; k++) {
+        const f = (k + 0.6) / (cnt + 0.4),
+          side = k % 2 ? 1 : -1,
+          [x, y] = along(q, f);
+        lv += '<g' + isNew(li++, seen.lobes) + '>' + leafAt(x, y, nd.dir + side * 0.95, Lf * 0.9, '#5fbf4a', true) + '</g>';
+      }
+      if (!live.some((c) => c.parent === nd && c.at === 1)) lv += '<g' + isNew(li++, seen.lobes) + '>' + leafAt(q[2], q[3], nd.dir - 0.55, Lf, '#5fbf4a', true) + leafAt(q[2], q[3], nd.dir + 0.55, Lf, '#6cc84f', true) + '</g>';
+    });
+    g += lv + area.filter((b) => !b[3]).map((b) => cluster([b[0], b[1] - b[2] * 0.15, b[2] * 0.85], 0.75, ['#5fbf4a', '#6cc84f', '#7ad366'], true)).join('') + '</g>';
+    const poke = cr > 0.3 ? frontW.filter((nd) => nd.depth === 2 || nd.depth === 3).filter((nd, j) => j % 3 === 0) : [];
+    g += poke.map((nd) => {
+      const q = nd.seg,
+        [mx, my] = along(q, 0.55);
+      return L('M' + n(mx) + ' ' + n(my) + 'Q' + n(q[6] * 0.3 + q[2] * 0.7) + ' ' + n(q[7] * 0.3 + q[3] * 0.7) + ' ' + n(q[2]) + ' ' + n(q[3]), INK, n(q[5] + 3)) + L('M' + n(mx) + ' ' + n(my) + 'Q' + n(q[6] * 0.3 + q[2] * 0.7) + ' ' + n(q[7] * 0.3 + q[3] * 0.7) + ' ' + n(q[2]) + ' ' + n(q[3]), '#9a6a40', n(q[5]));
+    }).join('');
+    // blossoms, then fruit, spread evenly over the crown (never in a bunch)
+    const spots = [],
+      want = (o.blossoms || []).length + (o.fruits || []).length;
+    if (want && area.length) {
+      const tot = area.reduce((s2, b) => s2 + b[2] * b[2], 0),
+        dmin = Math.max(17, Math.sqrt((Math.PI * tot * 0.5) / want) * 0.8);
+      for (let k = 0; k < 2500 && spots.length < want; k++) {
+        const b = area[Math.floor(rnd() * area.length)],
+          a = rnd() * Math.PI * 2,
+          r = Math.sqrt(rnd()) * b[2] * 0.75,
+          x = b[0] + Math.cos(a) * r,
+          y = b[1] + Math.sin(a) * r;
+        if (y < GY - 40 && spots.every((q) => Math.hypot(q[0] - x, q[1] - y) >= dmin)) spots.push([n(x), n(y)]);
+      }
+    }
+    const bl = o.blossoms || [];
+    bl.forEach((q, j) => {
+      const p = spots[j];
+      if (!p) return;
+      g += '<g data-act="tflower" data-n="' + q.n + '"' + isNew(j, seen.blossoms) + '>' + [0, 72, 144, 216, 288].map((a) => { const r = (a * Math.PI) / 180; return CF(n(p[0] + 3.6 * Math.cos(r)), n(p[1] + 3.6 * Math.sin(r)), 3.2, q.c); }).join('') + CF(p[0], p[1], 2.4, '#ffd23f') + '</g>';
+    });
+    const fruits = [];
+    (o.fruits || []).forEach((tp, j) => {
+      const p = spots[bl.length + j];
+      if (p) fruits.push({ x: p[0], y: p[1], t: tp });
+    });
+    g += fruits
+      .map((q, j) => '<g class="tfruit" data-act="tfruit" data-j="' + j + '" data-t="' + q.t + '" style="--dy:' + n(612 - q.y) + 'px">' + L('M' + q.x + ' ' + (q.y - 9) + 'L' + q.x + ' ' + (q.y - 4), '#6a4a2a', 1.4) + OUT(FRUIT[q.t](q.x, q.y), 1.4) + '</g>')
+      .join('');
+    // where a leaf may fall from now and then: points in the crown (none on a young plant)
+    const drop = area.slice(0, 40).map((b) => [n(b[0]), n(b[1])]);
+    return { svg: ground + '<g class="tsway">' + OUT(g, 2) + '</g>', fruits, lobes: li, drop };
   }
 
   /* A campfire beside each memorized sūrah on the map (viewBox 0 0 60 60, standing on y=54). It burns down over
@@ -3117,9 +3315,12 @@
     elder,
     stranger,
     campfire,
-    plant,
     garland,
     festSky,
+    tree,
+    fruitIcon,
+    FRUIT_TYPES,
+    TREE_STAGE,
     horizon,
     splash,
   };
