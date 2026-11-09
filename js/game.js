@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.9.1';
+  const VERSION = '2.9.2';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -3585,7 +3585,7 @@
         [5, '5'],
       ])}</div>
       ${tg('stranger', 'The Stranger', 'When a world is fully memorized, he tries its elements on your explorer, and finds they can’t be hurt')}
-      ${tg('teacher', 'Your Teacher', 'Your Teacher walks the map and, now and then, asks 3 questions from a memorized sūrah')}
+      ${tg('teacher', 'Your Teacher', 'Your Teacher walks the map and, now and then, tests a memorized sūrah: 3 to 7 questions, by its length')}
       ${tg('pzrtl', 'Puzzle from right to left', 'The Picture Puzzle fills from the right, like reading Arabic. Off: left to right, row by row')}
     </div>
     ${offlineSheet()}
@@ -4605,19 +4605,15 @@
         b.classList.add('hop');
         break;
       case 'tflower':
-        sfx.tap();
-        toast(`🌸 ${BYN[b.dataset.n].name}`);
+        flowerTag(b, b.dataset.n);
         break;
-      case 'tbud': {
+      case 'tbud':
+        // a gentle nudge (its zzz drift up, if it's asleep)
         sfx.tap();
-        const id = b.dataset.id;
         b.classList.remove('hop');
         void b.getBoundingClientRect();
         b.classList.add('hop');
-        if (treeHungry && treeHungry.id === id) toast(`Your ${itemName(id)} would love ${FRUIT_NAME[treeHungry.want]}! Tap one.`);
-        else if (b.classList.contains('m-asleep')) toast(`Shh… your ${itemName(id)} is asleep 💤`);
         break;
-      }
       case 'riddlego':
         startRiddle();
         break;
@@ -5956,12 +5952,11 @@
      Drawn like a picture-book tree (`ART.tree`): a dark crown behind, the trunk and its limbs, lighter lobes in front
      (more as more āyāt are learned), fruit spread evenly over it, and the flowers in the grass around it.
      Fruit comes in the order of FRUIT_TYPES (dates, figs, olives, pomegranates, grapes, apples, oranges); two berry
-     bushes give food from the start. Birds come once there's fruit, and a rabbit. Every buddy (pet) owned lives around
+     bushes give food from the start. Every buddy (pet) owned lives around
      it: awake, playing or asleep, never sad; one at a time gets hungry for a fruit (tap that fruit: it falls and the
      buddy eats it, fed for the day); the next only 30 seconds after one is fed (`TREE_NEXT`). Nothing happens if they
      aren't fed. */
   const TREE_NEXT = 30000;
-  const FRUIT_NAME = { date: 'a date', fig: 'a fig', olive: 'an olive', pomegranate: 'a pomegranate', grape: 'some grapes', apple: 'an apple', orange: 'an orange', berry: 'a berry' };
   const FLOWER_C = ['#ff8fcf', '#ff6b6b', '#ffb23d', '#c48bff', '#7fd8ff', '#ffffff', '#ff5d8f', '#9df07a'];
   // practising a sūrah grows the tree once a day
   function growTree(prof, s) {
@@ -5974,14 +5969,15 @@
   // how grown my tree is (0-1), and what's on it: a sapling, a plant, blossoms (one a sūrah memorized), then fruit,
   // more and more kinds as it grows (ART.TREE_STAGE)
   function treeInfo(prof) {
+    let mem = S.filter((s) => surahDone(s, prof));
     const a = achievements(prof),
-      mem = S.filter((s) => surahDone(s, prof)),
       gold = S.filter((s) => surahStars(s, prof) >= surahMax(s)).length,
       G = prof.grow[0],
       T = ART.TREE_STAGE;
     // āyāt learned 30%, green sūrahs 30%, golden sūrahs 40% (every one golden: 100%), and practice on top (up to 15%,
     // so it grows sooner, never past 100%)
-    const size = Math.min(1, (0.3 * a.ayat) / a.allAyat + (0.3 * mem.length) / S.length + (0.4 * gold) / S.length + 0.15 * Math.min(1, G / 200));
+    let size = Math.min(1, (0.3 * a.ayat) / a.allAyat + (0.3 * mem.length) / S.length + (0.4 * gold) / S.length + 0.15 * Math.min(1, G / 200));
+    if (window.__treeSize != null) (size = window.__treeSize), (mem = S.slice(0, Math.round(size * S.length))), (a.ayat = Math.round(size * a.allAyat)); // (tests only: any size)
     const ripe = size < T.fruit ? 0 : (size - T.fruit) / (1 - T.fruit),
       nf = size < T.fruit ? 0 : Math.round(2 + ripe * 30),
       kinds = ART.FRUIT_TYPES.slice(0, 1 + Math.floor(ripe * (ART.FRUIT_TYPES.length - 0.01))),
@@ -5991,8 +5987,8 @@
       leaves: a.ayat,
       memorized: mem.length,
       blossoms: mem.slice(0, nb).map((s) => ({ n: s.n, c: FLOWER_C[S.indexOf(s) % FLOWER_C.length] })),
+      flowers: mem.map((s) => ({ n: s.n, c: FLOWER_C[S.indexOf(s) % FLOWER_C.length] })), // (one in the grass for each)
       fruits: Array.from({ length: nf }, (_, j) => kinds[j % kinds.length]),
-      rabbit: nf >= 3,
     };
   }
   // the buddies around the tree (animals get hungry; rides just park), in a steady order
@@ -6000,8 +5996,9 @@
   const hungryOnes = (prof) => buddiesOf(prof).filter(animalBuddy);
   // now and then (very rarely) a leaf drifts down from the crown
   let treeDrop = [];
-  setInterval(() => {
-    if (st.view !== 'tree' || document.hidden || reduceMotion || !treeDrop.length || Math.random() > 0.12) return;
+  setInterval(() => !document.hidden && Math.random() < 0.12 && dropLeaf(), 2000);
+  function dropLeaf() {
+    if (st.view !== 'tree' || reduceMotion || !treeDrop.length) return;
     const svg = document.querySelector('.tsvg'),
       p = treeDrop[(Math.random() * treeDrop.length) | 0];
     if (!svg) return;
@@ -6011,7 +6008,19 @@
     g.innerHTML = `<path d="M0 0Q9 -7 18 0Q9 7 0 0Z" fill="${['#5fbf4a', '#8ad96f', '#c9b44a'][(Math.random() * 3) | 0]}" stroke="#2b2340" stroke-width="1.4"/>`;
     svg.appendChild(g);
     setTimeout(() => g.remove(), 7000);
-  }, 2000);
+  }
+  // now and then a gust: the tree bends a little further with the wind, and a leaf or two comes down
+  setInterval(() => {
+    if (st.view !== 'tree' || document.hidden || reduceMotion || Math.random() > 0.35) return;
+    const sw = document.querySelector('.tsvg .tsway');
+    if (!sw) return;
+    sw.classList.remove('gust');
+    void sw.getBoundingClientRect();
+    sw.classList.add('gust');
+    setTimeout(() => sw.classList.remove('gust'), 4200);
+    setTimeout(dropLeaf, 900);
+    if (Math.random() < 0.6) setTimeout(dropLeaf, 1500);
+  }, 20000);
   // and now and then a squirrel scampers across the ground under a fruiting tree, dropping a fruit on its way (a
   // hungry buddy may eat it)
   setInterval(() => {
@@ -6046,13 +6055,14 @@
     for (const ch of str) h = (Math.imul(h, 31) + ch.charCodeAt(0)) >>> 0;
     return h;
   };
-  // who's hungry now: the next one not fed today, at most one at a time, 30 seconds after the last was fed
+  // who's hungry now: the next one not fed today (if it's among those around the tree), one at a time, 30 seconds
+  // after the last was fed
   function pickHungry(prof) {
     clearTimeout(treeT);
     treeHungry = null;
     const fed = prof.buddy[0] === today() ? prof.buddy[1] : 0,
       id = hungryOnes(prof)[fed];
-    if (!id) return;
+    if (!id || !(st.buds || []).includes(id)) return;
     const wait = treeFedAt + TREE_NEXT - Date.now();
     if (wait > 0) {
       treeT = setTimeout(() => st.view === 'tree' && (pickHungry(P()), render()), wait + 50);
@@ -6061,6 +6071,24 @@
     const kinds = [...new Set(treeInfo(prof).fruits)]; // (only what's growing now: none yet, no one's hungry)
     if (!kinds.length) return;
     treeHungry = { id, want: kinds[seedOf(id + today()) % kinds.length] };
+  }
+  // who's around the tree this visit (more on bigger screens; the one due to be hungry first, the others taking turns)
+  // the ground in view, in the picture's units (the whole picture fits the screen; the sky and ground go on beyond it)
+  function treeView() {
+    const W = innerWidth,
+      H = innerHeight,
+      k = Math.min(W / 400, H / 900),
+      vw = W / k;
+    return { x0: 200 - vw / 2, x1: 200 + vw / 2 };
+  }
+  const budMax = () => (innerWidth < 600 ? 6 : 10); // (up to six on a phone, ten on a bigger screen)
+  function pickBuds(prof) {
+    const n = budMax(),
+      fed = prof.buddy[0] === today() ? prof.buddy[1] : 0,
+      next = hungryOnes(prof)[fed],
+      turn = Math.floor(Date.now() / 120000),
+      others = buddiesOf(prof).filter((id) => id !== next).sort((p, q) => seedOf(p + turn) - seedOf(q + turn));
+    return [...(next ? [next] : []), ...others].slice(0, n);
   }
   function openTree() {
     sfx.tap();
@@ -6072,44 +6100,140 @@
     const now = treeInfo(prof),
       drawn = ART.tree(Object.assign({ seed: seedOf(prof.id) }, now));
     try {
-      localStorage.setItem('lhq_tree_' + prof.id, JSON.stringify({ lobes: drawn.lobes, blossoms: now.blossoms.length }));
+      localStorage.setItem('lhq_tree_' + prof.id, JSON.stringify({ lobes: drawn.lobes, blossoms: now.blossoms.length, flowers: now.flowers.length }));
     } catch (e) {}
+    go('tree', { seen: seen || {}, buds: pickBuds(prof), budSeed: Date.now() % 100000 });
     pickHungry(prof);
-    go('tree', { seen: seen || {} });
+    render();
   }
-  // a buddy on the ground: awake, playing or asleep (by the time of day and a little chance), or hungry
-  function treeBuddy(prof, id, j) {
-    const xx = [96, 304, 140, 262][j % 4],
-      y = 612,
-      size = 54;
+  // where each sits: two rows on the ground, a little in front of each other (the front row a little bigger)
+  function budSpot(j, n) {
+    const v = treeView(),
+      lo = Math.max(v.x0, -300) + 66,
+      hi = Math.min(v.x1, 700) - 66,
+      // (in a line across the ground with a gap at the trunk, every other one a step back, so they overlap just a little)
+      gapL = 160,
+      gapR = 240,
+      span = gapL - lo + (hi - gapR),
+      d = n > 1 ? (j / (n - 1)) * span : span * 0.25,
+      x = d <= gapL - lo ? lo + d : gapR + (d - (gapL - lo)),
+      // (not in neat rows: each its own little shift, depth and size, the same for the whole visit)
+      r = (k2) => (seedOf(j + ':' + k2 + ':' + (st.budSeed || 0)) % 1000) / 1000,
+      row = r('row') < 0.5 ? 1 : 0,
+      jx = (r('x') - 0.5) * Math.min(30, span / Math.max(1, n) * 0.6),
+      y = (row ? 606 : 634) + (r('y') - 0.5) * 12;
+    return { x: Math.round(Math.max(lo, Math.min(hi, x + jx))), y: Math.round(y), size: Math.round((row ? 46 : 54) + (r('s') - 0.5) * 10) };
+  }
+  // now and then one buddy wanders off the screen and another walks in (when there are more than fit)
+  setInterval(() => {
+    if (st.view !== 'tree' || document.hidden || reduceMotion || Math.random() > 0.5) return;
+    const prof = P(),
+      shown = st.buds || [],
+      away = buddiesOf(prof).filter((id) => !shown.includes(id));
+    if (!away.length || document.querySelector('.tbud.leave')) return;
+    const j = shown.findIndex((id, i) => i === ((Math.random() * shown.length) | 0) && !(treeHungry && treeHungry.id === id));
+    const el = j >= 0 && document.querySelector(`.tbud[data-id="${shown[j]}"]`);
+    if (!el || el.classList.contains('hid')) return;
+    const v = treeView(),
+      x = +el.dataset.x,
+      out = (x < 200 ? v.x0 - 60 : v.x1 + 60) - x;
+    el.style.setProperty('--out', out + 'px');
+    el.classList.add('leave');
+    setTimeout(() => {
+      if (st.view !== 'tree' || !el.isConnected) return;
+      const nu = away[(Math.random() * away.length) | 0];
+      shown[j] = nu;
+      const tmp = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      tmp.innerHTML = treeBuddy(prof, nu, budSpots(shown.length, treeInfo(prof).size, shown)[j]);
+      const g = tmp.firstElementChild;
+      g.style.setProperty('--out', out + 'px');
+      g.classList.add('enter');
+      el.replaceWith(g);
+      setTimeout(() => g.classList.remove('enter'), 3500);
+    }, 3500);
+  }, 15000);
+  // where all of them sit: one whose spot falls on the big or the tall bush hides in it (one a bush; its head peeks
+  // out over the leaves, or a flier perches on top; never the turtle, green in the green), another there steps out
+  // in front, to the side
+  const FLIER = /^(bee|butterfly|bird|eagle|ladybug)-/;
+  function budSpots(n, size, ids = []) {
+    const B = ART.treeBushes(size), // (the bushes grow with the tree)
+      v = treeView(),
+      lo = Math.max(v.x0, -300) + 58,
+      hi = Math.min(v.x1, 700) - 58,
+      inTop = {}, // bushes with a buddy hiding in them
+      atSide = {}; // 'bush:side' with a buddy peeking round it
+    const near = (sp, b) => b.w > 0 && Math.abs(sp.x - b.x) < b.w / 2 + sp.size * 0.4; // (a bush not grown yet is not there)
+    // a buddy at a bush: in it (its head over the top), else peeking round one of its sides (partly behind it, on
+    // the same ground), else simply in front of it (nearer to you)
+    const settle = (sp, j) => {
+      B.forEach((b, i) => {
+        if (sp.at != null || !near(sp, b)) return;
+        if (b.hide && !inTop[i] && ids[j] !== 'turtle-buddy') {
+          inTop[i] = true;
+          return Object.assign(sp, { x: b.x + ((j * 7) % 9) - 4, y: Math.round(b.top + sp.size * (FLIER.test(ids[j] || '') ? 0.12 : 0.5)), at: i });
+        }
+        const side = sp.x < b.x ? -1 : 1,
+          sides = [side, -side];
+        for (const sd of sides)
+          if (!atSide[i + ':' + sd] && sp.y < 625) {
+            atSide[i + ':' + sd] = true;
+            return Object.assign(sp, { x: Math.round(b.x + sd * (b.w / 2 + sp.size * 0.12)), y: 612, at: i });
+          }
+        sp.y = Math.max(sp.y, 638); // (in front of it)
+      });
+    };
+    const sps = Array.from({ length: n }, (_, j) => budSpot(j, n));
+    sps.forEach(settle);
+    // (the others kept a little apart and on the screen; one that ends up at a bush stands in front of it)
+    const open = sps.filter((sp) => sp.at == null).sort((p, q) => p.x - q.x);
+    for (let pass = 0; pass < 3; pass++)
+      open.forEach((sp, i) => {
+        sp.x = Math.max(lo, Math.min(hi, sp.x));
+        const nx = open[i + 1];
+        if (nx && nx.x - sp.x < 46) nx.x = Math.min(hi, sp.x + 46);
+      });
+    open.forEach((sp) => B.some((b) => near(sp, b)) && (sp.y = Math.max(sp.y, 638)));
+    // (nor on the tree's roots: one there stands in front of them, nearer to you)
+    const foot = ART.treeFoot(size);
+    open.forEach((sp) => Math.abs(sp.x - 200) < foot + sp.size * 0.45 && (sp.y = Math.max(sp.y, 638)));
+    return sps;
+  }
+  // a buddy on the ground: awake (shuffling a little), playing or asleep, or hungry (a bubble shows what it wants);
+  // rides never dance about
+  function treeBuddy(prof, id, sp) {
+    const { x: xx, y, size } = sp;
     const hungry = treeHungry && treeHungry.id === id,
-      mood = hungry ? 'hungry' : isNight() || seedOf(id + Math.floor(Date.now() / 600000)) % 5 === 0 ? 'asleep' : seedOf(id + 'p' + Math.floor(Date.now() / 600000)) % 3 === 0 ? 'play' : 'awake';
+      mood = hungry ? 'hungry' : isNight() || seedOf(id + Math.floor(Date.now() / 600000)) % 5 === 0 ? 'asleep' : animalBuddy(id) && seedOf(id + 'p' + Math.floor(Date.now() / 600000)) % 3 === 0 ? 'play' : 'awake';
     const pic = ART.item(id).replace('<svg ', `<svg x="${xx - size / 2}" y="${y - size + 6}" width="${size}" height="${size}" `);
     const bubble = hungry
       ? `<g class="tb-want"><ellipse cx="${xx + 22}" cy="${y - size - 6}" rx="15" ry="13" fill="#fff" stroke="#2b2340" stroke-width="2"/><circle cx="${xx + 10}" cy="${y - size + 8}" r="3" fill="#fff" stroke="#2b2340" stroke-width="1.6"/>${ART.fruitIcon(treeHungry.want).replace('<svg ', `<svg x="${xx + 12}" y="${y - size - 17}" width="20" height="22" `)}</g>`
       : mood === 'asleep'
-        ? `<text class="tb-zz" x="${xx + 18}" y="${y - size + 6}" font-size="16">💤</text>`
+        ? `<text class="tb-zz" x="${xx + 16}" y="${y - size + 8}" font-size="14">💤</text>`
         : '';
-    return `<g class="tbud m-${mood}" data-act="tbud" data-id="${id}" data-x="${xx}" style="--x:${xx}px;--y:${y}px"><g class="tbud-in">${pic}</g>${bubble}</g>`;
+    const d = (seedOf(id) % 40) / 10;
+    return `<g class="tbud m-${mood}${sp.at != null ? ' hid' : ''}" data-act="tbud" data-id="${id}" data-x="${xx}"${sp.at != null ? ` data-bush="${sp.at}"` : ''}><g class="tbud-in"><g class="tbud-w" style="animation-delay:-${d}s">${pic}</g></g>${bubble}</g>`;
   }
   V.tree = () => {
     const prof = P(),
       info = treeInfo(prof),
-      t = ART.tree({ seed: seedOf(prof.id), size: info.size, leaves: info.leaves, blossoms: info.blossoms, fruits: info.fruits, seen: st.seen });
+      night = isNight(),
+      t = ART.tree({ seed: seedOf(prof.id), size: info.size, leaves: info.leaves, blossoms: info.blossoms, flowers: info.flowers, fruits: info.fruits, seen: st.seen, night });
     treeDrop = t.drop;
-    // (four at most around the tree: the hungry one, and the others taking turns, so it never gets crowded)
-    const turn = Math.floor(Date.now() / 120000),
-      others = buddiesOf(prof).filter((id) => !treeHungry || id !== treeHungry.id).sort((p, q) => seedOf(p + turn) - seedOf(q + turn)),
-      buds = [...(treeHungry ? [treeHungry.id] : []), ...others].slice(0, 4),
-      animals = info.rabbit ? `<g class="tanimal" data-act="tanimal">${(ART.props['meadow-rabbit'] || '').replace('<svg ', '<svg x="300" y="600" width="44" height="44" ')}</g>` : '';
-    const sub = `🍃 ${info.leaves} āyāt · 🌸 ${info.memorized} sūrahs · 🍎 ${info.fruits.length}`;
-    return `<div class="screen treescr${isNight() ? ' night' : ''}">
+    const buds = st.buds || [];
+    // (the back row first, so the front row sits a little in front of it; a bush with a buddy in it drawn again
+    // over it, so only its head peeks out)
+    const spots = budSpots(buds.length, info.size, buds),
+      order = buds.map((id, j) => j).sort((p, q) => spots[p].y - spots[q].y),
+      hide = [...new Set(spots.filter((sp) => sp.at != null).map((sp) => sp.at))];
+    const sub = `🍃 ${info.leaves} āyāt · 🌸 ${info.memorized} sūrahs`;
+    return `<div class="screen treescr${night ? ' night' : ''}">
     ${bar('My Tree', sub, 'map')}
-    <div class="tstage"><svg class="tsvg" viewBox="0 0 400 700" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">${t.svg}${animals}${buds.map((id, j) => treeBuddy(prof, id, j)).join('')}</svg></div>
-    <p class="tnote">It grows with every āyah and sūrah you learn, and bears fruit as you practise.</p>
+    <p class="tnote">${info.size >= 0.999 ? 'MāshāAllāh! Your tree is fully grown, with a flower for every sūrah.' : 'It grows as you learn and bears fruit as you practise. A flower in the grass for each sūrah.'}</p>
+    <div class="tstage"><svg class="tsvg" viewBox="0 -200 400 900" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg">${t.svg}${order.filter((j) => spots[j].at != null).map((j) => treeBuddy(prof, buds[j], spots[j])).join('')}<g class="tbushfront" pointer-events="none">${hide.map((i) => ART.treeBush(i, info.size)).join('')}</g>${order.filter((j) => spots[j].at == null).map((j) => ({ y: spots[j].y, svg: treeBuddy(prof, buds[j], spots[j]) })).concat(t.tufts).sort((p, q) => p.y - q.y).map((e) => e.svg).join('')}</svg></div>
   </div>`;
   };
-  // tap a fruit: it falls; the hungry buddy wanting it runs over and eats it
+  // tap a fruit: it falls; the hungry buddy wanting it walks over, eats it, and walks back
   function treeFruit(el) {
     if (el.classList.contains('fall')) return;
     sfx.tap();
@@ -6132,19 +6256,33 @@
         const fed = prof.buddy[0] === today() ? prof.buddy[1] : 0;
         prof.buddy = [today(), fed + 1, prof.buddy[2] + 1];
         treeFedAt = Date.now();
-        const id = treeHungry.id;
         treeHungry = null;
         save();
         sfx.chime();
         burstAt(bud, 10, ['💛', '✨', '😋']);
-        toast(`😋 Yum! Your ${itemName(id)} is full and happy`);
+        bud.classList.add('fed');
+        bud.classList.remove('m-hungry'); // (no longer hungry: its bubble goes at once)
+        setTimeout(() => bud.classList.remove('eat'), 700); // (back to its spot, smoothly)
         setTimeout(() => {
           if (st.view !== 'tree') return;
           pickHungry(P());
           render();
-        }, 1600);
+        }, 1700);
       }, 900);
     }, 650);
+  }
+  // tap a blossom: its sūrah's name pops out of it, with a few petals
+  function flowerTag(el, n) {
+    sfx.tap();
+    const r = el.getBoundingClientRect(),
+      tag = document.createElement('div');
+    tag.className = 'tftag';
+    tag.textContent = '🌸 ' + BYN[n].name;
+    tag.style.left = r.left + r.width / 2 + 'px';
+    tag.style.top = r.top + 'px';
+    document.body.appendChild(tag);
+    burstAt(el, 6, ['🌸', '✨']);
+    setTimeout(() => tag.remove(), 2600);
   }
 
   /* ================= THE TEACHER'S RIDDLES (v2.9.0; v2.9.1: seven a day) =================
@@ -6787,7 +6925,7 @@
 
   /* ================= THE WISE ELDER =================
      Once the game has been open 7 minutes, every 7 minutes there is a 1 in 3 chance that, on the map, the Wise
-     Elder (a kind old man who knows the whole Qur'an by heart) joins the explorer on the path and asks 3 questions from one memorized sūrah: what comes after an āyah, or
+     Elder (a kind old man who knows the whole Qur'an by heart) joins the explorer on the path and asks 3 to 7 questions (by its length) from one memorized sūrah: what comes after an āyah, or
      finish an āyah. No Listen, no hints: a grown-up taps "Said it!" or "Not quite". He is glad at a right answer and comforts after a miss.
      Every miss costs something. The world sends what it has (two kinds per world, shown on its sign: a rolling rock, rain,
      acorns, wind, sand, vines), and what the explorer wears decides what happens:

@@ -2307,11 +2307,124 @@
      explorer's progress) is eased into growth g = size^0.6, so the early steps show. TREE_STAGE: the sizes where
      blossoms and fruit begin. */
   const TREE_STAGE = { flowers: 0.2, fruit: 0.3 };
+  /* the sky behind my tree (well past the sides, so a screen of any shape is filled): by day a sun, a few small birds
+     flying (some far off) and pale clouds drifting slowly; at night a moon, tiny stars (some dim, some bright, a few
+     twinkling) and darker clouds. Nothing busy. */
+  function treeSky(night, sd) {
+    let seed = (sd >>> 0) + 99 || 99;
+    const rnd = () => (seed = (Math.imul(seed, 1103515245) + 12345) >>> 0) / 4294967296;
+    const gid = uid('tsky'),
+      cs = night ? ['#141a3f', '#262d68', '#3d4a72'] : ['#8fd0ff', '#cdeeff', '#f2fbea'];
+    let m = '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + cs[0] + '"/><stop offset="0.6" stop-color="' + cs[1] + '"/><stop offset="1" stop-color="' + cs[2] + '"/></linearGradient></defs>' +
+      '<rect x="-800" y="-900" width="2000" height="1520" fill="url(#' + gid + ')"/>';
+    if (night) {
+      for (let i = 0; i < 46; i++) {
+        const x = n(-120 + rnd() * 640),
+          y = n(-200 + rnd() * 560),
+          r = n(0.6 + rnd() * 1.2),
+          o = n(0.35 + rnd() * 0.65);
+        m += '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="#fff8d8" opacity="' + o + '"' + (i % 5 === 0 ? ' class="ttwk" style="animation-delay:-' + n(rnd() * 4) + 's"' : '') + '/>';
+      }
+      m += '<g opacity="0.95">' + EF(336, -64, 30, 30, '#fff3b0', 0.12) + F(crescent(336, -64, 20, 20, -11, 6), '#fff3b0') + '</g>';
+    } else {
+      // (the sun's glow fades softly out into the sky)
+      const sg = uid('tsun');
+      m += '<defs><radialGradient id="' + sg + '"><stop offset="0.3" stop-color="#fff6c0" stop-opacity="0.95"/><stop offset="0.6" stop-color="#fff6c0" stop-opacity="0.45"/><stop offset="1" stop-color="#fff6c0" stop-opacity="0"/></radialGradient></defs>' +
+        CF(338, -64, 60, 'url(#' + sg + ')') + CF(338, -64, 22, '#ffe066');
+      // a few birds, far and near, flapping slowly across
+      [[0.5, 40, 34, 0], [0.7, 160, 46, 14], [0.4, -40, 40, 27]].forEach(([k, y, d, dl]) => {
+        m += '<g class="tflyb" style="--y:' + y + 'px;animation-duration:' + d + 's;animation-delay:-' + dl + 's"><g transform="scale(' + k + ')"><path class="tflap" d="M-10 0Q-5 -6 0 0Q5 -6 10 0" fill="none" stroke="#2b2340" stroke-width="2.2" stroke-linecap="round"/></g></g>';
+      });
+    }
+    // clouds drifting slowly (darker at night)
+    [[0.9, -60, 150, 0], [0.6, 160, 190, 70], [0.75, -150, 170, 120]].forEach(([k, y, d, dl]) => {
+      m += '<g class="tcloud" style="--y:' + y + 'px;animation-duration:' + d + 's;animation-delay:-' + dl + 's"><g transform="scale(' + k + ')">' + F(cloudD(0, 0, 120, 34, 5), night ? '#4a5585' : '#ffffff', night ? 0.55 : 0.75) + '</g></g>';
+    });
+    return m;
+  }
+  // three bushes, each its own: a big round one with pink flowers, a tall leafy one, a little low one with white
+  // flowers. A buddy may hide in the big or the tall one (`hide`: drawn again over it, only its head showing).
+  // how far the trunk's foot (its roots, or the sapling's mound) spreads either side of the middle, by the tree's size
+  function treeFoot(size) {
+    const t = Math.pow(Math.max(0, Math.min(1, size)), 0.7),
+      W0 = 48 * (0.04 + 0.96 * Math.pow(Math.min(1, t / 0.95), 1.9)),
+      hw = 36 - 64 * t;
+    return Math.round(Math.max(W0 > 10 ? W0 * 1.3 : W0 / 2, hw > W0 * 0.8 + 3 ? hw : 0) + 4);
+  }
+  // far off behind the garden, faint in the haze: soft mountains, green hills one behind another, a river winding
+  // down towards the garden with reeds along it, rows of round trees and grassy clumps: a wide world beyond (dim blue
+  // at night)
+  function treeFar(night) {
+    const c = night
+      ? { haze: '#36406c', mt: '#2a3366', cap: '#3d4878', h1: '#2c3664', h2: '#2f3d68', tr: '#243258', gr: '#2b3d62', riv: ['#38467a', '#3d5592'], glint: '#7f8fc4' }
+      : { haze: '#eef8f2', mt: '#cddcf0', cap: '#f1f6fd', h1: '#d9efdc', h2: '#bfe2c4', tr: '#8cc497', gr: '#9acfa4', riv: ['#d4eef8', '#94d0ee'], glint: '#ffffff' };
+    // (the further back, the paler: each thing fades into the haze by how far off it stands)
+    const far = (col, y) => mix(c.haze, col, 0.25 + 0.75 * Math.max(0, Math.min(1, (y - 546) / 58)));
+    const trees = (list, y0, k) => list.map((x, i) => { const r = (4 + ((i * 7) % 4)) * k, y = y0 + ((i * 5) % 4) * k; const tc = far(c.tr, y); return F('M' + n(x - 0.8 * k) + ' ' + n(y) + 'L' + n(x + 0.8 * k) + ' ' + n(y) + 'L' + n(x + 0.8 * k) + ' ' + n(y - r) + 'L' + n(x - 0.8 * k) + ' ' + n(y - r) + 'Z', tc) + CF(n(x), n(y - r - r * 0.7), n(r), tc); }).join('');
+    const grass = (list, k) => list.map(([x, y], i) => F('M' + n(x - 4 * k) + ' ' + y + 'Q' + n(x - 4 * k) + ' ' + n(y - 5 * k) + ' ' + n(x - 6 * k) + ' ' + n(y - 9 * k) + 'Q' + n(x - 1 * k) + ' ' + n(y - 5 * k) + ' ' + n(x) + ' ' + n(y - (10 + (i % 3) * 2) * k) + 'Q' + n(x + 1 * k) + ' ' + n(y - 5 * k) + ' ' + n(x + 6 * k) + ' ' + n(y - 8 * k) + 'Q' + n(x + 4 * k) + ' ' + n(y - 4 * k) + ' ' + n(x + 4 * k) + ' ' + y + 'Z', far(c.gr, y))).join('');
+    // (the river: a smooth winding ribbon, thin far off and wider as it comes nearer, its width varying a little;
+    // a soft lighter current down its middle catches the sky)
+    const smoothThrough = (pts) => pts.slice(1).map((p, i) => {
+      const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p3 = pts[Math.min(pts.length - 1, i + 2)];
+      return 'C' + n(p1[0] + (p[0] - p0[0]) / 6) + ' ' + n(p1[1] + (p[1] - p0[1]) / 6) + ' ' + n(p[0] - (p3[0] - p1[0]) / 6) + ' ' + n(p[1] - (p3[1] - p1[1]) / 6) + ' ' + n(p[0]) + ' ' + n(p[1]);
+    }).join('');
+    const ribbon = (pts, k, off) => {
+      const side = (sg) => pts.map((p, i) => {
+        const q0 = pts[Math.max(0, i - 1)], q1 = pts[Math.min(pts.length - 1, i + 1)],
+          dx = q1[0] - q0[0], dy = q1[1] - q0[1], L0 = Math.hypot(dx, dy) || 1;
+        return [p[0] + (-dy / L0) * p[2] * (off + sg * k), p[1] + (dx / L0) * p[2] * (off + sg * k)];
+      });
+      const l = side(1), r = side(-1).reverse();
+      return 'M' + n(l[0][0]) + ' ' + n(l[0][1]) + smoothThrough(l) + 'L' + n(r[0][0]) + ' ' + n(r[0][1]) + smoothThrough(r) + 'Z';
+    };
+    const rv = [[182, 549, 0.5], [164, 554, 1.2], [140, 560, 1.8], [126, 567, 2.6], [134, 574, 3], [158, 580, 3.8], [174, 587, 4.4], [164, 594, 5.6], [140, 600, 7.4], [116, 606, 9]];
+    const river = ribbon(rv, 1, 0),
+      current = ribbon(rv.slice(3), 0.22, 0.18),
+      rg = uid('triv'),
+      cg = uid('tcur');
+    return '<g class="tfar"><defs><linearGradient id="' + rg + '" gradientUnits="userSpaceOnUse" x1="0" y1="549" x2="0" y2="606"><stop offset="0" stop-color="' + c.riv[0] + '"/><stop offset="1" stop-color="' + c.riv[1] + '"/></linearGradient>' +
+      // (the light on the water fades out far off)
+      '<linearGradient id="' + cg + '" gradientUnits="userSpaceOnUse" x1="0" y1="566" x2="0" y2="606"><stop offset="0" stop-color="' + c.glint + '" stop-opacity="0"/><stop offset="1" stop-color="' + c.glint + '" stop-opacity="' + (night ? 0.3 : 0.55) + '"/></linearGradient></defs>' +
+      // mountains, far and pale, with a little snow
+      F('M-160 566L-40 520Q-30 512 -18 520L60 548L120 506Q132 496 144 506L250 566Z', c.mt, 0.9) + F('M238 566L330 524Q342 515 354 524L470 566Z', c.mt, 0.75) +
+      F('M110 513L120 506Q132 496 144 506L154 513Q146 510 140 515Q132 509 124 515Q118 510 110 513Z M-28 525L-40 520Q-30 512 -18 520L-10 525Q-16 522 -20 526Q-24 522 -28 525Z', c.cap, 0.9) +
+      F('M-800 606L-800 556Q-620 530 -440 552Q-260 522 -80 548Q40 528 150 550Q270 520 390 546Q540 518 700 548Q920 530 1200 556L1200 606Z', c.h1, 0.9) +
+      trees([-60, -44, 8, 26, 64, 214, 238, 300, 318, 336, 420, 438, 470, 560], 552, 0.8) +
+      F('M-800 606L-800 584Q-560 568 -360 582Q-180 566 -10 580Q110 570 220 584Q370 568 500 582Q760 568 1200 586L1200 606Z', c.h2, 0.9) +
+      F(river, 'url(#' + rg + ')') + F(current, 'url(#' + cg + ')') +
+      grass([[112, 600], [96, 604], [186, 591], [196, 596], [160, 582], [118, 570], [138, 560]], 0.7) +
+      grass([[-40, 590], [20, 592], [60, 588], [250, 592], [290, 590], [330, 594], [380, 590], [440, 592]], 0.9) +
+      trees([-120, -96, -30, 40, 58, 92, 232, 262, 372, 398, 452, 500], 590, 1) + '</g>';
+  }
+  // the garden's three bushes (each its own shape), growing with the tree: the big flowering one, a tall leafy one
+  // with a smaller clump at its side, and a little one in flower. x, w, top: where a buddy can hide in it or peek round
+  function treeBushes(size) {
+    const grow = (s0) => (size < s0 ? 0 : 0.3 + 0.7 * Math.min(1, (size - s0) / 0.7)), // (none at first; each comes up in its turn)
+      bud = (x, y, r, c) => CF(n(x), n(y), r, c) + CF(n(x), n(y), r * 0.4, '#ffd23f');
+    let k = grow(0.06);
+    const big = (() => {
+      const w = 84 * k, h = 42 * k;
+      return { x: 56, w, top: n(606 - h), hide: k > 0.7, d: S(cloudD(56, 606, w, h, 6), '#4fae3e', 'M' + n(56 + w * 0.29) + ' ' + n(606 - h * 0.8) + 'Q' + n(56 + w * 0.52) + ' ' + n(606 - h * 0.6) + ' ' + n(56 + w * 0.48) + ' 604L' + n(56 + w * 0.33) + ' 604Q' + n(56 + w * 0.4) + ' ' + n(606 - h * 0.48) + ' ' + n(56 + w * 0.29) + ' ' + n(606 - h * 0.8) + 'Z') +
+        [[-0.26, 0.52], [0.02, 0.76], [0.26, 0.43], [-0.12, 0.24]].map((q) => bud(56 + q[0] * w, 606 - q[1] * h, 3.4 * Math.sqrt(k), '#ff8fcf')).join('') };
+    })();
+    k = grow(0.2);
+    const tall = (() => {
+      const w = 54 * k, h = 46 * k, sw = 34 * k, sh = 24 * k;
+      return { x: 358, w: w + sw * 0.5, top: n(608 - h), hide: k > 0.7, d: S(cloudD(358, 608, w, h, 7), '#3f9a35', 'M' + n(358 + w * 0.2) + ' ' + n(608 - h * 0.85) + 'Q' + n(358 + w * 0.48) + ' ' + n(608 - h * 0.5) + ' ' + n(358 + w * 0.42) + ' 606L' + n(358 + w * 0.26) + ' 606Q' + n(358 + w * 0.34) + ' ' + n(608 - h * 0.5) + ' ' + n(358 + w * 0.2) + ' ' + n(608 - h * 0.85) + 'Z') +
+        S(cloudD(n(358 - w * 0.45), 610, sw, sh, 4), '#4fae3e') + [[0.1, 0.62], [-0.18, 0.4], [0.24, 0.28]].map((q) => CF(n(358 + q[0] * w), n(608 - q[1] * h), 2.4 * Math.sqrt(k), '#e8434f')).join('') };
+    })();
+    k = grow(0.12);
+    const small = (() => {
+      const w = 40 * k, h = 18 * k;
+      return { x: 290, w, top: n(608 - h), hide: false, d: S(cloudD(290, 608, w, h, 4), '#6cc84f') + [[-0.25, 0.45], [0.1, 0.68], [0.3, 0.33]].map((q) => bud(290 + q[0] * w, 608 - q[1] * h, 2.6 * Math.sqrt(k), '#ffffff')).join('') };
+    })();
+    return [big, tall, small].map((b) => (b.w ? b : { x: b.x, w: 0, top: 606, hide: false, d: '' }));
+  }
   function tree(o) {
     let seed = o.seed >>> 0 || 7;
     const rnd = () => (seed = (Math.imul(seed, 1103515245) + 12345) >>> 0) / 4294967296;
     const size = Math.max(0, Math.min(1, o.size || 0)),
-      t = Math.pow(size, 0.6),
+      t = Math.pow(size, 0.7),
       seen = o.seen || {},
       GY = 600,
       cx = 200;
@@ -2324,6 +2437,8 @@
     const nodes = [];
     const make = (parent, at, ang, lenF, wF, depth, birth, back) => {
       // (the trunk nearly straight, a leader a little bent, the side branches each their own bend, some a lot)
+      // (a side branch never points straight up: it leans out, away from the middle)
+      if (depth >= 1 && at < 1 && Math.abs(ang + Math.PI / 2) < 0.38) ang = -Math.PI / 2 + (ang + Math.PI / 2 >= 0 ? 0.38 : -0.38) + (rnd() - 0.5) * 0.1;
       const nd = { parent, at, ang, lenF, wF, depth, birth, back, bend: (rnd() - 0.5) * (depth === 0 ? 0.06 : at === 1 ? 0.16 : 0.25 + rnd() * 0.6) };
       nodes.push(nd);
       if (depth >= 4) return;
@@ -2336,11 +2451,11 @@
         make(nd, a2, ang + side * (0.55 + rnd() * 0.5), lenF * (0.42 + rnd() * 0.3), wF * 0.5, depth + 1, birth + 0.06 + a2 * 0.14 + depth * 0.03 + rnd() * 0.05, back || (depth >= 1 && rnd() < 0.35));
       }
     };
-    make(null, 0, -Math.PI / 2 + (rnd() - 0.5) * 0.03, 180, 44, 0, 0, false);
+    make(null, 0, -Math.PI / 2 + (rnd() - 0.5) * 0.03, 236, 48, 0, 0, false); // (fully grown its top is level with the sun and moon)
     // the crown's rough outline at this growth: a branch reaching past it stops short, each at its own point inside,
     // so the crown is round and uneven, never cut straight
-    const Ht = 40 + 420 * ease(t * 1.05),
-      ex = { cx: cx, cy: GY - Ht * 0.6, rx: Math.min(168, 30 + 150 * t), ry: Ht * 0.44 };
+    const Ht = 40 + 625 * t,
+      ex = { cx: cx, cy: GY - Ht * 0.6, rx: Math.min(186, 30 + 170 * t), ry: Ht * 0.44 };
     const inside = (x, y, lim) => Math.pow((x - ex.cx) / ex.rx, 2) + Math.pow((y - ex.cy) / ex.ry, 2) <= lim;
     // a point along a branch: a gentle curve from its foot to its tip
     const along = (q, f) => {
@@ -2348,14 +2463,19 @@
       return [u * u * q[0] + 2 * u * f * q[6] + f * f * q[2], u * u * q[1] + 2 * u * f * q[7] + f * f * q[3]];
     };
     nodes.forEach((nd) => {
-      const p = (t - nd.birth) / 0.5;
+      // (each part grows on right up to a full tree; a sapling's side shoots come early, so its leaves spread out)
+      const bb = nd.at < 1 && nd.depth ? nd.birth * (nd.depth === 1 ? 0.5 : nd.depth === 2 ? 0.75 : 1) : nd.birth,
+        p = (t - bb) / Math.max(0.35, 1 - bb);
       if ((nd.depth && p <= 0) || (nd.parent && !nd.parent.seg)) return (nd.seg = null); // (the stem is always there)
-      let len = (nd.depth ? 6 : 14) + (nd.lenF - (nd.depth ? 6 : 14)) * ease(p);
-      const w1 = Math.max(nd.depth ? 1.4 : 2.6, nd.wF * (0.06 + 0.94 * Math.pow(clamp((t - nd.birth) / 0.95), 1.8))); // (slim for long, thickening as it matures)
+      // (a seedling is only leaves from the ground: its stem shows from about 1.5% and rises from there)
+      let len = nd.depth ? 6 + (nd.lenF - 6) * ease(p * 1.25) : nd.lenF * Math.pow(clamp((t - 0.053) / 0.947), 0.72); // (a sapling tall and slim, its shoots out early)
+      let w1 = Math.max(nd.depth ? 1.4 : 2.6, nd.wF * (0.04 + 0.96 * Math.pow(clamp((t - bb) / 0.95), 1.9))); // (slim for long, thickening as it matures)
       // (a branch starts a little inside its parent, so they join without a seam)
-      const [px, py] = nd.parent ? along(nd.parent.seg, nd.at) : [cx, GY],
-        x1 = nd.parent ? px - Math.cos(nd.ang) * w1 * 0.45 : px,
-        y1 = nd.parent ? py - Math.sin(nd.ang) * w1 * 0.45 : py;
+      const [px, py] = nd.parent ? along(nd.parent.seg, nd.at) : [cx, GY - 2 - Math.max(0, (36 - 64 * t) * 0.4 - 4)], // (on the mound's top while there is one)
+        x1 = nd.parent && nd.at < 1 ? px - Math.cos(nd.ang) * w1 * 0.45 : px,
+        y1 = nd.parent && nd.at < 1 ? py - Math.sin(nd.ang) * w1 * 0.45 : py;
+      // (never wider at its foot than its parent where it grows from: no step)
+      if (nd.parent) w1 = Math.min(w1, nd.parent.seg[4] + (nd.parent.seg[5] - nd.parent.seg[4]) * nd.at);
       const lim = 0.72 + rnd() * 0.28;
       let x2 = x1 + len * Math.cos(nd.ang),
         y2 = y1 + len * Math.sin(nd.ang);
@@ -2373,10 +2493,24 @@
     });
     const live = nodes.filter((nd) => nd.seg);
     // the ground and two bushes (still), then the plant (swaying a little in the wind), from a soil mound
-    const ground = OUT(F('M-40 604Q100 586 200 600Q300 586 440 604L440 760L-40 760Z', '#7acb6a') + F('M-40 640Q120 624 230 640Q330 628 440 642L440 760L-40 760Z', '#69bb59') +
-      [[52, 606], [348, 606]].map(([x, y]) => S(cloudD(x, y - 14, 60, 30, 5), '#5fbf4a', 'M' + (x + 14) + ' ' + (y - 26) + 'Q' + (x + 32) + ' ' + (y - 18) + ' ' + (x + 26) + ' ' + (y - 2) + 'Z')).join(''), 2);
+    const ground = OUT(F('M-800 606Q-300 590 -40 604Q100 586 200 600Q300 586 440 604Q700 590 1200 606L1200 1100L-800 1100Z', '#7acb6a') + F('M-800 642Q-300 628 -40 640Q120 624 230 640Q330 628 440 642Q700 630 1200 644L1200 1100L-800 1100Z', '#69bb59') +
+      treeBushes(size).map((b) => b.d).join(''), 2);
+    // a flower in the grass for every sūrah memorized (its own colour; tap: its name), from the very first
+    // (three loose rows, wide enough apart that each is easy to tap on its own)
+    const meadow = (o.flowers || [])
+      .map((q, j) => {
+        const row = j % 3,
+          k = Math.floor(j / 3),
+          x = n(34 + k * 26.5 + row * 8.8),
+          y = n(646 + row * 15);
+        return '<g class="tmflower" data-act="tflower" data-n="' + q.n + '"' + isNew(j, seen.flowers) + '><rect x="' + n(x - 12) + '" y="' + n(y - 8) + '" width="24" height="16" fill="transparent" stroke="none"/>' +
+          // (a soft shadow where it is planted)
+          EF(x, n(y + 8.8), 6.4, 2, '#2f6b2a', 0.38) +
+          L('M' + x + ' ' + y + 'L' + x + ' ' + (y + 8), '#3f9a35', 1.6) +
+          [0, 72, 144, 216, 288].map((a) => { const r = (a * Math.PI) / 180; return CF(n(x + 3.8 * Math.cos(r)), n(y + 3.8 * Math.sin(r)), 3.2, q.c); }).join('') + CF(x, y, 2.3, '#ffd23f') + '</g>';
+      })
+      .join('');
     let g = '';
-    if (t < 0.45) g += G(S('M150 604Q200 566 250 604Z', '#9a6b44', null, 'M168 596Q182 584 196 584Q184 590 176 600Z'), t > 0.3 ? ' opacity="' + n(1 - (t - 0.3) / 0.15) + '"' : '');
     // the wood: each branch a curved tapering shape, shaded on the side away from the light (the right), each drawn
     // with its shade before the branches growing from it; the ones behind the crown darker
     const shape = (q) => {
@@ -2388,7 +2522,7 @@
         a = q[4] / 2,
         b = q[5] / 2;
       return 'M' + n(q[0] + nx * a) + ' ' + n(q[1] + ny * a) + 'Q' + n(q[6] + nx * (a + b) / 2) + ' ' + n(q[7] + ny * (a + b) / 2) + ' ' + n(q[2] + nx * b) + ' ' + n(q[3] + ny * b) + 'A' + n(b) + ' ' + n(b) + ' 0 0 1 ' + n(q[2] - nx * b) + ' ' + n(q[3] - ny * b) +
-        'Q' + n(q[6] - nx * (a + b) / 2) + ' ' + n(q[7] - ny * (a + b) / 2) + ' ' + n(q[0] - nx * a) + ' ' + n(q[1] - ny * a) + 'A' + n(a) + ' ' + n(a) + ' 0 0 1 ' + n(q[0] + nx * a) + ' ' + n(q[1] + ny * a) + 'Z';
+        'Q' + n(q[6] - nx * (a + b) / 2) + ' ' + n(q[7] - ny * (a + b) / 2) + ' ' + n(q[0] - nx * a) + ' ' + n(q[1] - ny * a) + 'Z'; // (its foot is flat: hidden inside its parent, or in the ground)
     };
     const shade = (q) => {
       const dx = q[2] - q[0],
@@ -2402,65 +2536,199 @@
       return 'M' + n(q[0] + nx * a * 0.12) + ' ' + n(q[1] + ny * a * 0.12) + 'Q' + n(q[6] + nx * (a + b) * 0.06) + ' ' + n(q[7] + ny * (a + b) * 0.06) + ' ' + n(q[2] + nx * b * 0.12) + ' ' + n(q[3] + ny * b * 0.12) +
         'L' + n(q[2] + nx * b * 0.92) + ' ' + n(q[3] + ny * b * 0.92) + 'Q' + n(q[6] + nx * (a + b) * 0.46) + ' ' + n(q[7] + ny * (a + b) * 0.46) + ' ' + n(q[0] + nx * a * 0.92) + ' ' + n(q[1] + ny * a * 0.92) + 'Z';
     };
-    const wood = (list, c, sh) => {
-      const ok = list.filter((nd) => nd.seg);
-      return ok.map((nd) => P(shape(nd.seg), INK, ' stroke="' + INK + '" stroke-width="3.4"')).join('') +
-        ok.map((nd) => (nd.seg[4] < 4 ? F(shape(nd.seg), '#6fae3a') : F(shape(nd.seg), c) + F(shade(nd.seg), sh, 0.85))).join('');
+    // the wood, limb by limb: a branch and the stem carrying on from its tip are one smooth tapering shape (no seam
+    // where one part meets the next), side branches start inside their parent; outlines, then wood, then the shading
+    // on the side away from the light
+    const limbsOf = (list) =>
+      list
+        .filter((nd) => nd.seg && !(nd.at === 1 && nd.parent && list.includes(nd.parent)))
+        .map((nd) => {
+          const chain = [nd];
+          for (let c = nd, nx; (nx = list.find((k) => k.parent === c && k.at === 1 && k.seg)); c = nx) chain.push(nx);
+          return chain;
+        });
+    const limbPaths = (chain) => {
+      const pts = [];
+      let wPrev = chain[0].seg[4];
+      chain.forEach((nd, i) => {
+        const q = nd.seg,
+          wa = i ? Math.min(wPrev, q[4]) : q[4],
+          wb = Math.min(wa, q[5]);
+        for (let k = i ? 1 : 0; k <= 6; k++) {
+          const f = k / 6,
+            [x, y] = along(q, f),
+            [x2, y2] = along(q, Math.min(1, f + 0.02)),
+            [x0, y0] = along(q, Math.max(0, f - 0.02)),
+            dl = Math.hypot(x2 - x0, y2 - y0) || 1;
+          pts.push({ x, y, nx: -(y2 - y0) / dl, ny: (x2 - x0) / dl, w: wa + (wb - wa) * f });
+        }
+        wPrev = wb;
+      });
+      const sg = pts[0].nx >= 0 ? 1 : -1, // (the side facing right)
+        Lp = pts.map((p) => [p.x + p.nx * p.w / 2, p.y + p.ny * p.w / 2]),
+        Rp = pts.map((p) => [p.x - p.nx * p.w / 2, p.y - p.ny * p.w / 2]),
+        tip = pts[pts.length - 1].w / 2;
+      const body = 'M' + Lp.map((p) => n(p[0]) + ' ' + n(p[1])).join('L') + 'A' + n(tip) + ' ' + n(tip) + ' 0 0 1 ' + Rp.slice().reverse().map((p) => n(p[0]) + ' ' + n(p[1])).join('L') + 'Z';
+      const sh = pts.map((p) => [p.x + sg * p.nx * p.w * 0.06, p.y + sg * p.ny * p.w * 0.06]),
+        se = pts.map((p) => [p.x + sg * p.nx * p.w * 0.46, p.y + sg * p.ny * p.w * 0.46]);
+      const shade = 'M' + sh.map((p) => n(p[0]) + ' ' + n(p[1])).join('L') + 'L' + se.slice().reverse().map((p) => n(p[0]) + ' ' + n(p[1])).join('L') + 'Z';
+      return { body, shade, w: chain[0].seg[4], a: pts[0], b: pts[pts.length - 1] };
+    };
+    // the wood's colour: young and thin it is green, turning brown as it thickens and the tree ages, smoothly with
+    // every bit of growth; a limb shades from its foot's colour to its tip's, and a twig is the colour of the wood
+    // it grows from
+    const mixC = (c1, c2, k) => '#' + [1, 3, 5].map((i) => Math.round(parseInt(c1.substr(i, 2), 16) * (1 - k) + parseInt(c2.substr(i, 2), 16) * k).toString(16).padStart(2, '0')).join('');
+    const g0 = 0.3 + 3.4 * (1 - t),
+      ripe = (w) => Math.max(smooth((w - g0) / 3), smooth((t - 0.5) / 0.45)), // (all of it brown by the time the tree is grown)
+      WOOD = { f: ['#79b443', '#9a6a40', '#5f9a35', '#7a5232'], b: ['#5f9a35', '#7a5536', '#4c8229', '#5f412a'] },
+      woodC = (w, back, sh) => { const c = WOOD[back ? 'b' : 'f']; return mixC(c[sh ? 2 : 0], c[sh ? 3 : 1], ripe(w)); };
+    const wood = (list, back) => {
+      const ls = limbsOf(list.filter((nd) => nd.len >= 1.5)).map(limbPaths); // (no stem yet on a seedling)
+      let defs = '';
+      const fill = (l, sh) => {
+        const ca = woodC(l.a.w, back, sh),
+          cb = woodC(l.b.w, back, sh);
+        if (ca === cb) return ca;
+        const id = uid('tw');
+        defs += '<linearGradient id="' + id + '" gradientUnits="userSpaceOnUse" x1="' + n(l.a.x) + '" y1="' + n(l.a.y) + '" x2="' + n(l.b.x) + '" y2="' + n(l.b.y) + '"><stop offset="0" stop-color="' + ca + '"/><stop offset="1" stop-color="' + cb + '"/></linearGradient>';
+        return 'url(#' + id + ')';
+      };
+      // (the outer branches first, each with its shading, so the limb they grow from covers their foot: they come
+      // out from under its edge, with no end showing on it)
+      const body = ls.slice().reverse().map((l) => F(l.body, fill(l, false)) + (l.w >= 4 ? F(l.shade, fill(l, true)) : '')).join('');
+      return '<defs>' + defs + '</defs>' + ls.map((l) => P(l.body, INK, ' stroke="' + INK + '" stroke-width="3.4"')).join('') + body;
     };
     const W0 = live[0].seg[4],
-      roots = W0 > 10 ? 'M' + n(cx - W0 * 1.3) + ' 602Q' + n(cx - W0 * 0.5) + ' 598 ' + n(cx - W0 * 0.5) + ' ' + n(600 - W0 * 1.1) + 'L' + n(cx + W0 * 0.5) + ' ' + n(600 - W0 * 1.1) + 'Q' + n(cx + W0 * 0.5) + ' 598 ' + n(cx + W0 * 1.3) + ' 602Z' : '';
+      // (the roots meet the trunk exactly at its edges, a little up from the ground: no step, no extra line there)
+      rq = live[0].seg,
+      rf = Math.min(0.5, (W0 * 1.1) / (live[0].len || 1)),
+      [rx, ry] = along(rq, rf),
+      rw = (rq[4] + (rq[5] - rq[4]) * rf) / 2,
+      rl = rx - rw,
+      rr2 = rx + rw,
+      rootL = 'M' + n(cx - W0 * 1.3) + ' 602Q' + n(rl) + ' 598 ' + n(rl) + ' ' + n(ry),
+      rootR = 'M' + n(rr2) + ' ' + n(ry) + 'Q' + n(rr2) + ' 598 ' + n(cx + W0 * 1.3) + ' 602',
+      roots = W0 > 10 ? rootL + 'L' + n(rl) + ' ' + n(ry - 1.5) + 'L' + n(rr2) + ' ' + n(ry - 1.5) + 'L' + n(rr2) + ' ' + n(ry) + 'Q' + n(rr2) + ' 598 ' + n(cx + W0 * 1.3) + ' 602Z' : '';
     const backW = live.filter((nd) => nd.back),
       frontW = live.filter((nd) => !nd.back);
-    // the crown's growth: leaf clusters swelling at the branch ends
-    const cr = smooth((t - 0.3) / 0.45);
+    // the crown's growth (cr): where leaves can grow widens around the branches as the tree matures
+    const cr = smooth((t - 0.3) / 0.6);
     const ends = live.filter((nd) => nd.depth >= 2);
-    const clR = (nd) => cr * (16 + 9 * (4 - nd.depth)) * (0.55 + 0.45 * rnd()) * (0.6 + 0.4 * ease((t - nd.birth) / 0.4));
-    const area = cr > 0.02 ? ends.map((nd) => [nd.seg[2], nd.seg[3], clR(nd), nd.back]).filter((b) => b[2] > 3) : [];
-    // (a grown tree's top fills in: more clusters across the upper crown)
-    for (let k = 0, m = Math.round(clamp((cr - 0.35) / 0.65) * 18); k < m; k++) {
-      const x = ex.cx + (rnd() * 2 - 1) * ex.rx * 0.8,
-        y = ex.cy - ex.ry * (0.05 + rnd() * 0.75);
-      if (inside(x, y, 0.75)) area.push([x, y, (16 + 12 * rnd()) * cr, false]);
-    }
     const leafAt = (x, y, a, len, c, out) => G(F('M0 0Q' + n(len * 0.45) + ' ' + n(-len * 0.36) + ' ' + n(len) + ' 0Q' + n(len * 0.45) + ' ' + n(len * 0.36) + ' 0 0Z', c) + (out ? P('M0 0Q' + n(len * 0.45) + ' ' + n(-len * 0.36) + ' ' + n(len) + ' 0Q' + n(len * 0.45) + ' ' + n(len * 0.36) + ' 0 0Z', 'none', ' stroke-width="1.4"') + L('M' + n(len * 0.12) + ' 0L' + n(len * 0.72) + ' 0', '#3f9a35', 1) : ''), ' transform="translate(' + n(x) + ' ' + n(y) + ') rotate(' + n((a * 180) / Math.PI) + ')"');
-    const cluster = (b, k, cs, out) => {
-      let m = '';
-      const cnt = Math.round(k * (4 + b[2] / 5));
-      for (let i = 0; i < cnt; i++) {
-        const a = rnd() * Math.PI * 2,
-          r = Math.sqrt(rnd()) * b[2] * 0.95;
-        m += leafAt(b[0] + Math.cos(a) * r - 10, b[1] + Math.sin(a) * r, a + (rnd() - 0.5) * 0.9, 18 + rnd() * 12, cs[i % cs.length], out);
-      }
-      return m;
+    // every leaf hangs on wood: twigs grow off the young branches (not the bare old wood), alternating sides, leaning
+    // up and out, longer as the crown fills; each leaf grows from a point on a twig or a branch, pointing away from it.
+    // The darker leaves behind hang on their own twigs (the other side, reaching a little further)
+    // (as it grows the older wood drops its leaves bit by bit, from the inside out: first the stem, then the big
+    // limbs, then their branches; never all at once)
+    const bare = (nd) => (nd.depth > 2 ? 0 : smooth((t - [0.16, 0.38, 0.62][nd.depth]) / 0.3));
+    const sprout = (flip, far) => {
+      const twigs = [],
+        buds = [];
+      live.forEach((nd) => {
+        if (!nd.seg) return;
+        const q = nd.seg,
+          gone = bare(nd),
+          reach = (9 + 5 * (1 - cr) + (17 + 7 * (4 - nd.depth)) * cr) * far, // (a sapling's leaves spread out on longer shoots)
+          steps = Math.max(1, Math.round(nd.len / 8));
+        for (let k = 1; k <= steps; k++) {
+          const f = k / steps;
+          if (f <= gone) continue;
+          const [x, y] = along(q, f),
+            [x2, y2] = along(q, Math.min(1, f + 0.03)),
+            [x0, y0] = along(q, Math.max(0, f - 0.03)),
+            da = nd.len < 2 ? nd.ang : Math.atan2(y2 - y0, x2 - x0), // (a seedling's shoots rise straight from the ground)
+            side = (k + flip) % 2 ? 1 : -1;
+          if (k % 2) buds.push([x, y, da + side * (0.4 + rnd() * 0.4), -1]); // (now and then a leaf right on the branch)
+          // (a twig with leaves along it and one at its tip; the branch's end gets a little fan of them)
+          const fan = k === steps ? [-1, 0, 1] : k % 3 && !flip ? [side] : [side, -side];
+          fan.forEach((sd) => {
+            const ta = da + (sd ? sd * (0.4 + rnd() * 0.45) : (rnd() - 0.5) * 0.4),
+              tl = reach * (0.55 + rnd() * 0.45),
+              ti = twigs.length;
+            twigs.push([x, y, ta, tl]);
+            for (let d = 6, j = 0; d < tl - 3; d += 6 + rnd() * 3, j++) buds.push([x + Math.cos(ta) * d, y + Math.sin(ta) * d, ta + (j % 2 ? 1 : -1) * (0.35 + rnd() * 0.4), ti, d]);
+            buds.push([x + Math.cos(ta) * tl, y + Math.sin(ta) * tl, ta + (rnd() - 0.5) * 0.5, ti, tl]);
+          });
+        }
+      });
+      return { twigs, buds };
     };
-    // 1. the wood behind (darker), 2. the darker leaves behind, 3. the trunk and the wood in front, 4. the leaves
-    // along the young branches, 5. the fresh light leaves in front (with gaps), 6. a few twigs poking through
-    g += wood(backW, '#7a5536', '#5f412a');
-    g += '<g class="tleaves">' + area.map((b) => cluster(b, 1.25, ['#2f7a2a', '#3a8a32', '#33802e'], false)).join('');
-    g += (roots ? P(roots, INK, ' stroke="' + INK + '" stroke-width="4.4"') + F(roots, '#9a6a40') + F('M' + n(cx + W0 * 0.1) + ' ' + n(600 - W0 * 1.1) + 'L' + n(cx + W0 * 0.5) + ' ' + n(600 - W0 * 1.1) + 'Q' + n(cx + W0 * 0.5) + ' 598 ' + n(cx + W0 * 1.3) + ' 602L' + n(cx + W0 * 0.3) + ' 602Z', '#7a5232') : '') + wood(frontW, '#9a6a40', '#7a5232');
-    const Lf = 24 + 10 * clamp(t * 2.5),
-      bare = Math.floor(t * 4.2) - 1; // the branches up to this depth have dropped their leaves
-    let lv = '',
-      li = 0;
-    live.forEach((nd) => {
-      if (nd.depth <= bare) return;
-      const q = nd.seg,
-        cnt = Math.floor(nd.len / 26);
-      for (let k = 0; k < cnt; k++) {
-        const f = (k + 0.6) / (cnt + 0.4),
-          side = k % 2 ? 1 : -1,
-          [x, y] = along(q, f);
-        lv += '<g' + isNew(li++, seen.lobes) + '>' + leafAt(x, y, nd.dir + side * 0.95, Lf * 0.9, '#5fbf4a', true) + '</g>';
+    // pick the leaves mostly evenly over the crown (as a tree has them: no bunch and no bare patch, but not a grid)
+    const Lf = 36 * (size < 0.1 ? 0.27 + 0.2675 * (size / 0.1) : size < 0.4 ? 0.45 + 0.35 * (size / 0.4) : 0.8 + 0.2 * clamp((size - 0.4) / 0.2)), // (tiny leaves on a seedling, small on a sapling, 4/5 grown at 40%, full grown from 60%)
+      CELL = 6;
+    // (no leaf down by the ground on a tree; a seedling's own leaves are right at it)
+    const leafFloor = GY - 24 + (live[0].seg[1] - 2 - (GY - 24)) * (1 - smooth((t - 0.1) / 0.2));
+    const spread = (set, want, k, avoid = [], fill = 1e9) => {
+      const list = set.buds.map((b) => {
+          const len = Lf * (0.8 + 0.4 * (rnd() + rnd()) / 2), // (sizes vary a little)
+            // (each leaf leans a little towards the light, a young plant's more: none sticks straight out sideways)
+            up = Math.atan2(Math.sin(-Math.PI / 2 - b[2]), Math.cos(-Math.PI / 2 - b[2])),
+            a = b[2] + up * (0.1 + 0.2 * (1 - cr));
+          return { b, a, len, cx: b[0] + Math.cos(a) * len * 0.5, cy: b[1] + Math.sin(a) * len * 0.5 };
+        }).filter((c) => c.cy < leafFloor),
+        A = new Set(list.map((c) => Math.floor(c.cx / CELL) + ',' + Math.floor(c.cy / CELL))).size * CELL * CELL,
+        cnt = Math.min(want, list.length, Math.max(size < 0.03 ? 2 + Math.round(size * 300) : 0, Math.round((A * fill) / (Lf * Lf)))), // (a seedling: a pair of leaves, a few more as it grows)
+        out = [],
+        used = new Set(),
+        hash = new Map();
+      for (let i = list.length - 1; i > 0; i--) {
+        const j = Math.floor(rnd() * (i + 1));
+        [list[i], list[j]] = [list[j], list[i]];
       }
-      if (!live.some((c) => c.parent === nd && c.at === 1)) lv += '<g' + isNew(li++, seen.lobes) + '>' + leafAt(q[2], q[3], nd.dir - 0.55, Lf, '#5fbf4a', true) + leafAt(q[2], q[3], nd.dir + 0.55, Lf, '#6cc84f', true) + '</g>';
-    });
-    g += lv + area.filter((b) => !b[3]).map((b) => cluster([b[0], b[1] - b[2] * 0.15, b[2] * 0.85], 0.75, ['#5fbf4a', '#6cc84f', '#7ad366'], true)).join('') + '</g>';
-    const poke = cr > 0.3 ? frontW.filter((nd) => nd.depth === 2 || nd.depth === 3).filter((nd, j) => j % 3 === 0) : [];
-    g += poke.map((nd) => {
-      const q = nd.seg,
-        [mx, my] = along(q, 0.55);
-      return L('M' + n(mx) + ' ' + n(my) + 'Q' + n(q[6] * 0.3 + q[2] * 0.7) + ' ' + n(q[7] * 0.3 + q[3] * 0.7) + ' ' + n(q[2]) + ' ' + n(q[3]), INK, n(q[5] + 3)) + L('M' + n(mx) + ' ' + n(my) + 'Q' + n(q[6] * 0.3 + q[2] * 0.7) + ' ' + n(q[7] * 0.3 + q[3] * 0.7) + ' ' + n(q[2]) + ' ' + n(q[3]), '#9a6a40', n(q[5]));
-    }).join('');
+      // (as far apart as they can be: if they don't all fit, again a little closer, until every one has a place)
+      let dmin = Math.sqrt(A / Math.max(1, cnt)) * k;
+      for (let pass = 0; pass < 7 && out.length < cnt; pass++, dmin *= 0.8) {
+        const H = Math.max(1, dmin);
+        hash.clear();
+        avoid.concat(out).forEach((c) => {
+          const key = Math.floor(c.cx / H) + ',' + Math.floor(c.cy / H);
+          hash.set(key, [...(hash.get(key) || []), c]);
+        });
+        list.forEach((c, ci) => {
+          if (out.length >= cnt || used.has(ci)) return;
+          const hx = Math.floor(c.cx / H),
+            hy = Math.floor(c.cy / H),
+            dd = H * (0.75 + rnd() * 0.25); // (mostly even: some sit a little closer)
+          for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (const q of hash.get(hx + dx + ',' + (hy + dy)) || []) if (Math.hypot(q.cx - c.cx, q.cy - c.cy) < dd) return;
+          used.add(ci);
+          out.push(c);
+          const key = hx + ',' + hy;
+          hash.set(key, [...(hash.get(key) || []), c]);
+        });
+      }
+      return out;
+    };
+    // a twig is drawn out to the farthest leaf it carries (and none where no leaf grows)
+    const twigLines = (set, list, c) => {
+      const far = new Map();
+      list.forEach((l) => l.b[3] >= 0 && far.set(l.b[3], Math.max(far.get(l.b[3]) || 0, l.b[4])));
+      return [...far].map(([ti, d]) => {
+        const w = set.twigs[ti];
+        return L('M' + n(w[0]) + ' ' + n(w[1]) + 'L' + n(w[0] + Math.cos(w[2]) * d) + ' ' + n(w[1] + Math.sin(w[2]) * d), c, 2);
+      }).join('');
+    };
+    const nLeaves = Math.max(4, Math.min(564, Math.round(o.leaves || 0))); // a leaf for every āyah learned
+    // the area kept for blossoms and fruit (the leafy patches at the branch ends)
+    const area = cr > 0.02 ? ends.map((nd) => [nd.seg[2], nd.seg[3], 9 + (14 + 6 * (4 - nd.depth)) * cr, nd.back]) : [];
+    // 1. the wood behind (darker), 2. the darker leaves behind, 3. the trunk and the wood in front, 4. the fresh
+    // light leaves in front, a leaf for every āyah, spread evenly
+    g += wood(backW, true);
+    const DARK = ['#2f7a2a', '#3a8a32', '#33802e'],
+      LIGHT = ['#5fbf4a', '#6cc84f', '#7ad366', '#55b543'];
+    // (the light ones first; the darker ones behind fill the gaps between them, coming in slowly as the crown thickens)
+    const frontSet = sprout(0, 1),
+      // (no more than the crown has room for, the rest shading into the dark crown behind; a little airy as it
+      // spreads out (55% on), filling out thick again near the end)
+      fill = (size < 0.15 ? 3.5 + 23 * size : 7) - 1.5 * smooth((size - 0.45) / 0.25) + 3.5 * smooth((size - 0.75) / 0.25), // (a seedling: just a few)
+      light = spread(frontSet, Math.round(nLeaves * (1 - 0.25 * smooth((size - 0.3) / 0.7))), 0.8, [], fill),
+      backSet = sprout(1, 1.3),
+      dark = size > 0.1 ? spread(backSet, Math.max(size < 0.45 ? nLeaves - light.length : 0, Math.round(nLeaves * 0.85 * smooth((size - 0.15) / 0.85))), 0.6, light, fill * 0.75) : [];
+    g += '<g class="tleaves">' + twigLines(backSet, dark, woodC(2, true)) + dark.map((p, i) => leafAt(p.b[0], p.b[1], p.a, p.len * (i % 3 ? 1 : 0.8), DARK[i % 3], false)).join('');
+    g += wood(frontW, false) +
+      // the roots flaring at the foot, over the trunk, blending into its edges (outlined only on their curves)
+      (roots ? L(rootL + rootR, INK, 3.4, ' stroke-linecap="butt"') + F(roots, '#9a6a40') + F('M' + n(rx + rw * 0.12) + ' ' + n(ry - 1.5) + 'L' + n(rx + rw * 0.92) + ' ' + n(ry - 1.5) + 'L' + n(rx + rw * 0.92) + ' ' + n(ry) + 'Q' + n(rx + rw * 0.92) + ' 598 ' + n(cx + W0 * 1.3) + ' 602L' + n(cx + W0 * 0.3) + ' 602Z', '#7a5232') : ''); // (outlined like the trunk: half the line under the wood, so the two meet as one)
+    let li = 0;
+    g += twigLines(frontSet, light, woodC(2, false)) + light.map((p) => '<g' + isNew(li++, seen.lobes) + '>' + leafAt(p.b[0], p.b[1], p.a, p.len, LIGHT[li % 4], true) + '</g>').join('') + '</g>';
     // blossoms, then fruit, spread evenly over the crown (never in a bunch)
     const spots = [],
       want = (o.blossoms || []).length + (o.fruits || []).length;
@@ -2480,19 +2748,48 @@
     bl.forEach((q, j) => {
       const p = spots[j];
       if (!p) return;
-      g += '<g data-act="tflower" data-n="' + q.n + '"' + isNew(j, seen.blossoms) + '>' + [0, 72, 144, 216, 288].map((a) => { const r = (a * Math.PI) / 180; return CF(n(p[0] + 3.6 * Math.cos(r)), n(p[1] + 3.6 * Math.sin(r)), 3.2, q.c); }).join('') + CF(p[0], p[1], 2.4, '#ffd23f') + '</g>';
+      g += '<g' + isNew(j, seen.blossoms) + '>' + [0, 72, 144, 216, 288].map((a) => { const r = (a * Math.PI) / 180; return CF(n(p[0] + 3.6 * Math.cos(r)), n(p[1] + 3.6 * Math.sin(r)), 3.2, q.c); }).join('') + CF(p[0], p[1], 2.4, '#ffd23f') + '</g>';
     });
     const fruits = [];
     (o.fruits || []).forEach((tp, j) => {
       const p = spots[bl.length + j];
-      if (p) fruits.push({ x: p[0], y: p[1], t: tp });
+      if (p) fruits.push({ x: p[0], y: p[1], t: tp, k: n((0.7 + 0.45 * smooth((size - 0.3) / 0.7)) * (0.88 + rnd() * 0.24) * (rnd() < 0.15 ? 1.2 : 1)) }); // (growing with the tree, each a little its own size, a few bigger)
     });
     g += fruits
-      .map((q, j) => '<g class="tfruit" data-act="tfruit" data-j="' + j + '" data-t="' + q.t + '" style="--dy:' + n(612 - q.y) + 'px">' + L('M' + q.x + ' ' + (q.y - 9) + 'L' + q.x + ' ' + (q.y - 4), '#6a4a2a', 1.4) + OUT(FRUIT[q.t](q.x, q.y), 1.4) + '</g>')
+      .map((q, j) => '<g class="tfruit" data-act="tfruit" data-j="' + j + '" data-t="' + q.t + '" style="--dy:' + n(612 - q.y) + 'px">' + G(L('M' + q.x + ' ' + (q.y - 9) + 'L' + q.x + ' ' + (q.y - 4), '#6a4a2a', 1.4) + OUT(FRUIT[q.t](q.x, q.y), 1.4), ' transform="translate(' + q.x + ' ' + q.y + ') scale(' + q.k + ') translate(' + -q.x + ' ' + -q.y + ')"') + '</g>')
       .join('');
     // where a leaf may fall from now and then: points in the crown (none on a young plant)
     const drop = area.slice(0, 40).map((b) => [n(b[0]), n(b[1])]);
-    return { svg: ground + '<g class="tsway">' + OUT(g, 2) + '</g>', fruits, lobes: li, drop };
+    // the sapling's mound of earth (in front of its foot: the stem grows out of it), smaller as the trunk thickens,
+    // until only the trunk is left
+    const Wb = live[0].seg[4],
+      hw = 36 - 64 * t,
+      mound = hw > Wb * 0.8 + 3 ? S('M' + n(cx - hw) + ' 606Q' + n(cx - hw * 0.5) + ' ' + n(604 - hw * 0.4) + ' ' + cx + ' ' + n(604 - hw * 0.4) + 'Q' + n(cx + hw * 0.5) + ' ' + n(604 - hw * 0.4) + ' ' + n(cx + hw) + ' 606Z', '#9a6b44', null,
+        'M' + n(cx - hw * 0.62) + ' ' + n(603 - hw * 0.1) + 'Q' + n(cx - hw * 0.45) + ' ' + n(603 - hw * 0.3) + ' ' + n(cx - hw * 0.2) + ' ' + n(603 - hw * 0.33) + 'Q' + n(cx - hw * 0.4) + ' ' + n(603 - hw * 0.22) + ' ' + n(cx - hw * 0.5) + ' ' + n(603 - hw * 0.05) + 'Z') : '';
+    // little tufts of grass at the trunk's foot (in front of it, beside the mound) and about the garden, more as the
+    // tree grows, each its own: two to four blades, their own heights, leans and greens
+    const hsh = (i, j) => { const v = Math.sin(i * 12.9898 + j * 78.233) * 43758.5453; return v - Math.floor(v); };
+    const tuft = (x, y, k, i) => {
+      const nb = 2 + Math.floor(hsh(i, 1) * 3),
+        span = (6 + nb * 3) * k;
+      const col = ['#5fba52', '#6cc65a', '#57ad4a', '#7ad366'][Math.floor(hsh(i, 4) * 4)];
+      let d = '';
+      for (let j = 0; j < nb; j++) {
+        const bx = x - span / 2 + (span * (j + 0.5)) / nb + (hsh(i, j + 9) - 0.5) * 3 * k,
+          h = (8 + hsh(i, j + 2) * 11) * k,
+          lean = ((j - (nb - 1) / 2) * 3 + (hsh(i, j + 5) - 0.5) * 6) * k,
+          w = (4.4 + hsh(i, j + 7) * 2) * k;
+        d += S('M' + n(bx - w / 2) + ' ' + y + 'Q' + n(bx - w / 2 + lean * 0.25) + ' ' + n(y - h * 0.6) + ' ' + n(bx + lean) + ' ' + n(y - h) + 'Q' + n(bx + w / 2 + lean * 0.3) + ' ' + n(y - h * 0.5) + ' ' + n(bx + w / 2) + ' ' + y + 'Z', j % 2 ? mix(col, '#3f9a35', 0.25) : col); // (each blade on its own, in front of the one before)
+      }
+      return d;
+    };
+    const tufts = [[-0.9, 0, 0.02], [0.75, 4, 0.02], [-0.25, 7, 0.25], [1.5, 1, 0.35], [-1.6, 5, 0.5], [0.3, 9, 0.65]]
+      .filter((q) => size >= q[2])
+      .map((q, i) => [n(cx + Math.sign(q[0]) * Math.max(Math.min(Math.abs(q[0]) * Math.max(8, Wb), Wb * 0.5 + 24), mound ? hw + 4 + i * 2 : 0)), 604 + q[1], 0.75 + 0.35 * t + hsh(i, 3) * 0.25, i])
+      .concat([[118, 612, 0.15], [312, 608, 0.3], [150, 628, 0.45], [234, 632, 0.6], [392, 628, 0.75], [-14, 620, 0.85]].filter((q) => size >= q[2]).map((q, i) => [q[0], q[1], 0.8 + hsh(i + 20, 3) * 0.35, i + 20]))
+      .filter((q) => treeBushes(size).every((b) => Math.abs(q[0] - b.x) > b.w / 2 + 8)) // (never out of a bush)
+      .map((q) => ({ y: q[1], svg: OUT(tuft(q[0], q[1], q[2], q[3]), 1.1) })); // (drawn among the buddies, nearer ones in front)
+    return { svg: treeSky(o.night, o.seed) + treeFar(o.night) + ground + OUT(meadow, 1.4) + '<g class="tsway">' + OUT(g, 2) + '</g>' + OUT(mound, 2), tufts, fruits, lobes: li, drop };
   }
 
   /* A campfire beside each memorized sūrah on the map (viewBox 0 0 60 60, standing on y=54). It burns down over
@@ -3126,7 +3423,7 @@
     });
   }
   // A walking trail through pts that narrows from w0 (near) to w1 (far): an edge, the packed earth, a worn
-  // lighter middle, pebbles along both sides (o.stones) and stone steps across it (o.steps).
+  // lighter middle and pebbles along both sides (o.stones).
   // Drawn as round-capped strokes in short chunks (all edges first, then the fill), so hairpin bends stay clean.
   function trail(pts, w0, w1, o) {
     o = o || {};
@@ -3134,27 +3431,24 @@
       last = sm.length - 1,
       wAt = (i) => w0 + ((w1 - w0) * i) / last,
       C = o.N || ((c) => c);
-    let edge = '', fill = '', mid = '', extra = '';
-    for (let i = 0; i < last; i += 3) {
-      const seg = sm.slice(i, i + 4), w = n(wAt(i)), d = 'M' + seg.map((p) => n(p.x) + ' ' + n(p.y)).join('L'), cap = ' stroke-linecap="round" stroke-linejoin="round"';
-      edge += L(d, C(o.edge || '#b8875a'), n(w + 6), cap);
-      fill += L(d, C(o.fill || '#f2d9a4'), w, cap);
-      mid += L(d, C(o.mid || '#fff3d4'), n(w * 0.34), cap + ' opacity=".75"');
-    }
-    let side = 1;
-    for (let i = 4; i < last; i += o.stoneGap || 5) {
+    // one smooth ribbon, tapering as it goes (no joins, no steps); its ends round, or flat where it meets
+    // another stretch of the same trail (o.flat: 'start' / 'end')
+    const ribbon = (k, add) => {
+      const side = (sg) => sm.map((p, i) => { const h = (wAt(i) * k + add) / 2; return [n(p.x - p.ty * sg * h), n(p.y + p.tx * sg * h)]; });
+      const l = side(1), r = side(-1).reverse(),
+        hEnd = (wAt(last) * k + add) / 2,
+        hStart = (w0 * k + add) / 2;
+      return 'M' + l.map((q) => q[0] + ' ' + q[1]).join('L') + (o.flat === 'end' || o.flat === 'both' ? 'L' : 'A' + n(hEnd) + ' ' + n(hEnd) + ' 0 0 1 ') + r[0][0] + ' ' + r[0][1] + 'L' + r.slice(1).map((q) => q[0] + ' ' + q[1]).join('L') +
+        (o.flat === 'start' || o.flat === 'both' ? 'Z' : 'A' + n(hStart) + ' ' + n(hStart) + ' 0 0 1 ' + l[0][0] + ' ' + l[0][1] + 'Z');
+    };
+    let extra = '', side = 1;
+    for (let i = 4; o.stones && i < last; i += o.stoneGap || 5) {
       const p = sm[i], w = wAt(i);
-      if (o.stones) {
-        side = -side;
-        const r = Math.max(1.6, w * 0.13), x = n(p.x - p.ty * side * (w / 2 + r * 0.9)), y = n(p.y + p.tx * side * (w / 2 + r * 0.9));
-        extra += E(x, y, n(r * 1.3), n(r), C(i % 3 ? '#c9c3b8' : '#b3aca0'), sw(n(Math.max(1.2, w * 0.05))));
-      }
-      if (o.steps && i % 2 === 0) {
-        const hw = w * 0.42;
-        extra += L('M' + n(p.x - p.ty * hw) + ' ' + n(p.y + p.tx * hw) + 'L' + n(p.x + p.ty * hw) + ' ' + n(p.y - p.tx * hw), C('#c79a64'), n(Math.max(1.2, w * 0.1)));
-      }
+      side = -side;
+      const r = Math.max(1.6, w * 0.13), x = n(p.x - p.ty * side * (w / 2 + r * 0.9)), y = n(p.y + p.tx * side * (w / 2 + r * 0.9));
+      extra += E(x, y, n(r * 1.3), n(r), C(i % 3 ? '#c9c3b8' : '#b3aca0'), sw(n(Math.max(1.2, w * 0.05))));
     }
-    return edge + fill + mid + extra;
+    return (o.noEdge ? '' : F(ribbon(1, 6), C(o.edge || '#b8875a'))) + F(ribbon(1, 0), C(o.fill || '#f2d9a4')) + F(ribbon(0.34, 0), C(o.mid || '#fff3d4'), 0.75) + extra;
   }
   // a small pennant on a pole (the trail's checkpoints), standing at (x, y), scaled by s
   function pennant(x, y, s, c) {
@@ -3190,7 +3484,7 @@
     // rocky crags and a few hardy pines on the slopes, then the switchback trail up the mountain face
     s += L('M700 520Q716 488 742 470M1120 520Q1100 470 1060 440M820 300Q806 330 812 360M980 290Q996 320 990 350', N('#8f90d2'), 4, ' opacity=".7"');
     [[668, 560, 0.42], [700, 548, 0.36], [1130, 540, 0.4], [1166, 566, 0.46], [744, 512, 0.3]].forEach((t) => { s += G(OUT(PINE(0, 0, 1, N('#4f8f7a')), 3 / t[2]), tf(t[0], t[1], t[2])); });
-    s += trail(CLIMB, 17, 4, { N, fill: '#f6e6c4', edge: '#9f86b8', mid: '#fffaf0', steps: true });
+    s += trail(CLIMB, 17, 4, { N, fill: '#f6e6c4', edge: '#9f86b8', mid: '#fffaf0', flat: 'start' });
     // summit beacon + flag
     s += '<g class="sp-beacon">' + EF(888, 176, 110, 100, 'url(#lhq-g-aura)') + '</g>' + '<g class="sp-poke" data-act="poke" data-k="flag">' + OUT(S(rr(885, 128, 6, 56, 3), N('#e6ebf5')) + G(S('M891 132Q910 124 922 134Q934 142 948 136L942 152L948 168Q934 174 922 166Q910 158 891 166Z', N('#ff5d6c')) + P(star5(918, 150, 6.4), '#fff', sw(2)), cls('lhq-wave')) + ball(888, 127, 6, 6, '#ffe066', { sh: false }), 3) + '</g>' +
       '<path class="lhq-tw" d="' + star4(888, 126, 20) + '" fill="#fffbe0" style="animation-duration:2.2s"/>';
@@ -3223,8 +3517,14 @@
     // the trail from our ledge to the mountain: across the meadow, over a little bridge on the lake,
     // up through the canyon and the starry hills; a pennant in each world's color at every bend
     const lowA = [[742, 786], [860, 752], [972, 716], [948, 688], [931, 664]],
-      lowB = [[918, 620], [892, 600], [866, 584], [884, 552], [904, 530], [905, 508]];
-    s += trail(lowA, 46, 26, { N, stones: true, stoneGap: 4 }) + trail(lowB, 21, 16, { N, stones: true, stoneGap: 6 });
+      lowB = [[918, 620], [892, 600], [866, 584], [884, 552], [904, 530]];
+    // (it carries on up over the hill's top into the climb behind it, meeting it at the same point and width)
+    const climbSm = smooth(CLIMB, 10),
+      climbAt = climbSm[6],
+      climbW = n(17 - (13 * 6) / (climbSm.length - 1));
+    s += trail(lowA, 46, 26, { N, stones: true, stoneGap: 4 }) + trail(lowB.concat([[905, 512], [climbAt.x, climbAt.y]]), 21, climbW, { N, stones: true, stoneGap: 6, fill: '#f6e6c4', edge: '#9f86b8', mid: '#fffaf0', flat: 'end' }); // (the same path as the climb it carries on into, without a seam)
+    // (and the climb's first stretch laid again over the join, without its edges: no line across the path there)
+    s += trail(CLIMB.slice(0, 3), 17, n(17 - (13 * 20) / (climbSm.length - 1)), { N, fill: '#f6e6c4', mid: '#fffaf0', flat: 'both', noEdge: true });
     // the bridge: a plank deck narrowing into the distance, with rails and posts standing in the water
     const BR = [[931, 666, 15], [918, 618, 11.5]],
       bx = (t, side) => n(BR[0][0] + (BR[1][0] - BR[0][0]) * t + side * (BR[0][2] + (BR[1][2] - BR[0][2]) * t)),
@@ -3236,7 +3536,7 @@
       OUT(S('M' + bx(0, -1) + ' ' + by(0) + 'L' + bx(1, -1) + ' ' + by(1) + 'L' + bx(1, 1) + ' ' + by(1) + 'L' + bx(0, 1) + ' ' + by(0) + 'Z', N('#d9a46a'), 'M' + bx(0, 0.55) + ' ' + by(0) + 'L' + bx(1, 0.55) + ' ' + by(1) + 'L' + bx(1, 1) + ' ' + by(1) + 'L' + bx(0, 1) + ' ' + by(0) + 'Z') + planks + posts +
         L('M' + bx(0, -1.05) + ' ' + (by(0) - 11) + 'L' + bx(1, -1.05) + ' ' + (by(1) - 9), N('#a86b3c'), 2.4) + L('M' + bx(0, 1.05) + ' ' + (by(0) - 11) + 'L' + bx(1, 1.05) + ' ' + (by(1) - 9), N('#a86b3c'), 2.4), 2.2);
     // a signpost where the trail starts, and lanterns along the way
-    s += G(OUT(S(rr(-4, -64, 8, 64, 3), N('#a86b3c')) + S('M-46 -62L30 -62L44 -50L30 -38L-46 -38Q-50 -38 -50 -42L-50 -58Q-50 -62 -46 -62Z', N('#e0a86a'), 'M-46 -44L38 -44L30 -38L-46 -38Q-50 -38 -50 -42Z') +
+    s += G(OUT(S(rr(-4, -64, 8, 64, 3), N('#a86b3c')) + S(rr(-46, -62, 80, 24, 4), N('#e0a86a'), 'M-46 -44L34 -44L34 -42Q34 -38 30 -38L-42 -38Q-46 -38 -46 -42Z') +
       '<text x="-6" y="-44" text-anchor="middle" font-family="Baloo 2, ui-rounded, system-ui, sans-serif" font-weight="800" font-size="17" fill="#fff8e6" stroke="none">Summit</text>' + S('M-18 2Q-16 -8 -6 -6Q2 -12 10 -4Q18 -4 16 2Z', N('#6cc65a')), 3 / 0.72), tf(1006, 704, 0.72));
     [[1040, 760, 0.85], [858, 610, 0.55]].forEach((q, i) => {
       s += '<g class="pr-glow" style="animation-delay:-' + i + 's">' + EF(q[0], q[1] - 40 * q[2], 34 * q[2], 30 * q[2], 'url(#lhq-g-aura)') + '</g>' +
@@ -3318,6 +3618,9 @@
     garland,
     festSky,
     tree,
+    treeBush: (i, size) => OUT(treeBushes(size)[i].d, 2),
+    treeBushes,
+    treeFoot,
     fruitIcon,
     FRUIT_TYPES,
     TREE_STAGE,

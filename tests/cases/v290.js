@@ -68,7 +68,7 @@
   d.querySelector('[data-act=tree]').click(); await wait(800);
   const info = L.treeInfo(prof), hg = L.hungry();
   log('tree', JSON.stringify({ size: info.size.toFixed(2), leaves: info.leaves, blossoms: info.blossoms.length, fruits: info.fruits.length }), '| hungry', JSON.stringify(hg));
-  ok('my tree: fruit (and blossoms) drawn', L.st().view === 'tree' && d.querySelectorAll('.tsvg .tfruit').length === info.fruits.length && info.fruits.length >= 2 && d.querySelectorAll('.tsvg [data-act=tflower]').length === info.blossoms.length);
+  ok('my tree: fruit drawn, and a flower in the grass for every sūrah memorized', L.st().view === 'tree' && d.querySelectorAll('.tsvg .tfruit').length === info.fruits.length && info.fruits.length >= 2 && d.querySelectorAll('.tsvg [data-act=tflower]').length === info.flowers.length && info.flowers.length === info.memorized);
   ok('the buddies live around it, one hungry', d.querySelectorAll('.tsvg .tbud').length === 2 && d.querySelectorAll('.tsvg .tbud.m-hungry').length === 1);
   const want = hg.want, fr = [...d.querySelectorAll('.tsvg .tfruit')].find((f) => f.dataset.t === want);
   fr.dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await wait(2000);

@@ -262,8 +262,15 @@
 
   /* ---------------- the sounds (t = when it starts) ---------------- */
   const SOUNDS = {
-    // a button: one tiny drip
-    tap: (t) => drop(t, vary(1700, 0.08), 0.05, 0.06),
+    // a button: mostly one tiny drip; now and then a twig's tick, a leaf flicked, or (rarely) a tiny chirp (v2.9.2:
+    // a little variety, nothing louder)
+    tap: (t) => {
+      const r = Math.random();
+      if (r < 0.55) drop(t, vary(1700, 0.08), 0.05, 0.06);
+      else if (r < 0.75) knock(t, vary(640, 0.08), 0.045);
+      else if (r < 0.92) rustle(t, 0.07, 0.16, 3400);
+      else chirp(t, vary(3200, 0.05), vary(3700, 0.05), 0.05, 0.022);
+    },
     // a bubble popped (and other little steps forward): a water drop
     pop: (t) => drop(t, vary(1150, 0.1), 0.13, 0.11),
     // something done right: a little bird
