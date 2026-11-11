@@ -119,8 +119,21 @@
       const top = wi === W.length - 1 ? 0 : (last.y + nodes[last.i + 1].y) / 2;
       return { wi, top, bottom, mid: (first.y + last.y) / 2, first: first.i, last: last.i };
     });
-    // path x at a given y, used to keep props away from the path
-    const pathXs = (y) => path.filter((p) => Math.abs(p.y - y) < 40).map((p) => p.x);
+    // path x at a given y, used to keep props away from the path. (v2.10.1) The points are kept in 40 px rows by
+    // height, so a question looks only at the rows next to it, not the whole path (thousands of questions while
+    // the scenery finds its places); the same points come back, in the path's order
+    const rows = new Map();
+    path.forEach((p, k) => {
+      const r = Math.floor(p.y / 40);
+      if (!rows.has(r)) rows.set(r, []);
+      rows.get(r).push(k);
+    });
+    const pathXs = (y) => {
+      const r = Math.floor(y / 40),
+        ks = [];
+      for (let j = r - 1; j <= r + 1; j++) for (const k of rows.get(j) || []) if (Math.abs(path[k].y - y) < 40) ks.push(k);
+      return ks.sort((a, b) => a - b).map((k) => path[k].x);
+    };
     // the borders between worlds and where the path crosses them (center, length across the strip, angle)
     const borders = bands.slice(0, -1).map((b) => {
       const y = b.top,
@@ -209,7 +222,8 @@
       // Nothing is placed where its picture would cover another one (so no animal hides behind a mountain),
       // and everything is drawn back to front, so what stands nearer is drawn over what stands further away.
       const walkers = new Set(ART.WALKERS || []);
-      const isTall = (name) => /viewBox="0 0 100 150"/.test(ART.props[name] || ''); // trees, palms, cacti… are drawn 100×150
+      const tall = new Map(), // (each kind looked up once: v2.10.1)
+        isTall = (name) => (tall.has(name) ? tall.get(name) : tall.set(name, /viewBox="0 0 100 150"/.test(ART.props[name] || '')).get(name)); // trees, palms, cacti… are drawn 100×150
       const grow = Math.max(1, Math.min(1.35, width / 460)); // props a little bigger on tablets and computers
       const scenery = []; // { y, html }, sorted by y before drawing
       const propHTML = (name, x, y, size, hgt, rnd, wi) => {

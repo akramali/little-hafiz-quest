@@ -10438,3 +10438,48 @@ body.riddling .mfruit::after {
   transform: none;
   animation: none;
 }
+
+/* ---------- 2026-11-11 · v2.10.1: My Explorer's View icon a proper size; the glow behind the explorer fades out
+   before the edges (no box in the full view); the full view doesn't scroll; Read lights each word as it's recited;
+   My Tree's numbers spaced, without dots ---------- */
+.wd-side svg.i {
+  width: 24px;
+  height: 24px;
+  color: var(--ink);
+}
+.bagscr .wd-stage {
+  background:
+    radial-gradient(ellipse 130px 16px at 50% calc(100% - 18px), rgba(0, 0, 0, 0.16), rgba(0, 0, 0, 0)),
+    radial-gradient(ellipse closest-side at 50% 55%, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0));
+}
+html:has(.bagscr.fullv),
+html:has(.bagscr.fullv) body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+.bagscr.fullv {
+  touch-action: none;
+}
+.mw,
+.fword {
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+.mw.speak,
+.fword.speak {
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 0 0 3px var(--wc);
+  transform: scale(1.1);
+}
+.tstats {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 5px;
+}
+.ach-ic .wr-mapic {
+  width: 30px;
+  height: 26px;
+}

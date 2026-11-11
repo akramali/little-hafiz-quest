@@ -1756,6 +1756,8 @@
   function watch(band, face, inner, big) {
     // a glowing watch (face.glow): a soft halo around its face that breathes (v2.8.4)
     const halo = (r) => (face.glow ? G(CF(0, 0, r, face.glow, 0.22) + CF(0, 0, r * 0.8, face.glow, 0.3), cls('wglow')) : '');
+    // (v2.10.1) from behind: the band and its buckle, no face
+    if (big === 'back') return P(rr(-9.6, -4.6, 19.2, 9.2, 3.4), band) + P(rr(-3.4, -3.4, 6.8, 6.8, 1.4), 'none', ' stroke="#c9d2e3" stroke-width="1.8"') + L('M0 -3.4L0 3.4', '#c9d2e3', 1.4);
     if (!big) return halo(11) + P(rr(-9.6, -4.6, 19.2, 9.2, 3.4), band) + ball(0, 0, 6, 6, face.rim, { sh: false, hl: false }) + C(0, 0, 3.8, face.c, sw(1.4)) + (face.mini || '');
     return halo(36) + S(rr(-12, -44, 24, 88, 10), band, rr(4, -44, 8, 88, 4)) + [-34, -26, 26, 34].map((y) => CF(0, y, 2, dk(band, 0.4))).join('') +
       ball(0, 0, 24, 24, face.rim, { hl: false }) + C(0, 0, 18, face.c) + inner + F('M-14 -8Q-12 -14 -6 -16Q-11 -9 -12 -2Z', '#fff', 0.55);
@@ -2018,6 +2020,7 @@
   WATCHES().forEach((id) => {
     const a = ART[id];
     a.ex = () => G(OUT(a.w(false) + fxm(BYID[id].tier, [[-9, -8], [9, 7]], 0.8), 2.2), WATCH_AT);
+    a.exb = () => G(OUT(a.w('back'), 2.2), WATCH_AT); // (seen from behind, v2.10.1)
   });
 
   /* ---------- explorer assembly ---------- */
@@ -2148,7 +2151,7 @@
     const sleeve = S(SLEEVE, top.sl, SLEEVE_SH) + S(CUFF, top.cf);
     const hand = ball(HAND[0], HAND[1], HAND[2], HAND[2], sk, { hl: false, dx: 0.2, dy: 0.25 });
     const stickArt = o.stick ? G(G(ART[o.stick].ex() + fxOf('stick'), STICK_TILT), cls('ex-stick')) : '',
-      watchArt = o.watch ? ART[o.watch].ex() : '';
+      watchArt = o.watch ? (back && ART[o.watch].exb ? ART[o.watch].exb() : ART[o.watch].ex()) : '';
     const stickHand = stickArt + hand + L('M41.6 207.6Q46 205.4 50.6 207', dk(sk, 0.35), 1.6) + watchArt;
     const otherHand = G(hand, MIR) + (o.shield ? ART[o.shield].ex() : ''); // the free hand, on the other side from the staff
     // (v2.10.0) seen from the back, what the hands hold is on the far side of the explorer: the staff and the shield

@@ -1,7 +1,12 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.10.0",
+ "latest": "2.10.1",
  "versions": [
+  { "v": "2.10.1", "notes": [
+   "The map opens faster",
+   "Read lights up each word of the chosen āyah as it's recited",
+   "Small visual tweaks"
+  ] },
   { "v": "2.10.0", "notes": [
    "Over 200 riddles to find, each one once, and a gift for every seven",
    "A new recitation: Mishary Alafasy, live in California",

@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.10.0';
+  const VERSION = '2.10.1';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -1089,6 +1089,12 @@
         seg = { start: Math.max(0, ay[0] - 0.05), end: ay[1] + 0.15 };
         // Word Steps: the whole āyah plays, and each word lights up as it's recited (v2.8.4)
         if (st.view === 'words' && ay[2] && S[st.i].n === it[0] && st.a === it[1] - 1) seg.ws = ay[2];
+        // Read (v2.10.1): the words of the chosen āyah light up the same way (`k`: which āyah this is; the
+        // Basmalah is -1), whether it was chosen before or while it plays
+        if (st.view === 'mushaf' && ay[2] && (it[0] === 1 || S[st.i].n === it[0])) {
+          seg.ws = ay[2];
+          seg.k = it[0] === 1 ? -1 : it[1] - 1;
+        }
       }
       curSeg = seg;
       markNow(it);
@@ -1136,6 +1142,16 @@
      those not revealed yet) and the one being recited lights up with its bead (`speak`); when the āyah ends
      (j = -1) every word goes back to how it was. */
   function speakWord(j) {
+    if (st.view === 'mushaf') {
+      // Read (v2.10.1): only while that āyah is the chosen one (its colored words, in the page and in the close-up
+      // card); not chosen, the whole āyah is lit instead (markNow)
+      const on = j >= 0 && curSeg && st.sel != null && st.sel === curSeg.k,
+        els = on ? [document.querySelectorAll('.mayah.sel .mw')[j], document.querySelectorAll('.mfocus .fword')[j]].filter(Boolean) : [];
+      if (els.length && els.every((el) => el.classList.contains('speak'))) return;
+      document.querySelectorAll('.mw.speak, .fword.speak').forEach((el) => el.classList.remove('speak'));
+      els.forEach((el) => el.classList.add('speak'));
+      return;
+    }
     const boxes = document.querySelectorAll('.wflow > .wbox'),
       beads = document.querySelectorAll('.beads > .bead');
     if (j >= 0 && boxes[j] && boxes[j].classList.contains('speak')) return;
@@ -2947,7 +2963,7 @@
       : `<button class="wd-side wd-comfy" data-act="comfy" ${fancy ? '' : 'disabled'} aria-label="Just comfy clothes">👕<small>Comfy</small></button>`;
     return `<div class="screen bagscr ${st.fullView && tab !== 'look' ? 'fullv' : ''}">
     ${bar(whoBtn(prof, 'My Explorer'), prof.name || store.profiles.filter((p) => p.made).length > 1 ? 'My Explorer' : '', 'map', giftIcon(prof, 'inbar') + `<button class="btn small editme" data-act="editme" aria-label="Change your explorer: name and look">✏️</button>`)}
-    <div class="wd-stage"><button class="wd-ex" data-act="exmove" aria-label="Tap your explorer">${explorer({ view: st.backView && tab !== 'look' ? 'back' : 'front' })}</button>${tab === 'look' ? '' : `${comfy}<button class="wd-side wd-turn" data-act="turn" aria-label="Turn around">↻<small>Turn</small></button><button class="wd-side wd-full" data-act="exfull" aria-label="See your explorer big">⤢<small>View</small></button><button class="wd-side wd-show" data-act="show" aria-label="My achievements">🏆<small>Awards</small></button>`}</div>
+    <div class="wd-stage"><button class="wd-ex" data-act="exmove" aria-label="Tap your explorer">${explorer({ view: st.backView && tab !== 'look' ? 'back' : 'front' })}</button>${tab === 'look' ? '' : `${comfy}<button class="wd-side wd-turn" data-act="turn" aria-label="Turn around">↻<small>Turn</small></button><button class="wd-side wd-full" data-act="exfull" aria-label="See your explorer big">${ICON.fsIn}<small>View</small></button><button class="wd-side wd-show" data-act="show" aria-label="My achievements">🏆<small>Awards</small></button>`}</div>
     ${tab === 'look' ? '' : `<div class="wtwrap"><div class="wtabs" id="wtabs">${tabs}</div><button class="cpmore cpless" data-act="wtscroll" data-d="-1" aria-label="Earlier categories">‹</button><button class="cpmore" data-act="wtscroll" data-d="1" aria-label="More categories">›</button></div>`}
     <div class="wbody">${body}</div>
   </div>`;
@@ -3028,12 +3044,12 @@
   // badges, then the side activities (journal, riddles), then days in a row and time
   const ACH_ROWS = (a, prof) => [
     ['🧠', `${questPct(prof)}%`, 'memorized'],
-    ['🏆', `${a.memorized}`, 'sūrahs memorized'],
-    ['🗣️', `${a.ayat}`, `of ${a.allAyat} āyāt learned`],
+    ['🌸', `${a.memorized}`, 'sūrahs memorized'],
+    ['🍃', `${a.ayat}`, `of ${a.allAyat} āyāt learned`],
     ['🎁', `${a.items}`, `of ${a.allItems} things won`],
     ['⭐', `${a.stars}`, `of ${MAX_STARS} stars`],
     ['🏅', `${a.badges}`, a.badges === 1 ? 'star badge' : 'star badges'],
-    ['📔', `${a.found}`, `of ${JKEYS.size} journal finds`],
+    [BOOK_IC, `${a.found}`, `of ${JKEYS.size} journal finds`], // (the map's journal book, v2.10.1)
     ['🔎', `${Math.min(a.riddles, riddleCount())}`, `of ${riddleCount()} riddles found`],
     ['🏃', `${a.streak} ${a.streak === 1 ? 'day' : 'days'}`, `in a row · best ${a.best}`],
     ['⏱️', fmtTime(a.time), 'spent learning'],
@@ -3089,7 +3105,7 @@
           row = Math.floor(j / 2),
           x = 80 + col * 470,
           y = 776 + row * 100; // (five rows of two since v2.10.0: clear of the address at the bottom)
-        return `<g transform="translate(${x} ${y})"><rect width="450" height="90" rx="28" fill="#ffffff" fill-opacity=".92"/><text x="30" y="60" font-size="44">${ic}</text><text x="100" y="48" font-size="38" font-weight="800" fill="#2b2340">${esc(big)}</text><text x="100" y="77" font-size="24" font-weight="700" fill="#6b6385">${esc(sub)}</text></g>`;
+        return `<g transform="translate(${x} ${y})"><rect width="450" height="90" rx="28" fill="#ffffff" fill-opacity=".92"/>${ic[0] === '<' ? ic.replace('<svg ', '<svg x="26" y="22" width="54" height="46" ') : `<text x="30" y="60" font-size="44">${ic}</text>`}<text x="100" y="48" font-size="38" font-weight="800" fill="#2b2340">${esc(big)}</text><text x="100" y="77" font-size="24" font-weight="700" fill="#6b6385">${esc(sub)}</text></g>`;
       })
       .join('');
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${X}" height="${Y}" viewBox="0 0 ${X} ${Y}">
@@ -4604,6 +4620,7 @@
         st.fullView = !st.fullView;
         const scr = $app.querySelector('.bagscr');
         if (scr) scr.classList.toggle('fullv', st.fullView);
+        if (st.fullView) scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' }); // (the page doesn't scroll in it, v2.10.1)
         break;
       }
       case 'equip': {
@@ -6400,7 +6417,7 @@
     const spots = budSpots(buds.length, info.size, buds),
       order = buds.map((id, j) => j).sort((p, q) => spots[p].y - spots[q].y),
       hide = [...new Set(spots.filter((sp) => sp.at != null).map((sp) => sp.at))];
-    const sub = `🍃 ${info.leaves} āyāt · 🌸 ${info.memorized} sūrahs · ${questPct(prof)}%`;
+    const sub = `<span class="tstats"><span>🍃 ${info.leaves} āyāt</span><span>🌸 ${info.memorized} sūrahs</span><span>🧠 ${questPct(prof)}%</span></span>`;
     return `<div class="screen treescr${night ? ' night' : ''}">
     ${bar('My Tree', sub, 'map')}
     <p class="tnote">${info.size >= 0.999 ? 'MāshāAllāh! Your tree is fully grown, with a flower for every sūrah.' : 'It grows as you learn and bears fruit as you practise. A flower in the grass for each sūrah.'}</p>
