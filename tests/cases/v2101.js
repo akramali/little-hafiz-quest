@@ -35,6 +35,22 @@
   const A = w.LHQ_ART, look1 = L.store().profiles[0].look;
   const front = A.explorer(look1, { watch: 'explorer-watch' }, { view: 'front' }), back = A.explorer(look1, { watch: 'explorer-watch' }, { view: 'back' });
   ok('the watch shows its face from the front and only its band from behind', front.includes('#ef4b4b') && !back.includes('#ef4b4b'));
+  // 5. (v2.10.3) the gift card's button: a stick or a shield is held, a buddy comes along, clothes are worn
+  const said = {};
+  for (const id of ['blue-knobbly-branch', 'sturdy-shield', 'ladybug-buddy', 'kufi']) {
+    const prof = L.store().profiles[0];
+    prof.pending = [{ k: 'i', id }]; prof.items = prof.items.filter((x) => x !== id);
+    L.go('bag', { tab: 'hat' }); await wait(250);
+    d.querySelector('[data-act=opengift]').click(); await wait(300);
+    const b = d.querySelector('#modal [data-act=wear]');
+    said[id] = b ? b.textContent.trim() : '';
+    d.querySelector('#modal [data-act=giftok]').click(); await wait(200);
+  }
+  log('gift buttons:', JSON.stringify(said));
+  ok('the gift card says Hold it for a stick or a shield, Take it along for a buddy, Wear it for clothes', /Hold it/.test(said['blue-knobbly-branch']) && /Hold it/.test(said['sturdy-shield']) && /Take it along/.test(said['ladybug-buddy']) && /Wear it/.test(said.kufi), JSON.stringify(said));
+  const notes = {};
+  for (const tab of ['stick', 'shield', 'pet', 'hat']) { L.go('bag', { tab }); await wait(200); notes[tab] = (d.querySelector('.wnote2') || {}).textContent || ''; }
+  ok('My Explorer: tap to hold a stick or shield, take along a buddy, wear clothes', /tap to hold/.test(notes.stick) && /tap to hold/.test(notes.shield) && /tap to take along/.test(notes.pet) && /tap to wear/.test(notes.hat), JSON.stringify(notes));
   ok('no game errors', !errs.length, errs.slice(0, 3).join('; '));
   done();
 })();

@@ -1633,15 +1633,16 @@
     },
   };
   /* everyday sticks (surprise gifts) */
-  // a bumpy branch with knots, a cut top and a side shoot with two leaves
+  // a bumpy branch with knots, a cut top and a side shoot with two leaves (on the outer side, away from the
+  // explorer: v2.10.3)
   ART['knobbly-branch'] = {
-    box: [30, 134, 66, 292],
+    box: [20, 134, 56, 292],
     rot: 42,
     fs: 108,
     ex() {
       const w = '#9a6436',
         d = 'M42.6 144Q42 139 46 138.6Q50.6 138.6 50 144L49.4 166Q52.6 171 49.8 176L49.6 214Q52.4 219 49.6 224L49.6 254Q52.2 259 49.6 264L49.8 287Q47 290 43.4 287L43.2 262Q40.6 256 43.2 250L43 210Q40.2 204 43 198L42.8 176Q40.4 170 42.8 162Z';
-      return DL('M48 192Q56 186 59 176', w, 2.8) + S('M59 176Q56 166 62 160Q66 168 59 176Z', '#5fbf4a') + S('M57 182Q64 180 68 184Q62 190 57 182Z', '#5fbf4a') +
+      return DL('M44 192Q36 186 33 176', w, 2.8) + S('M33 176Q36 166 30 160Q26 168 33 176Z', '#5fbf4a') + S('M35 182Q28 180 24 184Q30 190 35 182Z', '#5fbf4a') +
         S(d, w, limb(48, 142, 48, 285, 1.4, 1.2)) + EF(46, 141.6, 3, 1.8, lt(w, 0.45), 0.9) + E(46, 141.6, 3, 1.8, 'none', sw(1.4)) +
         E(45, 232, 1.8, 3, dk(w, 0.35), sw(1.4)) + L('M43.4 186Q46.4 188 48.8 185.4M43.4 274Q46 276 49 273.4', dk(w, 0.4), 1.6) + EF(46, 288, 2.6, 1.6, INK);
     },

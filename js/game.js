@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.10.2';
+  const VERSION = '2.10.3';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -754,6 +754,8 @@
     '<path d="M31 4V15L34 12.5L37 15V4Z" fill="#ff5d6c" stroke="#2b2340" stroke-width="2" stroke-linejoin="round"/><path d="M15 12H25M15 17H23M15 22H26" stroke="#ffe3a3" stroke-width="2.4" stroke-linecap="round"/></svg>';
   // items drawn and named for this explorer (a girl's crowns are tiaras)
   const itemPic = (id) => ART.item(id, P().look);
+  // (v2.10.3) what the gift card's button says: a stick or a shield is held, not worn; a buddy or a ride comes along
+  const wearLabel = (it) => (it && (it.slot === 'stick' || it.slot === 'shield') ? '✋ Hold it!' : it && it.slot === 'pet' ? '🐾 Take it along!' : '👕 Wear it!');
   const itemName = (id) => (ART.isGirl(P().look) && ITEM[id].girl) || ITEM[id].name;
 
   /* ================= theme ================= */
@@ -2955,7 +2957,7 @@
       const won = list.filter((it) => !starter(it) && prof.items.includes(it.id)).sort((a, b) => gotAt(prof, 'i:' + b.id) - gotAt(prof, 'i:' + a.id));
       const rank = (it) => (starter(it) ? 0 : it.drop ? 1500 : it.track ? 2000 + it.track : 1000); // to find: sūrah treasures, surprises, the star track
       const rest = list.filter((it) => !won.includes(it)).sort((a, b) => rank(a) - rank(b));
-      body = `<div class="wrow">${[...won, ...rest].map((it) => itemCell(it, prof, worn)).join('')}</div><p class="wnote2">${SLOT_INFO[tab][1]} · won ${winnable(prof, tab).filter((it) => prof.items.includes(it.id)).length} of ${winnable(prof, tab).length} · tap to wear${nextPrize(prof) ? ` · next prize at ${nextPrize(prof).track} ⭐` : ''}</p>`;
+      body = `<div class="wrow">${[...won, ...rest].map((it) => itemCell(it, prof, worn)).join('')}</div><p class="wnote2">${SLOT_INFO[tab][1]} · won ${winnable(prof, tab).filter((it) => prof.items.includes(it.id)).length} of ${winnable(prof, tab).length} · tap to ${tab === 'stick' || tab === 'shield' ? 'hold' : tab === 'pet' ? 'take along' : 'wear'}${nextPrize(prof) ? ` · next prize at ${nextPrize(prof).track} ⭐` : ''}</p>`;
     }
     const fancy = Object.values(worn).some((id) => !starter(ITEM[id])) || prof.badge;
     const comfy = prof.stash
@@ -4132,7 +4134,7 @@
     const more = prof.pending.length;
     m.innerHTML = `<div class="card giftcard open"><div class="grays"></div><div class="gopen">${ART.gift({ tier: giftTier(g), open: true, kind: g.k === 'i' ? 'item' : 'sticker' })}</div>
       <div class="gitem">${art}</div><h3>${name}</h3><p class="saveinfo">${sub}</p>
-      <div class="row">${wear ? `<button class="btn go wide" data-act="wear" data-id="${g.id}">👕 Wear it!</button>` : `<button class="btn go wide" data-act="stick" data-id="${g.id}" data-from="gift">⭐ Stick it on!</button>`}<button class="btn wide" data-act="giftok">${more ? `🎁 Next gift (${more})` : 'Yay! ✨'}</button></div></div>`;
+      <div class="row">${wear ? `<button class="btn go wide" data-act="wear" data-id="${g.id}">${wearLabel(ITEM[g.id])}</button>` : `<button class="btn go wide" data-act="stick" data-id="${g.id}" data-from="gift">⭐ Stick it on!</button>`}<button class="btn wide" data-act="giftok">${more ? `🎁 Next gift (${more})` : 'Yay! ✨'}</button></div></div>`;
     setTimeout(() => burstAt(m.querySelector('.gitem'), 26, ['🎉', '⭐', '✨', '🎈']), 120);
   }
   function nextSuggestion(s, p) {
