@@ -10483,3 +10483,11 @@ html:has(.bagscr.fullv) body {
   width: 30px;
   height: 26px;
 }
+
+/* ---------- 2026-11-11 · v2.10.2: My Tree: a hungry buddy's thought cloud fades as it sets off for its fruit ---------- */
+.tsvg .tb-want {
+  transition: opacity 0.4s;
+}
+.tsvg .tb-want.gone {
+  opacity: 0;
+}

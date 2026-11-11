@@ -153,7 +153,13 @@
     }
   }
   const want = hg.want, fr = [...d.querySelectorAll('.tsvg .tfruit')].find((f) => f.dataset.t === want);
-  fr.dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await wait(4800);
+  const hb = d.querySelector(`.tsvg .tbud[data-id="${hg.id}"]`);
+  fr.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  // (v2.10.2) its thought cloud fades as it sets off, and stays gone on the way there and back
+  const cloudSeen = [];
+  for (let t = 0; t < 24; t++) { await wait(200); const c = hb && hb.querySelector('.tb-want'); cloudSeen.push(c && hb.classList.contains('eat') ? +w.getComputedStyle(c).opacity : c && t > 6 ? 1 : 0); }
+  log('cloud while away / back:', cloudSeen.join(' '));
+  ok('my tree: the thought cloud is gone once the buddy sets off for its fruit, and stays gone', cloudSeen.slice(6).every((o) => o === 0) && !(hb && hb.querySelector('.tb-want')), cloudSeen.join(' '));
   log('fed: buddy', JSON.stringify(prof.buddy), '| hungry now', JSON.stringify(L.hungry()));
   ok('tapping the fruit it wants: it falls, the buddy eats, fed for the day', prof.buddy[0] === today && prof.buddy[1] === 1 && !L.hungry());
   await wait(1200);

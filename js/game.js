@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.10.1';
+  const VERSION = '2.10.2';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -6462,6 +6462,12 @@
       if (inn) inn.style.transitionDuration = walk + 's';
       bud.style.setProperty('--go', fx - +bud.dataset.x + 'px');
       bud.classList.add('eat');
+      // (v2.10.2) its thought cloud fades as it sets off, and stays gone: it's on its way to eat
+      const cloud = bud.querySelector('.tb-want');
+      if (cloud) {
+        cloud.classList.add('gone');
+        setTimeout(() => cloud.remove(), 500);
+      }
       setTimeout(() => {
         fruitGone(el);
         const fed = prof.buddy[0] === today() ? prof.buddy[1] : 0;
