@@ -8,55 +8,113 @@
     m = d.getElementById('modal'),
     today = (() => { const x = new Date(); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0'); })();
   w.__occasion = '';
-  // 1. riddles (v2.9.1): opened from the journal, looked for on the map; seven a day, a minute apart
+  // 1. riddles (v2.9.1; v2.10.0: one and done, a button in the journal's header with the way to the next gift, two
+  // minutes apart, a gift every seventh, more kinds of answers): opened from the journal, looked for on the map
+  // (riddle j along the list: one whose answer is a thing on the map, for these taps)
+  const pick = (test) => { for (let j = 0; j < 7; j++) { prof.riddle = [today, j, 0, 0, 0]; const r = L.riddleNow(prof); if (r && test(r[0])) return j; } return -1; };
+  const jp = pick((k) => !/^[xs]:/.test(k));
   L.go('map'); await wait(1500);
   ok('the journal button has a dot while a riddle waits', !!d.querySelector('.jbtn .newdot'));
   const k = L.riddleNow(prof)[0];
   // tapping the answer on the map without opening the riddle solves nothing
   const el0 = d.querySelector(`.mprop[data-k="${k}"]`);
   if (el0) { el0.dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await wait(400); }
-  ok('a tap on the answer before opening the riddle solves nothing', prof.riddle[1] === 0);
+  ok('a tap on the answer before opening the riddle solves nothing', prof.riddle[1] === jp);
   L.go('journal', { w: 0 }); await wait(300);
-  const strip = d.querySelector('.jriddle.on');
-  log('riddle:', strip && strip.textContent.replace(/\s+/g, ' '));
-  ok('the riddle at the top of the journal (1 of 7)', !!strip && /Riddle 1 of 7/.test(strip.textContent));
-  strip.click(); await wait(1600);
+  const btn = d.querySelector('.bar .jrbtn.on');
+  log('riddle button:', btn && btn.textContent.replace(/\s+/g, ' '));
+  ok('the riddle in the journal\'s header, glowing, with the way to the next gift', !!btn && btn.textContent.includes(jp + '/7') && !d.querySelector('.jriddle'));
+  btn.click(); await wait(1600);
   ok('tapping it goes to the map, the clue at the bottom', L.st().view === 'map' && !!d.querySelector('.mriddle'));
   // a wrong thing: nothing lost, the riddle stays open
   const other = [...d.querySelectorAll('.mprop')].find((e) => e.dataset.k !== k);
   if (other) { other.dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await wait(300); }
-  ok('a wrong tap: nothing lost, still looking', !!d.querySelector('.mriddle') && prof.riddle[1] === 0);
+  ok('a wrong tap: nothing lost, still looking', !!d.querySelector('.mriddle') && prof.riddle[1] === jp);
   { // ✕: the clue slides away (a finger-sized target), then back in the journal; open it again from there
     const x = d.querySelector('.mriddle .mr-x'), r = x.getBoundingClientRect(), hit = w.getComputedStyle(x, '::after');
     x.click(); await wait(60);
     ok('closing the clue: it slides away, then it is gone', !!d.querySelector('.mriddle.closing') && r.width >= 40 && hit.inset === '-10px' && (await wait(400), !d.querySelector('.mriddle')));
     L.go('journal', { w: 0 }); await wait(300);
-    d.querySelector('.jriddle.on').click(); await wait(1600);
+    d.querySelector('.jrbtn.on').click(); await wait(1600);
   }
   const el = d.querySelector(`.mprop[data-k="${k}"]`);
   log('answer', k, '| on the map', !!el);
   el.scrollIntoView({ block: 'center' }); await wait(300);
   el.dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await wait(1300);
   log('after: riddle', JSON.stringify(prof.riddle), '| card', m.textContent.trim().slice(0, 90));
-  ok('found: a stamp, the next in a minute', prof.riddle[0] === today && prof.riddle[1] === 1 && prof.riddle[2] === 1 && prof.riddle[3] > Date.now() + 50000 && /you found it/.test(m.textContent));
+  ok('found: a stamp, the next in two minutes', prof.riddle[0] === today && prof.riddle[1] === jp + 1 && prof.riddle[2] === 1 && prof.riddle[3] > Date.now() + 110000 && /you found the/.test(m.textContent) && new RegExp((6 - jp) + ' more for a gift').test(m.textContent));
   m.querySelector('[data-act=cno]') && m.querySelector('[data-act=cno]').click(); await wait(200);
   L.go('journal', { w: 0 }); await wait(300);
-  ok('the next waits a minute', !!d.querySelector('.jriddle.done') && /in a minute/.test(d.querySelector('.jriddle').textContent));
-  // seven a day, all different; a gift with the 7th stamp, one a day at most
-  const day7 = [0, 1, 2, 3, 4, 5, 6].map((j) => { prof.riddle = [today, 0, j, 0, 0]; return L.riddleNow(prof)[0]; });
-  log('today\'s seven:', day7.join(' '));
-  ok('seven different riddles today', new Set(day7).size === 7);
-  prof.riddle = [today, 13, 6, 0, 0];
+  d.querySelector('.jrbtn').click(); await wait(200);
+  ok('none waiting: the button says when the next comes', !d.querySelector('.jrbtn.on') && /next riddle comes in 2 minutes/.test(d.getElementById('toast') ? d.getElementById('toast').textContent : d.body.textContent));
+  // one and done: every riddle once (a thing's second clue only after all the first ones), none skipped by days missed
+  {
+    const T = L.riddleCount(), all = [];
+    for (let j = 0; j < T; j++) { prof.riddle = [today, j, 0, 0, 0]; all.push(L.riddleNow(prof).join('|')); }
+    const N = T / 2, keys = all.map((x) => x.split('|')[0]);
+    log('riddles:', T, '| first:', keys.slice(0, 5).join(' '));
+    ok('every riddle once, a thing again only after all the others', T > 230 && new Set(all).size === T && new Set(keys.slice(0, N)).size === N && keys.every((x, j) => j < N || x === keys[j - N]));
+    prof.riddle = ['2020-01-01', 40, 3, 0, 0];
+    const later = L.riddleNow(prof);
+    prof.riddle = [today, 40, 0, 0, 0];
+    ok('days missed skip nothing: the next riddle is the next on the list', later && later.join() === L.riddleNow(prof).join());
+    prof.riddle = [today, T, 0, 0, 0];
+    ok('all found: they come round again in a new order', !!L.riddleNow(prof) && L.riddleNow(prof).join('|') !== all[0]);
+    // every answer is there to tap on the map (a fruit: its tree)
+    L.go('map'); await wait(1200);
+    const FT = { apple: 'meadow-tree', acorn: 'forest-oak', pinecone: 'forest-pine', coconut: 'sands-palm', cherry: 'meadow-bush', blueberry: 'forest-berries', pear: 'canyon-cactus' };
+    const missing = [...new Set(keys)].filter((x) => !d.querySelector(x.startsWith('s:') ? `.node[data-i="${idx(+x.slice(2))}"]` : x.startsWith('w:') ? `.msign[data-w="${x.slice(2)}"]` : x === 'x:bridge' ? '.mbridge, .mgate' : x.startsWith('x:') ? `.mprop[data-k="${FT[x.slice(2)]}"]` : `.mprop[data-k="${x}"]`));
+    ok('every answer can be found on the map', !missing.length, missing.join(' '));
+    prof.riddle = [today, jp + 1, 1, Date.now() + 120000, 0];
+  }
+  // (v2.10.0) a sūrah's stop can be the answer: tapping it solves the riddle instead of opening the sūrah
+  {
+    const n = 113, kk = 's:' + n;
+    L.go('map'); await wait(1200);
+    prof.riddle = [today, 1, 2, 0, 0];
+    L.go('journal', { w: 0 }); await wait(200);
+    d.querySelector('.jrbtn.on').click(); await wait(1600);
+    w.__lhq.riddleSet && w.__lhq.riddleSet(kk);
+    const node = d.querySelector(`.node[data-i="${idx(n)}"]`);
+    node && node.scrollIntoView({ block: 'center' }); await wait(300);
+    node && node.click(); await wait(1300);
+    ok('a sūrah stop as the answer: solved, and the map stays', L.st().view === 'map' && prof.riddle[2] === 3 && /you found the/.test(m.textContent), L.st().view + ' ' + JSON.stringify(prof.riddle));
+    m.querySelector('[data-act=cno]') && m.querySelector('[data-act=cno]').click(); await wait(200);
+  }
+  // (v2.10.0) a fruit that only falls when its tree is tapped: catch it before an animal does
+  {
+    prof.riddle = [today, 2, 3, 0, 0];
+    L.go('journal', { w: 0 }); await wait(200);
+    d.querySelector('.jrbtn.on').click(); await wait(1600);
+    w.__lhq.riddleSet('x:apple');
+    const tree = d.querySelector('.mprop[data-k="meadow-tree"]');
+    tree.scrollIntoView({ block: 'center' }); await wait(300);
+    tree.click(); await wait(800);
+    const f = d.querySelector('.mfruit[data-f="apple"]');
+    const tappable = f && w.getComputedStyle(f).pointerEvents !== 'none';
+    f && f.click(); await wait(1300);
+    ok('a hidden answer: tap the tree, catch the apple that falls', tappable && prof.riddle[2] === 4 && /Apple/.test(m.textContent), JSON.stringify(prof.riddle));
+    m.querySelector('[data-act=cno]') && m.querySelector('[data-act=cno]').click(); await wait(200);
+  }
+  // every seventh found (here the 14th, on a day's 3rd): a gift to tap open, right on the Teacher's card
+  prof.riddle = [today, 13, 2, 0, 0];
   const before = prof.pending.length;
   L.go('journal', { w: 0 }); await wait(200);
-  d.querySelector('.jriddle.on').click(); await wait(1600);
-  const k7 = L.riddleNow(prof) ? L.riddleNow(prof)[0] : day7[6];
-  const el7 = d.querySelector(`.mprop[data-k="${k7}"]`);
-  el7 && el7.dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await wait(1300);
-  ok('the 7th riddle (14th stamp) brings a gift', prof.riddle[1] === 14 && prof.pending.length > before && prof.riddle[4] === 1);
-  m.querySelector('[data-act=cno]') && m.querySelector('[data-act=cno]').click(); await wait(200);
+  d.querySelector('.jrbtn.on').click(); await wait(1600);
+  const el7 = d.querySelector('.mprop[data-k]');
+  w.__lhq.riddleSet(el7.dataset.k); // (whatever today's seventh is: answer it with a thing that's on the map)
+  el7.scrollIntoView({ block: 'center' }); await wait(300);
+  el7.dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await wait(1300);
+  ok('the 14th riddle brings a gift, to tap open on the card', prof.riddle[1] === 14 && prof.riddle[2] === 3 && /A gift for you/.test(m.textContent) && prof.pending.length > before && prof.riddle[4] === 1 && !!m.querySelector('.giftbtn[data-act=opengift]'));
+  m.querySelector('[data-act=opengift]') && m.querySelector('[data-act=opengift]').click(); await wait(600);
+  ok('…and it opens', prof.pending.length === before);
+  d.getElementById('modal').classList.remove('show');
   L.go('journal', { w: 0 }); await wait(200);
-  ok('all seven done: come back tomorrow', /Come back tomorrow/.test(d.querySelector('.jriddle').textContent) && !L.riddleNow(prof));
+  ok('after the gift the button starts again: 0/7', d.querySelector('.jrbtn').textContent.includes('0/7'));
+  prof.riddle = [today, 20, 7, 0, 0];
+  L.go('journal', { w: 0 }); await wait(200);
+  d.querySelector('.jrbtn').click(); await wait(200);
+  ok('seven today: none waiting, more tomorrow', !L.riddleNow(prof) && !d.querySelector('.jrbtn.on') && /More tomorrow/.test(d.getElementById('toast') ? d.getElementById('toast').textContent : d.body.textContent));
   // 2. my tree: its button under the journal's, a screen of its own
   L.go('map'); await wait(1500);
   ok('the My Tree button on the map', !!d.querySelector('.tbtn[data-act=tree]'));

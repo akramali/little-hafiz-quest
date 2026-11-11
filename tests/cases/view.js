@@ -46,9 +46,9 @@
   }
   else if (v === 'splash') { L.go('splash'); await wait(1500); if (Q.get('whatsnew')) { const dt = d.querySelector('.updnote details'); if (dt) dt.open = true; } }
   else if (v === 'bag') L.go('bag', { tab: Q.get('tab') || 'look' });
-  else if (v === 'done') L.go('done', { i, p, msg: Q.get('msg') || 'You put all of it in order!', stars: 1, allStars: !!Q.get('all'), memorized: !!Q.get('memo') });
+  else if (v === 'done') L.go('done', { i, p, msg: Q.get('msg') || 'You put all of it in order!', stars: 1, gained: +(Q.get('gained') || 1), allStars: !!Q.get('all'), memorized: !!Q.get('memo') });
   else if (v) L.go(v, { i, p, sel: Q.get('sel') != null ? +Q.get('sel') : null, focus: !!Q.get('focus') });
-  if (Q.get('click')) { await wait(200); d.querySelector(Q.get('click')).click(); }
+  if (Q.get('click')) { await wait(200); if (Q.get('still')) { const ns = d.createElement('style'); ns.textContent = '*{transition:none!important}'; d.head.appendChild(ns); } d.querySelector(Q.get('click')).click(); await wait(1500); } // (still: no transitions, for a picture of where a click ends up)
   if (Q.get('open')) { await wait(400); d.querySelectorAll('details').forEach((x) => (x.open = true)); }
   if (Q.get('scroll')) w.scrollTo(0, +Q.get('scroll'));
   if (Q.get('help')) { L.go('settings'); await wait(200); d.querySelector('[data-act=help]').click(); if (Q.get('help') === 'end') { await wait(200); const hc = d.querySelector('.infocard'); hc.scrollTop = hc.scrollHeight; } }

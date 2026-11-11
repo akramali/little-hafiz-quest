@@ -1678,9 +1678,16 @@
   const KITE = 'M0 -26Q16 -26 23 -20Q23 6 0 27Q-23 6 -23 -20Q-16 -26 0 -26Z';
   const KITE_IN = 'M0 -19.5Q12 -19.5 17.5 -15Q17.5 4.5 0 20.5Q-17.5 4.5 -17.5 -15Q-12 -19.5 0 -19.5Z';
   const KITE_SH = 'M0 -26Q16 -26 23 -20Q23 6 0 27Q12 6 10 -24Z';
+  /* (v2.10.0) a shield seen from behind (the explorer's back view): plain, its rim's colour, a darker panel, an arm
+     strap and the grip the hand holds (greyish leather, so colour versions keep it brown) */
+  const shieldBack = (R, c, k) =>
+    S(R, c) + G(F(R, dk(c, 0.18)), ' transform="scale(' + (k || 0.8) + ')"') +
+    [-11, 9].map((y) => S('M-15 ' + y + 'Q0 ' + (y - 2) + ' 15 ' + y + 'L15 ' + (y + 6) + 'Q0 ' + (y + 4) + ' -15 ' + (y + 6) + 'Z', '#6e5c50') + CF(-12.5, y + 3, 1.4, '#c9d2e3') + CF(12.5, y + 3, 1.4, '#c9d2e3')).join('');
+  const SUN_R = 'M0 -25A25 25 0 1 0 0.01 -25Z';
   ART['sturdy-shield'] = {
     box: [-26, -29, 26, 30],
     fx: [[-10, -14]],
+    bk: () => shieldBack(KITE, '#d5dceb'),
     sh() {
       return S(KITE, '#d5dceb', KITE_SH) + S(KITE_IN, '#3f7fe0', 'M0 -19.5Q12 -19.5 17.5 -15Q17.5 4.5 0 20.5Q9 4 7.5 -18Z') + P('M-11 -7L0 3L11 -7L11 1L0 11L-11 1Z', '#fff', sw(2)) +
         [[-17, -20], [17, -20], [0, 22.5]].map((p) => CF(p[0], p[1], 1.8, '#8d97b0')).join('') + F('M-14 -14Q-12 -17 -8 -17Q-12 -10 -13 -2Z', '#fff', 0.6);
@@ -1690,6 +1697,7 @@
     box: [-26, -29, 26, 30],
     fx: [[-10, -14], [12, 8]],
     aura: [0, 0, 34, 36],
+    bk: () => shieldBack(KITE, GOLD),
     sh() {
       return S(KITE, GOLD, KITE_SH) + S(KITE_IN, '#7a5cff', 'M0 -19.5Q12 -19.5 17.5 -15Q17.5 4.5 0 20.5Q9 4 7.5 -18Z') + P(star5(0, -1, 9.5, 4.2), GOLD, sw(2)) +
         F('M-14 -14Q-12 -17 -8 -17Q-12 -10 -13 -2Z', '#fff', 0.6);
@@ -1698,6 +1706,7 @@
   ART['sun-shield'] = {
     box: [-27, -27, 27, 27],
     fx: [[-12, -12]],
+    bk: () => shieldBack(SUN_R, '#ff9f1c'),
     sh() {
       return ball(0, 0, 25, 25, '#ff9f1c', { hl: false }) + ball(0, 0, 19, 19, '#ffd23f', { hl: false }) + P(raysD(0, 0, 9.5, 17, 8, 15), '#ff8a3d', sw(1.6)) +
         ball(0, 0, 10, 10, '#fff1a8', { sh: false }) + cuteEyes(-3.6, -1, 3.6, -1, 1.6) + smile(0, 3, 3, 1.6) + F('M-18 -9Q-15 -16 -9 -18Q-14 -12 -15 -5Z', '#fff', 0.6);
@@ -1706,6 +1715,7 @@
   ART['starry-shield'] = {
     box: [-26, -29, 26, 30],
     fx: [[-12, -12], [12, 10], [0, -22]],
+    bk: () => shieldBack(KITE, '#d5dceb'),
     sh() {
       return S(KITE, '#d5dceb', KITE_SH) + S(KITE_IN, '#2f5fc4', 'M0 -19.5Q12 -19.5 17.5 -15Q17.5 4.5 0 20.5Q9 4 7.5 -18Z') +
         // a red bird with stepped feathers, its head turned to one side, and a fanned tail
@@ -1718,6 +1728,7 @@
   ART['round-shield'] = {
     box: [-26, -26, 26, 26],
     fx: [[-10, -12]],
+    bk: () => shieldBack('M0 -24A24 24 0 1 0 0.01 -24Z', '#b9844e') + L('M-12 -21L-12 -11M-12 -5L-12 9M-12 15L-12 21M0 -24L0 -13M0 -7L0 7M0 13L0 24M12 -21L12 -11M12 -5L12 9M12 15L12 21', dk('#b9844e', 0.45), 1.4),
     sh() {
       const R = 'M0 -24A24 24 0 1 0 0.01 -24Z';
       return S(R, '#b9844e', 'M8 -22A24 24 0 0 1 0.01 24Q14 4 8 -22Z') + L('M-12 -21L-12 21M0 -24L0 24M12 -21L12 21', dk('#b9844e', 0.3), 1.6) + C(0, 0, 19.5, 'none', ' stroke="#8d97b0" stroke-width="2.6"') +
@@ -1727,6 +1738,7 @@
   // a small wooden buckler with a painted star (surprise gift)
   ART['star-buckler'] = {
     box: [-21, -21, 21, 21],
+    bk: () => shieldBack('M0 -19A19 19 0 1 0 0.01 -19Z', '#b9844e', 0.74),
     sh() {
       const w = '#b9844e',
         R = 'M0 -19A19 19 0 1 0 0.01 -19Z',
@@ -1737,6 +1749,8 @@
   };
   const SHIELDS = () => Object.keys(ART).filter((id) => ART[id].sh);
   SHIELDS().forEach((id) => (ART[id].ex = () => G(OUT(ART[id].sh(), SW / 0.85), tf(SHIELD_AT[0], SHIELD_AT[1], 0.85))));
+  // its back, where the shield sits seen from behind (mirrored by the explorer's back view)
+  const shieldBackAt = (a) => G(OUT(a.bk ? a.bk() : a.sh(), SW / 0.85), tf(SHIELD_AT[0], SHIELD_AT[1], 0.85));
 
   /* ---------- watches: ex = small band on the wrist, ic = big icon ---------- */
   function watch(band, face, inner, big) {
@@ -1999,6 +2013,7 @@
   SHIELDS().forEach((id) => {
     const a = ART[id];
     a.ex = () => G(OUT(a.sh() + fxm(BYID[id].tier, a.fx), SW / 0.85), tf(SHIELD_AT[0], SHIELD_AT[1], 0.85));
+    a.exb = () => shieldBackAt(a);
   });
   WATCHES().forEach((id) => {
     const a = ART[id];
@@ -2132,13 +2147,18 @@
     const legs = back ? G(leg, cls('ex-leg-l')) + G(G(leg, MIR), cls('ex-leg-r')) : G(leg, cls('ex-leg-r')) + G(G(leg, MIR), cls('ex-leg-l'));
     const sleeve = S(SLEEVE, top.sl, SLEEVE_SH) + S(CUFF, top.cf);
     const hand = ball(HAND[0], HAND[1], HAND[2], HAND[2], sk, { hl: false, dx: 0.2, dy: 0.25 });
-    const stickHand = (o.stick ? G(G(ART[o.stick].ex() + fxOf('stick'), STICK_TILT), cls('ex-stick')) : '') + hand + L('M41.6 207.6Q46 205.4 50.6 207', dk(sk, 0.35), 1.6) + (o.watch ? ART[o.watch].ex() : '');
+    const stickArt = o.stick ? G(G(ART[o.stick].ex() + fxOf('stick'), STICK_TILT), cls('ex-stick')) : '',
+      watchArt = o.watch ? ART[o.watch].ex() : '';
+    const stickHand = stickArt + hand + L('M41.6 207.6Q46 205.4 50.6 207', dk(sk, 0.35), 1.6) + watchArt;
     const otherHand = G(hand, MIR) + (o.shield ? ART[o.shield].ex() : ''); // the free hand, on the other side from the staff
-    const mirIf = (m, yes) => (yes ? G(m, MIR) : m);
-    const armsEarly = G(mirIf(sleeve, back), cls('ex-arm-r')) + G(mirIf(sleeve, !back), cls('ex-arm-l'));
-    // seen from the back the free arm is on the viewer's left, so its hand is too (not mirrored, unlike the
-    // front view); drawing it mirrored left a second hand on the stick whenever the stick arm moved
-    const armsLate = G(mirIf(stickHand, back), cls('ex-arm-r')) + G(back ? hand + G(o.shield ? ART[o.shield].ex() : '', MIR) : otherHand, cls('ex-arm-l'));
+    // (v2.10.0) seen from the back, what the hands hold is on the far side of the explorer: the staff and the shield
+    // (its back: straps, no picture) behind the sleeves and the body, only the hands (the back of the fist, no curl
+    // of the fingers) in front. The free arm is on the viewer's left, so its hand is too (not mirrored, unlike the
+    // front view; drawing it mirrored left a second hand on the stick whenever the stick arm moved)
+    const armsEarly = back
+      ? G(G(stickArt + sleeve, MIR), cls('ex-arm-r')) + G((o.shield ? G((ART[o.shield].exb || ART[o.shield].ex)(), MIR) : '') + sleeve, cls('ex-arm-l'))
+      : G(sleeve, cls('ex-arm-r')) + G(G(sleeve, MIR), cls('ex-arm-l'));
+    const armsLate = back ? G(G(hand + watchArt, MIR), cls('ex-arm-r')) + G(hand, cls('ex-arm-l')) : G(stickHand, cls('ex-arm-r')) + G(otherHand, cls('ex-arm-l'));
     const torso = S(TORSO, top.c, TORSO_SH, TORSO_HL) + (back ? top.bk() : top.fr()) + fxOf('top') + (mess ? mess.dust : '');
     const cape = o.cape ? G(ART[o.cape].ex(v) + fxOf('cape'), cls('ex-cape')) : '';
     const bag = o.bag ? ART[o.bag].ex(v) + fxOf('bag') : '';
@@ -2150,9 +2170,10 @@
     const pet = o.pet ? G(G(OUT(ART[o.pet].pet.d() + fxm(T('pet'), PETFX[o.pet] || [[-30, -50], [30, -36]], 1.4), SW / PET_S), tf(PET_AT[0], PET_AT[1], PET_S)), cls('ex-pet')) : '';
     const wingsF = '';
     const stk = !back && outfit && outfit.sticker ? badge(outfit.sticker) : '';
+    // (v2.10.0) the sleeves go behind the body, so each arm comes out from its side, not from the chest
     const body = back
-      ? torso + armsEarly + cape + bag + G(head, cls('ex-head')) + armsLate
-      : torso + (o.cape && ART[o.cape].over ? ART[o.cape].over() : '') + armsEarly + bag + stk + G(head, cls('ex-head')) + armsLate;
+      ? armsEarly + torso + cape + bag + G(head, cls('ex-head')) + armsLate
+      : armsEarly + torso + (o.cape && ART[o.cape].over ? ART[o.cape].over() : '') + bag + stk + G(head, cls('ex-head')) + armsLate;
     // shining again: a warm glow and twinkles all around
     const shine = mood === 'shine' ? tw(34, 70, 9, 0) + tw(156, 96, 8, 0.6) + tw(26, 200, 7, 1.2) + tw(166, 186, 9, 0.3) + tw(98, 40, 7, 0.9) + tw(150, 250, 6, 1.6) : '';
     if (mood === 'shine') auras = aura(92, 170, 90, 120) + auras;
@@ -2190,7 +2211,12 @@
       [70, 82, 94, 106, 118, 130].map((x) => P('M' + x + ' ' + (189 + (x - 100) * (x - 100) * -0.0016 + 8) + 'l3 -3l3 3l-3 3Z', gold, sw(0.8))).join('') +
       P('M92 192l8 -8l8 8l-8 8Z', gold, sw(1.6)) + P('M94 186h12v12h-12Z', gold, sw(1.6)) + CF(100, 192, 2.6, '#3fbf7f');
     const g =
-      EF(100, 292, 46, 6, INK, 0.16) + (noStaff ? '' : staff) + G(robe, cls('robe-sway')) +
+      EF(100, 292, 46, 6, INK, 0.16) +
+      // (his other arm hanging at his side, behind the robe so it comes out from his side, v2.10.0)
+      (noStaff ? '' : S('M74 146Q50 150 44 196L57 203Q60 176 82 158Z', robeC, 'M52 162Q45 178 44 196L50 199Q50 180 52 162Z') + L('M57 202L44 195', gold, 3) + ball(50, 205, 7.5, 7.5, skin, { hl: false }) +
+        // (his staff arm's sleeve behind the robe too, coming out from his side like the other one)
+        S('M126 146Q150 148 156 168L145 181Q139 165 118 158Z', robeC, 'M146 154Q154 160 156 168L150 175Q150 164 146 154Z') + L('M145 180L156 167', gold, 3)) +
+      G(robe, cls('robe-sway')) +
       S('M58 152Q58 128 100 126Q142 128 142 152Q122 142 100 142Q78 142 58 152Z', robeC, 'M120 132Q142 138 142 152Q132 146 120 144Z') +
       (noStaff
         ? // both hands tucked into his sleeves, in front: the sleeves fold across and their gold cuffs meet
@@ -2198,7 +2224,10 @@
           S('M140 150Q150 176 138 186Q120 184 100 182L100 164Q114 166 122 150Z', robeC, 'M140 168Q142 182 136 186L128 185Q138 178 140 168Z') +
           S('M88 165Q94 164 100 164L100 182Q94 183 88 184Z', gold) + S('M112 165Q106 164 100 164L100 182Q106 183 112 184Z', gold) +
           L('M100 164L100 182', dk(gold, 0.35), 1.6)
-        : S('M130 170Q146 186 150 200L144 206Q132 192 122 182Z', robeC) + ball(147, 203, 8, 8, skin, { hl: false })) +
+        : // (v2.10.0) his staff arm (its sleeve behind the robe, above): the staff over the sleeve and his fist over
+          // the staff, gripping it
+          staff +
+          ball(150, 177, 8, 8.6, skin, { hl: false })) +
       ball(73, 104, 7, 10, '#eeeae0', { hl: false }) + ball(127, 104, 7, 10, '#eeeae0', { hl: false }) + ball(100, 98, 30, 31, skin) +
       S('M70 88Q70 64 100 62Q130 64 130 88Q100 78 70 88Z', '#f4f1ea', 'M112 64Q130 70 130 88Q122 84 114 82Z') + L('M76 80Q100 72 124 80', '#d8d2c2', 1.6) +
       S('M74 104Q74 150 100 156Q126 150 126 104Q114 120 100 120Q86 120 74 104Z', '#f4f1ea', 'M112 116Q126 112 126 104Q126 146 104 155Q122 136 112 116Z') +
@@ -2288,7 +2317,8 @@
      decor: [sticker ids hung on it], seen: { leaves, flowers, fruits } (how many there were last time: the rest pop
      in) }. Returns { svg, fruits: [{ x, y, t }] } (the berries on the two bushes come first: food from the start). */
   const FRUIT = {
-    date: (x, y) => [[-3, -2], [3, -1], [0, 3]].map((d) => S('M' + n(x + d[0]) + ' ' + n(y + d[1] - 4.4) + 'Q' + n(x + d[0] + 3) + ' ' + n(y + d[1]) + ' ' + n(x + d[0]) + ' ' + n(y + d[1] + 4.4) + 'Q' + n(x + d[0] - 3) + ' ' + n(y + d[1]) + ' ' + n(x + d[0]) + ' ' + n(y + d[1] - 4.4) + 'Z', '#9a5a2e')).join(''),
+    // (v2.10.0) a little bunch of three plump, glossy amber dates hanging from a stalk (it read as a "V" before)
+    date: (x, y) => L('M' + x + ' ' + (y - 8) + 'Q' + (x + 0.6) + ' ' + (y - 4) + ' ' + x + ' ' + (y - 2.6), '#6a4a2a', 1.4) + [[-3.4, 1.6, 18], [3.4, 1.6, -18], [0, 3.6, 0]].map((d) => G(ball(0, 0, 3.4, 5.4, '#c8742d', { sh: true }), ' transform="translate(' + n(x + d[0]) + ' ' + n(y + d[1]) + ') rotate(' + d[2] + ')"')).join(''),
     fig: (x, y) => S('M' + x + ' ' + (y - 6) + 'Q' + (x + 7.5) + ' ' + (y + 2) + ' ' + x + ' ' + (y + 7) + 'Q' + (x - 7.5) + ' ' + (y + 2) + ' ' + x + ' ' + (y - 6) + 'Z', '#7a3f8a', null, 'M' + (x - 3) + ' ' + y + 'Q' + (x - 3) + ' ' + (y - 3) + ' ' + (x - 1) + ' ' + (y - 4) + 'Z'),
     olive: (x, y) => ball(x, y, 4, 5.4, '#7fa63a', { sh: false }),
     pomegranate: (x, y) => ball(x, y + 1, 6.4, 6, '#d63a4a') + S('M' + (x - 2.6) + ' ' + (y - 4) + 'L' + (x - 3) + ' ' + (y - 8) + 'L' + (x - 1) + ' ' + (y - 6) + 'L' + x + ' ' + (y - 8.6) + 'L' + (x + 1) + ' ' + (y - 6) + 'L' + (x + 3) + ' ' + (y - 8) + 'L' + (x + 2.6) + ' ' + (y - 4) + 'Z', '#b02a3a'),
@@ -2622,7 +2652,16 @@
     // the crown's growth (cr): where leaves can grow widens around the branches as the tree matures
     const cr = smooth((t - 0.3) / 0.6);
     const ends = live.filter((nd) => nd.depth >= 2);
-    const leafAt = (x, y, a, len, c, out) => G(F('M0 0Q' + n(len * 0.45) + ' ' + n(-len * 0.36) + ' ' + n(len) + ' 0Q' + n(len * 0.45) + ' ' + n(len * 0.36) + ' 0 0Z', c) + (out ? P('M0 0Q' + n(len * 0.45) + ' ' + n(-len * 0.36) + ' ' + n(len) + ' 0Q' + n(len * 0.45) + ' ' + n(len * 0.36) + ' 0 0Z', 'none', ' stroke-width="1.4"') + L('M' + n(len * 0.12) + ' 0L' + n(len * 0.72) + ' 0', '#3f9a35', 1) : ''), ' transform="translate(' + n(x) + ' ' + n(y) + ') rotate(' + n((a * 180) / Math.PI) + ')"');
+    // a leaf's outline at its place (no transform: v2.10.0 draws them with fewer elements, the same picture)
+    const leafD = (x, y, a, len) => {
+      const ca = Math.cos(a),
+        sa = Math.sin(a),
+        Pt = (u, v) => n(x + u * ca - v * sa) + ' ' + n(y + u * sa + v * ca);
+      return 'M' + Pt(0, 0) + 'Q' + Pt(len * 0.45, -len * 0.36) + ' ' + Pt(len, 0) + 'Q' + Pt(len * 0.45, len * 0.36) + ' ' + Pt(0, 0) + 'Z';
+    };
+    // a fresh leaf: one shape with its fill and outline, and its vein
+    const leafAt = (x, y, a, len, c) =>
+      '<path d="' + leafD(x, y, a, len) + '" fill="' + c + '" stroke-width="1.4"/>' + L('M' + n(x + Math.cos(a) * len * 0.12) + ' ' + n(y + Math.sin(a) * len * 0.12) + 'L' + n(x + Math.cos(a) * len * 0.72) + ' ' + n(y + Math.sin(a) * len * 0.72), '#3f9a35', 1);
     // every leaf hangs on wood: twigs grow off the young branches (not the bare old wood), alternating sides, leaning
     // up and out, longer as the crown fills; each leaf grows from a point on a twig or a branch, pointing away from it.
     // The darker leaves behind hang on their own twigs (the other side, reaching a little further)
@@ -2710,10 +2749,12 @@
     const twigLines = (set, list, c) => {
       const far = new Map();
       list.forEach((l) => l.b[3] >= 0 && far.set(l.b[3], Math.max(far.get(l.b[3]) || 0, l.b[4])));
-      return [...far].map(([ti, d]) => {
+      // (all of them as one shape: v2.10.0)
+      const d = [...far].map(([ti, dd]) => {
         const w = set.twigs[ti];
-        return L('M' + n(w[0]) + ' ' + n(w[1]) + 'L' + n(w[0] + Math.cos(w[2]) * d) + ' ' + n(w[1] + Math.sin(w[2]) * d), c, 2);
+        return 'M' + n(w[0]) + ' ' + n(w[1]) + 'L' + n(w[0] + Math.cos(w[2]) * dd) + ' ' + n(w[1] + Math.sin(w[2]) * dd);
       }).join('');
+      return d ? L(d, c, 2) : '';
     };
     const nLeaves = o.leaves > 0 ? Math.max(2, Math.min(564, Math.round(o.leaves))) : 0; // a leaf for every āyah learned (none yet: just the seed in its mound)
     // the area kept for blossoms and fruit (the leafy patches at the branch ends)
@@ -2731,12 +2772,14 @@
       light = spread(frontSet, Math.round(nLeaves * (1 - 0.25 * smooth((size - 0.3) / 0.7))), 0.8, [], fill),
       backSet = sprout(1, 1.3),
       dark = size > 0.1 ? spread(backSet, Math.max(size < 0.45 ? nLeaves - light.length : 0, Math.round(nLeaves * 0.85 * smooth((size - 0.15) / 0.85))), 0.6, light, fill * 0.75) : [];
-    g += '<g class="tleaves">' + twigLines(backSet, dark, woodC(2, true)) + dark.map((p, i) => leafAt(p.b[0], p.b[1], p.a, p.len * (i % 3 ? 1 : 0.8), DARK[i % 3], false)).join('');
+    g += '<g class="tleaves">' + twigLines(backSet, dark, woodC(2, true)) + DARK.map((c, k) => { const d = dark.filter((_, i) => i % 3 === k).map((p, i) => leafD(p.b[0], p.b[1], p.a, p.len * (k ? 1 : 0.8))).join(''); return d ? F(d, c) : ''; }).join(''); // (the darker ones, no outline: one shape a shade)
     g += wood(frontW, false) +
       // the roots flaring at the foot, over the trunk, blending into its edges (outlined only on their curves)
       (roots ? L(rootL + rootR, INK, 3.4, ' stroke-linecap="butt"') + F(roots, '#9a6a40') + F('M' + n(rx + rw * 0.12) + ' ' + n(ry - 1.5) + 'L' + n(rx + rw * 0.92) + ' ' + n(ry - 1.5) + 'L' + n(rx + rw * 0.92) + ' ' + n(ry) + 'Q' + n(rx + rw * 0.92) + ' 598 ' + n(cx + W0 * 1.3) + ' 602L' + n(cx + W0 * 0.3) + ' 602Z', '#7a5232') : ''); // (outlined like the trunk: half the line under the wood, so the two meet as one)
     let li = 0;
-    g += twigLines(frontSet, light, woodC(2, false)) + light.map((p) => '<g' + isNew(li++, seen.lobes) + '>' + leafAt(p.b[0], p.b[1], p.a, p.len, LIGHT[li % 4], true) + '</g>').join('') + '</g>';
+    // (new leaves since the last visit pop in; a big jump, the newest 40 only, v2.10.0)
+    const popFrom = seen.lobes == null ? null : Math.max(seen.lobes, light.length - 40);
+    g += twigLines(frontSet, light, woodC(2, false)) + light.map((p) => { const nw = isNew(li++, popFrom), leaf = leafAt(p.b[0], p.b[1], p.a, p.len, LIGHT[li % 4]); return nw ? '<g' + nw + '>' + leaf + '</g>' : leaf; }).join('') + '</g>';
     // blossoms, then fruit, spread evenly over the crown (never in a bunch)
     const spots = [],
       want = (o.blossoms || []).length + (o.fruits || []).length;
@@ -2797,7 +2840,12 @@
       .concat([[118, 612, 0.15], [312, 608, 0.3], [150, 628, 0.45], [234, 632, 0.6], [392, 628, 0.75], [-14, 620, 0.85]].filter((q) => size >= q[2]).map((q, i) => [q[0], q[1], 0.8 + hsh(i + 20, 3) * 0.35, i + 20]))
       .filter((q) => treeBushes(size).every((b) => Math.abs(q[0] - b.x) > b.w / 2 + 8)) // (never out of a bush)
       .map((q) => ({ y: q[1], svg: nightTint(OUT(tuft(q[0], q[1], q[2], q[3]), 1.1), o.night) })); // (drawn among the buddies, nearer ones in front)
-    return { svg: treeSky(o.night, o.seed) + treeFar(o.night) + groundN + OUT(meadow, 1.4) + '<g class="tgustw"><g class="tsway">' + OUT(g, 2) + '</g></g>' + nightTint(OUT(mound, 2), o.night), tufts, fruits, lobes: li, drop };
+    // (v2.10.0) in three layers, so the swaying tree can move on its own: back (sky, far off, ground, flowers), the
+    // tree, front (the mound; the screen adds the buddies and tufts there)
+    const back = treeSky(o.night, o.seed) + treeFar(o.night) + groundN + OUT(meadow, 1.4),
+      tree = OUT(g, 2),
+      front = nightTint(OUT(mound, 2), o.night);
+    return { back, tree, front, svg: back + '<g class="tgustw"><g class="tsway">' + tree + '</g></g>' + front, tufts, fruits, lobes: li, drop };
   }
 
   /* A campfire beside each memorized sūrah on the map (viewBox 0 0 60 60, standing on y=54). It burns down over

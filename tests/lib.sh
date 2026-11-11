@@ -36,7 +36,7 @@ shot_target() { if [ -n "$WSL" ]; then echo "C:\\Temp\\$1"; else echo "$OUT/$1";
 shot_collect() { [ -n "$WSL" ] && [ -f "/mnt/c/Temp/$1" ] && mv -f "/mnt/c/Temp/$1" "$OUT/$1"; echo "$OUT/$1"; }
 stop_chrome() { # profile, pid
   if [ -n "$WSL" ]; then
-    powershell.exe -NoProfile -Command "Get-CimInstance Win32_Process -Filter \"Name='chrome.exe'\" | Where-Object { \$_.CommandLine -like '*$1*' } | ForEach-Object { Stop-Process -Id \$_.ProcessId -Force -ErrorAction SilentlyContinue }" >/dev/null 2>&1
+    timeout 30 powershell.exe -NoProfile -Command "Get-CimInstance Win32_Process -Filter \"Name='chrome.exe'\" | Where-Object { \$_.CommandLine -like '*$1*' } | ForEach-Object { Stop-Process -Id \$_.ProcessId -Force -ErrorAction SilentlyContinue }" >/dev/null 2>&1
   else
     pkill -f -- "$1" 2>/dev/null; [ -n "$2" ] && kill "$2" 2>/dev/null
     case "$1" in /*lhq-*) rm -rf "$1" ;; esac

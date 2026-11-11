@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.9.5';
+  const VERSION = '2.10.0';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -1139,6 +1139,9 @@
     const boxes = document.querySelectorAll('.wflow > .wbox'),
       beads = document.querySelectorAll('.beads > .bead');
     if (j >= 0 && boxes[j] && boxes[j].classList.contains('speak')) return;
+    // (v2.10.0) while it plays only the word being recited is lit: the newest revealed one rests until it ends
+    const flow = document.querySelector('.wflow');
+    if (flow) flow.classList.toggle('playing', j >= 0);
     boxes.forEach((el, i) => {
       el.classList.toggle('speak', i === j);
       el.classList.toggle('heard', i <= j);
@@ -1777,7 +1780,7 @@
       mapCtl = null;
       document.body.classList.remove('busy'); // a walk on the map can't finish now
     }
-    document.body.className = 'v-' + st.view;
+    document.body.className = 'v-' + st.view + (riddleOn && st.view === 'map' ? ' riddling' : ''); // (riddling: the map's own parts can be tapped)
     const s = S[st.i];
     if (st.view === 'splash' || st.view === 'map' || st.view === 'summit') setScene(null);
     else if (s && st.i != null && !['settings', 'bag', 'create', 'show'].includes(st.view)) setScene(worldOf(s));
@@ -2814,14 +2817,25 @@
     for (let l = Math.min(5, from); to >= from ? l <= to : l >= to; l += to >= from ? 1 : -1) lv.push(l);
     return `<span class="firerise" role="img" aria-label="Campfire: ${FIRE_WORD[to]}">${lv.map((l, j) => `<span class="fr-st ${j === lv.length - 1 ? 'last' : ''} ${j === 0 ? 'first' : ''}" style="--d:${0.3 + j * 0.4}s">${ART.campfire(l)}</span>`).join('')}</span>`;
   }
-  function nextPrizeNote(prof) {
+  // the way to the next prize (v2.10.0): a star slot for each star it takes, the ones won filled and the new one(s)
+  // popping in, so a child sees the star they just won counting; a long way: the bar grows from where it was
+  function nextPrizeNote(prof, gained) {
     const nx = nextPrize(prof);
     if (!nx) return '';
-    const left = nx.track - totalStars(prof),
-      prev = TRACK.filter((it) => it.track <= totalStars(prof)).slice(-1)[0],
-      from = prev ? prev.track : 0;
-    const pct = Math.round(((totalStars(prof) - from) / (nx.track - from)) * 100);
-    return `<div class="nextprize"><span class="np-sil">${ART.silhouette(nx.id, prof.look)}</span><span><b>${left} more star${left > 1 ? 's' : ''}</b> to your next prize!<i class="np-bar"><i style="width:${pct}%"></i></i></span></div>`;
+    const tot = totalStars(prof),
+      left = nx.track - tot,
+      prev = TRACK.filter((it) => it.track <= tot).slice(-1)[0],
+      from = prev ? prev.track : 0,
+      need = nx.track - from,
+      have = tot - from,
+      fresh = Math.min(have, gained || 0);
+    const pct = Math.round((have / need) * 100),
+      pct0 = Math.round(((have - fresh) / need) * 100);
+    const track =
+      need <= 12
+        ? `<span class="np-slots">${[...Array(need).keys()].map((j) => `<i class="${j < have ? 'on' : ''} ${j >= have - fresh && j < have ? 'new' : ''}" style="--j:${Math.max(0, j - (have - fresh))}">★</i>`).join('')}</span>`
+        : `<i class="np-bar"><i class="${fresh ? 'grow' : ''}" style="--from:${pct0}%;width:${pct}%"></i></i>`;
+    return `<div class="nextprize"><span class="np-sil">${ART.silhouette(nx.id, prof.look)}</span><span><b>${left} more star${left > 1 ? 's' : ''}</b> to your next prize!${track}</span></div>`;
   }
   function giftTier(g) {
     if (!g) return 1;
@@ -2866,7 +2880,7 @@
     ${st.prizes ? `<div class="memo">⭐ ${totalStars()} stars! ${st.prizes > 1 ? st.prizes + ' prizes' : 'A prize'} for you.</div>` : ''}
     ${st.badge ? `<div class="memo gold">🏅 ${st.badge}! A special badge for you.</div>` : ''}
     ${st.rides ? `<div class="memo gold">🚀 A whole world all golden! A special ride is waiting for you.</div>` : ''}
-    ${st.noStar ? '' : nextPrizeNote(prof)}
+    ${st.noStar ? '' : nextPrizeNote(prof, st.gained)}
     ${g ? `<button class="giftbtn dgift" data-act="opengift"><span class="rattle">${giftArt(g)}</span>${prof.pending.length > 1 ? `<span class="badge">${prof.pending.length}</span>` : ''}<b>${prof.pending.length > 1 ? prof.pending.length + ' gifts' : 'A gift'} for you!</b><small>Tap to open</small></button>` : ''}
     <div class="row drow">
       ${st.nextAct ? `<button class="btn go wide" data-act="${st.nextAct}" ${st.nextP != null ? `data-p="${st.nextP}"` : ''}>${st.nextLabel}</button>` : ''}
@@ -2931,9 +2945,9 @@
     const comfy = prof.stash
       ? `<button class="wd-side wd-comfy on" data-act="comfy" aria-label="Put my things back on">✨<small>Back</small></button>`
       : `<button class="wd-side wd-comfy" data-act="comfy" ${fancy ? '' : 'disabled'} aria-label="Just comfy clothes">👕<small>Comfy</small></button>`;
-    return `<div class="screen bagscr">
+    return `<div class="screen bagscr ${st.fullView && tab !== 'look' ? 'fullv' : ''}">
     ${bar(whoBtn(prof, 'My Explorer'), prof.name || store.profiles.filter((p) => p.made).length > 1 ? 'My Explorer' : '', 'map', giftIcon(prof, 'inbar') + `<button class="btn small editme" data-act="editme" aria-label="Change your explorer: name and look">✏️</button>`)}
-    <div class="wd-stage"><button class="wd-ex" data-act="exmove" aria-label="Tap your explorer">${explorer({ view: st.backView && tab !== 'look' ? 'back' : 'front' })}</button>${tab === 'look' ? '' : `${comfy}<button class="wd-side wd-turn" data-act="turn" aria-label="Turn around">↻<small>Turn</small></button><button class="wd-side wd-show" data-act="show" aria-label="My achievements">🏆<small>Awards</small></button>`}</div>
+    <div class="wd-stage"><button class="wd-ex" data-act="exmove" aria-label="Tap your explorer">${explorer({ view: st.backView && tab !== 'look' ? 'back' : 'front' })}</button>${tab === 'look' ? '' : `${comfy}<button class="wd-side wd-turn" data-act="turn" aria-label="Turn around">↻<small>Turn</small></button><button class="wd-side wd-full" data-act="exfull" aria-label="See your explorer big">⤢<small>View</small></button><button class="wd-side wd-show" data-act="show" aria-label="My achievements">🏆<small>Awards</small></button>`}</div>
     ${tab === 'look' ? '' : `<div class="wtwrap"><div class="wtabs" id="wtabs">${tabs}</div><button class="cpmore cpless" data-act="wtscroll" data-d="-1" aria-label="Earlier categories">‹</button><button class="cpmore" data-act="wtscroll" data-d="1" aria-label="More categories">›</button></div>`}
     <div class="wbody">${body}</div>
   </div>`;
@@ -2993,6 +3007,7 @@
       streak: streakNow(prof),
       found: prof.found.length,
       best: prof.best || 0,
+      riddles: (prof.riddle && prof.riddle[1]) || 0,
     };
   }
   function fmtTime(sec) {
@@ -3001,15 +3016,27 @@
     if (m < 60) return `${m} min`;
     return `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')} min`;
   }
-  const ACH_ROWS = (a) => [
-    ['⭐', `${a.stars}`, `of ${MAX_STARS} stars`],
-    ['📔', `${a.found}`, `of ${JKEYS.size} journal finds`],
+  // how much of the quest is done (v2.10.0): āyāt learned 30%, sūrahs memorized 30%, sūrahs golden 40% (the tree's
+  // growth without the practice on top), to one decimal, never rounded up to 100 before it is
+  function questPct(prof) {
+    const a = achievements(prof),
+      gold = S.filter((s) => surahStars(s, prof) >= surahMax(s)).length,
+      v = 100 * ((0.3 * a.ayat) / a.allAyat + (0.3 * a.memorized) / S.length + (0.4 * gold) / S.length);
+    return (Math.floor(v * 10) / 10).toFixed(1);
+  }
+  // (v2.10.0) ten boxes, by priority: memorizing (how much, sūrahs, āyāt) and the things won, then stars and star
+  // badges, then the side activities (journal, riddles), then days in a row and time
+  const ACH_ROWS = (a, prof) => [
+    ['🧠', `${questPct(prof)}%`, 'memorized'],
     ['🏆', `${a.memorized}`, 'sūrahs memorized'],
     ['🗣️', `${a.ayat}`, `of ${a.allAyat} āyāt learned`],
     ['🎁', `${a.items}`, `of ${a.allItems} things won`],
+    ['⭐', `${a.stars}`, `of ${MAX_STARS} stars`],
     ['🏅', `${a.badges}`, a.badges === 1 ? 'star badge' : 'star badges'],
-    ['⏱️', fmtTime(a.time), 'spent learning'],
+    ['📔', `${a.found}`, `of ${JKEYS.size} journal finds`],
+    ['🔎', `${Math.min(a.riddles, riddleCount())}`, `of ${riddleCount()} riddles found`],
     ['🏃', `${a.streak} ${a.streak === 1 ? 'day' : 'days'}`, `in a row · best ${a.best}`],
+    ['⏱️', fmtTime(a.time), 'spent learning'],
   ];
   V.show = () => {
     const prof = P(),
@@ -3017,7 +3044,7 @@
     return `<div class="screen showscr">
     ${bar(whoBtn(prof, 'My Achievements'), prof.name || store.profiles.filter((p) => p.made).length > 1 ? 'My Achievements' : '', 'bag')}
     <div class="show-stage"><button class="wd-ex" data-act="exmove" aria-label="Tap your explorer">${explorer({ view: 'front' })}</button></div>
-    <div class="achgrid">${ACH_ROWS(a)
+    <div class="achgrid">${ACH_ROWS(a, prof)
       .map(([ic, big, sub]) => `<div class="ach"><span class="ach-ic">${ic}</span><b>${big}</b><small>${sub}</small></div>`)
       .join('')}</div>
     <div class="row"><button class="btn go wide" data-act="share">📤 Share</button></div>
@@ -3055,14 +3082,14 @@
       })
       .join('');
     const ex = explorer({ view: 'front' }).replace('<svg ', '<svg x="345" y="180" width="400" height="600" ');
-    const rows = ACH_ROWS(a);
+    const rows = ACH_ROWS(a, prof);
     const cells = rows
       .map(([ic, big, sub], j) => {
         const col = j % 2,
           row = Math.floor(j / 2),
           x = 80 + col * 470,
-          y = 790 + row * 110;
-        return `<g transform="translate(${x} ${y})"><rect width="450" height="96" rx="28" fill="#ffffff" fill-opacity=".92"/><text x="30" y="64" font-size="46">${ic}</text><text x="100" y="52" font-size="40" font-weight="800" fill="#2b2340">${esc(big)}</text><text x="100" y="82" font-size="24" font-weight="700" fill="#6b6385">${esc(sub)}</text></g>`;
+          y = 776 + row * 100; // (five rows of two since v2.10.0: clear of the address at the bottom)
+        return `<g transform="translate(${x} ${y})"><rect width="450" height="90" rx="28" fill="#ffffff" fill-opacity=".92"/><text x="30" y="60" font-size="44">${ic}</text><text x="100" y="48" font-size="38" font-weight="800" fill="#2b2340">${esc(big)}</text><text x="100" y="77" font-size="24" font-weight="700" fill="#6b6385">${esc(sub)}</text></g>`;
       })
       .join('');
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${X}" height="${Y}" viewBox="0 0 ${X} ${Y}">
@@ -3286,7 +3313,15 @@
         incoming = { from, link, appV: raw.appV || '', sameThings: raw.sameThings, noColors: raw.look.tee == null, target: match ? match.id : store.profiles.length ? '' : 'new' };
         showSync();
       })
-      .catch((e) => toast(e && e.message === 'nozip' ? 'This browser is too old to read it. Please update the browser.' : "That progress link didn't work. Ask for a new one."));
+      .catch((e) =>
+        toast(
+          e && e.message === 'nozip'
+            ? 'This browser is too old to read it. Please update the browser.'
+            : e && e.appV // (a link from a newer version than this phone: v2.10.0 on, its version is readable)
+              ? `This link is from a newer version (v${e.appV}). Update this phone first, then open it again.`
+              : "That progress link didn't work. Ask for a new one.",
+        ),
+      );
   }
   const thingsOf = (p) => p.items.length + p.stickers.length;
   function preview(target) {
@@ -3917,7 +3952,7 @@
     }
     save();
     stopAudio();
-    const done = Object.assign({ i: st.i, p: st.p }, extra);
+    const done = Object.assign({ i: st.i, p: st.p, gained: st.starsBefore != null ? Math.max(0, totalStars(prof) - st.starsBefore) : 0 }, extra);
     if (feats.length) {
       go('summit', { i: st.i, feats, after: done });
       return;
@@ -4011,8 +4046,8 @@
       <h4>📚 Sources</h4>
       <ul class="srcs">
         <li><b>Qur'an text</b> (Uthmani): ${ext('https://quranenc.com', 'The Noble Qur\'an Encyclopedia')}, via ${ext('https://github.com/risan/quran-json', 'quran-json')} (CC BY-SA 4.0)</li>
-        <li><b>Recitation</b>: Alafasy, Al-Husary, Al-Minshawi and Abdul Basit, from ${ext('https://everyayah.com', 'EveryAyah.com')}</li>
-        <li><b>Word timings</b>: ${ext('https://quran.com', 'Quran.com')}</li>
+        <li><b>Recitation</b>: Alafasy, Al-Husary, Al-Minshawi and Abdul Basit, from ${ext('https://everyayah.com', 'EveryAyah.com')}; Alafasy (live, California) from ${ext('https://quranicaudio.com', 'QuranicAudio.com')}</li>
+        <li><b>Word timings</b>: ${ext('https://quran.com', 'Quran.com')}; for the California recording, ${ext('https://github.com/QUD-Technologies/quranic-universal-audio', 'Qur’anic Universal Audio')} (CC BY 4.0, cut to the game’s āyāt)</li>
         <li><b>Word-by-word meanings and transliteration</b>: the ${ext('https://corpus.quran.com', 'Quranic Arabic Corpus')} (GNU GPL v3), via the ${ext('https://api-docs.quran.com', 'Quran.com API')}</li>
         <li><b>Simple meanings, memory cues and āyah transliterations</b>: written for this game</li>
         <li><b>Fonts</b>: Amiri Quran and Baloo 2 (SIL Open Font License)</li>
@@ -4563,6 +4598,14 @@
         st.backView = !st.backView;
         render();
         break;
+      case 'exfull': {
+        // (v2.10.0) the explorer and buddy big on the whole page, everything else slides away; again: back
+        sfx.tap();
+        st.fullView = !st.fullView;
+        const scr = $app.querySelector('.bagscr');
+        if (scr) scr.classList.toggle('fullv', st.fullView);
+        break;
+      }
       case 'equip': {
         const id = b.dataset.id,
           it = ITEM[id];
@@ -4789,6 +4832,13 @@
       case 'back': {
         sfx.tap();
         stopAudio();
+        // (My Explorer in full view: back first brings everything back, v2.10.0)
+        if (st.view === 'bag' && st.fullView) {
+          st.fullView = false;
+          const scr = $app.querySelector('.bagscr');
+          if (scr) scr.classList.remove('fullv');
+          break;
+        }
         const to = b.dataset.to;
         if (to === 'map') go('map');
         else if (to === 'splash') go('splash');
@@ -5695,6 +5745,7 @@
       fy = ty + 2;
     const f = document.createElement('div');
     f.className = 'mfruit';
+    f.dataset.f = FRUIT_OF[tree.dataset.k];
     f.dataset.x = fx.toFixed(1);
     f.dataset.y = fy.toFixed(1);
     f.style.left = (fx - 12).toFixed(1) + 'px';
@@ -6082,7 +6133,7 @@
     if (window.__treeSize != null) (size = window.__treeSize), (mem = S.slice(0, Math.round(size * S.length))), (a.ayat = Math.round(size * a.allAyat)); // (tests only: any size)
     const ripe = size < T.fruit ? 0 : (size - T.fruit) / (1 - T.fruit),
       nf = size < T.fruit ? 0 : Math.round(2 + ripe * 30),
-      kinds = ART.FRUIT_TYPES.slice(0, 1 + Math.floor(ripe * (ART.FRUIT_TYPES.length - 0.01))),
+      kinds = ART.FRUIT_TYPES.slice(0, 1 + Math.floor(Math.min(1, ripe * 1.6) * (ART.FRUIT_TYPES.length - 0.01))), // (v2.10.0: a second kind soon after the first, all of them by about 75%)
       nb = size < T.flowers ? 0 : Math.min(mem.length, size < T.fruit ? Math.round(3 + ((size - T.flowers) / (T.fruit - T.flowers)) * 7) : Math.max(2, 8 - Math.floor(nf / 5)));
     return {
       size,
@@ -6101,7 +6152,7 @@
   setInterval(() => !document.hidden && Math.random() < 0.12 && dropLeaf(), 2000);
   function dropLeaf() {
     if (st.view !== 'tree' || reduceMotion || !treeDrop.length) return;
-    const svg = document.querySelector('.tsvg'),
+    const svg = document.querySelector('.tsvg.tfront'),
       p = treeDrop[(Math.random() * treeDrop.length) | 0];
     if (!svg) return;
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -6116,7 +6167,7 @@
   let treeGustTill = 0;
   setInterval(() => {
     if (st.view !== 'tree' || document.hidden || reduceMotion || Math.random() > 0.35) return;
-    const sw = document.querySelector('.tsvg .tgustw');
+    const sw = document.querySelector('.tstage .tgustw');
     if (!sw || sw.classList.contains('gust')) return;
     sw.classList.add('gust');
     treeGustTill = Date.now() + 6000;
@@ -6129,7 +6180,7 @@
   setInterval(() => {
     if (st.view !== 'tree' || document.hidden || reduceMotion || Math.random() > 0.25) return;
     const kinds = [...new Set(treeInfo(P()).fruits)],
-      svg = document.querySelector('.tsvg');
+      svg = document.querySelector('.tsvg.tfront');
     if (!kinds.length || !svg || svg.querySelector('.tsq') || !ART.props['forest-squirrel']) return;
     const ltr = Math.random() < 0.5,
       sq = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -6327,14 +6378,21 @@
     const d = (seedOf(id) % 40) / 10;
     return `<g class="tbud m-${mood}${sp.at != null ? ' hid' : ''}" data-act="tbud" data-id="${id}" data-x="${xx}"${sp.at != null ? ` data-bush="${sp.at}"` : ''}><g class="tbud-in"><g class="tbud-w" style="animation-delay:-${d}s">${pic}</g></g>${bubble}</g>`;
   }
+  // the tree as last drawn, kept while nothing about it changes (redrawing for a hungry buddy costs nothing, v2.10.0)
+  let treeKept = null;
+  function treeArt(o) {
+    const key = JSON.stringify(o);
+    if (!treeKept || treeKept.key !== key) treeKept = { key, t: ART.tree(o) };
+    return treeKept.t;
+  }
   V.tree = () => {
     const prof = P(),
       info = treeInfo(prof),
       night = isNight(),
-      t = ART.tree({ seed: seedOf(prof.id), size: info.size, leaves: info.leaves, blossoms: info.blossoms, flowers: info.flowers, fruits: info.fruits, seen: st.seen, night });
+        t = treeArt({ seed: seedOf(prof.id), size: info.size, leaves: info.leaves, blossoms: info.blossoms, flowers: info.flowers, fruits: info.fruits, seen: st.seen, night });
     // (a fruit that fell stays off the tree, also when the screen is drawn again, until it grows back)
-    if (Date.now() < treeGustTill) t.svg = t.svg.replace('<g class="tgustw">', '<g class="tgustw gust">');
-    t.svg = t.svg.replace(/<g class="tfruit" data-act="tfruit" data-j="(\d+)"/g, (m, j) => (treeFallen[j] ? '<g class="tfruit fall' + (treeFallen[j].gone ? ' gone' : '') + '" data-act="tfruit" data-j="' + j + '"' : m));
+    const treeG = t.tree.replace(/<g class="tfruit" data-act="tfruit" data-j="(\d+)"/g, (m, j) => (treeFallen[j] ? '<g class="tfruit fall' + (treeFallen[j].gone ? ' gone' : '') + '" data-act="tfruit" data-j="' + j + '"' : m));
+    const SV = (cls, inner) => `<svg class="tsvg ${cls}" viewBox="0 -200 400 900" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
     treeDrop = t.drop;
     const buds = st.buds || [];
     // (the back row first, so the front row sits a little in front of it; a bush with a buddy in it drawn again
@@ -6342,11 +6400,11 @@
     const spots = budSpots(buds.length, info.size, buds),
       order = buds.map((id, j) => j).sort((p, q) => spots[p].y - spots[q].y),
       hide = [...new Set(spots.filter((sp) => sp.at != null).map((sp) => sp.at))];
-    const sub = `🍃 ${info.leaves} āyāt · 🌸 ${info.memorized} sūrahs`;
+    const sub = `🍃 ${info.leaves} āyāt · 🌸 ${info.memorized} sūrahs · ${questPct(prof)}%`;
     return `<div class="screen treescr${night ? ' night' : ''}">
     ${bar('My Tree', sub, 'map')}
     <p class="tnote">${info.size >= 0.999 ? 'MāshāAllāh! Your tree is fully grown, with a flower for every sūrah.' : 'It grows as you learn and bears fruit as you practise. A flower in the grass for each sūrah.'}</p>
-    <div class="tstage"><svg class="tsvg" viewBox="0 -200 400 900" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg">${t.svg}${order.filter((j) => spots[j].at != null).map((j) => treeBuddy(prof, buds[j], spots[j])).join('')}<g class="tbushfront" pointer-events="none">${hide.map((i) => ART.treeBush(i, info.size, night)).join('')}</g>${order.filter((j) => spots[j].at == null).map((j) => ({ y: spots[j].y, svg: treeBuddy(prof, buds[j], spots[j]) })).concat(t.tufts).sort((p, q) => p.y - q.y).map((e) => e.svg).join('')}</svg></div>
+    <div class="tstage">${SV('tback', t.back)}<div class="tgustw${Date.now() < treeGustTill ? ' gust' : ''}">${SV('ttree tsway', treeG)}</div><svg class="tsvg tfront" viewBox="0 -200 400 900" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg">${t.front}${order.filter((j) => spots[j].at != null).map((j) => treeBuddy(prof, buds[j], spots[j])).join('')}<g class="tbushfront" pointer-events="none">${hide.map((i) => ART.treeBush(i, info.size, night)).join('')}</g>${order.filter((j) => spots[j].at == null).map((j) => ({ y: spots[j].y, svg: treeBuddy(prof, buds[j], spots[j]) })).concat(t.tufts).sort((p, q) => p.y - q.y).map((e) => e.svg).join('')}</svg></div>
   </div>`;
   };
   // tap a fruit: it falls; the hungry buddy wanting it walks over, eats it, and walks back
@@ -6439,6 +6497,10 @@
       note = $app.querySelector('.tnote'),
       m = svg && svg.getScreenCTM();
     if (!core || !note || !m) return;
+    // (the tree's layer sways and bends from its foot: (200, 600) in the picture, here in pixels)
+    const stage = svg.closest('.tstage'),
+      sr = svg.getBoundingClientRect();
+    if (stage) stage.style.cssText = `--tox:${Math.round(m.a * 200 + m.e - sr.left)}px;--toy:${Math.round(m.d * 600 + m.f - sr.top)}px`;
     sun.removeAttribute('transform');
     const nr = note.getBoundingClientRect(),
       cr = core.getBoundingClientRect(),
@@ -6454,7 +6516,7 @@
   }
   // a squirrel or a rabbit runs in from the nearer side, picks up the fallen fruit and runs back off
   function critterFor(f) {
-    const svg = document.querySelector('.tsvg'),
+    const svg = document.querySelector('.tsvg.tfront'),
       id = Math.random() < 0.5 ? 'forest-squirrel' : 'meadow-rabbit';
     if (st.view !== 'tree' || reduceMotion || !svg || !f.isConnected || f.classList.contains('gone') || svg.querySelector('.tcrit') || !ART.props[id]) return;
     const bb = f.getBBox(),
@@ -6502,15 +6564,14 @@
     setTimeout(() => tag.remove(), 2600);
   }
 
-  /* ================= THE TEACHER'S RIDDLES (v2.9.0; v2.9.1: seven a day) =================
-     Up to seven riddles a day about things on the map, anywhere on the mountain: two clues for each of its 68 kinds of
-     things. Each explorer goes through all 136 in an order of their own, seven a day, so none comes twice in a day
-     and one comes back only after about three weeks. A riddle counts only once it's opened (tap it in the journal:
-     off to the map, where its clue shows at the bottom), so tapping about at random never solves one; there are no
-     tries to lose, it's something to look for (other taps work as usual). After each, the next opens a minute later. Each solved one is a stamp; every
-     7 stamps a gift, at most one a day. The journal shows the riddle at the top (its outline pulses now and then)
-     and its button has a dot while one is waiting. prof.riddle = [day, stamps, done that day, the next opens at (ms),
-     the day's gift given (0/1)]. */
+  /* ================= THE TEACHER'S RIDDLES (v2.9.0; v2.10.0: one and done) =================
+     Riddles about things on the map, anywhere on the mountain (its props, fruit to catch, bridges, world signs and the
+     sūrah stops): each thing has two riddles, two different clues with the same answer. Each explorer goes through
+     every riddle once, in an order of their own (see riddleList), up to seven a day and two minutes apart. A riddle
+     counts only once it's opened (the 🔎 in the journal's header: off to the map, its clue at the bottom), so tapping
+     about at random never solves one; there are no tries to lose (other taps work as usual). Every seventh found brings
+     a gift (the 🔎 shows the way there, 3/7), so at most one a day. prof.riddle = [day, stamps, done that day, the next
+     opens at (ms), a gift given that day (0/1)]. */
   // two clues for every thing on the map (v2.9.1: 136 riddles over all seven worlds)
   const RIDDLES = {
     'meadow-windmill': ['Its big arms turn round and round in the wind.', 'A tall white tower with four long sails.'],
@@ -6582,27 +6643,57 @@
     'peak-igloo': ['A round house made of snow blocks.', 'A cold house with a little round door.'],
     'peak-goat': ['It climbs steep mountains with strong hooves.', 'A sure-footed animal with curly horns.'],
   };
-  const RIDDLE_DAY = 7,
-    RIDDLE_GAP = 60000;
-  // this explorer's own order of the things to find (a shuffle seeded by their id)
-  function riddleOrder(prof) {
+  // (v2.10.0) more to find, beyond the journal's things: fruit that only falls when you tap its tree (catch it before
+  // an animal does), the map's own parts, and the sūrah stops by their pictures. Only tappable while a riddle is open.
+  const RIDDLE_EXTRA = {
+    'x:apple': ['Apple', 'Tap an apple tree and one falls. Catch it before an animal eats it!', 'Red and sweet, it drops when you tap its tree. Be quick!'],
+    'x:acorn': ['Acorn', 'Tap an oak tree in the forest, then catch what falls before a squirrel does!', 'A little nut in a cap. Shake an oak and grab one quick!'],
+    'x:pinecone': ['Pine cone', 'Tap a pine tree and catch what drops, before an animal gets it!', 'Brown and scaly, it falls from a pine. Catch it fast!'],
+    'x:coconut': ['Coconut', 'Tap a palm tree by the sea and catch what falls!', 'Hard and hairy on the outside, it drops from a palm.'],
+    'x:cherry': ['Cherry', 'Tap a bush in the meadow and catch the little red fruit!', 'Small, red and round, it falls from a meadow bush.'],
+    'x:blueberry': ['Blueberry', 'Tap a berry bush in the forest and catch what drops!', 'Tiny and blue, it falls from a forest bush. Catch it!'],
+    'x:pear': ['Cactus fruit', 'Tap a cactus in the canyon and catch the fruit that falls!', 'Even a prickly cactus has fruit. Tap one and catch it!'],
+    'x:bridge': ['Bridge', 'A path across the water, from one world to the next.', 'Walk over it to reach a new world!'],
+  };
+  // (v2.10.0) each world's sign, and every sūrah's stop: by its picture, and by what its name means
+  WORLDS.forEach((w, wi) => (RIDDLE_EXTRA['w:' + wi] = [`World ${wi + 1} sign`, `Find the sign of World ${wi + 1}.`, `Which sign says “${w.name}”? Find it!`]));
+  S.forEach((x) => (RIDDLE_EXTRA['s:' + x.n] = [x.name, `Find the sūrah with this picture: ${x.icon}`, `Find the sūrah called “${x.meaning}”.`]));
+  const riddleName = (k) => (RIDDLE_EXTRA[k] ? RIDDLE_EXTRA[k][0] : PROP_NAME[k]);
+  const RIDDLE_DAY = 7, // (at most seven a day, so at most one gift a day)
+    RIDDLE_GIFT = 7, // (v2.10.0: a gift for every seven found, however many days that takes)
+    RIDDLE_GAP = 120000; // (v2.10.0: two minutes apart)
+  // (v2.10.0) every riddle once, one and done: each thing to find in an order of the explorer's own (seeded by their
+  // id), first with its first clue, then the same order again with its second (so a thing comes back only after all
+  // the others). The stamps say how far along: nothing is skipped by days missed. A release adding riddles adds a set
+  // on the end, so the ones already found stay found. All found: they come round again in a new order (the
+  // achievement stays complete), so the gifts keep coming.
+  // (built on first use: the journal's pages, JPAGE, are set up further down)
+  let riddleSets = null;
+  const RIDDLE_SETS = () => riddleSets || (riddleSets = [[...Object.keys(RIDDLES).filter((k) => JPAGE.has('p:' + k)), ...Object.keys(RIDDLE_EXTRA)]]);
+  const riddleCount = () => RIDDLE_SETS().reduce((n, a) => n + a.length * 2, 0);
+  let riddleMemo = null; // [explorer, round, list]
+  function riddleList(prof, round) {
+    if (riddleMemo && riddleMemo[0] === prof.id && riddleMemo[1] === round) return riddleMemo[2];
     let h = 2166136261;
-    for (const ch of prof.id) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+    for (const ch of prof.id + (round ? '#' + round : '')) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
     const rnd = () => (h = (Math.imul(h, 1103515245) + 12345) >>> 0) / 4294967296;
-    const a = Object.keys(RIDDLES).filter((k) => JPAGE.has('p:' + k));
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(rnd() * (i + 1));
-      [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
+    const list = [];
+    RIDDLE_SETS().forEach((set) => {
+      const a = set.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(rnd() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      [0, 1].forEach((c) => a.forEach((k) => list.push([k, c])));
+    });
+    riddleMemo = [prof.id, round, list];
+    return list;
   }
-  const dayNumber = () => Math.floor((Date.now() - new Date().getTimezoneOffset() * 60000) / 864e5);
-  // today's riddle j (0-6): [the thing, its clue] (the first pass through the order uses the first clues)
-  function riddleAt(prof, j) {
-    const order = riddleOrder(prof),
-      N = order.length,
-      i = (dayNumber() * RIDDLE_DAY + j) % (N * 2);
-    return [order[i % N], RIDDLES[order[i % N]][Math.floor(i / N) % 2]];
+  // the riddle after this many stamps: [the thing, its clue]
+  function riddleAt(prof, stamps) {
+    const T = riddleCount(),
+      [k, c] = riddleList(prof, Math.floor(stamps / T))[stamps % T];
+    return [k, (RIDDLE_EXTRA[k] ? RIDDLE_EXTRA[k].slice(1) : RIDDLES[k])[c]];
   }
   // today's state (a new day starts afresh, the stamps kept)
   const riddleToday = (prof) => (prof.riddle[0] === today() ? prof.riddle.slice() : [today(), prof.riddle[1], 0, 0, 0]);
@@ -6610,38 +6701,44 @@
   function riddleNow(prof) {
     const r = riddleToday(prof);
     if (!prof.made || r[2] >= RIDDLE_DAY || Date.now() < r[3]) return null;
-    return riddleAt(prof, r[2]);
+    return riddleAt(prof, r[1]);
   }
   const riddleOpen = (prof) => !!riddleNow(prof);
   let riddleOn = null; // the riddle opened, while on the map: { k, clue }
-  function riddleStrip(prof) {
-    const r = riddleToday(prof),
-      now = riddleNow(prof),
-      stamps = `<span class="jr-st" aria-label="${r[1]} stamps">🔖 ${r[1]}</span>`;
-    if (now) return `<button class="jriddle on" data-act="riddlego"><span class="jr-ic">🔎</span><span class="jr-tx"><b>Riddle ${r[2] + 1} of ${RIDDLE_DAY}</b><small>${now[1]} <u>Find it on the map!</u></small></span>${stamps}</button>`;
-    const txt = r[2] >= RIDDLE_DAY ? 'All seven riddles done today! Come back tomorrow for more.' : 'The next riddle comes in a minute…';
-    return `<div class="jriddle done"><span class="jr-ic">✅</span><span class="jr-tx"><b>Riddles of the day</b><small>${txt}</small></span>${stamps}</div>`;
+  // the riddle in the journal's header (v2.10.0): the way to the next gift (3/7), glowing while a riddle waits; tapped
+  // with none waiting, it says when the next comes
+  const riddleToGift = (prof) => RIDDLE_GIFT - (prof.riddle[1] % RIDDLE_GIFT);
+  function riddleBtn(prof) {
+    const on = !!riddleNow(prof),
+      n = RIDDLE_GIFT - riddleToGift(prof);
+    return `<button class="icon-btn jrbtn ${on ? 'on' : ''}" data-act="riddlego" aria-label="Riddles: ${riddleToGift(prof)} more for a gift${on ? ', one waiting' : ''}"><span class="jrb-ic">🔎</span><b>${n}/${RIDDLE_GIFT}</b></button>`;
   }
   // the riddle opened, on the map: its clue at the bottom
   const riddleBar = () => (riddleOn ? `<div class="mriddle" role="status"><span class="mr-ic">🔎</span><span class="mr-tx">${riddleOn.clue}<small>Find it on the map!</small></span><button class="mr-x" data-act="riddleoff" aria-label="Stop looking">✕</button></div>` : '');
   function startRiddle() {
-    const now = riddleNow(P());
-    if (!now) return;
+    const prof = P(),
+      now = riddleNow(prof);
+    if (!now) {
+      // none waiting: all seven done today, or the next in a little while
+      const r = riddleToday(prof),
+        mins = Math.max(1, Math.ceil((r[3] - Date.now()) / 60000));
+      sfx.tap();
+      toast(r[2] >= RIDDLE_DAY ? '🔎 That’s all the riddles for today. More tomorrow!' : `🔎 The next riddle comes in ${mins} minute${mins > 1 ? 's' : ''}.`);
+      return;
+    }
     sfx.tap();
     riddleOn = { k: now[0], clue: now[1] };
     go('map');
   }
-  // found: a stamp, and the next opens in a minute
-  function riddleDone(found) {
+  // found: a stamp, and the next opens in two minutes
+  function riddleDone() {
     const prof = P(),
       r = riddleToday(prof);
     r[2]++;
     r[3] = Date.now() + RIDDLE_GAP;
-    let gift = false;
-    if (found) {
-      r[1]++;
-      if (r[1] % 7 === 0 && !r[4]) gift = r[4] = 1; // every 7 stamps a gift, one a day at most
-    }
+    r[1]++; // (all the stamps ever won: how far along the list, in My Achievements)
+    let gift = r[1] % RIDDLE_GIFT === 0; // (v2.10.0) every seventh: a gift
+    if (gift) r[4] = 1; // (a gift today)
     prof.riddle = r;
     if (gift) gift = giveSurprise(prof, false, true) || giveLevelGift(prof, true);
     riddleOn = null;
@@ -6651,14 +6748,16 @@
   // a tap on a thing on the map while a riddle is open: the answer? (true: solved; anything else carries on as usual)
   function riddleTap(el, k) {
     if (k !== riddleOn.k) return false;
-    const res = riddleDone(true);
+    const res = riddleDone();
     sfx.win();
     burstAt(el, 12, ['🔎', '✨', '⭐']);
-    const text = `MāshāAllāh, you found it: the <b>${PROP_NAME[k]}</b>! A stamp for you: 🔖 ${res.n}. ${res.gift ? 'A gift for you! 🎁 ' : ''}${res.last ? 'That’s all seven for today!' : 'The next riddle comes in a minute.'}`;
+    const left = riddleToGift(P()),
+      text = `MāshāAllāh, you found the <b>${riddleName(k)}</b>!${res.n === riddleCount() ? ' That’s every riddle!' : ''} ${res.gift ? 'A gift for you!' : `${left} more for a gift.`} ${res.last ? 'More riddles tomorrow!' : 'The next riddle comes in two minutes.'}`;
     setTimeout(() => {
       if (st.view !== 'map') return;
       render();
-      if (prefs.teacher) teacherNote(text);
+      // (a gift won: shown right there, to tap open, v2.10.0)
+      if (prefs.teacher || res.gift) teacherNote(text, !!res.gift);
       else toast('🔎 ' + text.replace(/<[^>]+>/g, ''));
     }, 700);
     return true;
@@ -6826,6 +6925,22 @@
     jChip.el.remove();
     jChip = null;
   }
+  // (v2.10.0) a riddle open: the map's bridges, signs, fallen fruit and sūrah stops can be the answer
+  document.addEventListener(
+    'click',
+    (e) => {
+      if (!riddleOn || st.view !== 'map' || !e.target.closest) return;
+      const el = e.target.closest('.mbridge, .mgate, .msign, .mfruit, .node');
+      if (!el) return;
+      const k = el.classList.contains('mfruit') ? 'x:' + el.dataset.f : el.classList.contains('msign') ? 'w:' + el.dataset.w : el.classList.contains('node') ? 's:' + (S[+el.dataset.i] || {}).n : 'x:bridge';
+      if (k !== riddleOn.k) return;
+      e.preventDefault();
+      e.stopPropagation(); // (a sūrah stop that is the answer doesn't open)
+      riddleTap(el, k);
+      if (el.classList.contains('mfruit')) el.remove(); // (caught! no animal gets it now)
+    },
+    true,
+  );
   document.addEventListener(
     'click',
     (e) => {
@@ -6873,8 +6988,7 @@
       .map((x) => `<div class="jsura"><button class="jsname" data-act="jgo" data-n="${x.n}">${BYN[x.n].name} ›</button><div class="jems">${x.es.map((e) => `<span class="jem ${has('e:' + e) ? 'got' : ''}">${e}</span>`).join('')}</div></div>`)
       .join('');
     return `<div class="screen jscr">
-    ${bar('My Journal', `${prof.found.length} of ${JKEYS.size} found`, 'map')}
-    ${riddleStrip(prof)}
+    ${bar('My Journal', `${prof.found.length} of ${JKEYS.size} found`, 'map', riddleBtn(prof))}
     <div class="jtabs">${tabs}</div>
     <div class="jbook">
       <div class="jpage" data-w="${wi}">
@@ -7191,9 +7305,10 @@
   }
   const NUM_WORD = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven'];
   // what he says in a card of his own (a bubble on the map would run off the screen)
-  function teacherNote(text) {
-    const m = document.getElementById('modal');
-    m.innerHTML = `<div class="card eldmeet"><div class="eldart">${elderArt('happy')}</div><p class="eldsay">“${text}”</p><div class="row"><button class="btn go wide" data-act="cno">👍 OK</button></div></div>`;
+  function teacherNote(text, gift) {
+    const m = document.getElementById('modal'),
+      g = gift && P().pending[0];
+    m.innerHTML = `<div class="card eldmeet"><div class="eldart">${elderArt('happy')}</div><p class="eldsay">“${text}”</p>${g ? `<button class="giftbtn dgift" data-act="opengift"><span class="rattle">${giftArt(g)}</span><b>A gift for you!</b><small>Tap to open</small></button>` : `<div class="row"><button class="btn go wide" data-act="cno">👍 OK</button></div>`}</div>`;
     m.classList.add('show');
   }
   // asked for a test with none to give: everything left is waiting to be won back, or practised already today
@@ -7432,7 +7547,7 @@
       .filter((f) => !f.ran)
       .map((f, j) => `<span class="eldfallen" style="--j:${j}">${thingPic(f)}</span>`)
       .join('');
-    return `<div class="screen eldscr" style="${cv(s.color)}">
+    return `<div class="screen eldscr ${st.phase === 'end' ? 'ended' : ''}" style="${cv(s.color)}">
     <div class="eldtop"><span class="eldtitle">Test · ${s.name}<span class="elddots ${st.qs.length > 5 ? 'many' : ''}">${dots}</span></span>${LISTEN}</div>
     ${eldWorld(s)}
     <div class="arena">
@@ -7895,5 +8010,5 @@
   registerOffline();
   if (linkCode) setTimeout(() => openSync(linkCode, `${appURL()}#sync=${linkCode}`), 400);
   if (justUpdated) loadChangelog().then(() => st.view === 'splash' && render());
-  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder, world: elderWorld, size: testSize, tap: tapElder }, sunDown, journal: JKEYS, countDay, installSteps: showInstallSteps, cleanStore, cleanProfile, syncCtx, openSync, markNow, fabTarget, riddleNow, occasion, treeInfo, hungry: () => treeHungry, treeReset: () => (treeFedAt = 0), critterFor }; // for testing in the browser console
+  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder, world: elderWorld, size: testSize, tap: tapElder }, sunDown, journal: JKEYS, countDay, installSteps: showInstallSteps, cleanStore, cleanProfile, syncCtx, openSync, markNow, fabTarget, riddleNow, riddleCount, occasion, treeInfo, hungry: () => treeHungry, treeReset: () => (treeFedAt = 0), critterFor, riddleSet: (k) => riddleOn && (riddleOn.k = k), riddleKey: () => riddleOn && riddleOn.k }; // for testing in the browser console
 })();

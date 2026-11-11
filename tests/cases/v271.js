@@ -7,6 +7,7 @@
   const p = L.store().profiles[0];
   const day = (t) => { const x = new Date(t); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0'); };
   const min = (t) => Math.floor(t / 60000) * 60000;
+  const hr = (t) => Math.floor(t / 3.6e6) * 3.6e6; // (campfires travel to the hour since v2.10.0)
   // an explorer with a bit of everything
   const items = A.ITEMS.filter((it) => !it.gold && it.tier >= 1 && it.from).slice(0, 6).map((it) => it.id);
   const owned = new Set(p.items);
@@ -26,8 +27,8 @@
   p.teacherAt = min(Date.now() - 3600e3);
   p.rematch = [113]; p.rematchReady = [];
   p.lostSt = [{ id: 'star', n: 113 }]; p.stickers = p.stickers.filter((x) => x !== 'star');
-  for (const n in p.fire) p.fire[n] = [min(p.fire[n][0]), p.fire[n][1]];
-  Object.assign(p.fire, { 113: [min(Date.now() - 2 * 864e5), 1], 112: [min(Date.now() - 864e5), 3] });
+  for (const n in p.fire) p.fire[n] = [hr(p.fire[n][0]), p.fire[n][1]];
+  Object.assign(p.fire, { 113: [hr(Date.now() - 2 * 864e5), 1], 112: [hr(Date.now() - 864e5), 3] });
   p.found = [...X.journal].slice(0, 9);
   p.jdone = [3];
   p.time = 4321; p.stime = { 113: 600, 112: 300 };
@@ -51,6 +52,20 @@
   ok('a sharing code brings back every field exactly', !sd.length, sd.map((k) => `${k}: ${JSON.stringify(got[k])} ≠ ${JSON.stringify(want[k])}`).join(' | '));
   log('code length: ' + code.length);
   ok('the code stays a sensible size for a QR code', code.length < 2000, code.length);
+  // 3. (v2.10.0) a big collection: the newest 30 wins keep their order, every thing owned comes along, the version up front
+  {
+    const big = JSON.parse(JSON.stringify(p)),
+      many = A.ITEMS.filter((it) => !it.gold && it.from).slice(0, 120).map((it) => it.id);
+    big.items = [...new Set([...big.items, ...many])];
+    big.got = [...big.items.map((id) => 'i:' + id), ...big.stickers.map((id) => 's:' + id)].reverse();
+    big.fresh = big.got.slice(-2);
+    const cb = X.cleanProfile(JSON.parse(JSON.stringify(big))); // (what this phone itself keeps of it)
+    Object.assign(big, { items: cb.items, got: cb.got, fresh: cb.fresh });
+    const c2 = await SY.encode(big, X.syncCtx()), r2 = X.cleanProfile(await SY.decode(c2, X.syncCtx())), raw2 = await SY.decode(c2, X.syncCtx());
+    log('big collection: ' + big.got.length + ' things, code ' + c2.length);
+    ok('a big collection: all owned, the newest 30 in their order, still new ones still new', r2.items.length === big.items.length && JSON.stringify(r2.got.slice(-30)) === JSON.stringify(big.got.slice(-30)) && JSON.stringify(r2.fresh.sort()) === JSON.stringify(big.fresh.slice().sort()));
+    ok('the version travels up front', raw2.appV === X.syncCtx().version, raw2.appV);
+  }
   // 4. merging into the same explorer on another phone keeps the extras
   const other = X.cleanProfile(JSON.parse(JSON.stringify(want)));
   other.found = []; other.jdone = []; other.fire = {}; other.pending = []; other.streak = ['', 0]; other.best = 0; other.touched = 1;

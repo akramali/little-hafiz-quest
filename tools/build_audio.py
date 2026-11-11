@@ -84,6 +84,22 @@ RECITERS = {
 }
 SOURCE = 'EveryAyah.com via Quran.com'
 
+# Whole-sūrah recordings (not āyah by āyah) with word timings from Qur'anic Universal Audio (QUA, CC BY 4.0,
+# https://github.com/QUD-Technologies/quranic-universal-audio): each āyah is cut out of the sūrah's file and laid out
+# like the others (LEAD, GAP, TAIL), its word times moved with it. The zip is pinned to a release, so the times keep
+# matching the audio. QUA word numbers are Quran.com word positions, so Quran.com's word text (recitation 7) is used
+# to line them up with the game's words, as for the others.
+QUA = {
+    'alafasy-california': {
+        'name': 'Mishary Rashid Alafasy (live, California)',
+        'note': 'A live Tarāwīḥ recording, warm and flowing',
+        'audio': 'https://download.quranicaudio.com/quran/mishaari_california/{n:03d}.mp3',
+        'zip': 'https://github.com/QUD-Technologies/quranic-universal-audio/releases/download/v4.0.0/'
+               'mishary_rashid_al_afasy_2008_qdc.zip',
+        'source': 'QuranicAudio.com; word timings: Qur’anic Universal Audio (CC BY 4.0)',
+    },
+}
+
 SURAHS = [1] + list(range(78, 115))      # 1 = the Basmalah (Sūrah 1, āyah 1 only)
 API = 'https://api.quran.com/api/v4'
 RATE = 44100                             # samples per second, mono
@@ -560,10 +576,103 @@ def build_reciter(slug, ffmpeg, cache, game):
     return mismatches
 
 
+def qua_rows(cache, slug):
+    """QUA's word timings for a reciter: {"78:1": [start, end, [[word, start, end], …]], …} in ms."""
+    import gzip
+    import io
+    import zipfile
+    path = fetch(QUA[slug]['zip'], os.path.join(cache, 'qua', slug + '.zip'))
+    with zipfile.ZipFile(path) as z:
+        name = next(x for x in z.namelist() if x.endswith('word_timestamps.json.gz'))
+        rows = json.load(io.TextIOWrapper(gzip.GzipFile(fileobj=io.BytesIO(z.read(name))), encoding='utf-8'))['rows']
+    return {r[0]: (r[1], r[2], r[5]) for r in rows}
+
+
+def one_pass(start, end, words):
+    """An āyah recited with part of it said twice (e.g. 78:40, words 5-10 again): keep one clean pass. Returns the
+    pieces of audio to keep [(a, b), …] (ms) and each word's (start, end) in the joined audio, from 0 (seconds)."""
+    keep, spans, top, cut_from = [], {}, 0, None
+    seg_a, removed = start, 0
+    for idx, a, b in words:
+        if idx <= top and cut_from is None:          # a repeat starts: cut from the end of the first pass
+            cut_from = spans[top][1] * 1000 + start + removed
+        if cut_from is not None:
+            if idx <= top:
+                continue
+            keep.append((seg_a, cut_from))            # the repeat is over at the first new word
+            removed += a - cut_from
+            seg_a, cut_from = a, None
+        if idx not in spans:
+            spans[idx] = ((a - start - removed) / 1000, (b - start - removed) / 1000)
+        top = max(top, idx)
+    keep.append((seg_a, end))
+    return keep, spans
+
+
+def build_qua(slug, ffmpeg, cache, game):
+    q = QUA[slug]
+    print(f'\n== {slug} (whole sūrahs, QUA word timings): {q["name"]}')
+    out_dir = os.path.join(AUDIO_DIR, slug)
+    os.makedirs(out_dir, exist_ok=True)
+    rows = qua_rows(cache, slug)
+    timings, notes = {}, []
+    for n in SURAHS:
+        src = fetch(q['audio'].format(n=n), os.path.join(cache, 'qua', slug, f'{n:03d}.mp3'), check_mp3)
+        full = decode(ffmpeg, src)
+        refs = ['1:1'] if n == 1 else [f'{n}:{a}' for a in range(1, len(game[n]) + 1)]
+        qc = api_verses(cache, 7, n)                 # Quran.com's words (text and positions) for the letters
+        pcm, pos, ayat = [silence(LEAD)], round(LEAD * RATE), []
+        for i, ref in enumerate(refs):
+            if ref not in rows:
+                sys.exit(f'{slug}: no timings for {ref}')
+            a0, b0, words = rows[ref]
+            keep, by_pos = one_pass(a0, b0, words)
+            if len(keep) > 1:
+                notes.append((ref, f'a repeat inside the āyah cut out ({len(keep) - 1} cut)'))
+            data = b''.join(full[round(a / 1000 * RATE) * 2:round(b / 1000 * RATE) * 2] for a, b in keep)
+            if i:
+                pcm.append(silence(GAP))
+                pos += round(GAP * RATE)
+            pcm.append(data)
+            length = (len(data) // 2) / RATE
+            start, end = pos / RATE, (pos + len(data) // 2) / RATE
+            pos += len(data) // 2
+            qc_words = [w for w in qc[i].get('words', []) if w.get('char_type_name') == 'word']
+            qc_spans = [by_pos.get(w['position']) for w in qc_words]
+            qc_letters = [letters(w.get('text_uthmani') or w.get('text') or '') for w in qc_words]
+            if None in qc_spans:
+                qc_spans = fill_gaps(qc_spans, [len(x) for x in qc_letters], length)
+                notes.append((ref, 'words without a time, interpolated'))
+            game_words = words_of(game[n][i])
+            if len(qc_words) == len(game_words):
+                spans = qc_spans
+            else:
+                spans = fill_gaps(align(game_words, qc_letters, qc_spans), [len(letters(w)) for w in game_words], length)
+                notes.append((ref, f'{len(qc_words)} Quran.com words vs {len(game_words)} game words, aligned by letters'))
+            spans = [(max(0.0, min(length, a)), max(0.0, min(length, b))) for a, b in spans]
+            wspans = tidy([(start + a, start + b) for a, b in spans], round(start, 3), round(end, 3))
+            ayat.append([round(start, 3), round(end, 3), wspans])
+        pcm.append(silence(TAIL))
+        pos += round(TAIL * RATE)
+        dest = os.path.join(out_dir, f'{n:03d}.mp3')
+        encode(ffmpeg, b''.join(pcm), dest)
+        snap_words(decode(ffmpeg, dest), ayat)
+        timings[str(n)] = ayat
+        print(f'   {n:03d}.mp3  {len(ayat)} āyāt, {pos / RATE:.1f} s')
+    with open(os.path.join(out_dir, 'timings.json'), 'w', encoding='utf-8') as f:
+        json.dump({'reciter': slug, 'name': q['name'], 'kbps': KBPS, 'snapped': True, 'surahs': timings}, f,
+                  separators=(',', ':'), ensure_ascii=False)
+        f.write('\n')
+    for ref, note in notes:
+        print(f'     {ref}  {note}')
+
+
 def write_index():
     """Rewrite audio/reciters.json from the reciter folders that are complete."""
     index = []
-    for slug, (_rid, name, note) in RECITERS.items():
+    every = [(slug, name, note, SOURCE) for slug, (_rid, name, note) in RECITERS.items()]
+    every += [(slug, q['name'], q['note'], q['source']) for slug, q in QUA.items()]
+    for slug, name, note, source in every:
         folder = os.path.join(AUDIO_DIR, slug)
         needed = ['timings.json'] + [f'{n:03d}.mp3' for n in SURAHS]
         if not all(os.path.isfile(os.path.join(folder, x)) for x in needed):
@@ -571,7 +680,7 @@ def write_index():
         size = sum(os.path.getsize(os.path.join(folder, x)) for x in os.listdir(folder)
                    if os.path.isfile(os.path.join(folder, x)))
         index.append({'id': slug, 'name': name, 'note': note,
-                      'mb': round(size / 1e6, 1), 'source': SOURCE})
+                      'mb': round(size / 1e6, 1), 'source': source})
     with open(os.path.join(AUDIO_DIR, 'reciters.json'), 'w', encoding='utf-8') as f:
         json.dump(index, f, indent=1, ensure_ascii=False)
         f.write('\n')
@@ -594,9 +703,11 @@ if __name__ == '__main__':
     if args.list:
         for slug, (rid, name, _) in RECITERS.items():
             print(f'{slug:16} {rid:3}  {name}')
+        for slug, q in QUA.items():
+            print(f'{slug:16} QUA  {q["name"]}')
         sys.exit()
-    slugs = list(RECITERS) if args.all else args.reciters
-    unknown = [s for s in slugs if s not in RECITERS]
+    slugs = list(RECITERS) + list(QUA) if args.all else args.reciters
+    unknown = [s for s in slugs if s not in RECITERS and s not in QUA]
     if unknown:
         sys.exit(f'Unknown reciter(s): {", ".join(unknown)}. Try --list.')
     if not slugs and not args.index_only:
@@ -611,5 +722,8 @@ if __name__ == '__main__':
             sys.exit()
         game = load_game_text()
         for slug in slugs:
-            build_reciter(slug, ffmpeg, os.path.abspath(args.cache), game)
+            if slug in QUA:
+                build_qua(slug, ffmpeg, os.path.abspath(args.cache), game)
+            else:
+                build_reciter(slug, ffmpeg, os.path.abspath(args.cache), game)
     write_index()

@@ -23,7 +23,11 @@
 (function () {
   'use strict';
 
-  const FORMAT = 2; // 2 (v2.5.3): adds the starter shirt and pants colors. Format 1 codes still open.
+  // 2 (v2.5.3): adds the starter shirt and pants colors. 3 (v2.10.0): about half as long (the order things were won
+  // kept for the newest 30, campfires in hours, time per sūrah in 10 s steps) and the game version up front, outside
+  // the compressed part, so a phone can always tell a link from a newer version. Format 1 and 2 codes still open.
+  const FORMAT = 3;
+  const RECENT = 30; // how many of the newest wins keep their order (older ones follow the game's own order)
 
   /* ---------- bits ---------- */
   function writer() {
@@ -182,7 +186,7 @@
     ['once', 'three', 'all'].forEach((f) => w.bit((p.feats || []).includes(f)));
     ctx.surahs.forEach((s) => s.P.forEach((_, q) => w.bit((p.cpg || []).includes(s.n + ':' + q))));
     w.big(p.time || 0);
-    ctx.surahs.forEach((s) => w.big((p.stime && p.stime[s.n]) || 0));
+    ctx.surahs.forEach((s) => w.big(Math.round(((p.stime && p.stime[s.n]) || 0) / 10))); // (in 10 s steps)
     // the extras block (v2.7.1): everything else, so the other phone shows the explorer exactly as they are
     w.num(EXTRAS, 8);
     w.num(5, 8); // its version (2: v2.7.2 adds the comfy shoes' color; 3: v2.7.24 the Stranger's visits; 4: v2.8.4 the app version; 5: v2.9.1 the riddles, the buddies and my tree)
@@ -195,10 +199,18 @@
       w.num(ref(kOf(g)), 12);
       w.bit(!!g.m);
     });
-    const got = (p.got || []).filter((k) => cat.at.has(k));
-    w.big(got.length);
-    got.forEach((k) => {
-      w.num(ref(k), 12);
+    // the order things were won: the newest RECENT (and any still new) in order, each as its place among the
+    // things owned; the others are older and follow the game's own order on the other phone
+    const ownList = cat.list.filter((k) => own.has(k)),
+      ownAt = new Map(ownList.map((k, j) => [k, j])),
+      ob = Math.max(1, Math.ceil(Math.log2(ownList.length + 1))),
+      got = (p.got || []).filter((k) => ownAt.has(k)),
+      firstNew = got.findIndex((k) => (p.fresh || []).includes(k)),
+      from = Math.max(0, Math.min(got.length - RECENT, firstNew < 0 ? got.length : firstNew)),
+      recent = got.slice(from);
+    w.big(recent.length);
+    recent.forEach((k) => {
+      w.num(ownAt.get(k), ob);
       w.bit((p.fresh || []).includes(k));
     });
     w.bit(!!p.stash);
@@ -219,11 +231,14 @@
       w.num(ref('s:' + x.id), 12);
       w.num(ctx.surahs.findIndex((s) => s.n === x.n), 6);
     });
+    // campfires: when each was last practised, in hours before now (a fire changes only at whole days)
+    const hr = Math.floor(Date.now() / 3.6e6);
+    w.big(hr);
     ctx.surahs.forEach((s) => {
       const f = p.fire && p.fire[s.n];
       w.bit(!!f);
       if (f) {
-        w.big(Math.floor(f[0] / 60000));
+        w.num(Math.max(0, Math.min(1023, hr - Math.floor(f[0] / 3.6e6))), 10);
         w.num(f[1], 3);
       }
     });
@@ -244,14 +259,21 @@
     ctx.surahs.forEach((s) => w.bit((gr[2] || []).includes(s.n)));
     const body = w.done();
     const zip = CAN_ZIP ? await pipe(body, new CompressionStream('deflate-raw')) : body;
-    return b64(new Uint8Array([FORMAT, CAN_ZIP ? 1 : 0, ...zip]));
+    const ver = String(ctx.version || '0.0.0').split('.').slice(0, 3).map((x) => Math.min(255, parseInt(x, 10) || 0));
+    return b64(new Uint8Array([FORMAT, CAN_ZIP ? 1 : 0, ...ver, ...zip]));
   }
 
   async function decode(code, ctx) {
     const raw = unb64(String(code).trim());
     const fmt = raw[0];
-    if (fmt !== 1 && fmt !== 2) throw new Error('format');
-    let body = raw.slice(2);
+    // a newer format than this phone knows: from v2.10.0 on its version is up front, so it can say "update first"
+    if (fmt > 3 || !fmt) {
+      const e = new Error('format');
+      if (raw.length > 4) e.appV = [raw[2], raw[3], raw[4]].join('.');
+      throw e;
+    }
+    const headV = fmt >= 3 ? [raw[2], raw[3], raw[4]].join('.') : '';
+    let body = raw.slice(fmt >= 3 ? 5 : 2);
     if (raw[1] & 1) {
       if (!CAN_ZIP) throw new Error('nozip');
       body = await pipe(body, new DecompressionStream('deflate-raw'));
@@ -305,7 +327,7 @@
     p.time = r.big();
     p.stime = {};
     ctx.surahs.forEach((s) => {
-      const t = r.big();
+      const t = r.big() * (fmt >= 3 ? 10 : 1);
       if (t) p.stime[s.n] = t;
     });
     // the extras block (v2.7.1), when the code has one
@@ -321,14 +343,29 @@
       }
       p.got = [];
       p.fresh = [];
-      for (let j = r.big(); j > 0; j--) {
-        const k = key(r.num(12)),
-          nw = r.bit();
-        if (k) {
-          p.got.push(k);
-          if (nw) p.fresh.push(k);
+      if (fmt >= 3) {
+        // the newest wins in order; the older ones (everything else owned) before them, in the game's own order
+        const ownList = owned.map((j) => cat.list[j]),
+          ob = Math.max(1, Math.ceil(Math.log2(ownList.length + 1))),
+          recent = [];
+        for (let j = r.big(); j > 0; j--) {
+          const k = same ? ownList[r.num(ob)] : (r.num(ob), null),
+            nw = r.bit();
+          if (k) {
+            recent.push(k);
+            if (nw) p.fresh.push(k);
+          }
         }
-      }
+        if (same) p.got = [...ownList.filter((k) => !recent.includes(k)), ...recent];
+      } else
+        for (let j = r.big(); j > 0; j--) {
+          const k = key(r.num(12)),
+            nw = r.bit();
+          if (k) {
+            p.got.push(k);
+            if (nw) p.fresh.push(k);
+          }
+        }
       if (r.bit()) {
         p.stash = { outfit: {}, badge: '' };
         ctx.slots.forEach((sl) => {
@@ -353,8 +390,9 @@
         if (k && s && k.startsWith('s:')) p.lostSt.push({ id: k.slice(2), n: s.n });
       }
       p.fire = {};
+      const hr = fmt >= 3 ? r.big() : 0;
       ctx.surahs.forEach((s) => {
-        if (r.bit()) p.fire[s.n] = [r.big() * 60000, r.num(3)];
+        if (r.bit()) p.fire[s.n] = fmt >= 3 ? [(hr - r.num(10)) * 3.6e6, r.num(3)] : [r.big() * 60000, r.num(3)];
       });
       const jl = listOf(ctx.journal || []),
         jsum = r.num(16),
@@ -373,6 +411,7 @@
         Object.assign(p, { riddle: [dayStr(rd), rn, rdone, rat * 1000, rgift], buddy: [dayStr(bd), bn, ball], grow: [gn, dayStr(gd), gs] });
       }
     }
+    if (headV) p.appV = headV;
     p.made = true;
     p.sameThings = same;
     return p;

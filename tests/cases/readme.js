@@ -52,6 +52,15 @@
     L.go('map'); await wait(1200);
     d.querySelector('[data-act=journal]').click(); await wait(800);
     if (shot === 'riddle') { d.querySelector('[data-act=riddlego]').click(); await wait(1200); }
+  } else if (shot === 'elderend') {
+    // (v2.10.0) the end of the Teacher's test, all right: his words, the campfire rising, the gift to open
+    prof.fire[113] = [Date.now() - 12 * 864e5, 0];
+    L.go('elder', { i: idx(113), p: 0, fire0: 1, qs: [{ k: 0, kind: 'next', cut: 0, throw: 'rock' }, { k: 1, kind: 'next', cut: 0, throw: 'rock' }, { k: 2, kind: 'next', cut: 0, throw: 'rock' }], q: 0, marks: [], hurt: false, fallen: [], phase: 'ask', anytime: true, rematch: false, result: null, ack: '' });
+    for (let q = 0; q < 3; q++) {
+      for (let t = 0; t < 40 && !d.querySelector('[data-act=eldans]:not([disabled])'); t++) await wait(100);
+      d.querySelector('[data-act=eldans][data-ok="1"]').click(); await wait(300);
+    }
+    for (let t = 0; t < 80 && L.st().phase !== 'end'; t++) await wait(100);
   } else if (shot === 'elder') {
     prof.prog[100] = full(2);
     L.go('elder', { i: idx(100), p: 0, qs: [{ k: 2, kind: 'next', cut: 0, throw: 'sand' }, { k: 4, kind: 'next', cut: 0, throw: 'water' }, { k: 6, kind: 'next', cut: 0, throw: 'sand' }], q: 1, marks: [true], hurt: false, fallen: [], phase: 'ask', anytime: false, rematch: false, result: null, ack: '' });

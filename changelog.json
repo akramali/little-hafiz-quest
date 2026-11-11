@@ -1,7 +1,13 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.9.5",
+ "latest": "2.10.0",
  "versions": [
+  { "v": "2.10.0", "notes": [
+   "Over 200 riddles to find, each one once, and a gift for every seven",
+   "A new recitation: Mishary Alafasy, live in California",
+   "See how much you've memorized, and how close your next prize is",
+   "A smoother My Tree, shorter family links, and small visual tweaks"
+  ] },
   { "v": "2.9.5", "notes": [
    "Each review game shows its own hearts, and keeps them until you finish it",
    "The next step to do glows softly",

@@ -89,7 +89,7 @@
   X.countDay(p, 15);
   ok('a minute of learning today adds to the streak', p.streak[1] === 5 && p.best === 5, JSON.stringify(p.streak));
   L.go('show'); await wait(400);
-  ok('My Achievements shows the streak and the best', /5 days/.test(d.body.textContent) && /best 5/.test(d.body.textContent) && d.querySelectorAll('.ach').length === 8);
+  ok('My Achievements shows the streak and the best', /5 days/.test(d.body.textContent) && /best 5/.test(d.body.textContent) && d.querySelectorAll('.ach').length === 10); // (v2.10.0: the riddles found and how much is memorized too)
   L.go('splash'); await wait(300);
   ok('the start screen shows the streak (🏃 5 days, as tall as the settings button)', /5\s*days/.test(d.querySelector('.streakbtn').textContent) && d.querySelector('.streakbtn').offsetHeight === d.querySelector('[data-act=settings]').offsetHeight);
   d.querySelector('.streakbtn').click(); await wait(250);
