@@ -1,7 +1,10 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.10.5",
+ "latest": "2.10.6",
  "versions": [
+  { "v": "2.10.6", "notes": [
+   "The Share button in Back up everything works"
+  ] },
   { "v": "2.10.5", "notes": [
    "Loading a progress file adds to the phone, never takes away: every explorer at once",
    "Share the file from Backup; each file has the time in its name"

@@ -58,6 +58,20 @@
   ok('a newer version\'s file: update first', /newer version/.test(toastTxt()) && !d.querySelector('#modal.show [data-act=cyes]'), toastTxt());
   // 6. a .txt file (how Android shares it) loads the same way
   ok('the file picker takes .txt too (shared from Android)', /\.txt/.test(d.getElementById('loadfile').accept));
+  // 7. (v2.10.6) 📤 Share: the share menu gets a .txt file; refused (Chrome with a .json), the file is saved instead
+  let shared = null, refuse = '';
+  w.navigator.canShare = () => true;
+  w.navigator.share = (data) => ((shared = data.files[0]), refuse ? Promise.reject(Object.assign(new Error('x'), { name: refuse })) : Promise.resolve());
+  L.go('explorers'); await wait(200);
+  ok('the Backup section: "Back up everything", with Share', /Back up everything/.test(d.body.textContent) && !!d.querySelector('[data-act=sharefile]'));
+  name = ''; d.querySelector('[data-act=sharefile]').click(); await wait(200);
+  ok('Share sends the file as .txt (text/plain), every explorer in it', !!shared && /\.txt$/.test(shared.name) && shared.type === 'text/plain' && JSON.parse(await shared.text()).store.profiles.length === 2 && !name, shared && shared.name);
+  refuse = 'NotAllowedError'; name = '';
+  d.querySelector('[data-act=sharefile]').click(); await wait(300);
+  ok('the share menu refuses: the file is saved instead (never nothing)', /\.json$/.test(name), name);
+  refuse = 'AbortError'; name = '';
+  d.querySelector('[data-act=sharefile]').click(); await wait(300);
+  ok('the menu just closed: nothing more', !name, name);
   ok('no game errors', errs.length === 0, errs.join(' | '));
   done();
 })();

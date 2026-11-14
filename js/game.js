@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.10.5';
+  const VERSION = '2.10.6';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -3200,9 +3200,9 @@
     }
     ${noExplorers() ? `<div class="sheet"><h3>👨‍👩‍👧 Family sync</h3><div class="setrow" style="justify-content:center"><button class="btn small" data-act="syncpaste">📋 Paste from family</button></div></div>` : ''}
     <div class="sheet">
-      <h3>💾 Backup</h3>
+      <h3>💾 Back up everything</h3>
       <p class="saveinfo">Every explorer in one file. Loading it adds to a phone, never takes away.</p>
-      <div class="setrow" style="justify-content:center;gap:10px"><button class="btn small" data-act="savefile" ${noExplorers() ? 'disabled' : ''}>💾 Save</button>${CAN_SHARE_FILES ? `<button class="btn small" data-act="sharefile" ${noExplorers() ? 'disabled' : ''}>📤 Share</button>` : ''}<button class="btn small" data-act="loadfile">📂 Load</button><input type="file" id="loadfile" accept=".json,.txt,application/json,text/plain" hidden></div>
+      <div class="setrow" style="justify-content:center;gap:10px"><button class="btn small" data-act="savefile" ${noExplorers() ? 'disabled' : ''}>💾 Save</button>${canShareFiles() ? `<button class="btn small" data-act="sharefile" ${noExplorers() ? 'disabled' : ''}>📤 Share</button>` : ''}<button class="btn small" data-act="loadfile">📂 Load</button><input type="file" id="loadfile" accept=".json,.txt,application/json,text/plain" hidden></div>
     </div>
     ${
       noExplorers()
@@ -4189,19 +4189,20 @@
     setTimeout(() => URL.revokeObjectURL(u), 4000);
     toast(`Saved ${f.name}`);
   }
-  // the share menu with the file (Android shares no .json files: there it goes as .txt, loaded the same way)
-  const CAN_SHARE_FILES = !!(navigator.canShare && navigator.share);
+  // the share menu with the file, as .txt (v2.10.6: Chrome says it can share a .json file, then refuses it, and a
+  // second try isn't allowed without another tap; Load takes .txt the same). If the menu still fails: saved instead
+  const canShareFiles = () => !!(navigator.canShare && navigator.share);
   function shareFile() {
     const f = progressFile(),
-      file = [new File([f.data], f.name, { type: 'application/json' }), new File([f.data], f.name.replace(/json$/, 'txt'), { type: 'text/plain' })].find((x) => {
-        try {
-          return navigator.canShare({ files: [x] });
-        } catch (e) {
-          return false;
-        }
-      });
-    if (!file) return saveFile();
-    navigator.share({ files: [file], title: 'Little Hafiz Quest progress' }).catch(() => {});
+      file = new File([f.data], f.name.replace(/json$/, 'txt'), { type: 'text/plain' });
+    let ok = false;
+    try {
+      ok = navigator.canShare({ files: [file] });
+    } catch (e) {}
+    if (!ok) return saveFile();
+    navigator.share({ files: [file], title: 'Little Hafiz Quest progress' }).catch((e) => {
+      if (!e || e.name !== 'AbortError') saveFile(); // (AbortError: the menu was just closed)
+    });
   }
   // what loading would do, explorer by explorer (worked out on copies)
   function filePlan(list) {
