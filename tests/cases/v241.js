@@ -12,15 +12,16 @@
   const text = await saved.text();
   log('saved file:', saved.type, text.length, 'bytes, has app:', JSON.parse(text).app);
   ok('save file is a progress file', JSON.parse(text).app === 'little-hafiz-quest');
-  const before = JSON.stringify(prof().prog);
+  const progKey = (pr) => JSON.stringify(Object.keys(pr).sort().map((n) => [n, pr[n].parts.map((x) => [x.learn, x.words, x.order, x.path].map((v) => +!!v)), +!!pr[n].big])); // (v2.10.5: loading merges, so compare what was done)
+  const before = progKey(prof().prog);
   prof().prog = {}; prof().name = 'Changed'; L.go('explorers'); await wait(100);
   const file = new w.File([text], 'p.json', { type: 'application/json' });
   const input = d.getElementById('loadfile'); const dt = new w.DataTransfer(); dt.items.add(file); input.files = dt.files; input.dispatchEvent(new w.Event('change', { bubbles: true }));
   await wait(300);
   log('confirm shown:', !!d.querySelector('#modal [data-act=cyes]'));
   d.querySelector('#modal [data-act=cyes]').click(); await wait(300);
-  log('after load: name', prof().name, 'progress restored', JSON.stringify(prof().prog) === before);
-  ok('loading a file restores progress', JSON.stringify(prof().prog) === before);
+  log('after load: name', prof().name, 'progress restored', progKey(prof().prog) === before);
+  ok('loading a file restores progress', progKey(prof().prog) === before, progKey(prof().prog));
   // a bad file
   const bad = new w.File(['{"hello":1}'], 'x.json'); const dt2 = new w.DataTransfer(); dt2.items.add(bad); input.files = dt2.files; input.dispatchEvent(new w.Event('change', { bubbles: true })); await wait(300);
   log('bad file toast:', d.getElementById('toast').textContent);

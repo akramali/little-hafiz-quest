@@ -82,7 +82,7 @@ recite on their own.
   you on your way up and tries that world's elements on you, but with your Teacher at your side they can't reach
   you: what's in your heart protects you. Nothing is lost, and he's never on the map.
 - **Your Teacher:** a kind old man who roams the map; tap him, or he finds you, to walk together and test a memorized sūrah, with no help (3 to 7 questions, 30 seconds each).
-- **Family friendly:** up to 10 explorers on one phone, family sync between phones by link or QR code, backups to a file.
+- **Family friendly:** up to 10 explorers on one phone, family sync between phones by link or QR code, backups to a file that also syncs every explorer at once.
 
 Five to ten minutes a day is plenty. Stop while it's still fun.
 
@@ -103,7 +103,7 @@ Updates download by themselves; the start screen offers them with a short note o
 
 No accounts, analytics, ads or trackers, and no requests to other websites. Progress stays on the device; family
 sync puts all of it inside the link you send, never on a server. A backup file or a family link brings an explorer
-back exactly as they were.
+back exactly as they were, and only ever adds to a phone.
 
 ## For developers
 

@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.10.4';
+  const VERSION = '2.10.5';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -3201,8 +3201,8 @@
     ${noExplorers() ? `<div class="sheet"><h3>👨‍👩‍👧 Family sync</h3><div class="setrow" style="justify-content:center"><button class="btn small" data-act="syncpaste">📋 Paste from family</button></div></div>` : ''}
     <div class="sheet">
       <h3>💾 Backup</h3>
-      <p class="saveinfo">A file with every explorer on this phone, in case its storage is cleared. Load it back any time.</p>
-      <div class="setrow" style="justify-content:center;gap:10px"><button class="btn small" data-act="savefile" ${noExplorers() ? 'disabled' : ''}>💾 Save progress</button><button class="btn small" data-act="loadfile">📂 Load progress</button><input type="file" id="loadfile" accept=".json,application/json" hidden></div>
+      <p class="saveinfo">Every explorer in one file. Loading it adds to a phone, never takes away.</p>
+      <div class="setrow" style="justify-content:center;gap:10px"><button class="btn small" data-act="savefile" ${noExplorers() ? 'disabled' : ''}>💾 Save</button>${CAN_SHARE_FILES ? `<button class="btn small" data-act="sharefile" ${noExplorers() ? 'disabled' : ''}>📤 Share</button>` : ''}<button class="btn small" data-act="loadfile">📂 Load</button><input type="file" id="loadfile" accept=".json,.txt,application/json,text/plain" hidden></div>
     </div>
     ${
       noExplorers()
@@ -4165,22 +4165,68 @@
     go('surah', { i: st.i, p: st.p == null ? 0 : st.p });
   }
 
-  /* ---------- a progress file: save every explorer to a file, load them back ---------- */
+  /* ---------- a progress file: every explorer on this phone, saved or shared as a file ----------
+     Loading one adds it to what's here, as a family link does (v2.10.5): each explorer joins the one with the same
+     name or id, or comes in new; nothing is ever taken away (the most stars, every treasure and find kept), so
+     loading an older or smaller file changes nothing. On an empty phone that is the file exactly. */
   const FILE_APP = 'little-hafiz-quest';
-  function saveFile() {
+  // the date and time in the name, so a second save the same day is a new file (no "download again?" question)
+  function progressFile() {
     save();
-    const data = JSON.stringify({ app: FILE_APP, v: 2, version: VERSION, saved: new Date().toISOString(), store }, null, 1);
-    const name = `little-hafiz-quest-progress-${today()}.json`;
-    const u = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
+    const d = new Date(),
+      t = [d.getHours(), d.getMinutes(), d.getSeconds()].map((x) => String(x).padStart(2, '0')).join('-');
+    return { name: `little-hafiz-quest-progress-${today()}_${t}.json`, data: JSON.stringify({ app: FILE_APP, v: 2, version: VERSION, saved: d.toISOString(), store }, null, 1) };
+  }
+  function saveFile() {
+    const f = progressFile();
+    const u = URL.createObjectURL(new Blob([f.data], { type: 'application/json' }));
     const aEl = document.createElement('a');
     aEl.href = u;
-    aEl.download = name;
+    aEl.download = f.name;
     document.body.appendChild(aEl);
     aEl.click();
     aEl.remove();
     setTimeout(() => URL.revokeObjectURL(u), 4000);
-    toast(`Saved ${name}`);
+    toast(`Saved ${f.name}`);
   }
+  // the share menu with the file (Android shares no .json files: there it goes as .txt, loaded the same way)
+  const CAN_SHARE_FILES = !!(navigator.canShare && navigator.share);
+  function shareFile() {
+    const f = progressFile(),
+      file = [new File([f.data], f.name, { type: 'application/json' }), new File([f.data], f.name.replace(/json$/, 'txt'), { type: 'text/plain' })].find((x) => {
+        try {
+          return navigator.canShare({ files: [x] });
+        } catch (e) {
+          return false;
+        }
+      });
+    if (!file) return saveFile();
+    navigator.share({ files: [file], title: 'Little Hafiz Quest progress' }).catch(() => {});
+  }
+  // what loading would do, explorer by explorer (worked out on copies)
+  function filePlan(list) {
+    const used = new Set();
+    let room = MAX_EXPLORERS - store.profiles.length;
+    return list.map((from) => {
+      from.made = true;
+      const into = store.profiles.find((p) => !used.has(p.id) && p.id === from.id) || store.profiles.find((p) => !used.has(p.id) && p.name && p.name === from.name);
+      if (!into) return room-- > 0 ? { from, gain: { stars: totalStars(from), things: thingsOf(from) }, changed: true } : { from, full: true };
+      used.add(into.id);
+      const copy = JSON.parse(JSON.stringify(into));
+      mergeInto(copy, from);
+      return { from, into, gain: { stars: totalStars(copy) - totalStars(into), things: thingsOf(copy) - thingsOf(into) }, changed: JSON.stringify(Object.assign(copy, { touched: 0 })) !== JSON.stringify(Object.assign({}, into, { touched: 0 })) }; // (only when it was last played isn't news)
+    });
+  }
+  const planLine = (x) =>
+    x.full
+      ? `No room (${MAX_EXPLORERS} explorers at most)`
+      : !x.into
+        ? `New explorer · ⭐ ${x.gain.stars}`
+        : x.gain.stars > 0 || x.gain.things > 0
+          ? `+${x.gain.stars} ⭐${x.gain.things ? ` · ${x.gain.things} new treasure${x.gain.things === 1 ? '' : 's'}` : ''}`
+          : x.changed
+            ? 'A few updates'
+            : 'Up to date';
   function loadFile(file) {
     if (!file) return;
     const fr = new FileReader();
@@ -4193,29 +4239,67 @@
         toast("That isn't a Little Hafiz Quest progress file.");
         return;
       }
+      // (a newer version's things would be lost here: update first, as with a family link)
+      if (o.version && vnum(o.version) > vnum(VERSION)) {
+        toast(`This file is from a newer version (v${o.version}). Update this phone first, then load it again.`);
+        return;
+      }
       const next = cleanStore(o.store);
       if (!next.profiles.length) {
         toast('There are no explorers in that file.');
         return;
       }
-      const names = next.profiles.map((p) => (p.name ? esc(p.name) : 'Explorer')).join(', ');
-      askConfirm(`Load ${next.profiles.length === 1 ? 'this explorer' : next.profiles.length + ' explorers'} from the file (${names})? It replaces every explorer on this device.`, 'Load', () => {
-        store = next;
-        store.profiles.forEach((prof) => {
-          S.forEach((s) => giveSurahGift(s, prof));
-          giveTrackPrizes(prof);
-          giveStarBadges(prof);
-          giveWorldRides(prof);
-        });
-        prefs = store.prefs;
-        nobody = null;
-        save();
-        applyTheme();
-        render();
-        toast('Progress loaded ✨');
-      });
+      incoming = null; // (mergeInto reads a family link's details: none here)
+      const plan = filePlan(next.profiles);
+      if (!plan.some((x) => x.changed)) {
+        toast('Already up to date: nothing new');
+        return;
+      }
+      pendingYes = () => applyFile(plan, next);
+      const m = document.getElementById('modal');
+      m.innerHTML = `<div class="card synccard"><h3>📂 Load progress</h3>
+        <div class="synclist">${plan.map((x) => `<div class="syncopt${x.changed ? ' on' : ''}"><span class="phead">${ART.explorer(x.from.look, Object.assign({}, x.from.outfit, { sticker: x.from.badge }), { view: 'front', cls: 'mini' })}</span><span>${x.from.name ? esc(x.from.name) : 'Explorer'}<small>${planLine(x)}</small></span></div>`).join('')}</div>
+        <p class="saveinfo center">Nothing on this phone is taken away.</p>
+        <div class="row"><button class="btn wide" data-act="cno">Cancel</button><button class="btn go wide" data-act="cyes">✨ Load</button></div></div>`;
+      m.classList.add('show');
     };
     fr.readAsText(file);
+  }
+  function applyFile(plan, next) {
+    const empty = noExplorers();
+    incoming = null;
+    plan.forEach((x) => {
+      if (x.full || !x.changed) return;
+      const from = x.from;
+      if (x.into) {
+        mergeInto(x.into, from);
+        // next time the two phones recognize this explorer by itself (as a family link does)
+        if (x.into.id !== from.id && !store.profiles.some((p) => p.id === from.id)) {
+          if (store.cur === x.into.id) store.cur = from.id;
+          x.into.id = from.id;
+        }
+        return;
+      }
+      if (store.profiles.some((p) => p.id === from.id)) from.id = newProfile().id;
+      store.profiles.push(from);
+      S.forEach((s) => giveSurahGift(s, from));
+      giveTrackPrizes(from);
+      giveStarBadges(from);
+      giveWorldRides(from);
+      unlockDesigns(from);
+    });
+    // an empty phone (a new install): the file's settings and explorer too
+    if (empty) {
+      prefs = store.prefs = next.prefs;
+      if (store.profiles.some((p) => p.id === next.cur)) store.cur = next.cur;
+    }
+    if (!store.profiles.some((p) => p.id === store.cur)) store.cur = store.profiles[0].id;
+    nobody = null;
+    save(true);
+    sfx.win();
+    applyTheme();
+    render();
+    toast('Progress loaded ✨');
   }
   document.addEventListener('change', (e) => {
     if (e.target && e.target.id === 'loadfile') {
@@ -4830,6 +4914,10 @@
       case 'savefile':
         sfx.tap();
         saveFile();
+        break;
+      case 'sharefile':
+        sfx.tap();
+        shareFile();
         break;
       case 'loadfile':
         sfx.tap();
