@@ -76,8 +76,9 @@ recite on their own.
 - **Daily streaks** (🏃 days on the trail, a little gift every 7 days in a row), and a welcome from your Teacher, who hands each new explorer their walking stick.
 - **Read mode** for children who can read the muṣḥaf, following the recitation āyah by āyah.
 - **Five recitations** (including a live one by Alafasy), adjustable speed (0.5×–1.5×) and loops; tap any word to hear it alone.
-- **Over 350 things to win and wear:** treasures, golden editions, patterned surprises, stickers, buddies, toy rides
-  for golden worlds and summit awards, paced so new ones keep coming right up to the last star.
+- **Over 550 things to win and wear:** treasures, golden editions, patterned surprises, stickers (gold and shimmer
+  ones too), star badges, buddies, toy rides for golden worlds and summit awards. Every game finished the first time
+  brings something.
 - **The Stranger** guards the bridges to the higher worlds. Once everything up to World 3 is memorized, he meets
   you on your way up and tries that world's elements on you, but with your Teacher at your side they can't reach
   you: what's in your heart protects you. Nothing is lost, and he's never on the map.

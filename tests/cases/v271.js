@@ -12,12 +12,13 @@
   const items = A.ITEMS.filter((it) => !it.gold && it.tier >= 1 && it.from).slice(0, 6).map((it) => it.id);
   const owned = new Set(p.items);
   items.forEach((id) => owned.has(id) || (p.items.push(id), p.got.push('i:' + id)));
-  p.stickers = [...new Set([...p.stickers, 'moon', 'bee'])];
-  ['s:moon', 's:bee'].forEach((k) => p.got.includes(k) || p.got.push(k));
+  p.stickers = [...new Set([...p.stickers, 'moon', 'bee', 'stars100', 'stars200'])];
+  ['s:moon', 's:bee', 's:stars100', 's:stars200'].forEach((k) => p.got.includes(k) || p.got.push(k));
   p.fresh = [p.got[p.got.length - 1], p.got[0]];
   p.pending = [{ k: 'i', id: A.ITEMS.find((it) => it.drop && !p.items.includes(it.id)).id }, { k: 's', id: 'sun', m: 1 }];
-  p.stash = { outfit: { hat: items[0] }, badge: 'moon' };
+  p.stash = { outfit: { hat: items[0] }, badge: 'moon', medal: 'stars100' };
   p.badge = 'bee';
+  p.medal = 'stars200'; // (v2.11.0: a star badge pinned on the other side)
   p.at = 5;
   p.look.feet = 2;
   p.greeted = true;

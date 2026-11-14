@@ -1,7 +1,12 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.10.6",
+ "latest": "2.11.0",
  "versions": [
+  { "v": "2.11.0", "notes": [
+   "Every game you finish the first time brings a gift: 185 new stickers, gold and shimmer ones too",
+   "Star badges have their own tab: wear one with a sticker",
+   "Small visual tweaks"
+  ] },
   { "v": "2.10.6", "notes": [
    "The Share button in Back up everything works"
   ] },

@@ -221,6 +221,8 @@
       radial('lhq-g-crys', [[0, '#e9fdff', 0.9], [0.5, '#7ff0ff', 0.4], [1, '#7ff0ff', 0]]) +
       radial('lhq-g-mush', [[0, '#e8fffb', 0.85], [0.5, '#7dffe0', 0.35], [1, '#7dffe0', 0]]) +
       linear('lhq-g-dawn', [[0, '#ffb347'], [0.5, '#ff7aa8'], [1, '#9b6cff']]) +
+      linear('lhq-foil-gold', [[0, '#fff3b0'], [0.3, '#ffc83d'], [0.55, '#fff7d6'], [0.8, '#e0a21f'], [1, '#ffd96b']], 1, 1) + // (v2.11.0: foil stickers' edges)
+      linear('lhq-foil-holo', [[0, '#ff9ad5'], [0.25, '#ffe27a'], [0.5, '#8ff0c8'], [0.75, '#8fc8ff'], [1, '#c79bff']], 1, 1) +
       linear('lhq-g-ray', [[0, '#ffe680', 0.95], [1, '#fff2b0', 0]]) +
       linear('lhq-g-rain', [[0, '#ffffff', 0.9], [1, '#ffffff', 0]]) +
       linear('lhq-g-sky', [[0, '#7fc8ff'], [0.42, '#bfe6ff'], [0.72, '#ffe2c4'], [1, '#ffd0a8']]) +
@@ -305,11 +307,13 @@
     return { hair: hairBits, dust };
   }
   // a sticker stuck on the shirt (front view), drawn from the sticker art with its white die-cut edge
-  function badge(id) {
+  // a sticker on the shirt (the explorer's right, our left); medal: a star badge on the other side (v2.11.0)
+  function badge(id, medal) {
     const f = STKBY[id];
     if (!f) return '';
-    const art = stillArt(OUT(f()));
-    return '<svg x="64" y="163" width="27" height="27" viewBox="0 0 100 100" overflow="visible"><g transform="rotate(-10 50 50)">' + flat(art, '#ffffff', 14) + art + '</g></svg>';
+    const art = stillArt(OUT(f())),
+      foil = foilOf(id);
+    return '<svg x="' + (medal ? 95 : 64) + '" y="' + (medal ? 162 : 163) + '" width="27" height="27" viewBox="0 0 100 100" overflow="visible"><g transform="rotate(' + (medal ? 8 : -10) + ' 50 50)">' + flat(art, foil ? FOIL_EDGE[foil] : '#ffffff', foil ? 16 : 14) + art + '</g></svg>';
   }
   const HAIR = {
     short: 'M47 120C40 104 41 84 55 74C70 62 114 60 129 74C143 84 144 104 137 120C134 108 130 98 124 92Q114 102 104 94Q94 103 82 94Q70 102 62 92C54 98 50 108 47 120Z',
@@ -1761,8 +1765,10 @@
     // a glowing watch (face.glow): a soft halo around its face that breathes (v2.8.4)
     const halo = (r) => (face.glow ? G(CF(0, 0, r, face.glow, 0.22) + CF(0, 0, r * 0.8, face.glow, 0.3), cls('wglow')) : '');
     // (v2.10.1) from behind: the band and its buckle, no face
-    if (big === 'back') return P(rr(-9.6, -4.6, 19.2, 9.2, 3.4), band) + P(rr(-3.4, -3.4, 6.8, 6.8, 1.4), 'none', ' stroke="#c9d2e3" stroke-width="1.8"') + L('M0 -3.4L0 3.4', '#c9d2e3', 1.4);
-    if (!big) return halo(11) + P(rr(-9.6, -4.6, 19.2, 9.2, 3.4), band) + ball(0, 0, 6, 6, face.rim, { sh: false, hl: false }) + C(0, 0, 3.8, face.c, sw(1.4)) + (face.mini || '');
+    if (big === 'back') return P(rr(-13, -4.4, 26, 8.8, 3.4), band) + P(rr(-3.4, -3.4, 6.8, 6.8, 1.4), 'none', ' stroke="#c9d2e3" stroke-width="1.8"') + L('M0 -3.4L0 3.4', '#c9d2e3', 1.4);
+    // (v2.11.0) on the wrist: the real face, scaled down, on a bigger dial (a stand-in symbol, face.mini, used to be
+    // drawn there: the smiley was half a smile, the rocket an arrow); clipped to the dial
+    if (!big) return halo(13) + P(rr(-13, -4.4, 26, 8.8, 3.4), band) + ball(0, 0, 8.6, 8.6, face.rim, { sh: false, hl: false }) + C(0, 0, 6.4, face.c, sw(1.2)) + G(inner, ' transform="scale(' + n(6.4 / 18) + ')"');
     return halo(36) + S(rr(-12, -44, 24, 88, 10), band, rr(4, -44, 8, 88, 4)) + [-34, -26, 26, 34].map((y) => CF(0, y, 2, dk(band, 0.4))).join('') +
       ball(0, 0, 24, 24, face.rim, { hl: false }) + C(0, 0, 18, face.c) + inner + F('M-14 -8Q-12 -14 -6 -16Q-11 -9 -12 -2Z', '#fff', 0.55);
   }
@@ -2176,7 +2182,7 @@
     if (sad) head = G(head, ' transform="translate(0 3) rotate(-3 92 150)"'); // a droopy head
     const pet = o.pet ? G(G(OUT(ART[o.pet].pet.d() + fxm(T('pet'), PETFX[o.pet] || [[-30, -50], [30, -36]], 1.4), SW / PET_S), tf(PET_AT[0], PET_AT[1], PET_S)), cls('ex-pet')) : '';
     const wingsF = '';
-    const stk = !back && outfit && outfit.sticker ? badge(outfit.sticker) : '';
+    const stk = (!back && outfit && outfit.sticker ? badge(outfit.sticker) : '') + (!back && outfit && outfit.medal ? badge(outfit.medal, true) : '');
     // (v2.10.0) the sleeves go behind the body, so each arm comes out from its side, not from the chest
     const body = back
       ? armsEarly + torso + cape + bag + G(head, cls('ex-head')) + armsLate
@@ -2997,16 +3003,40 @@
   // v2.8.4: sixteen more, drawn from the map's own animals and things (props, defined further down: drawn when needed)
   const propSticker = (k) => () => {
     const svg = props[k],
-      h = +(svg.match(/viewBox="0 0 100 (\d+)"/) || [0, 100])[1],
-      sc = Math.min(1, 94 / h);
-    const inner = svg.replace(/^<svg[^>]*>|<\/svg>$/g, '').replace(new RegExp('<ellipse[^>]*fill="' + INK + '" stroke="none" opacity="0?\\.1[0-9]*"/>', 'g'), ''); // (not its shadow)
-    return G(inner, ' transform="translate(' + n(50 - 50 * sc) + ' ' + n(50 - (h * sc) / 2) + ') scale(' + n(sc) + ')"');
+      vb = svg.match(/viewBox="0 0 (\d+) (\d+)"/) || [0, 100, 100],
+      wd = +vb[1],
+      h = +vb[2],
+      sc = Math.min(1, 100 / wd, 94 / h); // (v2.11.0: wide ones, like the summit, fit too)
+    const inner = svg
+      .replace(/^<svg[^>]*>|<\/svg>$/g, '')
+      .replace(new RegExp('<ellipse[^>]*fill="' + INK + '" stroke="none" opacity="0?\\.1[0-9]*"/>', 'g'), '') // (not its shadow)
+      .replace(/<ellipse class="pr-glow"[^>]*\/>|<(ellipse|circle)[^>]*opacity="0?\.[0-3][0-9]*"[^>]*\/>/g, ''); // (nor a glow: a sticker's white edge would make it a blob)
+    return G(inner, ' transform="translate(' + n(50 - (wd * sc) / 2) + ' ' + n(50 - (h * sc) / 2) + ') scale(' + n(sc) + ')"');
   };
   [['p-sheep', 'Sheep', 'meadow-sheep'], ['p-rabbit', 'Rabbit', 'meadow-rabbit'], ['p-fox', 'Fox', 'forest-fox'], ['p-owl', 'Owl', 'forest-owl'], ['p-squirrel', 'Squirrel', 'forest-squirrel'],
     ['p-mushroom', 'Mushroom', 'forest-mushroom'], ['p-crab', 'Crab', 'sands-crab'], ['p-starfish', 'Starfish', 'sands-starfish'], ['p-castle', 'Sandcastle', 'sands-castle'], ['p-shell', 'Shell', 'sands-shell'],
     ['p-cactus', 'Cactus', 'canyon-cactus'], ['p-snowman', 'Snowman', 'peak-snowman'], ['p-igloo', 'Igloo', 'peak-igloo'], ['p-balloon', 'Hot-air balloon', 'sky-balloon'], ['p-goat', 'Mountain goat', 'peak-goat'], ['p-windmill', 'Windmill', 'meadow-windmill'],
   ].forEach(([id, name, k]) => STK.push([id, name, propSticker(k)]));
-  const STICKERS = STK.map((s) => ({ id: s[0], name: s[1] }));
+  // v2.11.0: more of the map's things as stickers, so every game finished the first time can bring one
+  [['p-flowerpink', 'Pink flower', 'meadow-flower-pink'], ['p-appletree', 'Apple tree', 'meadow-tree'], ['p-cottage', 'Cottage', 'meadow-cottage'], ['p-pond', 'Pond', 'meadow-pond'], ['p-berrybush', 'Berry bush', 'meadow-bush'],
+    ['p-pine', 'Pine tree', 'forest-pine'], ['p-oak', 'Oak tree', 'forest-oak'], ['p-deer', 'Deer', 'forest-deer'], ['p-berries', 'Berries', 'forest-berries'], ['p-bigtree', 'Big old tree', 'forest-bigtree'], ['p-log', 'Log', 'forest-log'], ['p-fern', 'Fern', 'forest-fern'],
+    ['p-lighthouse', 'Lighthouse', 'sands-lighthouse'], ['p-umbrella', 'Beach umbrella', 'sands-umbrella'],
+    ['p-mesa', 'Mesa', 'canyon-mesa'], ['p-lantern', 'Desert lantern', 'canyon-lantern'], ['p-desertflower', 'Desert flower', 'canyon-flower'], ['p-lizard', 'Lizard', 'canyon-lizard'], ['p-tumbleweed', 'Tumbleweed', 'canyon-tumbleweed'], ['p-arch', 'Rock arch', 'canyon-arch'], ['p-dune', 'Dune', 'canyon-dune'],
+    ['p-glowshroom', 'Glowing mushroom', 'starry-mushroom'], ['p-crystal', 'Crystal', 'starry-crystal'], ['p-starlantern', 'Star lantern', 'starry-lantern'], ['p-nightowl', 'Night owl', 'starry-owl'], ['p-observatory', 'Observatory', 'starry-observatory'], ['p-starpond', 'Starry pond', 'starry-pond'],
+    ['p-island', 'Floating island', 'sky-island'], ['p-skycastle', 'Sky castle', 'sky-castle'], ['p-airship', 'Airship', 'sky-airship'],
+    ['p-icecrystal', 'Ice crystal', 'peak-crystal'], ['p-flag', 'Summit flag', 'peak-flag'], ['p-cabin', 'Mountain cabin', 'peak-cabin'], ['p-summit', 'The summit', 'peak-summit'], ['p-snowpine', 'Snowy pine', 'peak-pine'],
+  ].forEach(([id, name, k]) => STK.push([id, name, propSticker(k)]));
+  // (v2.11.0) the stickers from here on are bonus ones (`fill`): one comes when a game finished the first time brought
+  // nothing else; the first 40 stay the surprise gifts. Every sticker also has a gold and a shimmer (rainbow foil) edition
+  const FIRST_STK = 40;
+  const STICKERS = STK.map((s, j) => Object.assign({ id: s[0], name: s[1] }, j >= FIRST_STK ? { fill: true } : {}));
+  const lc1 = (t) => t[0].toLowerCase() + t.slice(1);
+  STK.slice().forEach((s) =>
+    [['gold', 'Gold '], ['holo', 'Shimmer ']].forEach(([foil, nm]) => {
+      STK.push([foil + '-' + s[0], nm + lc1(s[1]), s[2]]);
+      STICKERS.push({ id: foil + '-' + s[0], name: nm + lc1(s[1]), fill: true, foil, of: s[0] });
+    }),
+  );
   // stickers stay still (only buddies move): drop the flapping, blinking and swaying from their art
   const stillArt = (m) => m.replace(/ class="(lhq-(blink|flap|wave|wing-l|bounce|hover|wobble|frog-b)|pr-(bob|flap|sway|ripple))"/g, '');
   /* Star badges: one for every 100 stars, each its own color. Earned, never given at random. */
@@ -3053,11 +3083,16 @@
   STK.forEach((s) => (STKBY[s[0]] = s[2]));
   BADGES.forEach((b) => (STKBY[b.id] = () => badgeArt(b.stars, b.c)));
   SEASONS.forEach((x) => (STKBY[x.id] = x.year ? () => yearArt(x.kind, x.year) : SEASON_ART[x.id]));
+  // a foil sticker's shining edge and a few still twinkles (v2.11.0)
+  const FOIL_EDGE = { gold: 'url(#lhq-foil-gold)', holo: 'url(#lhq-foil-holo)' };
+  const foilOf = (id) => (/^(gold|holo)-/.exec(id) || [])[1];
+  const foilTw = (foil) => [[12, 14, 7], [88, 22, 5.5], [84, 86, 6.5]].map(([x, y, r]) => P(star4(x, y, r), '#fff', ' stroke="' + (foil === 'gold' ? '#e0a21f' : '#b48cff') + '" stroke-width="1.4"')).join('');
   function sticker(id) {
     const f = STKBY[id];
     if (!f) return '';
-    const art = stillArt(OUT(f()));
-    return svg100('lhq-sticker', G(flat(art, INK, 12), ' opacity=".16" transform="translate(1.5 3)"') + flat(art, '#ffffff', 11) + art, (STICKERS.find((s) => s.id === id) || BADGES.find((s) => s.id === id) || SEASONS.find((s) => s.id === id) || {}).name);
+    const art = stillArt(OUT(f())),
+      foil = foilOf(id);
+    return svg100('lhq-sticker', G(flat(art, INK, 12), ' opacity=".16" transform="translate(1.5 3)"') + flat(art, foil ? FOIL_EDGE[foil] : '#ffffff', foil ? 13 : 11) + art + (foil ? foilTw(foil) : ''), (STICKERS.find((s) => s.id === id) || BADGES.find((s) => s.id === id) || SEASONS.find((s) => s.id === id) || {}).name);
   }
 
   /* ---------- gifts, hearts, markers, flags, frog, stepping stones ---------- */

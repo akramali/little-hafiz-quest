@@ -189,7 +189,7 @@
     ctx.surahs.forEach((s) => w.big(Math.round(((p.stime && p.stime[s.n]) || 0) / 10))); // (in 10 s steps)
     // the extras block (v2.7.1): everything else, so the other phone shows the explorer exactly as they are
     w.num(EXTRAS, 8);
-    w.num(5, 8); // its version (2: v2.7.2 adds the comfy shoes' color; 3: v2.7.24 the Stranger's visits; 4: v2.8.4 the app version; 5: v2.9.1 the riddles, the buddies and my tree)
+    w.num(6, 8); // its version (2: v2.7.2 adds the comfy shoes' color; 3: v2.7.24 the Stranger's visits; 4: v2.8.4 the app version; 5: v2.9.1 the riddles, the buddies and my tree; 6: v2.11.0 the star badge pinned on, and the one put aside with the comfy clothes)
     w.num(Math.max(0, p.at || 0), 6);
     w.bit(!!p.greeted);
     const kOf = (g) => (g.k === 'i' ? 'i:' : 's:') + g.id;
@@ -257,6 +257,8 @@
       gr = p.grow || [0, '', []];
     [dayNum(rd[0]), rd[1] || 0, rd[2] || 0, Math.round((rd[3] || 0) / 1000), rd[4] ? 1 : 0, dayNum(bd[0]), bd[1] || 0, bd[2] || 0, gr[0] || 0, dayNum(gr[1])].forEach((v) => w.big(v));
     ctx.surahs.forEach((s) => w.bit((gr[2] || []).includes(s.n)));
+    w.num(p.medal ? ref('s:' + p.medal) : 0, 12);
+    w.num(p.stash && p.stash.medal ? ref('s:' + p.stash.medal) : 0, 12);
     const body = w.done();
     const zip = CAN_ZIP ? await pipe(body, new CompressionStream('deflate-raw')) : body;
     const ver = String(ctx.version || '0.0.0').split('.').slice(0, 3).map((x) => Math.min(255, parseInt(x, 10) || 0));
@@ -409,6 +411,12 @@
         const [rd, rn, rdone, rat, rgift, bd, bn, ball, gn, gd] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0].map(() => r.big());
         const gs = ctx.surahs.filter(() => r.bit()).map((s) => s.n);
         Object.assign(p, { riddle: [dayStr(rd), rn, rdone, rat * 1000, rgift], buddy: [dayStr(bd), bn, ball], grow: [gn, dayStr(gd), gs] });
+      }
+      if (xv >= 6) {
+        const m = key(r.num(12)),
+          sm = key(r.num(12));
+        p.medal = m && m.startsWith('s:') ? m.slice(2) : '';
+        if (p.stash) p.stash.medal = sm && sm.startsWith('s:') ? sm.slice(2) : '';
       }
     }
     if (headV) p.appV = headV;

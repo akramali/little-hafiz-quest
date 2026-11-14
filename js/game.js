@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.10.6';
+  const VERSION = '2.11.0';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -85,6 +85,9 @@
   });
   const STICKER = Object.create(null);
   ART.STICKERS.forEach((x) => (STICKER[x.id] = x));
+  // the surprise stickers (the first 40); the rest are bonus ones, one for a game finished the first time that
+  // brought nothing else (v2.11.0: the map's things, and every sticker's gold and shimmer editions)
+  const REG_STK = ART.STICKERS.filter((x) => !x.fill);
   ART.BADGES.forEach((x) => (STICKER[x.id] = x)); // star badges: one for every 100 stars, never given at random
   ART.SEASONS.forEach((x) => (STICKER[x.id] = x)); // special days' stickers (v2.9.0): given on the day, never at random
   const SLOTS = ['hat', 'hijab', 'glasses', 'top', 'pants', 'shoes', 'cape', 'bag', 'stick', 'shield', 'watch', 'pet'];
@@ -232,6 +235,7 @@
       lost: [],
       got: [], // everything won, oldest first: 'i:<item id>' or 's:<sticker id>'
       badge: '', // the sticker stuck on the explorer's shirt
+      medal: '', // (v2.11.0) the star badge pinned on the other side of the shirt (one at a time)
       wdone: [], // worlds already celebrated (a star in every sūrah)
       fresh: [], // wins not seen yet in My Explorer (a "new" dot): same keys as got
       stash: null, // the outfit put aside by the "comfy clothes" button, to swap back
@@ -343,10 +347,17 @@
     const got = uniq((Array.isArray(o.got) ? o.got : []).filter((k) => owned.includes(k)));
     p.got = [...owned.filter((k) => !got.includes(k)), ...got]; // older saves: what they already had comes first
     if (typeof o.badge === 'string' && p.stickers.includes(o.badge)) p.badge = o.badge;
+    // (v2.11.0) star badges have their own place: one worn as the sticker before moves there
+    const isMedal = (id) => typeof id === 'string' && p.stickers.includes(id) && !!(STICKER[id] && STICKER[id].stars);
+    if (isMedal(o.medal)) p.medal = o.medal;
+    if (isMedal(p.badge)) {
+      if (!p.medal) p.medal = p.badge;
+      p.badge = '';
+    }
     p.fresh = uniq((Array.isArray(o.fresh) ? o.fresh : []).filter((k) => owned.includes(k)));
     const st0 = o.stash && typeof o.stash === 'object' ? o.stash : null;
     if (st0) {
-      p.stash = { outfit: {}, badge: typeof st0.badge === 'string' && p.stickers.includes(st0.badge) ? st0.badge : '' };
+      p.stash = { outfit: {}, badge: typeof st0.badge === 'string' && p.stickers.includes(st0.badge) && !isMedal(st0.badge) ? st0.badge : '', medal: isMedal(st0.medal) ? st0.medal : isMedal(st0.badge) ? st0.badge : '' };
       SLOTS.forEach((sl) => {
         const id = st0.outfit && st0.outfit[sl];
         if (ITEM[id] && ITEM[id].slot === sl && p.items.includes(id)) p.stash.outfit[sl] = id;
@@ -676,17 +687,17 @@
   /* Surprises (everyday things and stickers) are paced along the journey, so they keep coming until every star is
      won: a few to start, then a share of them matching the share of the Juz's stars won. Milestones (a journal page,
      7 days in a row, the Teacher's gift) are never held back; after every star, his tests bring the rest. */
-  const surprisePool = (prof) => DROPS.filter((it) => forKid(it, prof)).length + ART.STICKERS.length;
+  const surprisePool = (prof) => DROPS.filter((it) => forKid(it, prof)).length + REG_STK.length;
   function surprisesGot(prof) {
     const stk = new Set([...prof.stickers, ...prof.pending.filter((g) => g.k === 's').map((g) => g.id), ...(prof.lostSt || []).map((x) => x.id)]);
-    return DROPS.filter((it) => forKid(it, prof) && hasOrWaits(it, prof)).length + ART.STICKERS.filter((x) => stk.has(x.id)).length;
+    return DROPS.filter((it) => forKid(it, prof) && hasOrWaits(it, prof)).length + REG_STK.filter((x) => stk.has(x.id)).length;
   }
   const surpriseRoom = (prof) => Math.min(surprisePool(prof), 6 + Math.ceil((surprisePool(prof) * totalStars(prof)) / MAX_STARS)) - surprisesGot(prof);
   function giveSurprise(prof, small, milestone) {
     if (!milestone && surpriseRoom(prof) <= 0) return false; // saved for further along the journey
     const waiting = (k) => prof.pending.filter((g) => g.k === k).map((g) => g.id);
     const haveS = new Set([...prof.stickers, ...waiting('s')]);
-    const stickers = ART.STICKERS.filter((x) => !haveS.has(x.id));
+    const stickers = REG_STK.filter((x) => !haveS.has(x.id));
     const things = DROPS.filter((it) => forKid(it, prof) && !hasOrWaits(it, prof));
     if (!stickers.length && !things.length) return false;
     const pick = (list) => list[(Math.random() * list.length) | 0];
@@ -713,11 +724,13 @@
   }
   /* The explorer as they look now: their outfit, the sticker on their shirt, and a sad, scruffy face
      while something they own is lost somewhere on the map. */
+  // what's pinned on the shirt: a sticker on one side, a star badge on the other (v2.11.0)
+  const pinned = (p) => ({ sticker: p.badge, medal: p.medal });
   function explorer(opts, prof) {
     prof = prof || P();
     opts = Object.assign({ view: 'front' }, opts);
     if (opts.mood == null) opts.mood = prof.lost.length || (prof.lostSt || []).length ? 'sad' : '';
-    return ART.explorer(prof.look, Object.assign(drawnOutfit(prof), { sticker: prof.badge }), opts);
+    return ART.explorer(prof.look, Object.assign(drawnOutfit(prof), pinned(prof)), opts);
   }
   function gotIt(prof, key) {
     prof.got = prof.got.filter((k) => k !== key);
@@ -737,7 +750,7 @@
       n++;
     });
     ART.STICKERS.forEach((x) => {
-      if (prof.stickers.includes(x.id) || prof.lostSt.some((l) => l.id === x.id)) return; // (the Teacher's held ones come back by revising)
+      if (x.foil || prof.stickers.includes(x.id) || prof.lostSt.some((l) => l.id === x.id)) return; // (the Teacher's held ones come back by revising)
       prof.stickers.push(x.id);
       prof.pending = prof.pending.filter((g) => !(g.k === 's' && g.id === x.id));
       gotIt(prof, 's:' + x.id);
@@ -1850,7 +1863,7 @@
       days = streakNow(prof);
     // back from the world: the picture zooms back out (the reverse of Continue); from elsewhere, a fade
     return `<div class="splash ${arriving === 'map' ? 'returning' : arriving ? 'arrive' : ''}">
-    <div class="sp-art">${ART.splash(prof.look, Object.assign(drawnOutfit(prof), { sticker: prof.badge }), { night: isNight(), mood: prof.lost.length ? 'sad' : '' })}</div>
+    <div class="sp-art">${ART.splash(prof.look, Object.assign(drawnOutfit(prof), pinned(prof)), { night: isNight(), mood: prof.lost.length ? 'sad' : '' })}</div>
     <div class="sp-top">
       <button class="verchip ${upd.available ? 'ready' : ''}" data-act="updates" aria-label="Version and updates">v${VERSION}${upd.available ? ' · Update ✨' : ''}</button>
       <span class="sp-tr">${days >= 1 ? `<button class="icon-btn streakbtn" data-act="streak" aria-label="${days} ${days === 1 ? 'day' : 'days'} on the trail">🏃<b>${days}<small>${days === 1 ? 'day' : 'days'}</small></b></button>` : ''}${FS_OK && !STANDALONE ? `<button class="icon-btn" data-act="fs" aria-label="${fsNow() ? 'Exit fullscreen' : 'Fullscreen'}">${fsNow() ? ICON.fsOut : ICON.fsIn}</button>` : ''}<button class="icon-btn" data-act="settings" aria-label="Grown-up corner">${ICON.gear}</button></span>
@@ -1884,7 +1897,7 @@
     const gifts = f.map((k) => `<span class="sgift">${itemPic(FEAT_ITEM[k].id)}<small>${itemName(FEAT_ITEM[k].id)}</small></span>`).join('') +
       (f.includes('once') ? `<span class="sgift">${itemPic(STAFF)}<small>${itemName(STAFF)}</small></span>` : '');
     return `<div class="splash summit">
-    <div class="sp-art">${ART.splash(prof.look, Object.assign(wornOutfit(prof), { sticker: prof.badge }), { night: isNight(), climb: true, still: reduceMotion })}</div>
+    <div class="sp-art">${ART.splash(prof.look, Object.assign(wornOutfit(prof), pinned(prof)), { night: isNight(), climb: true, still: reduceMotion })}</div>
     <div class="sm-card ${reduceMotion ? 'now' : ''}">
       <h2>🏔️ ${title}</h2>
       <p>${sub}</p>
@@ -2869,7 +2882,7 @@
     const found =
       st.found && st.found.length
         ? (() => {
-            const without = Object.assign(wornOutfit(prof), { sticker: prof.badge });
+            const without = Object.assign(wornOutfit(prof), pinned(prof));
             st.found.forEach((id) => {
               if (without[ITEM[id].slot] === id) delete without[ITEM[id].slot];
             });
@@ -2923,7 +2936,7 @@
     return `<div class="icell locked ${it.gold || it.wgold ? 'goldlock' : ''}"><span class="iart">${ART.silhouette(it.id, P().look)}</span><small>${it.wgold ? `World ${it.wgold} all golden` : it.quest === 'staff' ? 'At the summit' : it.quest ? 'Pass your Teacher’s test' : it.feat ? FEAT_HINT[it.feat] : it.drop ? 'A surprise gift' : it.track ? `At ${it.track} ⭐` : it.from === CROWN_N ? (it.gold ? `Every star in ${BYN[it.from].name}, all memorized` : 'Every sūrah memorized') : it.gold ? `Every star in ${BYN[it.from].name}` : `A star in ${BYN[it.from].name}`}</small></div>`;
   }
   function stickerCell(id, prof) {
-    const on = prof.badge === id;
+    const on = prof.badge === id || prof.medal === id;
     return `<button class="scell ${on ? 'on' : ''}" data-act="stick" data-id="${id}" aria-pressed="${on}">${ART.sticker(id)}<small>${STICKER[id].name}</small>${prof.fresh.includes('s:' + id) ? NEWDOT : ''}</button>`;
   }
   /* My Explorer: the explorer always stays in view. Only the bottom part changes: a row of categories
@@ -2933,11 +2946,12 @@
     const prof = P(),
       tab = st.tab || 'hat',
       worn = wornOutfit(prof);
-    const tabs = [...SLOTS.filter((t) => t !== 'hijab' || kidOf(prof) === 'girl'), 'stickers']
+    const isBadgeKey = (k) => k[0] === 's' && STICKER[k.slice(2)] && !!STICKER[k.slice(2)].stars;
+    const tabs = [...SLOTS.filter((t) => t !== 'hijab' || kidOf(prof) === 'girl'), 'stickers', 'badges']
       .map((t) => {
-        const ic = t === 'stickers' ? '⭐' : t === 'stick' ? STICK_IC : SLOT_INFO[t][0];
-        const nm = t === 'stickers' ? 'Stickers' : SLOT_INFO[t][1];
-        const isNew = prof.fresh.some((k) => (t === 'stickers' ? k[0] === 's' : k[0] === 'i' && ITEM[k.slice(2)].slot === t));
+        const ic = t === 'stickers' ? '⭐' : t === 'badges' ? '🏅' : t === 'stick' ? STICK_IC : SLOT_INFO[t][0];
+        const nm = t === 'stickers' ? 'Stickers' : t === 'badges' ? 'Badges' : SLOT_INFO[t][1];
+        const isNew = prof.fresh.some((k) => (t === 'stickers' ? k[0] === 's' && !isBadgeKey(k) : t === 'badges' ? isBadgeKey(k) : k[0] === 'i' && ITEM[k.slice(2)].slot === t));
         return `<button class="wtab ${tab === t ? 'on' : ''} ${isNew ? 'hasnew' : ''}" data-act="tab" data-t="${t}"><span>${ic}</span><small>${nm}</small>${isNew ? NEWDOT : ''}</button>`;
       })
       .join('');
@@ -2945,12 +2959,16 @@
     if (tab === 'look') body = `<div class="wscroll-v">${lookControls(prof)}</div>`;
     else if (tab === 'stickers') {
       const mine = prof.stickers.slice().sort((a, b) => gotAt(prof, 's:' + b) - gotAt(prof, 's:' + a));
-      const locked = ART.STICKERS.filter((x) => !prof.stickers.includes(x.id));
-      // the ones still to win: the same tiles as things still to find (a shadow of a badge, a ? for a sticker)
-      const badges = ART.BADGES.map((b) => (prof.stickers.includes(b.id) ? stickerCell(b.id, prof) : `<div class="icell locked goldlock"><span class="iart sil">${ART.sticker(b.id)}</span><small>At ${b.stars} ⭐</small></div>`)).join('');
+      const locked = REG_STK.filter((x) => !prof.stickers.includes(x.id)),
+        bonus = prof.stickers.filter((id) => STICKER[id].fill).length;
+      // the ones still to win: the same tiles as things still to find (a ? for a sticker)
       const seasons = nextSeasons().filter((x) => !prof.stickers.includes(x.id)).map((x) => `<div class="icell locked goldlock"><span class="iart sil">${ART.sticker(x.id)}</span><small>${x.season}</small></div>`).join(''); // (v2.9.0)
-      body = `<div class="wrow">${mine.filter((id) => !STICKER[id].stars).map((id) => stickerCell(id, prof)).join('')}${locked.map(() => `<div class="icell locked"><span class="iart"><span class="lockq">?</span></span><small>A gift to win</small></div>`).join('')}${seasons}${badges}</div>
-      <p class="wnote2">${mine.length ? 'Tap a sticker to stick it on. Tap again to take it off.' : 'Finish games to win stickers.'} ${prof.stickers.filter((id) => !STICKER[id].stars && !STICKER[id].season).length} of ${ART.STICKERS.length} stickers · 🏅 a badge every 100 stars</p>`;
+      body = `<div class="wrow">${mine.filter((id) => !STICKER[id].stars).map((id) => stickerCell(id, prof)).join('')}${locked.map(() => `<div class="icell locked"><span class="iart"><span class="lockq">?</span></span><small>A gift to win</small></div>`).join('')}${seasons}</div>
+      <p class="wnote2">${mine.some((id) => !STICKER[id].stars) ? 'Tap a sticker to stick it on. Tap again to take it off.' : 'Finish games to win stickers.'} ${prof.stickers.filter((id) => !STICKER[id].stars && !STICKER[id].season && !STICKER[id].fill).length} of ${REG_STK.length} stickers${bonus ? ` · ${bonus} bonus` : ''}</p>`;
+    } else if (tab === 'badges') {
+      // (v2.11.0) the star badges, worn on the other side of the shirt from the sticker; still to win: a shadow
+      const badges = ART.BADGES.map((b) => (prof.stickers.includes(b.id) ? stickerCell(b.id, prof) : `<div class="icell locked goldlock"><span class="iart sil">${ART.sticker(b.id)}</span><small>At ${b.stars} ⭐</small></div>`)).join('');
+      body = `<div class="wrow">${badges}</div><p class="wnote2">A badge every 100 stars · tap to pin one on</p>`;
     } else {
       // won things newest first, then the starting clothes, then the ones still to find
       const list = ITEMS.filter((it) => it.slot === tab && forKid(it, prof) && (!it.gold || prof.items.includes(it.id) || prof.items.includes(it.base)));
@@ -2959,7 +2977,7 @@
       const rest = list.filter((it) => !won.includes(it)).sort((a, b) => rank(a) - rank(b));
       body = `<div class="wrow">${[...won, ...rest].map((it) => itemCell(it, prof, worn)).join('')}</div><p class="wnote2">${SLOT_INFO[tab][1]} · won ${winnable(prof, tab).filter((it) => prof.items.includes(it.id)).length} of ${winnable(prof, tab).length} · tap to ${tab === 'stick' || tab === 'shield' ? 'hold' : tab === 'pet' ? 'take along' : 'wear'}${nextPrize(prof) ? ` · next prize at ${nextPrize(prof).track} ⭐` : ''}</p>`;
     }
-    const fancy = Object.values(worn).some((id) => !starter(ITEM[id])) || prof.badge;
+    const fancy = Object.values(worn).some((id) => !starter(ITEM[id])) || prof.badge || prof.medal;
     const comfy = prof.stash
       ? `<button class="wd-side wd-comfy on" data-act="comfy" aria-label="Put my things back on">✨<small>Back</small></button>`
       : `<button class="wd-side wd-comfy" data-act="comfy" ${fancy ? '' : 'disabled'} aria-label="Just comfy clothes">👕<small>Comfy</small></button>`;
@@ -3018,8 +3036,8 @@
       memorized: S.filter((s) => surahDone(s, prof)).length,
       ayat,
       allAyat: S.reduce((t, s) => t + s.ayat.length, 0),
-      items: prof.items.filter((id) => ITEM[id] && !starter(ITEM[id])).length + prof.stickers.filter((id) => !STICKER[id].stars && !STICKER[id].year).length,
-      allItems: winnable(prof).length + ART.STICKERS.length + ART.SEASONS.filter((x) => !x.year).length, // (v2.8.4: so a child can aim for 100%; a year's special-day stickers are a bonus)
+      items: prof.items.filter((id) => ITEM[id] && !starter(ITEM[id])).length + prof.stickers.filter((id) => !STICKER[id].stars && !STICKER[id].year && !STICKER[id].fill).length,
+      allItems: winnable(prof).length + REG_STK.length + ART.SEASONS.filter((x) => !x.year).length, // (v2.8.4: so a child can aim for 100%; a year's special-day stickers are a bonus)
       badges: prof.stickers.filter((id) => STICKER[id].stars).length,
       time: prof.time || 0,
       streak: streakNow(prof),
@@ -3361,7 +3379,7 @@
     const pick = vs > 0 ? '' : incoming.target;
     const pv = pick ? preview(pick) : null;
     m.innerHTML = `<div class="card synccard">
-      <div class="syncwho big"><span class="phead">${ART.explorer(from.look, Object.assign({}, from.outfit, { sticker: from.badge }), { view: 'front', cls: 'mini' })}</span><span><b>Sync ${nm}'s progress?</b><small>⭐ ${totalStars(from)} stars from another phone</small></span></div>
+      <div class="syncwho big"><span class="phead">${ART.explorer(from.look, Object.assign({}, from.outfit, pinned(from)), { view: 'front', cls: 'mini' })}</span><span><b>Sync ${nm}'s progress?</b><small>⭐ ${totalStars(from)} stars from another phone</small></span></div>
       ${store.profiles.length && vs <= 0 ? `<p class="saveinfo">Which explorer on this phone is ${nm}?</p><div class="synclist">${choices.map(([id, label, p]) => `<button class="syncopt ${pick === id ? 'on' : ''}" data-act="synctarget" data-id="${id}">${p ? `<span class="phead">${explorer({ view: 'front', cls: 'mini' }, p)}</span>` : ''}<span>${label}${p ? `<small>⭐ ${totalStars(p)}</small>` : ''}</span></button>`).join('')}</div>` : ''}
       ${pv ? `<p class="syncsum">${pick === 'new' ? `A new explorer with ⭐ ${pv.stars} stars` : pv.plus > 0 || pv.things > 0 ? `+${pv.plus} star${pv.plus === 1 ? '' : 's'} · ${pv.things} new treasure${pv.things === 1 ? '' : 's'} · ⭐ ${pv.stars} in all` : 'Already up to date: nothing new'}</p>` : ''}
       ${vs > 0 ? `<p class="saveinfo syncver">⬆️ This link is from a newer version (v${incoming.appV}). Update this phone first, then open the link again.</p>` : vs < 0 ? `<p class="saveinfo syncver">⬆️ The other phone has an older version${incoming.appV ? ` (v${incoming.appV})` : ''}. Update it too, then send a new link, so both phones match.</p>` : ''}
@@ -3393,6 +3411,7 @@
       into.look = Object.assign({}, from.look, incoming && incoming.noColors ? { tee: into.look.tee, legs: into.look.legs } : {});
       into.outfit = Object.assign({}, from.outfit);
       into.badge = from.badge;
+      into.medal = from.medal || ''; // (its stickers, star badges among them, were added above)
       into.lost = from.lost.filter((x) => into.items.includes(x.id));
       into.fix = from.fix.slice();
       into.at = from.at;
@@ -3938,6 +3957,8 @@
     extra.badge = giveStarBadges(prof);
     extra.rides = giveWorldRides(prof);
     if (!wonBack && (newStar || extra.firstTime) && prof.pending.length === giftsBefore && giveLevelGift(prof)) extra.levelGift = true;
+    // (v2.11.0) a game finished the first time always brings something: when nothing else came, a bonus sticker
+    if (!wonBack && (newStar || extra.firstTime) && prof.pending.length === giftsBefore && giveBonusSticker(prof)) extra.levelGift = true;
     // the summit milestones for the whole Juz
     const feats = Object.keys(FEAT_TEST).filter((f) => !prof.feats.includes(f) && FEAT_TEST[f](prof));
     feats.forEach((f) => {
@@ -3945,7 +3966,7 @@
       if (f === 'once') {
         // everything unlocked at once: every sticker, and every treasure still waiting in a gift box
         ART.STICKERS.forEach((x) => {
-          if (!prof.stickers.includes(x.id)) {
+          if (!x.foil && !prof.stickers.includes(x.id)) {
             prof.stickers.push(x.id);
             gotIt(prof, 's:' + x.id);
           }
@@ -4025,13 +4046,25 @@
     prof.pending.push({ k: 'i', id: early.id });
     return true;
   }
+  /* A bonus sticker (v2.11.0), never held back: a new picture from the map first, then a gold edition of one already
+     collected, then a shimmer edition of a gold one; a foil edition of one not collected yet last of all. */
+  function giveBonusSticker(prof) {
+    const have = new Set([...prof.stickers, ...prof.pending.filter((g) => g.k === 's').map((g) => g.id), ...(prof.lostSt || []).map((x) => x.id)]),
+      left = ART.STICKERS.filter((x) => x.fill && !have.has(x.id));
+    const tier = (x) => (!x.foil ? 0 : x.foil === 'gold' ? (have.has(x.of) ? 1 : 3) : have.has('gold-' + x.of) ? 2 : 4),
+      best = Math.min(...left.map(tier)),
+      pool = left.filter((x) => tier(x) === best);
+    if (!pool.length) return false;
+    prof.pending.push({ k: 's', id: pool[(Math.random() * pool.length) | 0].id, m: 1 });
+    return true;
+  }
   function giveCheckpointGift(s, p) {
     const prof = P(),
       key = s.n + ':' + p;
     if (prof.cpg.includes(key) || surpriseRoom(prof) <= 0) return false; // (paced like the other surprises)
     prof.cpg.push(key);
     const have = new Set([...prof.stickers, ...prof.pending.filter((g) => g.k === 's').map((g) => g.id)]);
-    const left = ART.STICKERS.filter((x) => !have.has(x.id));
+    const left = REG_STK.filter((x) => !have.has(x.id));
     if (!left.length) return false;
     prof.pending.push({ k: 's', id: left[(Math.random() * left.length) | 0].id, m: 1 });
     return true;
@@ -4125,7 +4158,7 @@
       art = ART.sticker(g.id);
       const badge = STICKER[g.id].stars;
       name = badge ? `${STICKER[g.id].name} badge` : STICKER[g.id].name + ' sticker';
-      sub = badge ? `For collecting ${badge} stars! MāshāAllāh! Stick it on your explorer to show it off.` : 'Stick it on your explorer, or keep it in your sticker book.';
+      sub = badge ? `For collecting ${badge} stars! MāshāAllāh! Pin it on your explorer to show it off.` : 'Stick it on your explorer, or keep it in your sticker book.';
     }
     save();
     sfx.open();
@@ -4134,7 +4167,7 @@
     const more = prof.pending.length;
     m.innerHTML = `<div class="card giftcard open"><div class="grays"></div><div class="gopen">${ART.gift({ tier: giftTier(g), open: true, kind: g.k === 'i' ? 'item' : 'sticker' })}</div>
       <div class="gitem">${art}</div><h3>${name}</h3><p class="saveinfo">${sub}</p>
-      <div class="row">${wear ? `<button class="btn go wide" data-act="wear" data-id="${g.id}">${wearLabel(ITEM[g.id])}</button>` : `<button class="btn go wide" data-act="stick" data-id="${g.id}" data-from="gift">⭐ Stick it on!</button>`}<button class="btn wide" data-act="giftok">${more ? `🎁 Next gift (${more})` : 'Yay! ✨'}</button></div></div>`;
+      <div class="row">${wear ? `<button class="btn go wide" data-act="wear" data-id="${g.id}">${wearLabel(ITEM[g.id])}</button>` : `<button class="btn go wide" data-act="stick" data-id="${g.id}" data-from="gift">${STICKER[g.id].stars ? '🏅 Pin it on!' : '⭐ Stick it on!'}</button>`}<button class="btn wide" data-act="giftok">${more ? `🎁 Next gift (${more})` : 'Yay! ✨'}</button></div></div>`;
     setTimeout(() => burstAt(m.querySelector('.gitem'), 26, ['🎉', '⭐', '✨', '🎈']), 120);
   }
   function nextSuggestion(s, p) {
@@ -4259,7 +4292,7 @@
       pendingYes = () => applyFile(plan, next);
       const m = document.getElementById('modal');
       m.innerHTML = `<div class="card synccard"><h3>📂 Load progress</h3>
-        <div class="synclist">${plan.map((x) => `<div class="syncopt${x.changed ? ' on' : ''}"><span class="phead">${ART.explorer(x.from.look, Object.assign({}, x.from.outfit, { sticker: x.from.badge }), { view: 'front', cls: 'mini' })}</span><span>${x.from.name ? esc(x.from.name) : 'Explorer'}<small>${planLine(x)}</small></span></div>`).join('')}</div>
+        <div class="synclist">${plan.map((x) => `<div class="syncopt${x.changed ? ' on' : ''}"><span class="phead">${ART.explorer(x.from.look, Object.assign({}, x.from.outfit, pinned(x.from)), { view: 'front', cls: 'mini' })}</span><span>${x.from.name ? esc(x.from.name) : 'Explorer'}<small>${planLine(x)}</small></span></div>`).join('')}</div>
         <p class="saveinfo center">Nothing on this phone is taken away.</p>
         <div class="row"><button class="btn wide" data-act="cno">Cancel</button><button class="btn go wide" data-act="cyes">✨ Load</button></div></div>`;
       m.classList.add('show');
@@ -4733,7 +4766,8 @@
         if (!STICKER[id] || !prof.stickers.includes(id)) break;
         sfx.pop();
         prof.stash = null;
-        prof.badge = prof.badge === id && b.dataset.from !== 'gift' ? '' : id;
+        const side = STICKER[id].stars ? 'medal' : 'badge'; // (v2.11.0: a star badge on the other side)
+        prof[side] = prof[side] === id && b.dataset.from !== 'gift' ? '' : id;
         save();
         if (b.dataset.from === 'gift') {
           if (st.view === 'elder') {
@@ -4745,7 +4779,7 @@
             render();
           } else {
             hideModal();
-            go('bag', { tab: 'stickers' });
+            go('bag', { tab: STICKER[id].stars ? 'badges' : 'stickers' });
             burstAt($app.querySelector('.wd-stage'), 12, ['⭐', '✨']);
           }
           break;
@@ -4763,11 +4797,13 @@
         if (prof.stash) {
           prof.outfit = Object.assign({}, prof.stash.outfit);
           prof.badge = prof.stash.badge;
+          prof.medal = prof.stash.medal || '';
           prof.stash = null;
         } else {
-          prof.stash = { outfit: Object.assign({}, prof.outfit), badge: prof.badge };
+          prof.stash = { outfit: Object.assign({}, prof.outfit), badge: prof.badge, medal: prof.medal };
           prof.outfit = {};
           prof.badge = '';
+          prof.medal = '';
         }
         save();
         render();
@@ -8126,5 +8162,5 @@
   registerOffline();
   if (linkCode) setTimeout(() => openSync(linkCode, `${appURL()}#sync=${linkCode}`), 400);
   if (justUpdated) loadChangelog().then(() => st.view === 'splash' && render());
-  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder, world: elderWorld, size: testSize, tap: tapElder }, sunDown, journal: JKEYS, countDay, installSteps: showInstallSteps, cleanStore, cleanProfile, syncCtx, openSync, markNow, fabTarget, riddleNow, riddleCount, occasion, treeInfo, hungry: () => treeHungry, treeReset: () => (treeFedAt = 0), critterFor, riddleSet: (k) => riddleOn && (riddleOn.k = k), riddleKey: () => riddleOn && riddleOn.k }; // for testing in the browser console
+  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder, world: elderWorld, size: testSize, tap: tapElder }, sunDown, journal: JKEYS, countDay, installSteps: showInstallSteps, cleanStore, cleanProfile, syncCtx, openSync, markNow, fabTarget, riddleNow, riddleCount, occasion, treeInfo, hungry: () => treeHungry, treeReset: () => (treeFedAt = 0), critterFor, riddleSet: (k) => riddleOn && (riddleOn.k = k), riddleKey: () => riddleOn && riddleOn.k, bonusSticker: giveBonusSticker }; // for testing in the browser console
 })();
