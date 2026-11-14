@@ -1,7 +1,11 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.10.3",
+ "latest": "2.10.4",
  "versions": [
+  { "v": "2.10.4", "notes": [
+   "Every explorer gets the Jumuʿah, Ramadan and Eid stickers, not just the first",
+   "Sleeping buddies at My Tree close their eyes"
+  ] },
   { "v": "2.10.3", "notes": [
    "Sticks and shields are held, buddies come along: no more \"wear it\"",
    "Small visual tweaks"

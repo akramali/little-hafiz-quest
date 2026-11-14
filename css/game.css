@@ -10491,3 +10491,11 @@ html:has(.bagscr.fullv) body {
 .tsvg .tb-want.gone {
   opacity: 0;
 }
+
+/* ---------- 2026-11-13 · v2.10.4: My Tree: a sleeping buddy's eyes shut (‿), not squashed (a dot read as open) ---------- */
+.tsvg .tbud.m-asleep .lhq-blink {
+  opacity: 0;
+}
+.tsvg .tbud.m-asleep .lhq-shut {
+  display: inline;
+}

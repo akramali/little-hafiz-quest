@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.10.3';
+  const VERSION = '2.10.4';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -6834,15 +6834,9 @@
     const k = occasion(),
       prof = P();
     if (!k || st.view !== 'map' || noExplorers() || !prof.made) return;
-    let seen = '';
-    try {
-      seen = localStorage.getItem('lhq_greet') || '';
-    } catch (e) {}
-    if (seen === today() + k) return;
-    try {
-      localStorage.setItem('lhq_greet', today() + k);
-    } catch (e) {}
-    // this year's sticker for Ramadan and the Eids (missed if the game isn't opened then); Jumuʿah's comes once
+    // this year's sticker for Ramadan and the Eids (missed if the game isn't opened then); Jumuʿah's comes once.
+    // Per explorer: checked every time the map opens (v2.10.4: it hid behind the phone's once-a-day greeting, so a
+    // second explorer never got it)
     const h = hijri(),
       id = k === 'jumuah' ? k : h && h.y ? k + '-' + h.y : '';
     const gift = !!STICKER[id] && !prof.stickers.includes(id) && !prof.pending.some((g) => g.k === 's' && g.id === id);
@@ -6851,6 +6845,14 @@
       save();
       render();
     }
+    let seen = '';
+    try {
+      seen = localStorage.getItem('lhq_greet') || '';
+    } catch (e) {}
+    if (seen === today() + k && !gift) return;
+    try {
+      localStorage.setItem('lhq_greet', today() + k);
+    } catch (e) {}
     toast(GREET[k] + (gift ? ' A special sticker for you 🎁' : ''));
   }
 
