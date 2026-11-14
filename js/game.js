@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.11.0';
+  const VERSION = '2.11.1';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -348,7 +348,7 @@
     p.got = [...owned.filter((k) => !got.includes(k)), ...got]; // older saves: what they already had comes first
     if (typeof o.badge === 'string' && p.stickers.includes(o.badge)) p.badge = o.badge;
     // (v2.11.0) star badges have their own place: one worn as the sticker before moves there
-    const isMedal = (id) => typeof id === 'string' && p.stickers.includes(id) && !!(STICKER[id] && STICKER[id].stars);
+    const isMedal = (id) => typeof id === 'string' && p.stickers.includes(id) && !!(STICKER[id] && STICKER[id].badge);
     if (isMedal(o.medal)) p.medal = o.medal;
     if (isMedal(p.badge)) {
       if (!p.medal) p.medal = p.badge;
@@ -2946,7 +2946,7 @@
     const prof = P(),
       tab = st.tab || 'hat',
       worn = wornOutfit(prof);
-    const isBadgeKey = (k) => k[0] === 's' && STICKER[k.slice(2)] && !!STICKER[k.slice(2)].stars;
+    const isBadgeKey = (k) => k[0] === 's' && STICKER[k.slice(2)] && !!STICKER[k.slice(2)].badge;
     const tabs = [...SLOTS.filter((t) => t !== 'hijab' || kidOf(prof) === 'girl'), 'stickers', 'badges']
       .map((t) => {
         const ic = t === 'stickers' ? '⭐' : t === 'badges' ? '🏅' : t === 'stick' ? STICK_IC : SLOT_INFO[t][0];
@@ -2963,12 +2963,13 @@
         bonus = prof.stickers.filter((id) => STICKER[id].fill).length;
       // the ones still to win: the same tiles as things still to find (a ? for a sticker)
       const seasons = nextSeasons().filter((x) => !prof.stickers.includes(x.id)).map((x) => `<div class="icell locked goldlock"><span class="iart sil">${ART.sticker(x.id)}</span><small>${x.season}</small></div>`).join(''); // (v2.9.0)
-      body = `<div class="wrow">${mine.filter((id) => !STICKER[id].stars).map((id) => stickerCell(id, prof)).join('')}${locked.map(() => `<div class="icell locked"><span class="iart"><span class="lockq">?</span></span><small>A gift to win</small></div>`).join('')}${seasons}</div>
-      <p class="wnote2">${mine.some((id) => !STICKER[id].stars) ? 'Tap a sticker to stick it on. Tap again to take it off.' : 'Finish games to win stickers.'} ${prof.stickers.filter((id) => !STICKER[id].stars && !STICKER[id].season && !STICKER[id].fill).length} of ${REG_STK.length} stickers${bonus ? ` · ${bonus} bonus` : ''}</p>`;
+      body = `<div class="wrow">${mine.filter((id) => !STICKER[id].badge).map((id) => stickerCell(id, prof)).join('')}${locked.map(() => `<div class="icell locked"><span class="iart"><span class="lockq">?</span></span><small>A gift to win</small></div>`).join('')}${seasons}</div>
+      <p class="wnote2">${mine.some((id) => !STICKER[id].badge) ? 'Tap a sticker to stick it on. Tap again to take it off.' : 'Finish games to win stickers.'} ${prof.stickers.filter((id) => !STICKER[id].badge && !STICKER[id].season && !STICKER[id].fill).length} of ${REG_STK.length} stickers${bonus ? ` · ${bonus} bonus` : ''}</p>`;
     } else if (tab === 'badges') {
-      // (v2.11.0) the star badges, worn on the other side of the shirt from the sticker; still to win: a shadow
-      const badges = ART.BADGES.map((b) => (prof.stickers.includes(b.id) ? stickerCell(b.id, prof) : `<div class="icell locked goldlock"><span class="iart sil">${ART.sticker(b.id)}</span><small>At ${b.stars} ⭐</small></div>`)).join('');
-      body = `<div class="wrow">${badges}</div><p class="wnote2">A badge every 100 stars · tap to pin one on</p>`;
+      // (v2.11.0) the badges, worn on the other side of the shirt from the sticker; still to win: a shadow. Star badges
+      // for every 100 stars, world badges (v2.11.1) for every world memorized
+      const badges = ART.BADGES.map((b) => (prof.stickers.includes(b.id) ? stickerCell(b.id, prof) : `<div class="icell locked goldlock"><span class="iart sil">${ART.sticker(b.id)}</span><small>${b.world ? `Memorize World ${b.world}` : `At ${b.stars} ⭐`}</small></div>`)).join('');
+      body = `<div class="wrow">${badges}</div><p class="wnote2">For every 100 stars and every world memorized · tap to pin one on</p>`;
     } else {
       // won things newest first, then the starting clothes, then the ones still to find
       const list = ITEMS.filter((it) => it.slot === tab && forKid(it, prof) && (!it.gold || prof.items.includes(it.id) || prof.items.includes(it.base)));
@@ -3036,9 +3037,9 @@
       memorized: S.filter((s) => surahDone(s, prof)).length,
       ayat,
       allAyat: S.reduce((t, s) => t + s.ayat.length, 0),
-      items: prof.items.filter((id) => ITEM[id] && !starter(ITEM[id])).length + prof.stickers.filter((id) => !STICKER[id].stars && !STICKER[id].year && !STICKER[id].fill).length,
+      items: prof.items.filter((id) => ITEM[id] && !starter(ITEM[id])).length + prof.stickers.filter((id) => !STICKER[id].badge && !STICKER[id].year && !STICKER[id].fill).length,
       allItems: winnable(prof).length + REG_STK.length + ART.SEASONS.filter((x) => !x.year).length, // (v2.8.4: so a child can aim for 100%; a year's special-day stickers are a bonus)
-      badges: prof.stickers.filter((id) => STICKER[id].stars).length,
+      badges: prof.stickers.filter((id) => STICKER[id].badge).length,
       time: prof.time || 0,
       streak: streakNow(prof),
       found: prof.found.length,
@@ -3068,7 +3069,7 @@
     ['🍃', `${a.ayat}`, `of ${a.allAyat} āyāt learned`],
     ['🎁', `${a.items}`, `of ${a.allItems} things won`],
     ['⭐', `${a.stars}`, `of ${MAX_STARS} stars`],
-    ['🏅', `${a.badges}`, a.badges === 1 ? 'star badge' : 'star badges'],
+    ['🏅', `${a.badges}`, a.badges === 1 ? 'badge' : 'badges'],
     [BOOK_IC, `${a.found}`, `of ${JKEYS.size} journal finds`], // (the map's journal book, v2.10.1)
     ['🔎', `${Math.min(a.riddles, riddleCount())}`, `of ${riddleCount()} riddles found`],
     ['🏃', `${a.streak} ${a.streak === 1 ? 'day' : 'days'}`, `in a row · best ${a.best}`],
@@ -4023,12 +4024,13 @@
     });
     return n;
   }
-  /* a star badge for every 100 stars (100 stars, 200 stars …) */
+  /* a star badge for every 100 stars (100 stars, 200 stars …), and (v2.11.1) a world badge for every world memorized */
   function giveStarBadges(prof) {
     const t = totalStars(prof);
     let got = '';
     ART.BADGES.forEach((b) => {
-      if (b.stars > t || prof.stickers.includes(b.id) || prof.pending.some((g) => g.id === b.id)) return;
+      const due = b.world ? S.filter((s) => worldOf(s) === b.world - 1).every((s) => surahDone(s, prof)) : b.stars <= t;
+      if (!due || prof.stickers.includes(b.id) || prof.pending.some((g) => g.id === b.id)) return;
       prof.pending.push({ k: 's', id: b.id });
       got = b.name;
     });
@@ -4156,9 +4158,9 @@
       if (!prof.stickers.includes(g.id)) prof.stickers.push(g.id);
       gotIt(prof, 's:' + g.id);
       art = ART.sticker(g.id);
-      const badge = STICKER[g.id].stars;
-      name = badge ? `${STICKER[g.id].name} badge` : STICKER[g.id].name + ' sticker';
-      sub = badge ? `For collecting ${badge} stars! MāshāAllāh! Pin it on your explorer to show it off.` : 'Stick it on your explorer, or keep it in your sticker book.';
+      const bd = STICKER[g.id];
+      name = bd.badge ? `${bd.name} badge` : bd.name + ' sticker';
+      sub = bd.world ? `For memorizing every sūrah of World ${bd.world}! MāshāAllāh! Pin it on your explorer to show it off.` : bd.stars ? `For collecting ${bd.stars} stars! MāshāAllāh! Pin it on your explorer to show it off.` : 'Stick it on your explorer, or keep it in your sticker book.';
     }
     save();
     sfx.open();
@@ -4167,7 +4169,7 @@
     const more = prof.pending.length;
     m.innerHTML = `<div class="card giftcard open"><div class="grays"></div><div class="gopen">${ART.gift({ tier: giftTier(g), open: true, kind: g.k === 'i' ? 'item' : 'sticker' })}</div>
       <div class="gitem">${art}</div><h3>${name}</h3><p class="saveinfo">${sub}</p>
-      <div class="row">${wear ? `<button class="btn go wide" data-act="wear" data-id="${g.id}">${wearLabel(ITEM[g.id])}</button>` : `<button class="btn go wide" data-act="stick" data-id="${g.id}" data-from="gift">${STICKER[g.id].stars ? '🏅 Pin it on!' : '⭐ Stick it on!'}</button>`}<button class="btn wide" data-act="giftok">${more ? `🎁 Next gift (${more})` : 'Yay! ✨'}</button></div></div>`;
+      <div class="row">${wear ? `<button class="btn go wide" data-act="wear" data-id="${g.id}">${wearLabel(ITEM[g.id])}</button>` : `<button class="btn go wide" data-act="stick" data-id="${g.id}" data-from="gift">${STICKER[g.id].badge ? '🏅 Pin it on!' : '⭐ Stick it on!'}</button>`}<button class="btn wide" data-act="giftok">${more ? `🎁 Next gift (${more})` : 'Yay! ✨'}</button></div></div>`;
     setTimeout(() => burstAt(m.querySelector('.gitem'), 26, ['🎉', '⭐', '✨', '🎈']), 120);
   }
   function nextSuggestion(s, p) {
@@ -4766,7 +4768,7 @@
         if (!STICKER[id] || !prof.stickers.includes(id)) break;
         sfx.pop();
         prof.stash = null;
-        const side = STICKER[id].stars ? 'medal' : 'badge'; // (v2.11.0: a star badge on the other side)
+        const side = STICKER[id].badge ? 'medal' : 'badge'; // (v2.11.0: a badge on the other side)
         prof[side] = prof[side] === id && b.dataset.from !== 'gift' ? '' : id;
         save();
         if (b.dataset.from === 'gift') {
@@ -4779,7 +4781,7 @@
             render();
           } else {
             hideModal();
-            go('bag', { tab: STICKER[id].stars ? 'badges' : 'stickers' });
+            go('bag', { tab: STICKER[id].badge ? 'badges' : 'stickers' });
             burstAt($app.querySelector('.wd-stage'), 12, ['⭐', '✨']);
           }
           break;
@@ -7612,7 +7614,7 @@
     const best = (list) => list.filter(ok).sort((a, b) => rank(b) - rank(a))[0];
     const w = best(worn) || best(prof.items);
     if (w) return { k: 'i', id: w };
-    const keepS = (id) => STICKER[id].stars || STICKER[id].season; // (star badges and special days' stickers stay)
+    const keepS = (id) => STICKER[id].badge || STICKER[id].season; // (badges and special days' stickers stay)
     const stk = (prof.badge && STICKER[prof.badge] && !keepS(prof.badge) ? prof.badge : '') || prof.stickers.filter((id) => !keepS(id)).slice(-1)[0];
     if (stk) return { k: 's', id: stk };
     // nothing else left: golden things too (worn first), and last of all the one protecting

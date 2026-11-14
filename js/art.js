@@ -1765,10 +1765,10 @@
     // a glowing watch (face.glow): a soft halo around its face that breathes (v2.8.4)
     const halo = (r) => (face.glow ? G(CF(0, 0, r, face.glow, 0.22) + CF(0, 0, r * 0.8, face.glow, 0.3), cls('wglow')) : '');
     // (v2.10.1) from behind: the band and its buckle, no face
-    if (big === 'back') return P(rr(-13, -4.4, 26, 8.8, 3.4), band) + P(rr(-3.4, -3.4, 6.8, 6.8, 1.4), 'none', ' stroke="#c9d2e3" stroke-width="1.8"') + L('M0 -3.4L0 3.4', '#c9d2e3', 1.4);
+    if (big === 'back') return P(rr(-11.6, -4.4, 23.2, 8.8, 3.4), band) + P(rr(-3.4, -3.4, 6.8, 6.8, 1.4), 'none', ' stroke="#c9d2e3" stroke-width="1.8"') + L('M0 -3.4L0 3.4', '#c9d2e3', 1.4);
     // (v2.11.0) on the wrist: the real face, scaled down, on a bigger dial (a stand-in symbol, face.mini, used to be
     // drawn there: the smiley was half a smile, the rocket an arrow); clipped to the dial
-    if (!big) return halo(13) + P(rr(-13, -4.4, 26, 8.8, 3.4), band) + ball(0, 0, 8.6, 8.6, face.rim, { sh: false, hl: false }) + C(0, 0, 6.4, face.c, sw(1.2)) + G(inner, ' transform="scale(' + n(6.4 / 18) + ')"');
+    if (!big) return halo(12) + P(rr(-11.6, -4.4, 23.2, 8.8, 3.4), band) + ball(0, 0, 7.5, 7.5, face.rim, { sh: false, hl: false }) + C(0, 0, 5.6, face.c, sw(1.1)) + G(inner, ' transform="scale(' + n(5.6 / 18) + ')"');
     return halo(36) + S(rr(-12, -44, 24, 88, 10), band, rr(4, -44, 8, 88, 4)) + [-34, -26, 26, 34].map((y) => CF(0, y, 2, dk(band, 0.4))).join('') +
       ball(0, 0, 24, 24, face.rim, { hl: false }) + C(0, 0, 18, face.c) + inner + F('M-14 -8Q-12 -14 -6 -16Q-11 -9 -12 -2Z', '#fff', 0.55);
   }
@@ -3026,6 +3026,89 @@
     ['p-island', 'Floating island', 'sky-island'], ['p-skycastle', 'Sky castle', 'sky-castle'], ['p-airship', 'Airship', 'sky-airship'],
     ['p-icecrystal', 'Ice crystal', 'peak-crystal'], ['p-flag', 'Summit flag', 'peak-flag'], ['p-cabin', 'Mountain cabin', 'peak-cabin'], ['p-summit', 'The summit', 'peak-summit'], ['p-snowpine', 'Snowy pine', 'peak-pine'],
   ].forEach(([id, name, k]) => STK.push([id, name, propSticker(k)]));
+  // v2.11.1: thirty-five new drawings for the bonus stickers (food, animals, nature, space and everyday things)
+  const tent8 = (c, d, w) => DL(d, c, w || 7);
+  // a waffle's criss-cross lines, kept inside a triangle (slope ±m, every gap px)
+  const waffle = (T, m, gap) => {
+    let d = '';
+    [m, -m].forEach((sl) => {
+      for (let c = -120; c <= 220; c += gap) {
+        const pts = [];
+        T.forEach((a, i) => {
+          const b = T[(i + 1) % 3],
+            dx = b[0] - a[0],
+            dy = b[1] - a[1],
+            den = dy - sl * dx;
+          if (Math.abs(den) < 1e-9) return;
+          const t = (sl * (a[0] - 50) + c - a[1]) / den; // (the line y = sl·(x − 50) + c)
+          if (t > 0.001 && t < 0.999) pts.push([a[0] + t * dx, a[1] + t * dy]);
+        });
+        if (pts.length === 2) d += 'M' + n(pts[0][0]) + ' ' + n(pts[0][1]) + 'L' + n(pts[1][0]) + ' ' + n(pts[1][1]);
+      }
+    });
+    return d;
+  };
+  [
+    ['d-dates', 'Dates', () => L('M50 8Q47 18 50 26', '#6b8a3a', 3.4) + L('M50 26L38 36M50 26L62 34M50 26L30 56M50 26L50 52M50 26L70 54M50 26L42 72M50 26L60 72', '#8a6a3a', 2) +
+      [[38, 42], [62, 40], [30, 62], [50, 58], [70, 60], [41, 80], [60, 79]].map(([x, y]) => ball(x, y, 9, 12.5, '#9a4f2c', { hlo: 0.45 })).join('') + S('M50 24Q38 14 28 20Q40 28 50 24Z', '#7fbf4a') + S('M50 24Q62 12 72 18Q60 28 50 24Z', '#5fae3a')],
+    ['d-melon', 'Watermelon', () => S('M6 34A44 44 0 0 0 94 34Z', '#4caf50') + F('M12 34A38 38 0 0 0 88 34Z', '#fff3df') + S('M16 34A34 34 0 0 0 84 34Z', '#ff5d6c', 'M84 34A34 34 0 0 1 50 68Q74 58 80 34Z') +
+      [[30, 46], [44, 52], [58, 52], [70, 44], [38, 60], [62, 60]].map(([x, y]) => EF(x, y, 1.8, 3, INK)).join('') + cuteEyes(42, 40, 58, 40, 2.4) + smile(50, 45, 2.6, 1.8)],
+    ['d-orange', 'Orange', () => ball(50, 56, 34, 32, '#ffa23d') + [[34, 46], [62, 40], [68, 64], [40, 72], [54, 78]].map(([x, y]) => CF(x, y, 1.2, '#e07f1a')).join('') + L('M50 24Q50 16 54 12', '#7a5230', 3.2) + S('M52 22Q64 8 78 14Q68 26 52 22Z', '#5fd27a') + face2(50, 56, 3.2)],
+    ['d-strawberry', 'Strawberry', () => S('M50 92C30 78 14 58 18 42Q24 26 50 30Q76 26 82 42Q86 58 50 92Z', '#ff4f5e', 'M80 42Q86 60 50 92Q72 70 74 44Z', 'M26 46Q28 36 38 34Q30 40 30 50Z') +
+      [[32, 52], [44, 46], [58, 46], [70, 54], [38, 66], [52, 62], [64, 68], [48, 78]].map(([x, y]) => EF(x, y, 1.4, 2.2, '#ffe066')).join('') + S('M28 34L38 22L45 30L50 16L55 30L62 22L72 34Q50 42 28 34Z', '#5fd27a') + L('M50 16L50 8', '#3f9a52', 3) + face2(50, 54, 2.4)],
+    ['d-honey', 'Honey pot', () => ball(50, 62, 32, 28, '#e8a23a', { hlo: 0.5 }) + S(rr(22, 30, 56, 12, 6), '#c97f22') + S('M24 40Q26 50 32 48Q34 58 40 54Q44 62 48 54Q54 60 58 52Q64 58 68 48Q74 50 76 40Z', '#ffd23f') +
+      L('M68 32L86 10', '#b8834a', 4) + ball(86, 10, 4, 4, '#b8834a', { hl: false }) + face2(50, 70, 3)],
+    ['d-cupcake', 'Cupcake', () => S('M26 56L74 56L66 92L34 92Z', '#5fb2ff', 'M62 56L74 56L66 92L58 92Z') + L('M38 58L41 90M50 58L50 90M62 58L59 90', dk('#5fb2ff', 0.2), 2) + S(cloudD(50, 60, 56, 26, 3), '#ffb3d1') + S(cloudD(50, 40, 34, 16, 2), '#ffc8de') +
+      ball(50, 20, 7, 7, '#ff3d55') + L('M50 13Q52 6 58 5', '#3f9a52', 2) + [[34, 46, '#ffe066'], [44, 38, '#5fd27a'], [60, 44, '#7fd8ff'], [68, 52, '#ffe066'], [40, 52, '#b48cff']].map(([x, y, c]) => F(rr(x - 3, y - 1.2, 6, 2.4, 1.2), c)).join('')],
+    ['d-icecream', 'Ice cream', () => S('M32 52L68 52L50 96Z', '#e8b26a', 'M60 52L68 52L50 96Z') + L(waffle([[32, 52], [68, 52], [50, 96]], 1.3, 9), dk('#e8b26a', 0.3), 1.6) + P('M32 52L68 52L50 96Z', 'none') + ball(50, 48, 22, 15, '#8ff0c8') + ball(50, 28, 18, 16, '#ff9fc4') + face2(50, 28, 2.4) + CF(42, 14, 1.4, '#fff') + F(rr(56, 16, 5, 2, 1), '#ffe066')],
+    ['d-whale', 'Whale', () => S('M84 50Q94 32 98 38Q92 48 98 60Q92 64 84 58Z', '#4f8ae8') + S('M8 60Q10 32 46 32Q80 32 86 58Q86 78 54 80Q18 82 8 60Z', '#5f9fff', 'M86 58Q86 78 54 80Q76 70 80 52Z') + F('M14 66Q40 80 74 72Q60 82 40 80Q20 78 14 66Z', '#cfe6ff') +
+      L('M44 30Q40 18 32 14M46 30Q46 16 46 10M48 30Q54 18 62 14', '#7fd8ff', 3) + cuteEyes(30, 52, 44, 52, 2.8) + smile(37, 60, 4, 2) + cheeks(24, 60, 50, 60, 3)],
+    ['d-octopus', 'Octopus', () => ['M28 56Q18 70 26 84', 'M38 60Q34 76 40 90', 'M50 62Q50 78 50 92', 'M62 60Q66 76 60 90', 'M72 56Q82 70 74 84'].map((d) => tent8('#b48cff', d)).join('') + ball(50, 40, 30, 28, '#c48cff') + face2(50, 44, 3.2) + CF(36, 26, 2.4, '#e6d4ff') + CF(66, 30, 1.8, '#e6d4ff')],
+    ['d-penguin', 'Penguin', () => EF(38, 92, 9, 4, '#ff9f1c') + EF(62, 92, 9, 4, '#ff9f1c') + S('M20 56Q14 70 22 74Q28 66 26 56Z', '#3a3f52') + S('M80 56Q86 70 78 74Q72 66 74 56Z', '#3a3f52') + ball(50, 56, 28, 36, '#3a3f52', { hlo: 0.3 }) + EF(50, 64, 18, 26, '#ffffff') + E(50, 64, 18, 26, 'none') +
+      ball(50, 40, 15, 13, '#ffffff', { sh: false, hl: false }) + cuteEyes(44, 38, 56, 38, 2.6) + P('M45 45L55 45L50 52Z', '#ffb23d') + cheeks(38, 46, 62, 46, 2.6)],
+    ['d-dolphin', 'Dolphin', () => S('M80 54Q88 38 98 36Q94 46 97 56Q90 53 84 59Z', '#5f9fd6') + S('M48 36Q54 20 66 17Q62 28 63 36Z', '#5f9fd6') +
+      S('M5 62Q8 55 18 53Q30 34 56 34Q78 35 87 50Q88 56 84 59Q74 57 66 63Q52 74 30 72Q12 70 5 62Z', '#7fb8e6', 'M87 50Q88 56 84 59Q74 57 66 63Q52 74 30 72Q56 64 72 48Z') + F('M9 64Q28 69 50 66Q38 73 26 72Q14 70 9 64Z', '#e6f4ff') + S('M38 60Q46 60 52 64Q46 70 36 74Q38 66 38 60Z', '#5f9fd6') +
+      cuteEyes(24, 52, 24, 52, 2.6) + L('M7 62Q13 64 19 61', INK, 2) + EF(28, 59, 3.4, 2, '#ff8fa3', 0.6) + CF(78, 18, 2.6, '#cfeeff') + CF(86, 9, 1.8, '#cfeeff')],
+    ['d-frog', 'Frog', () => EF(28, 86, 12, 5, '#3f9a52') + EF(72, 86, 12, 5, '#3f9a52') + ball(50, 62, 36, 26, '#5fd27a') + ball(32, 36, 12, 12, '#5fd27a', { sh: false }) + ball(68, 36, 12, 12, '#5fd27a', { sh: false }) +
+      C(32, 36, 7, '#fff', sw(2)) + C(68, 36, 7, '#fff', sw(2)) + CF(33, 37, 3.6, INK) + CF(69, 37, 3.6, INK) + CF(34, 35, 1.2, '#fff') + CF(70, 35, 1.2, '#fff') + L('M30 60Q50 76 70 60', INK, 2.6) + cheeks(22, 58, 78, 58, 4.4)],
+    ['d-snail', 'Snail', () => S('M8 84Q12 70 26 72L82 76Q92 84 80 88L18 90Q8 90 8 84Z', '#ffd9a6', null, 'M20 78Q40 76 70 79Q40 80 20 80Z') + S('M20 76Q14 56 22 44Q28 38 32 46Q30 60 32 74Z', '#ffd9a6') +
+      L('M22 44Q16 30 12 26M26 44Q28 30 32 24', INK, 2.2) + CF(12, 26, 2.8, INK) + CF(32, 24, 2.8, INK) + cuteEyes(22, 54, 30, 54, 1.8) + L('M22 62Q26 64 30 62', INK, 1.8) + ball(60, 54, 26, 26, '#e8a26a') + L('M60 54Q66 50 66 58Q64 66 56 66Q46 64 46 54Q48 40 62 38Q78 40 80 56', dk('#e8a26a', 0.35), 2.6)],
+    ['d-panda', 'Panda', () => ball(24, 26, 11, 11, '#3a3f52', { hl: false }) + ball(76, 26, 11, 11, '#3a3f52', { hl: false }) + ball(50, 56, 36, 32, '#ffffff', { shc: '#e3e1ea' }) +
+      E(36, 52, 7.5, 10, '#3a3f52', ' transform="rotate(30 36 52)"') + E(64, 52, 7.5, 10, '#3a3f52', ' transform="rotate(-30 64 52)"') + CF(37, 51, 2.6, '#fff') + CF(63, 51, 2.6, '#fff') + E(50, 64, 5, 3.6, INK) + L('M44 72Q50 76 56 72', INK, 2.2) + cheeks(28, 68, 72, 68, 4)],
+    ['d-lion', 'Lion cub', () => P(raysD(50, 52, 28, 44, 14, 22), '#e8902a') + ball(50, 52, 30, 28, '#ffc96a') + ball(26, 30, 8, 8, '#ffc96a', { hl: false }) + ball(74, 30, 8, 8, '#ffc96a', { hl: false }) +
+      EF(50, 64, 13, 9, '#fff3d6') + P('M45 58L55 58L50 64Z', '#8a4b2a') + L('M50 64L50 68M50 68Q46 72 42 70M50 68Q54 72 58 70', INK, 2) + cuteEyes(40, 48, 60, 48, 3) + L('M30 64L40 64M30 70L40 68M70 64L60 64M70 70L60 68', INK, 1.4)],
+    ['d-hedgehog', 'Hedgehog', () => P('M10 76L8 62L16 64L14 48L24 54L26 38L34 46L40 30L46 42L54 28L58 42L66 32L68 46L76 40L76 54L84 52L80 66L88 72Q60 82 10 76Z', '#8a5a35') + S('M60 56Q84 52 94 70Q86 80 64 80Q52 74 60 56Z', '#ffe0b0') +
+      ball(94, 70, 4, 4, INK, { hl: false, sh: false }) + cuteEyes(76, 62, 76, 62, 2.6) + EF(70, 72, 3.6, 2.2, '#ff8fa3', 0.6) + EF(30, 82, 6, 3.6, '#7a5230') + EF(64, 84, 6, 3.6, '#7a5230')],
+    ['d-duck', 'Duck', () => L('M8 84Q30 78 50 84Q70 90 92 84', '#5fb2ff', 3.4) + S('M20 70Q22 52 50 54Q82 54 86 66Q80 84 50 84Q22 84 20 70Z', '#ffe066', 'M86 66Q80 84 50 84Q72 76 80 60Z') + S('M50 62Q60 56 76 60Q74 70 62 74Q54 74 50 62Z', '#ffd23f') + L('M58 64Q64 66 70 64', dk('#ffd23f', 0.3), 1.6) +
+      ball(34, 38, 17, 16, '#ffe066') + P('M14 40Q8 44 14 48L24 46Q20 40 14 40Z', '#ff9f1c') + cuteEyes(32, 34, 32, 34, 2.6) + EF(38, 44, 3.4, 2, '#ff8fa3', 0.6) + L('M36 20Q40 14 46 18', INK, 2.4)],
+    ['d-parrot', 'Parrot', () => L('M10 74L90 70', '#9a6b44', 6) + S('M54 64Q60 84 56 96L48 96Q50 82 46 66Z', '#5fb2ff') + ball(50, 50, 18, 24, '#ff5d5d') + S('M56 40Q74 50 66 72Q58 66 56 50Z', '#4caf50') + ball(48, 24, 15, 14, '#ff5d5d') +
+      S('M34 20Q24 22 26 32Q30 30 36 30Z', '#ffd23f') + C(48, 22, 5, '#fff', sw(2)) + CF(49, 22, 2.4, INK) + EF(42, 74, 3, 3, '#ffb23d') + EF(54, 74, 3, 3, '#ffb23d') + L('M46 8Q50 2 56 6M50 10Q56 4 60 10', '#ff5d5d', 3)],
+    ['d-ladybird', 'Ladybird', () => L('M30 30Q22 18 16 18M70 30Q78 18 84 18', INK, 2.6) + CF(16, 18, 3, INK) + CF(84, 18, 3, INK) + ball(50, 34, 20, 14, '#3a3f52', { hl: false }) + CF(42, 32, 3, '#fff') + CF(58, 32, 3, '#fff') + CF(42, 33, 1.4, INK) + CF(58, 33, 1.4, INK) +
+      ball(50, 60, 34, 32, '#f04848') + L('M50 30L50 92', INK, 2.4) + [[34, 50, 5], [66, 50, 5], [30, 70, 4.4], [70, 70, 4.4], [42, 82, 3.6], [58, 82, 3.6]].map(([x, y, r]) => CF(x, y, r, '#3a3f52')).join('')],
+    ['d-snowflake', 'Snowflake', () => [0, 60, 120].map((a) => G(DL('M50 8L50 92', '#bfefff', 6) + DL('M50 24L40 14M50 24L60 14M50 76L40 86M50 76L60 86', '#bfefff', 4.4), ' transform="rotate(' + a + ' 50 50)"')).join('') + ball(50, 50, 9, 9, '#e8fbff', { sh: false }) + F(star4(78, 20, 6), '#fff')],
+    ['d-sunflower', 'Sunflower', () => L('M50 60Q48 80 50 96', '#45b45e', 5) + S('M50 82Q30 72 22 80Q34 92 50 86Z', '#5fd27a') + Array.from({ length: 12 }, (_, i) => E(50, 22, 7, 15, '#ffd23f', ' transform="rotate(' + i * 30 + ' 50 42)"')).join('') +
+      ball(50, 42, 15, 15, '#8a5a35', { hlo: 0.3 }) + [[44, 36], [52, 34], [58, 42], [44, 46], [52, 48]].map(([x, y]) => CF(x, y, 1.4, '#5a3a20')).join('') + face2(50, 42, 1.8)],
+    ['d-tulip', 'Tulip', () => L('M50 50Q52 74 50 96', '#45b45e', 5) + S('M50 92Q22 82 24 54Q38 66 50 80Z', '#5fd27a') + S('M50 92Q80 80 74 58Q62 72 52 82Z', '#4caf50') +
+      S('M28 22Q32 54 50 58Q68 54 72 22L62 32L50 16L38 32Z', '#ff6b9a', 'M72 22Q68 54 50 58Q64 46 62 32Z', 'M32 30Q34 44 40 50Q34 42 34 30Z')],
+    ['d-acorn', 'Acorn', () => ball(50, 62, 24, 28, '#c9834a') + S('M22 46Q24 26 50 24Q76 26 78 46Q50 54 22 46Z', '#8a5a35') + L('M30 34L42 46M40 28L56 46M52 26L66 44M28 42L36 30M66 30L58 48', dk('#8a5a35', 0.3), 1.6) + L('M50 24Q50 14 56 10', '#7a5230', 3.6) + face2(50, 66, 2.8)],
+    ['d-leaf', 'Autumn leaf', () => S('M50 8Q88 28 82 62Q74 88 50 92Q26 88 18 62Q12 28 50 8Z', '#ff8a3d', 'M82 62Q74 88 50 92Q70 76 74 44Z', 'M26 50Q26 30 40 20Q30 34 32 52Z') + L('M50 12L50 98M50 34L32 24M50 34L68 24M50 52L28 42M50 52L72 42M50 70L30 62M50 70L70 62', '#d85a1a', 2)],
+    ['d-raindrop', 'Raindrop', () => S('M50 6Q80 46 78 64Q76 90 50 92Q24 90 22 64Q20 46 50 6Z', '#5fb2ff', 'M78 64Q76 90 50 92Q70 80 70 58Z', 'M34 52Q36 36 44 26Q38 42 38 56Z') + face2(50, 64, 3)],
+    ['d-rocket', 'Rocket', () => S('M36 70Q44 92 50 96Q56 92 64 70Z', '#ffb23d') + F('M42 70Q46 84 50 88Q54 84 58 70Z', '#ffe066') + S('M34 50L18 76L34 70Z', '#ff5d5d') + S('M66 50L82 76L66 70Z', '#ff5d5d') +
+      S('M50 6Q72 24 68 72L32 72Q28 24 50 6Z', '#f3f3f7', 'M50 6Q72 24 68 72L60 72Q64 30 50 6Z') + C(50, 38, 9, '#7fd8ff', sw(3)) + F('M45 34Q47 30 51 30Q47 34 47 38Z', '#fff') + S(rr(44, 66, 12, 8, 3), '#ff5d5d')],
+    ['d-planet', 'Ringed planet', () => DL('M6 56A44 13 0 0 1 94 56', '#ffd23f', 6) + ball(50, 50, 28, 28, '#ff9fc4') + L('M28 40Q50 34 72 42M24 56Q50 50 76 58', dk('#ff9fc4', 0.15), 3) + DL('M6 56A44 13 0 0 0 94 56', '#ffd23f', 6) + face2(50, 50, 2.6) + P(star5(16, 20, 6), '#fff3b0', sw(2)) + P(star5(84, 84, 5), '#fff3b0', sw(2))],
+    ['d-comet', 'Shooting star', () => ['#ff6b6b', '#ffb43d', '#5fd27a', '#5fb2ff'].map((c, i) => L('M' + (12 + i * 2) + ' ' + (92 - i * 10) + 'Q36 ' + (70 - i * 8) + ' ' + (52 + i * 2) + ' ' + (54 - i * 6), c, 5)).join('') + S(star5(64, 38, 30, 14), '#ffd23f', null, star5(56, 30, 6, 3)) + face2(64, 40, 2.6)],
+    ['d-plane', 'Paper plane', () => L('M8 82Q22 74 18 66M26 90Q36 86 34 78', '#9fd8ff', 2.4) + P('M8 46L92 12L56 88L44 60Z', '#ffffff') + P('M92 12L44 60L38 80L50 64Z', '#cfe6ff') + L('M92 12L44 60', INK, 2)],
+    ['d-gem', 'Gem', () => S('M18 36L34 14L66 14L82 36L50 90Z', '#7fe3ff', 'M66 14L82 36L50 90Z') + F('M18 36L82 36L50 90Z', '#5fc9e8', 0.6) + L('M18 36L82 36M34 14L42 36L50 90M66 14L58 36L50 90M42 36L50 14L58 36', '#2f9ac0', 1.8) + P('M18 36L34 14L66 14L82 36L50 90Z', 'none') + F('M38 18L46 18L40 32L32 32Z', '#fff', 0.7) + F(star4(64, 26, 5), '#fff')],
+    ['d-trophy', 'Trophy', () => S(rr(28, 84, 44, 10, 3), '#8a5a35') + S(rr(36, 76, 28, 10, 2), GOLD) + S(rr(44, 60, 12, 18, 2), GOLD) + L('M24 24Q8 26 12 40Q16 52 32 50M76 24Q92 26 88 40Q84 52 68 50', '#e0a21f', 5) +
+      S('M22 16L78 16Q78 60 50 64Q22 60 22 16Z', '#ffc83d', 'M64 16L78 16Q78 60 50 64Q66 52 64 16Z', 'M30 22Q30 40 38 50Q32 40 32 22Z') + P(star5(50, 36, 10), '#fff3b0', sw(2))],
+    ['d-prayermat', 'Prayer mat', () => G(S(rr(26, 8, 48, 84, 4), '#2f9a6a') + F(rr(31, 13, 38, 74, 2), '#3fb47c') + S('M36 46Q36 26 50 20Q64 26 64 46L64 76L36 76Z', '#ffd23f') + F('M40 48Q40 32 50 26Q60 32 60 48L60 72L40 72Z', '#c9363e') +
+      L('M36 82L64 82M36 86L64 86', '#ffd23f', 2) + L('M30 92L30 98M38 92L38 98M46 92L46 98M54 92L54 98M62 92L62 98M70 92L70 98', '#ffd23f', 2) + F(star5(50, 40, 5), '#ffd23f'), ' transform="rotate(-8 50 50)"')],
+    ['d-teapot', 'Teapot', () => L('M42 22Q36 14 42 6M54 22Q60 14 54 6', '#cfd8e8', 2.6) + L('M74 48Q92 46 88 62Q84 72 74 70', '#3fa596', 5) + S(limb(26, 62, 10, 40, 5.5, 3.6), '#5fc9b6') + ball(48, 62, 30, 26, '#5fc9b6') +
+      S('M28 40Q48 30 68 40Z', '#3fa596') + ball(48, 30, 5, 5, '#ffd23f') + L('M24 74Q48 84 72 74', '#ffffff', 3) + face2(48, 58, 2.8)],
+    ['d-backpack', 'Backpack', () => L('M38 26Q38 10 50 10Q62 10 62 26', '#c9483a', 5) + S(rr(24, 24, 52, 68, 16), '#ff7a59', rr(60, 24, 16, 68, 8)) + S(rr(32, 58, 36, 26, 9), '#e85a3e') + L('M32 68L68 68', '#ffd23f', 2.4) + CF(50, 68, 2.4, '#ffd23f') +
+      F(rr(30, 30, 6, 22, 3), '#fff', 0.35)],
+    ['d-crayons', 'Crayons', () => [[-22, '#5fb2ff'], [0, '#ff5d6c'], [22, '#5fd27a']].map(([a, c]) => G(S('M44 30L56 30L56 92L44 92Z', c) + S('M44 30L50 10L56 30Z', '#fff3df') + F('M47.4 18L50 10L52.6 18Z', c) + F(rr(44, 46, 12, 4, 0), dk(c, 0.25)) + F(rr(44, 76, 12, 4, 0), dk(c, 0.25)) + P('M44 30L56 30L56 92L44 92Z', 'none'), ' transform="rotate(' + a + ' 50 92)"')).join('')],
+  ].forEach(([id, name, f]) => STK.push([id, name, f]));
   // (v2.11.0) the stickers from here on are bonus ones (`fill`): one comes when a game finished the first time brought
   // nothing else; the first 40 stay the surprise gifts. Every sticker also has a gold and a shimmer (rainbow foil) edition
   const FIRST_STK = 40;
@@ -3046,7 +3129,32 @@
     ball(50, 44, 36, 36, c) + C(50, 44, 27, lt(c, 0.45), sw(2)) +
     P(star5(50, 31, 8.5, 3.8), '#fff', sw(2)) +
     '<text x="50" y="59" text-anchor="middle" font-family="\'Baloo 2\', ui-rounded, system-ui, sans-serif" font-weight="800" font-size="' + (m >= 1000 ? 17 : 21) + '" fill="#2b2340" stroke="none">' + m + '</text>';
-  const BADGES = BADGE_C.map((c, j) => ({ id: 'stars' + (j + 1) * 100, name: (j + 1) * 100 + ' stars', stars: (j + 1) * 100, c }));
+  const BADGES = BADGE_C.map((c, j) => ({ id: 'stars' + (j + 1) * 100, name: (j + 1) * 100 + ' stars', stars: (j + 1) * 100, c, badge: true }));
+  /* World badges (v2.11.1): a crest for each world memorized (every sūrah's Stepping Stones), in the world's own sky
+     and ground, its emblem in the middle, a gold rim and the world's number on a ribbon. */
+  const WORLD_BADGE_NAMES = ['First Steps', 'Little Treasures', 'Shining Sands', 'Sun & Moon', 'Starry Path', 'Sky Kingdom', 'The Great Climb'];
+  WORLD_BADGE_NAMES.forEach((nm, wi) => BADGES.push({ id: 'world' + (wi + 1), name: nm, world: wi + 1, badge: true }));
+  const CREST = 'M50 8L84 20Q86 60 50 92Q14 60 16 20Z',
+    CREST_IN = 'M50 15.5L77.4 25.4Q78 57.6 50 83.6Q22 57.6 22.6 25.4Z';
+  const WORLD_EMBLEM = [
+    () => propSticker('meadow-sheep')(),
+    () => propSticker('forest-owl')(),
+    () => propSticker('sands-castle')(),
+    () => propSticker('canyon-camel')(),
+    () => S(crescent(46, 52, 32, 32, -20, 14), '#ffe27a') + face2(34, 58, 2.6) + P(star5(76, 30, 9), '#fff3b0', sw(2)) + P(star5(80, 62, 6), '#fff3b0', sw(2)) + F(star4(60, 16, 6), '#fff'),
+    () => propSticker('sky-balloon')(),
+    () => propSticker('peak-summit')(),
+  ];
+  const EMBLEM_AT = { 6: ' transform="translate(28.5 21) scale(.43)"' }; // (the summit is wide: smaller, so it stays inside the crest)
+  const worldBadgeArt = (wi) => {
+    const w = WORLDS[wi];
+    return S(CREST, GOLD, 'M50 8L84 20Q86 60 50 92Q72 60 72 22Z', 'M22 24L48 14L24 30Z') +
+      F(CREST_IN, w.sky[1]) + F('M50 15.5L77.4 25.4Q77.6 34 76.6 40Q50 30 23.4 40Q22.4 34 22.6 25.4Z', w.sky[0]) + F('M23.4 56Q50 44 76.6 56Q72 70 50 83.6Q28 70 23.4 56Z', w.ground[1]) + F('M28 64Q50 54 72 64Q66 74 50 83.6Q34 74 28 64Z', w.ground[0], 0.7) + P(CREST_IN, 'none', sw(2)) +
+      G(WORLD_EMBLEM[wi](), EMBLEM_AT[wi] || ' transform="translate(24.5 19) scale(.51)"') +
+      S('M30 71L70 71L65 79.5L70 88L30 88L35 79.5Z', w.accent, 'M33.8 82L66.2 82L70 88L30 88Z') +
+      '<text x="50" y="84.2" text-anchor="middle" font-family="\'Baloo 2\', ui-rounded, system-ui, sans-serif" font-weight="800" font-size="12" fill="#fff" stroke="#2b2340" stroke-width="2.6" paint-order="stroke">' + (wi + 1) + '</text>' +
+      P(star5(50, 9, 8, 3.8), '#fff3b0', sw(2));
+  };
   /* Special days (v2.9.0): one sticker each, given on the day (never at random): Ramadan, the two Eids, Jumuʿah. */
   const SEASON_ART = {
     ramadan: () =>
@@ -3081,7 +3189,7 @@
   };
   const STKBY = Object.create(null);
   STK.forEach((s) => (STKBY[s[0]] = s[2]));
-  BADGES.forEach((b) => (STKBY[b.id] = () => badgeArt(b.stars, b.c)));
+  BADGES.forEach((b) => (STKBY[b.id] = b.world ? () => worldBadgeArt(b.world - 1) : () => badgeArt(b.stars, b.c)));
   SEASONS.forEach((x) => (STKBY[x.id] = x.year ? () => yearArt(x.kind, x.year) : SEASON_ART[x.id]));
   // a foil sticker's shining edge and a few still twinkles (v2.11.0)
   const FOIL_EDGE = { gold: 'url(#lhq-foil-gold)', holo: 'url(#lhq-foil-holo)' };

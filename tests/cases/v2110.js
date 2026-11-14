@@ -27,14 +27,14 @@
   d.querySelector('[data-act=comfy]').click(); await wait(200);
   ok('Comfy takes both off, Back puts both back', off && prof.medal === 'stars100' && prof.badge === 'moon');
   // 3. bonus stickers
-  ok('185 bonus stickers: 35 from the map, a gold and a shimmer edition of each of the 75', A.STICKERS.filter((x) => x.fill).length === 185 && A.STICKERS.filter((x) => x.foil).length === 150);
+  ok('290 bonus stickers: 35 from the map, 35 new drawings (v2.11.1), a gold and a shimmer edition of each of the 110', A.STICKERS.filter((x) => x.fill).length === 290 && A.STICKERS.filter((x) => x.foil).length === 220 && A.STICKERS.filter((x) => /^d-/.test(x.id)).length === 35);
   const gold = A.sticker('gold-moon');
   ok('a gold sticker has a foil edge', gold.includes('url(#lhq-foil-gold)'));
   // the order: a new map picture first; with every one of those, a gold edition of one collected (not of one missing)
   prof.pending = [];
   X.bonusSticker(prof);
   const first = prof.pending.pop();
-  ok('the first bonus sticker is a new map picture', first && /^p-/.test(first.id) && !w.LHQ_ART.STICKERS.find((x) => x.id === first.id).foil, first && first.id);
+  ok('the first bonus sticker is a new picture (from the map, or a new drawing)', first && /^[pd]-/.test(first.id) && !w.LHQ_ART.STICKERS.find((x) => x.id === first.id).foil, first && first.id);
   const keep = prof.stickers.slice();
   prof.stickers.push(...A.STICKERS.filter((x) => x.fill && !x.foil).map((x) => x.id));
   X.bonusSticker(prof);
