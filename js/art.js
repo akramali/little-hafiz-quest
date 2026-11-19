@@ -746,7 +746,7 @@
   /* Pattern versions (v2.7.22): the same shape with a pattern over it (dots, stripes, stars, stitching, checks,
      zigzags) and its own color, so a surprise looks like a new thing, not just a new color. Two for each of these.
      [pattern, base item, hue turn] */
-  const PAT_NAME = { dots: 'Polka-dot', stripes: 'Striped', stars: 'Starry', stitch: 'Stitched', checks: 'Checked', zigzag: 'Zigzag' };
+  const PAT_NAME = { dots: 'Polka-dot', stripes: 'Striped', stars: 'Starry', stitch: 'Stitched', checks: 'Checked', zigzag: 'Zigzag', mosaic: 'Mosaic', vines: 'Vine', rosette: 'Rose' };
   const PAT_BASES = [
     'explorer-cap', 'bucket-hat', 'beanie', 'sun-visor', 'earflap-hat', 'ranger-hat', 'sun-hat',
     'basic-shoes', 'rain-boots', 'comfy-sneakers', 'sandals', 'frog-boots', 'trail-boots',
@@ -754,7 +754,7 @@
     'leaf-cape', 'scarf-cape', 'sturdy-shield', 'round-shield', 'star-buckler', 'sun-shield',
     'basic-pants', 'cargo-pants', 'joggers', 'night-cape', // v2.8.4 (always added at the end: saved ids stay the same)
   ]; // (not sticks or the little pouch, too thin for a pattern to show, nor white things, where it wouldn't)
-  const PATS = Object.keys(PAT_NAME);
+  const PATS = ['dots', 'stripes', 'stars', 'stitch', 'checks', 'zigzag']; // (the everyday surprises' six: the Garden's own patterns never change their ids)
   const DROP_PATTERNS = [];
   PAT_BASES.forEach((base, j) => [0, 1].forEach((k) => DROP_PATTERNS.push([PATS[(j * 2 + k * 3) % PATS.length], base, ((j * 97 + k * 151) % 300) + 30])));
   DROP_NEW.forEach((r) => ITEMS.push({ id: r[0], slot: r[1], name: r[2], tier: r[3] || 1, from: null, drop: true })); // (glowing things: tier 2, shiny)
@@ -768,6 +768,35 @@
     ITEMS.push({ id: pat + '-' + base, slot: b.slot, name: PAT_NAME[pat] + ' ' + nm.charAt(0).toLowerCase() + nm.slice(1), tier: 1, from: null, drop: true, vof: base, deg, pat });
   });
   const BYID = Object.create(null);
+  /* ---------- THE HIDDEN GARDEN (World 8, v2.12.0): its treasures (one for each sūrah memorized, a golden edition for
+     every star), its ride (the whole Garden golden) and its own editions of everyday things (the Garden's surprises) */
+  const GARDEN_TREASURES = [
+    ['medallion-cape', 'cape', 'Star medallion cape', 1],
+    ['guardian-shield', 'shield', 'Guardian shield', 2],
+    ['starlight-aviators', 'glasses', 'Starlight aviators', 3],
+    ['cave-lantern-staff', 'stick', 'Cave lantern staff', 4],
+    ['sky-falcon', 'pet', 'Sky falcon', 5],
+    ['pearl-shell-pack', 'bag', 'Pearl shell pack', 6],
+  ];
+  GARDEN_TREASURES.forEach(([id, slot, name, k]) => {
+    ITEMS.push({ id, slot, name, tier: 4, from: null, garden: k });
+    ITEMS.push({ id: 'gold-' + id, slot, name: 'Golden ' + name.charAt(0).toLowerCase() + name.slice(1), tier: 4, from: null, gold: true, base: id, garden: k });
+  });
+  ITEMS.push({ id: 'garden-bike', slot: 'pet', name: 'Garden bike', tier: 4, from: null, garden: 'ride' });
+  // two-tone designs in bold colour pairs (the Garden's surprises too): [id, main, second, name]
+  const TWO_TONES = [['tealcoral', '#1fa5a0', '#ff7a59', 'Teal and coral'], ['navygold', '#25356e', '#ffc23d', 'Navy and gold'], ['blacklime', '#2b2b33', '#8ee34a', 'Black and lime'],
+    ['redwhite', '#e8434a', '#f6f6f8', 'Red and white'], ['purpleorange', '#6b46c8', '#ff9a2b', 'Purple and orange'], ['mintpink', '#7fe0c0', '#ff6fa8', 'Mint and pink']];
+  const TWO_DESIGNS = [['snapback', 'hat', 'snapback'], ['hightops', 'shoes', 'high-tops'], ['wayfarers', 'glasses', 'wayfarers'], ['sling-bag', 'bag', 'sling bag'], ['quarter-shield', 'shield', 'quartered shield']];
+  TWO_DESIGNS.forEach(([d, slot, nm], j) => TWO_TONES.forEach(([k, , , cn], i) => (i + j) % 2 === 0 || d === 'wayfarers' ? ITEMS.push({ id: d + '-' + k, slot, name: cn + ' ' + nm, tier: 2, from: null, garden: 'drop', two: [d, k] }) : 0));
+  const GARDEN_EDITIONS = [];
+  ['explorer-cap', 'sun-hat', 'basic-shoes', 'sandals', 'little-backpack', 'buckle-satchel', 'leaf-cape', 'round-shield'].forEach((base, j) =>
+    ['mosaic', 'vines', 'rosette'].forEach((pat, k) => GARDEN_EDITIONS.push([pat, base, [150, 300, 40, 190, 330, 90, 260, 20][(j + k * 3) % 8]])),
+  );
+  GARDEN_EDITIONS.forEach(([pat, base, deg]) => {
+    const b = ITEMS.find((i) => i.id === base);
+    ITEMS.push({ id: pat + '-' + base, slot: b.slot, name: PAT_NAME[pat] + ' ' + b.name.charAt(0).toLowerCase() + b.name.slice(1), tier: 2, from: null, vof: base, deg, pat, garden: 'drop' });
+  });
+  const twoOf = (k) => TWO_TONES.find((t) => t[0] === k);
   ITEMS.forEach((it) => (BYID[it.id] = it));
   const DEFAULTS = { top: 'basic-shirt', pants: 'basic-pants', shoes: 'basic-shoes', stick: 'twig' };
   const SLOTS = ['hat', 'hijab', 'glasses', 'top', 'pants', 'shoes', 'cape', 'bag', 'stick', 'shield', 'watch', 'pet'];
@@ -1301,6 +1330,15 @@
       C(76, 273, 3.6, '#ffffff', sw(1.6)) + C(85, 273, 3.6, '#ffffff', sw(1.6)) + CF(76.6, 273.4, 1.7, INK) + CF(85.6, 273.4, 1.7, INK) + L('M75 279.4Q80.5 283 86 279.4', INK, 1.6);
   };
   const SHOEFX = { 'gallop-boots': [[80, 266]], 'comfy-sneakers': [[70, 272]], 'cloud-boots': [[66, 252], [92, 262]] };
+  // (v2.12.0) high-top sneakers: a colour body, a contrasting toe cap, stripe and collar, white laces
+  ITEMS.filter((it) => it.two && it.two[0] === 'hightops').forEach((it) => {
+    const [, a, b] = twoOf(it.two[1]);
+    SHOE[it.id] = () => {
+      const d = BOOT(256);
+      return F(d, a) + F('M63.6 287C62 279 66 274 72 272L84 272Q94 273 95.6 281L95.6 287Z', b) + F(SOLE.replace(/94\.4/g, '95.6'), '#f6f6f8') + L('M62.8 286L95.8 286', '#cfd2dc', 1.4) +
+        F('M68 263L68 261Q68 256 73 256L87.5 256Q92.6 256 92.6 261L92.6 263Z', b) + L('M72 266L86 266M72 270L86 270M73 274L85 274', '#fff', 2) + L('M70 280Q80 270 92 276', b === '#f6f6f8' ? INK : '#fff', 2) + P(d, 'none') + L('M68 263L92.6 263', INK, 1.8);
+    };
+  });
   Object.keys(SHOE).forEach((id) => (ART[id] = { shoe: SHOE[id], box: [52, 236, 132, 296], fx: SHOEFX[id] }));
 
   /* ---------- capes: f = front view (behind the body), b = back view (over the back) ---------- */
@@ -1755,6 +1793,29 @@
         [45, 135, 225, 315].map((a) => CF(n(16.3 * Math.cos((a * Math.PI) / 180)), n(16.3 * Math.sin((a * Math.PI) / 180)), 1.5, dk(w, 0.4))).join('') + F('M-11 -7Q-9 -11 -5 -12Q-9 -7 -10 -2Z', '#fff', 0.5);
     },
   };
+  // (v2.12.0) Āyat al-Kursī's treasure: a gold-rimmed crest with an eight-pointed star and a pearl
+  const GUARD = 'M0 -28L23 -19Q25 9 0 29Q-25 9 -23 -19Z',
+    GUARD_IN = 'M0 -21.5L17.4 -14.6Q18.6 6.6 0 21.8Q-18.6 6.6 -17.4 -14.6Z';
+  ART['guardian-shield'] = {
+    box: [-27, -30, 27, 31],
+    fx: [[-14, -14], [14, 10], [0, -24]],
+    bk: () => shieldBack(GUARD, GOLD),
+    sh: () =>
+      S(GUARD, GOLD, 'M0 -28L23 -19Q25 9 0 29Q13 6 11 -22Z') + S(GUARD_IN, '#1f8f8a', 'M0 -21.5L17.4 -14.6Q18.6 6.6 0 21.8Q9 4 7 -18Z') +
+      P(star8(0, 0, 13, 9.8), '#ffd23f', sw(1.6)) + P(star8(0, 0, 8.4, 6.4), '#fff3b0', sw(1.2)) + ball(0, 0, 3.8, 3.8, '#ffffff', { sh: false }) +
+      [[-11, -13], [11, -13], [0, 16]].map(([x, y]) => CF(x, y, 1.6, '#7ff0d8')).join('') + F('M-15 -12Q-13 -17 -8 -18Q-12 -13 -12 -7Z', '#fff', 0.5),
+  };
+  // (v2.12.0) quartered shields: a round shield in two bold colours, a gold star at its boss
+  ITEMS.filter((it) => it.two && it.two[0] === 'quarter-shield').forEach((it) => {
+    const [, a, b] = twoOf(it.two[1]);
+    ART[it.id] = {
+      box: [-27, -27, 27, 27],
+      fx: [[-12, -12]],
+      bk: () => shieldBack('M0 -25A25 25 0 1 0 0.01 -25Z', a),
+      sh: () => ball(0, 0, 25, 25, a, { hl: false }) + F('M0 0L0 -25A25 25 0 0 1 25 0Z', b) + F('M0 0L0 25A25 25 0 0 1 -25 0Z', b) + C(0, 0, 25, 'none') + L('M0 -25L0 25M-25 0L25 0', INK, 2) +
+        C(0, 0, 20, 'none', ' stroke="' + GOLD + '" stroke-width="2"') + ball(0, 0, 8, 8, GOLD) + P(star5(0, 0.4, 5, 2.3), '#fff3b0', sw(1.4)) + F('M-17 -10Q-14 -17 -8 -19Q-13 -12 -14 -5Z', '#fff', 0.45),
+    };
+  });
   const SHIELDS = () => Object.keys(ART).filter((id) => ART[id].sh);
   SHIELDS().forEach((id) => (ART[id].ex = () => G(OUT(ART[id].sh(), SW / 0.85), tf(SHIELD_AT[0], SHIELD_AT[1], 0.85))));
   // its back, where the shield sits seen from behind (mirrored by the explorer's back view)
@@ -2011,10 +2072,136 @@
       C(0, -62, 7.5, '#7fd6ff', ' stroke="' + GOLD + '" stroke-width="3"') + CF(-2.6, -64.6, 2.2, '#fff', 0.8) + S(rr(-14, -32, 28, 6, 3), GOLD) +
       P(star5(0, -44, 4.6), GOLD, sw(1.6)) + tw(-24, -78, 6, 0) + tw(24, -60, 5, 1) + '</g>',
   };
+  /* ---------- the Hidden Garden's treasures (v2.12.0) ---------- */
+  // Al-Fātiḥah: a star medallion cape, deep teal with a gold mosaic hem and an eight-pointed star on the back
+  const HEM_F = 'M32 262Q42 270 52 264Q62 272 72 266Q82 274 92 268Q102 274 112 266Q122 272 132 264Q142 270 152 262',
+    HEM_B = 'M43 262Q53 270 63 264Q73 272 83 266Q92 273 101 266Q111 272 121 264Q131 270 141 262';
+  ART['medallion-cape'] = {
+    box: [36, 146, 148, 280],
+    fx: [[92, 196], [52, 250], [132, 250]],
+    ex(v) {
+      const c = '#1f6f6a';
+      if (v === 'back')
+        return S(CAPE_B, c, CAPE_B_SH, 'M66 170Q62 200 58 236Q56 200 62 166Z') + L(HEM_B, GOLD, 5) + L('M47 254Q92 262 137 254', GOLD, 2.4) + [56, 74, 92, 110, 128].map((x) => P(star8(x, 258, 3.4), '#fff3b0', sw(1))).join('') +
+          C(92, 200, 19, GOLD, sw(2.4)) + C(92, 200, 15, '#2a8f88', sw(1.6)) + P(star8(92, 200, 12), GOLD, sw(1.6)) + P(star8(92, 200, 7.4), '#fff3b0', sw(1.2)) + ball(92, 200, 3.2, 3.2, '#ffffff', { sh: false }) + L('M62 160L122 160', GOLD, 3);
+      return S(CAPE_F, c, null, null) + L(HEM_F, GOLD, 5) + [44, 140].map((x) => P(star8(x, 252, 3.6), '#fff3b0', sw(1))).join('');
+    },
+  };
+  // Al-Baqarah's last two āyāt: starlight aviators, gold frames and night-sky lenses
+  ART['starlight-aviators'] = {
+    box: [44, 102, 140, 134],
+    fx: [[54, 104], [130, 104]],
+    ex(v) {
+      if (v === 'back') return '';
+      const lens = (x, d) => {
+        const inner = x - d * 12,
+          outer = x + d * 13;
+        return 'M' + inner + ' 108Q' + x + ' 104 ' + outer + ' 108Q' + (outer + d * 2) + ' 122 ' + (x + d * 4) + ' 128Q' + (inner - d) + ' 128 ' + inner + ' 113Z';
+      };
+      const sky = (x, d) => P(lens(x, d), '#1d2a6b', ' stroke="' + GOLD + '" stroke-width="3.2"') + F(star4(x - d * 3, 116, 3), '#fff') + CF(x + d * 5, 121, 1.2, '#fff3b0') + CF(x - d * 6, 123, 0.9, '#9fd8ff') + F('M' + (x - 9) + ' 120L' + (x + 1) + ' 110L' + (x + 4) + ' 110L' + (x - 6) + ' 120Z', '#9fd3ff', 0.4);
+      return temples(GOLD) + sky(75, -1) + sky(109, 1) + L('M87 109Q92 106 97 109M87 113L97 113', GOLD, 2.4);
+    },
+  };
+  // (v2.12.0) wayfarers: a bold upper frame in one colour, the lower rims in another, dark lenses
+  ITEMS.filter((it) => it.two && it.two[0] === 'wayfarers').forEach((it) => {
+    const [, a, b] = twoOf(it.two[1]);
+    ART[it.id] = {
+      box: [44, 102, 140, 134],
+      ex(v) {
+        if (v === 'back') return '';
+        const lens = (x) => 'M' + (x - 14) + ' 108L' + (x + 14) + ' 108L' + (x + 12) + ' 124Q' + (x + 11) + ' 128 ' + (x + 6) + ' 128L' + (x - 7) + ' 128Q' + (x - 12) + ' 128 ' + (x - 13) + ' 123Z';
+        return temples(a) + P(lens(75), '#2b3245', ' stroke="' + b + '" stroke-width="3.2"') + P(lens(109), '#2b3245', ' stroke="' + b + '" stroke-width="3.2"') +
+          S(rr(59, 104, 32, 8, 3), a) + S(rr(93, 104, 32, 8, 3), a) + DL('M90 110L94 110', a, 3) + F('M67 122L77 112L81 112L71 122Z', '#9fd3ff', 0.45) + F('M101 122L111 112L115 112L105 122Z', '#9fd3ff', 0.45);
+      },
+    };
+  });
+  // (v2.12.0) snapbacks: the front panel in one colour, the crown and flat brim in the other
+  ITEMS.filter((it) => it.two && it.two[0] === 'snapback').forEach((it) => {
+    const [, a, b] = twoOf(it.two[1]);
+    ART[it.id] = {
+      box: [40, 46, 150, 112],
+      ex(v) {
+        if (v === 'back')
+          return S('M47 94C45 66 66 52 92 52C118 52 139 66 137 94Q92 101 47 94Z', b, 'M108 54C126 60 139 72 137 94Q126 97 116 97C118 78 116 62 108 54Z') + P('M80 97Q80 86 92 86Q104 86 104 97Z', '#2b2b33', sw(2.4)) + L('M82 92L102 92', a, 2.6) + C(92, 53, 3.6, a);
+        return S('M47 92C45 66 66 52 92 52C118 52 139 66 137 92Q92 85 47 92Z', b, 'M108 54C126 60 139 72 137 92Q126 89 116 88C118 72 116 62 108 54Z') + S('M70 88Q68 66 80 56Q92 52 104 56Q116 66 114 88Q92 85 70 88Z', a) +
+          S('M42 90Q92 82 146 92Q148 100 140 102Q92 96 46 100Q38 98 42 90Z', b, 'M46 98Q92 94 140 100Q146 99 146 96Q92 90 46 98Z') + C(92, 53, 3.6, a, sw(2.2)) + P(star8(92, 72, 6), '#fff3b0', sw(1.4));
+      },
+    };
+  });
+  // (v2.12.0) sling bags: a strap across the body to a little pouch at the hip, in two colours
+  ITEMS.filter((it) => it.two && it.two[0] === 'sling-bag').forEach((it) => {
+    const [, a, b] = twoOf(it.two[1]);
+    ART[it.id] = {
+      box: [58, 150, 132, 236],
+      ex(v) {
+        const pouch = (x) => S(rr(x - 15, 210, 30, 20, 8), a) + S(rr(x - 15, 210, 30, 8, 4), b) + L('M' + (x - 9) + ' 222L' + (x + 9) + ' 222', b, 2) + P(rr(x - 3, 216, 6, 4, 1.5), GOLD, sw(1.2));
+        return v === 'back' ? DL('M114 158L72 214', b, 5) + pouch(70) : DL('M72 158L112 214', b, 5) + pouch(114);
+      },
+      // (its icon: the strap as a loop over the pouch, so it reads as a bag)
+      ic: () => DL('M78 216Q70 160 92 156Q114 160 106 216', b, 5) + S(rr(70, 206, 44, 30, 11), a) + S(rr(70, 206, 44, 12, 6), b) + L('M80 224L104 224', b, 2.4) + P(rr(88, 214, 8, 6, 2), GOLD, sw(1.4)),
+    };
+  });
+  // Al-Kahf: a crook staff with a lantern hanging from it, glowing
+  ART['cave-lantern-staff'] = {
+    box: [30, 100, 94, 292],
+    rot: 28,
+    fs: 104,
+    fx: [[72, 150], [40, 240]],
+    ex() {
+      const wd = '#8a5a35';
+      return S(limb(46, 132, 46, 287, 3.8, 3.2), wd) + L('M43 160L49 168M43 190L49 198M43 220L49 228M43 250L49 258', dk(wd, 0.3), 1.6) + DL('M46 136Q46 112 62 112Q74 114 72 128', wd, 4.4) +
+        L('M72 128L72 136', INK, 2) + G(G(EF(72, 150, 20, 20, '#ffe27a', 0.35), cls('pr-glow')) + S('M62 140Q72 132 82 140Z', GOLD) + S(rr(63, 140, 18, 21, 5), '#fff3b0') +
+        F('M72 158Q66 152 70 146Q72 150 74 146Q78 152 72 158Z', '#ff9f1c') + L('M69 141L69 160M75 141L75 160', GOLD, 1.6) + S(rr(62, 160, 20, 4.6, 2), GOLD), ' transform="translate(72 134) scale(1.35) translate(-72 -134)"') + EF(46, 288, 2.6, 1.6, INK);
+    },
+  };
+  // Al-Wāqiʿah: an open shell on the back, a pearl glowing inside (from the front: its straps)
+  ART['pearl-shell-pack'] = {
+    box: [56, 160, 128, 250],
+    fx: [[92, 168]],
+    ex(v) {
+      const c = '#ffc8dd',
+        st = '#e889ad';
+      if (v !== 'back') return DL('M73 155L75 212', st, 5) + DL('M111 155L109 212', st, 5) + ball(75, 199, 3.4, 3.4, '#ffffff', { sh: false }) + ball(109, 199, 3.4, 3.4, '#ffffff', { sh: false });
+      return L('M84 166Q92 156 100 166', INK, 3.4) + S('M66 214Q68 180 92 174Q116 180 118 214Q92 204 66 214Z', '#f9b3cf') + L('M92 176L92 206M80 180L86 206M104 180L98 206M70 192L80 208M114 192L104 208', st, 1.6) +
+        G(EF(92, 214, 17, 15, '#fff6fb', 0.6), cls('pr-glow')) + ball(92, 213, 10, 10, '#ffffff', { shc: '#e8e0f0' }) +
+        S('M60 218Q92 210 124 218Q124 244 92 248Q60 244 60 218Z', c, 'M110 214Q124 218 124 224Q122 244 92 248Q114 236 110 214Z') + L('M92 248L92 222M80 246L76 220M104 246L108 220M70 240L64 222M114 240L120 222', st, 1.6);
+    },
+  };
+  // Al-Mulk: a sky falcon, its wings the night sky (“the birds above them, spreading their wings”)
+  PET['sky-falcon'] = {
+    box: [-46, -86, 46, 3],
+    aura: [0, -40, 48, 48],
+    d() {
+      const b = '#3b4fb8',
+        g = GOLD,
+        wg = S('M-12 -44C-30 -48 -44 -32 -40 -10C-34 -14 -28 -12 -24 -16C-22 -10 -16 -12 -14 -16Z', '#2a3a90', null, 'M-30 -42Q-38 -36 -38 -26Q-34 -34 -28 -40Z') +
+          [[-30, -30, 2.8], [-24, -40, 2.2], [-35, -20, 2.4], [-20, -24, 1.8]].map(([x, y, r]) => F(star4(x, y, r), '#fff3b0')).join('');
+      return G(G(wg, cls('lhq-wing-l')) + G(G(wg, cls('lhq-wing-l')), ' transform="scale(-1 1)"')) +
+        P('M-12 -3Q-8 -9 -4 -3Q-6 0 -8 0Q-10 0 -12 -3Z', g, sw(2)) + P('M12 -3Q8 -9 4 -3Q6 0 8 0Q10 0 12 -3Z', g, sw(2)) +
+        ball(0, -25, 17, 21, b) + EF(0, -19, 10, 12.5, '#cfd8ff') + L('M-6 -24Q-3 -21 0 -24Q3 -21 6 -24M-5 -16Q-2.5 -13 0 -16Q2.5 -13 5 -16', '#8fa0e8', 1.6) +
+        S('M-3 -63Q-6 -74 0 -78Q3 -71 1 -63Z', g) + S('M4 -62Q6 -72 12 -73Q11 -66 6 -61Z', g) + S('M-6 -61Q-12 -70 -10 -75Q-5 -69 -3 -62Z', g) +
+        ball(0, -50, 15, 14, b) + G(cuteEyes(-6, -52, 6, -52, 3.3), cls('lhq-blink')) + shut([[-6, -52], [6, -52]], 3.3) + L('M-12 -58Q-7 -60 -3 -58M3 -58Q7 -60 12 -58', '#fff3b0', 1.6) +
+        cheeks(-10, -45, 10, -45, 3) + S('M-5.4 -47Q0 -50.4 5.4 -47Q5.6 -40 0 -36Q-5.6 -40 -5.4 -47Z', '#ffc23d') + F(star4(-30, -70, 4), '#fff3b0') + F(star4(30, -62, 3.4), '#fff3b0');
+    },
+  };
+  // the whole Garden golden: a garden bike, a basket of pomegranates in front
+  PET['garden-bike'] = {
+    box: [-48, -58, 50, 3],
+    aura: [0, -26, 54, 36],
+    d() {
+      const f = '#1fa5a0',
+        wheel = (x) => C(x, -14, 13, 'none', sw(4.6)) + C(x, -14, 13, 'none', ' stroke="#3a3f52" stroke-width="2.4"') + L('M' + (x - 9) + ' -14L' + (x + 9) + ' -14M' + x + ' -23L' + x + ' -5M' + (x - 6.4) + ' -20.4L' + (x + 6.4) + ' -7.6M' + (x - 6.4) + ' -7.6L' + (x + 6.4) + ' -20.4', '#cfd2dc', 1.2) + CF(x, -14, 2.2, '#3a3f52');
+      return shadow(34) + wheel(-25) + wheel(25) + DL('M-25 -14L-6 -16L10 -36L-16 -36L-25 -14M-6 -16L-16 -36M10 -36L25 -14', f, 3.6) + DL('M-16 -36L-18 -42M10 -36L12 -46L18 -48', f, 3.2) +
+        S('M-26 -45Q-18 -48 -10 -45L-12 -42Q-18 -43 -24 -42Z', '#3a2f45') + L('M15 -49L22 -50', '#3a2f45', 3.6) + CF(-6, -16, 3, GOLD) +
+        S('M18 -44L38 -44L35 -30L21 -30Z', '#c98d4e', null, null) + L('M20 -40L36 -40M21 -35L35 -35', '#9a6a3a', 1.4) + [[23, -46], [30, -48], [36, -46]].map(([x, y]) => ball(x, y, 4, 4, '#d8344a', { hl: false })).join('') + S('M28 -52Q32 -58 37 -56Q33 -51 29 -51Z', '#5fae3a');
+    },
+  };
   Object.keys(PET).forEach((id) => (ART[id] = { pet: PET[id], box: PET[id].box, aura: PET[id].aura }));
 
   /* ---------- tier effects on the explorer ---------- */
   const PETFX = { 'butterfly-buddy': [[-34, -88], [36, -70]], 'camel-buddy': [[8, -66], [30, -50], [-40, -72]], 'eagle-buddy': [[-30, -56], [32, -46], [0, -84], [-20, -8]] };
+  PETFX['sky-falcon'] = [[-34, -80], [36, -60], [0, -88]]; // (v2.12.0: the Hidden Garden's)
+  PETFX['garden-bike'] = [[-40, -48], [44, -56]];
   function fxm(tier, spots, k) {
     if (!spots || !spots.length || tier < 2) return '';
     k = k || 1;
@@ -2089,6 +2276,10 @@
     stitch: (c) => '<path d="M0 5H16M0 13H16" stroke="' + c + '" stroke-width="1.6" stroke-dasharray="3.2 2.4" fill="none"/>',
     checks: (c) => '<rect x="0" y="0" width="8" height="8" fill="' + c + '"/><rect x="8" y="8" width="8" height="8" fill="' + c + '"/>',
     zigzag: (c) => '<path d="M0 10L4 5L8 10L12 5L16 10" stroke="' + c + '" stroke-width="2.2" fill="none"/>',
+    // (v2.12.0) the Hidden Garden's own
+    mosaic: (c) => '<path d="' + star8(8, 8, 6.2, 4.6) + '" fill="' + c + '"/>',
+    vines: (c) => '<path d="M0 12Q4 6 8 12T16 12" stroke="' + c + '" stroke-width="1.8" fill="none"/><ellipse cx="4" cy="6.4" rx="2.6" ry="1.4" fill="' + c + '" transform="rotate(-30 4 6.4)"/><ellipse cx="12" cy="16.4" rx="2.6" ry="1.4" fill="' + c + '" transform="rotate(30 12 16.4)"/>',
+    rosette: (c) => [[8, 4.6], [11.4, 8], [8, 11.4], [4.6, 8]].map(([x, y]) => '<circle cx="' + x + '" cy="' + y + '" r="2.2" fill="' + c + '"/>').join('') + '<circle cx="8" cy="8" r="1.4" fill="' + c + '"/>',
   };
   function patterned(out, pat) {
     if (typeof out !== 'string' || !/<(path|ellipse|circle|rect|polygon)\b/.test(out)) return out;
@@ -2822,6 +3013,23 @@
     g += fruits
       .map((q, j) => '<g class="tfruit" data-act="tfruit" data-j="' + j + '" data-t="' + q.t + '" style="--dy:' + n(612 - q.y) + 'px"><circle cx="' + q.x + '" cy="' + q.y + '" r="13" fill="transparent" stroke="none"/>' + G(L('M' + q.x + ' ' + (q.y - 9) + 'L' + q.x + ' ' + (q.y - 4), '#6a4a2a', 1.4) + OUT(FRUIT[q.t](q.x, q.y), 1.4), ' transform="translate(' + q.x + ' ' + q.y + ') scale(' + q.k + ') translate(' + -q.x + ' ' + -q.y + ')"') + '</g>')
       .join('');
+    // (v2.12.0) the Hidden Garden's lanterns, one for each of its stops: dark until the stop is memorized, lit then,
+    // golden with every star. They hang from the lowest leafy branches, spread out (or, while the tree is too young
+    // for that, on a line between two little posts in front of it)
+    const LN = o.lanterns || [];
+    let posts = '';
+    if (LN.length) {
+      const low = area.filter((b) => b[1] < GY - 80).map((b) => [n(b[0]), n(b[1] + b[2] * 0.45)]).sort((p2, q2) => q2[1] - p2[1]);
+      const pick = [];
+      for (const p2 of low) if (pick.length < LN.length && pick.every((q2) => Math.hypot(q2[0] - p2[0], q2[1] - p2[1]) > 44)) pick.push(p2);
+      if (pick.length >= LN.length) g += pick.sort((p2, q2) => p2[0] - q2[0]).map((p2, j) => L('M' + p2[0] + ' ' + (p2[1] - 18) + 'L' + p2[0] + ' ' + (p2[1] - 7), '#6a4a2a', 1.4) + treeLantern(p2[0], p2[1], LN[j])).join('');
+      else {
+        const x0 = 116, x1 = 284, yT = GY - 96, sag = 26,
+          at = (f) => [n(x0 + (x1 - x0) * f), n(yT + 4 * sag * f * (1 - f))];
+        posts = S(rr(x0 - 3, yT - 4, 6, GY - yT + 6, 2), '#9a6a40') + S(rr(x1 - 3, yT - 4, 6, GY - yT + 6, 2), '#9a6a40') + CF(x0, yT - 4, 3.4, GOLD) + CF(x1, yT - 4, 3.4, GOLD) +
+          L('M' + x0 + ' ' + yT + 'Q200 ' + n(yT + 2 * sag) + ' ' + x1 + ' ' + yT, '#6a4a2a', 1.6) + LN.map((v, j) => { const q = at((j + 0.5) / LN.length); return L('M' + q[0] + ' ' + q[1] + 'L' + q[0] + ' ' + (q[1] + 6), '#6a4a2a', 1.4) + treeLantern(q[0], q[1] + 13, v); }).join('');
+      }
+    }
     // where a leaf may fall from now and then: points in the crown (none on a young plant)
     const drop = area.slice(0, 40).map((b) => [n(b[0]), n(b[1])]);
     // the sapling's mound of earth (in front of its foot: the stem grows out of it), smaller as the trunk thickens,
@@ -2857,9 +3065,29 @@
     // tree, front (the mound; the screen adds the buddies and tufts there)
     const back = treeSky(o.night, o.seed) + treeFar(o.night) + groundN + OUT(meadow, 1.4),
       tree = OUT(g, 2),
-      front = nightTint(OUT(mound, 2), o.night);
+      front = nightTint(OUT(mound, 2), o.night) + (posts ? OUT(posts, 1.6) : '');
     return { back, tree, front, svg: back + '<g class="tgustw"><g class="tsway">' + tree + '</g></g>' + front, tufts, fruits, lobes: li, drop };
   }
+
+  // a little lantern for My Tree (centred at x, y): 0 dark, 1 lit, 2 golden (v2.12.0)
+  function treeLantern(x, y, v) {
+    const frame = v === 2 ? GOLD : '#c9a25a',
+      glass = v ? '#fff3b0' : '#5d6a8c';
+    return (v ? G(EF(x, y, 16, 16, v === 2 ? '#ffd84d' : '#ffe27a', 0.4), cls('pr-glow')) : '') + S('M' + (x - 6) + ' ' + (y - 8) + 'Q' + x + ' ' + (y - 15) + ' ' + (x + 6) + ' ' + (y - 8) + 'Z', frame) +
+      S(rr(x - 6, y - 8, 12, 15, 3.5), glass) + (v ? F('M' + x + ' ' + (y + 4) + 'Q' + (x - 3.6) + ' ' + y + ' ' + (x - 0.6) + ' ' + (y - 4) + 'Q' + x + ' ' + (y - 1) + ' ' + (x + 1.4) + ' ' + (y - 4) + 'Q' + (x + 3.6) + ' ' + y + ' ' + x + ' ' + (y + 4) + 'Z', '#ff9f1c') : '') +
+      L('M' + (x - 2) + ' ' + (y - 7) + 'L' + (x - 2) + ' ' + (y + 6) + 'M' + (x + 2) + ' ' + (y - 7) + 'L' + (x + 2) + ' ' + (y + 6), frame, 1.2) + S(rr(x - 7, y + 6, 14, 3.6, 1.6), frame) +
+      (v === 2 ? F(star4(x + 10, y - 10, 3.4), '#fff') : '');
+  }
+
+  // the Hidden Garden's gate (100×110): an arch in a garden wall, roses either side, a lantern; back: the door open
+  function gardenGate(back) {
+    const door = back ? F('M30 104L30 56Q30 32 50 28Q70 32 70 56L70 104Z', '#ffe9b0') + F('M30 104L30 56Q30 32 50 28L50 104Z', '#2fb89a', 0.25) + L('M50 104L50 70M42 92L50 84L58 92', '#e0a21f', 3) :
+      F('M30 104L30 56Q30 32 50 28Q70 32 70 56L70 104Z', '#2fb89a') + L('M50 104L50 40', dk('#2fb89a', 0.3), 2) + CF(44, 76, 2.6, GOLD) + CF(56, 76, 2.6, GOLD) + P(star8(50, 52, 7), '#ffd23f', sw(1.2));
+    return svg100x('0 0 100 110', OUT(S('M14 106L14 48Q14 12 50 8Q86 12 86 48L86 106Z', '#f5e6c8', 'M70 14Q86 22 86 48L86 106L76 106L76 48Q76 26 70 14Z') + door + P('M30 104L30 56Q30 32 50 28Q70 32 70 56L70 104', 'none') +
+      L('M50 8L50 16', INK, 2) + S('M44 18Q50 12 56 18Z', GOLD) + S(rr(45, 18, 10, 12, 3), '#fff3b0') + S(cloudD(14, 108, 24, 18, 3), '#4fb06a') + S(cloudD(86, 108, 24, 18, 3), '#4fb06a') +
+      [[6, 98], [16, 94], [84, 96], [94, 100], [10, 104]].map(([x, y]) => CF(x, y, 3, '#ff5d7a')).join('')));
+  }
+  const svg100x = (vb, inner) => '<svg class="lhq-art" viewBox="' + vb + '" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' + inner + '</svg>';
 
   /* A campfire beside each memorized sūrah on the map (viewBox 0 0 60 60, standing on y=54). It burns down over
      three weeks until the sūrah is practised: 5 roaring (a big fire, side flames, sparks), 4 strong, 3 steady,
@@ -3134,6 +3362,8 @@
      and ground, its emblem in the middle, a gold rim and the world's number on a ribbon. */
   const WORLD_BADGE_NAMES = ['First Steps', 'Little Treasures', 'Shining Sands', 'Sun & Moon', 'Starry Path', 'Sky Kingdom', 'The Great Climb'];
   WORLD_BADGE_NAMES.forEach((nm, wi) => BADGES.push({ id: 'world' + (wi + 1), name: nm, world: wi + 1, badge: true }));
+  BADGES.push({ id: 'world8', name: 'The Hidden Garden', world: 8, badge: true }); // (v2.12.0)
+  const GARDEN_PAL = { sky: ['#ffe2a8', '#d9f5e4'], ground: ['#9fe08a', '#4fb06a'], accent: '#2fb89a' };
   const CREST = 'M50 8L84 20Q86 60 50 92Q14 60 16 20Z',
     CREST_IN = 'M50 15.5L77.4 25.4Q78 57.6 50 83.6Q22 57.6 22.6 25.4Z';
   const WORLD_EMBLEM = [
@@ -3144,10 +3374,14 @@
     () => S(crescent(46, 52, 32, 32, -20, 14), '#ffe27a') + face2(34, 58, 2.6) + P(star5(76, 30, 9), '#fff3b0', sw(2)) + P(star5(80, 62, 6), '#fff3b0', sw(2)) + F(star4(60, 16, 6), '#fff'),
     () => propSticker('sky-balloon')(),
     () => propSticker('peak-summit')(),
+    // the Hidden Garden: its arched gate, a lantern hanging in it, roses either side
+    () => S('M18 94L18 46Q18 14 50 10Q82 14 82 46L82 94Z', '#f5e6c8', 'M66 14Q82 22 82 46L82 94L72 94L72 46Q72 26 66 14Z') + F('M28 94L28 50Q28 26 50 22Q72 26 72 50L72 94Z', '#7fd0a8') + P('M28 94L28 50Q28 26 50 22Q72 26 72 50L72 94', 'none') +
+      L('M50 22L50 36', INK, 2) + S('M43 40Q50 33 57 40Z', GOLD) + S(rr(44, 40, 12, 15, 4), '#fff3b0') + F('M50 52Q46 48 49 44Q50 47 51 44Q54 48 50 52Z', '#ff9f1c') + S(rr(43, 55, 14, 3.6, 1.8), GOLD) +
+      S(cloudD(14, 94, 26, 18, 3), '#4fb06a') + S(cloudD(86, 94, 26, 18, 3), '#4fb06a') + [[8, 84], [18, 80], [82, 82], [92, 86]].map(([x, y]) => CF(x, y, 3, '#ff5d7a')).join(''),
   ];
   const EMBLEM_AT = { 6: ' transform="translate(28.5 21) scale(.43)"' }; // (the summit is wide: smaller, so it stays inside the crest)
   const worldBadgeArt = (wi) => {
-    const w = WORLDS[wi];
+    const w = WORLDS[wi] || GARDEN_PAL;
     return S(CREST, GOLD, 'M50 8L84 20Q86 60 50 92Q72 60 72 22Z', 'M22 24L48 14L24 30Z') +
       F(CREST_IN, w.sky[1]) + F('M50 15.5L77.4 25.4Q77.6 34 76.6 40Q50 30 23.4 40Q22.4 34 22.6 25.4Z', w.sky[0]) + F('M23.4 56Q50 44 76.6 56Q72 70 50 83.6Q28 70 23.4 56Z', w.ground[1]) + F('M28 64Q50 54 72 64Q66 74 50 83.6Q34 74 28 64Z', w.ground[0], 0.7) + P(CREST_IN, 'none', sw(2)) +
       G(WORLD_EMBLEM[wi](), EMBLEM_AT[wi] || ' transform="translate(24.5 19) scale(.51)"') +
@@ -3191,6 +3425,53 @@
   STK.forEach((s) => (STKBY[s[0]] = s[2]));
   BADGES.forEach((b) => (STKBY[b.id] = b.world ? () => worldBadgeArt(b.world - 1) : () => badgeArt(b.stars, b.c)));
   SEASONS.forEach((x) => (STKBY[x.id] = x.year ? () => yearArt(x.kind, x.year) : SEASON_ART[x.id]));
+  /* ---------- the Hidden Garden's stickers (v2.12.0): its journal, riddles and surprises (with gold and shimmer editions) ---------- */
+  const GARDEN_STK = [
+    ['g-pomegranate', 'Pomegranate', () => ball(50, 58, 32, 30, '#d8344a') + S('M40 30L42 18L48 26L52 16L56 26L60 18L62 30Q50 34 40 30Z', '#b8283c') + S('M56 22Q66 10 78 14Q70 24 58 26Z', '#5fd27a') + face2(50, 60, 3)],
+    ['g-fig', 'Fig', () => L('M50 14Q50 8 55 5', '#7a5230', 3) + S('M50 14Q58 30 72 44Q86 62 76 80Q66 94 50 94Q34 94 24 80Q14 62 28 44Q42 30 50 14Z', '#8a4f9c', 'M72 44Q86 62 76 80Q66 94 50 94Q70 80 70 50Z') + S('M52 14Q66 6 76 14Q66 22 54 18Z', '#5fae3a') + face2(50, 66, 3)],
+    ['g-olive', 'Olive branch', () => L('M14 86Q44 60 88 16', '#7a6a3a', 3.6) + [[28, 70, -50], [40, 58, 20], [52, 48, -60], [62, 38, 10], [74, 28, -55], [84, 22, 30], [36, 74, 40], [58, 52, 60]].map(([x, y, a]) => E(x, y, 4, 11, '#9cb86a', ' transform="rotate(' + a + ' ' + x + ' ' + y + ')"')).join('') +
+      [[46, 66], [68, 44], [30, 84]].map(([x, y], i) => ball(x, y, 6, 7.4, i % 2 ? '#7a8c3a' : '#4a5b2a')).join('')],
+    ['g-grapes', 'Grapes', () => L('M50 8Q48 16 52 22', '#7a5230', 3.4) + S('M52 20Q66 8 80 14Q72 26 56 26Z', '#5fae3a') + [[38, 32], [52, 30], [66, 32], [32, 46], [46, 46], [60, 46], [74, 46], [40, 60], [54, 60], [68, 60], [46, 74], [60, 74], [52, 87]].map(([x, y]) => ball(x, y, 8, 8, '#8f5fc4', { hlo: 0.5 })).join('')],
+    ['g-rose', 'Rose', () => L('M50 56Q48 76 52 96', '#45b45e', 4.4) + S('M50 76Q32 66 24 74Q36 86 50 80Z', '#5fd27a') + S('M52 70Q68 58 78 64Q68 76 52 74Z', '#4caf50') + ball(50, 36, 24, 22, '#ff5d7a') +
+      L('M50 30Q58 28 58 36Q56 44 48 42Q40 40 42 32Q46 22 58 24Q68 28 66 40', '#c9364e', 2.4) + L('M30 40Q34 54 50 56Q66 54 70 40', '#c9364e', 2)],
+    ['g-jasmine', 'Jasmine', () => L('M20 88Q40 64 50 40M50 40Q56 30 70 26M50 40Q42 30 28 30', '#45b45e', 3) + [[30, 30, 12], [70, 26, 13], [50, 52, 12]].map(([x, y, r]) =>
+      [0, 72, 144, 216, 288].map((a) => E(x, y - r * 0.55, r * 0.34, r * 0.6, '#ffffff', ' transform="rotate(' + a + ' ' + x + ' ' + y + ')"')).join('') + CF(x, y, r * 0.18, '#ffd23f')).join('') + S('M30 76Q20 68 26 60Q34 66 34 76Z', '#5fd27a')],
+    ['g-lily', 'Water lily', () => S('M8 72Q8 56 50 54Q92 56 92 72Q92 88 50 90Q8 88 8 72Z', '#4caf50', 'M92 72Q92 88 50 90Q76 84 86 66Z') + P('M50 72L64 56', 'none') +
+      [[-50, '#ffb3d1'], [-25, '#ff8fbf'], [0, '#ffb3d1'], [25, '#ff8fbf'], [50, '#ffb3d1']].map(([a, c]) => P('M50 66Q40 46 50 26Q60 46 50 66Z', c, ' transform="rotate(' + a + ' 50 66)"')).join('') + ball(50, 62, 6, 5, '#ffd23f')],
+    ['g-fountain', 'Fountain', () => L('M50 30Q30 30 22 50M50 30Q70 30 78 50M50 22Q40 10 30 16M50 22Q60 10 70 16', '#7fd8ff', 3.4) + S('M10 70Q10 62 50 62Q90 62 90 70L84 88Q50 94 16 88Z', '#cfd8e8', 'M84 70L84 88Q50 94 16 88Q60 86 84 70Z') + F('M16 68Q50 62 84 68Q50 74 16 68Z', '#7fd8ff') +
+      S(rr(44, 38, 12, 26, 3), '#e6e1ec') + S('M30 38Q50 46 70 38L66 32Q50 36 34 32Z', '#cfd8e8') + CF(50, 26, 4, '#bfefff')],
+    ['g-tile', 'Star tile', () => S(rr(14, 14, 72, 72, 6), '#1f6fb0') + P(star8(50, 50, 30), '#ffffff', sw(2)) + P(star8(50, 50, 18), '#2fb8a8', sw(1.8)) + CF(50, 50, 6, '#ffd23f') + [[22, 22], [78, 22], [22, 78], [78, 78]].map(([x, y]) => P(star4(x, y, 5), '#ffd23f', sw(1.2))).join('')],
+    ['g-arch', 'Garden arch', () => S('M14 94L14 46Q14 12 50 8Q86 12 86 46L86 94Z', '#f5e6c8', 'M70 12Q86 22 86 46L86 94L76 94L76 46Q76 24 70 12Z') + F('M26 94L26 50Q26 24 50 20Q74 24 74 50L74 94Z', '#2fb89a') + P('M26 94L26 50Q26 24 50 20Q74 24 74 50L74 94', 'none') +
+      L('M50 60L50 94', dk('#2fb89a', 0.3), 2) + CF(44, 76, 2.4, GOLD) + CF(56, 76, 2.4, GOLD) + [[18, 30], [14, 56], [82, 34], [86, 60], [50, 8]].map(([x, y]) => ball(x, y, 5.4, 5.4, '#ff5d7a', { hl: false })).join('')],
+    ['g-lamp', 'Garden lamp', () => L('M50 4L50 16', INK, 2.4) + S('M34 28Q50 12 66 28Z', '#e0a21f') + G(EF(50, 50, 30, 30, '#ffe27a', 0.35), '') + S('M32 28L68 28L72 68L28 68Z', '#ffd36b', 'M60 28L68 28L72 68L62 68Z') +
+      [[42, 44], [58, 44], [50, 58]].map(([x, y]) => P(star8(x, y, 5), '#fff6c8', sw(1.2))).join('') + S('M26 68L74 68L66 80L34 80Z', '#e0a21f') + L('M50 80L50 92', INK, 2.4) + CF(50, 94, 3, '#e0a21f')],
+    ['g-peacock', 'Peacock', () => [-70, -45, -20, 5, 30, 55, 80].map((a) => G(L('M50 70L50 18', '#3f9a52', 2) + E(50, 16, 8, 11, '#2fb8a8') + E(50, 17, 4.4, 6, '#1f6fb0') + CF(50, 18, 2.2, '#ffd23f'), ' transform="rotate(' + a + ' 50 70)"')).join('') +
+      ball(50, 70, 12, 18, '#1f6fb0') + ball(50, 48, 9, 9, '#1f6fb0') + L('M48 39L46 32M52 39L54 32', INK, 1.6) + CF(46, 31, 2, '#2fb8a8') + CF(54, 31, 2, '#2fb8a8') + P('M56 49L63 51L56 53Z', '#ffb23d') + cuteEyes(48, 47, 48, 47, 2) + L('M44 86L42 94M56 86L58 94', '#ffb23d', 2.4)],
+    ['g-songbird', 'Songbird', () => L('M10 78Q50 70 92 76', '#8a5a35', 4) + S('M80 52Q94 46 96 56Q88 58 84 60Z', '#c9834a') + S('M24 60Q22 36 48 32Q70 30 80 48Q82 66 60 72Q34 76 24 60Z', '#e8a26a', 'M80 48Q82 66 60 72Q74 60 72 44Z') + EF(46, 60, 14, 9, '#fff3df') +
+      S('M44 46Q60 40 70 52Q58 60 44 54Z', '#c9834a') + P('M24 42L12 44L24 48Z', '#ffd23f') + cuteEyes(32, 42, 32, 42, 2.6) + EF(36, 50, 3.4, 2, '#ff8fa3', 0.6) + L('M44 74L42 80M56 72L56 79', '#ffb23d', 2.2) + P('M4 22C4 16 12 16 12 22C12 16 20 16 20 22C20 28 12 32 12 34C12 32 4 28 4 22Z', '#ff5d7a', sw(1.6))],
+    ['g-koi', 'Koi fish', () => C(50, 50, 40, '#9fe0f0', sw(2.4)) + G(S('M50 18Q66 30 64 50Q62 70 50 78Q38 70 36 50Q34 30 50 18Z', '#ffffff') + F('M50 18Q60 24 62 36Q52 40 44 30Q46 22 50 18Z', '#ff7a2b') + F('M40 52Q50 46 60 56Q54 64 44 62Z', '#ff7a2b') + S('M50 76Q40 88 44 94Q50 86 56 94Q60 88 50 76Z', '#ff9a52') + E(40, 44, 6, 3, '#ffffff', ' transform="rotate(30 40 44)"') + E(60, 44, 6, 3, '#ffffff', ' transform="rotate(-30 60 44)"') + CF(45, 28, 1.6, INK) + CF(55, 28, 1.6, INK), ' transform="rotate(20 50 50)"') + C(24, 30, 3, 'none', sw(1.6)) + C(78, 72, 2.4, 'none', sw(1.6))],
+    ['g-ewer', 'Water jug', () => L('M66 34Q88 30 86 52Q84 66 70 66', '#b8834a', 4.6) + S('M30 38Q46 32 50 22Q20 20 8 30Q18 34 30 38Z', '#e0a21f') + S('M34 30L66 30Q70 48 74 60Q78 84 50 90Q22 84 26 60Q30 48 34 30Z', '#2fb8a8', 'M66 30Q70 48 74 60Q78 84 50 90Q68 74 62 30Z') +
+      S(rr(36, 22, 28, 9, 4), '#e0a21f') + ball(50, 18, 5, 5, '#e0a21f') + L('M30 56Q50 64 70 56', '#ffd23f', 2.4) + P(star8(50, 72, 6), '#ffd23f', sw(1.2))],
+    ['g-pearl', 'Pearl shell', () => S('M14 52Q16 18 50 12Q84 18 86 52Q50 42 14 52Z', '#ffc8dd') + L('M50 14L50 44M34 18L40 46M66 18L60 46M22 32L30 48M78 32L70 48', '#e889ad', 1.8) + G(EF(50, 56, 18, 18, '#fff6fb', 0.55), '') + ball(50, 56, 12, 12, '#ffffff', { shc: '#e8e0f0' }) +
+      S('M10 56Q50 48 90 56Q86 86 50 92Q14 86 10 56Z', '#ffb3cf', 'M74 54Q90 56 88 64Q82 86 50 92Q76 74 74 54Z') + L('M50 92L50 62M34 90L28 60M66 90L72 60', '#e889ad', 1.8)],
+    ['g-honeycomb', 'Honeycomb', () => [[30, 30], [50, 30], [70, 30], [40, 47], [60, 47], [80, 47], [20, 47], [30, 64], [50, 64], [70, 64], [40, 81], [60, 81]].map(([x, y]) => S('M' + (x - 10) + ' ' + y + 'L' + (x - 5) + ' ' + (y - 9) + 'L' + (x + 5) + ' ' + (y - 9) + 'L' + (x + 10) + ' ' + y + 'L' + (x + 5) + ' ' + (y + 9) + 'L' + (x - 5) + ' ' + (y + 9) + 'Z', '#ffc83d', null, null)).join('') + F('M64 88Q66 96 64 98Q60 96 62 88Z', '#ffb23d') + face2(50, 64, 2.6)],
+    ['g-dragonfly', 'Dragonfly', () => [[-1, -30], [-1, 20], [1, -30], [1, 20]].map(([sx, a]) => E(50 + sx * 20, 40 + (a > 0 ? 12 : 0), 20, 7, '#bfefff', ' opacity=".9" transform="rotate(' + sx * a + ' ' + (50 + sx * 20) + ' ' + (40 + (a > 0 ? 12 : 0)) + ')"')).join('') +
+      S(limb(50, 40, 50, 92, 5, 2.6), '#2fb8a8') + L('M45 56L55 56M45 66L55 66M46 76L54 76', '#1f8f8a', 1.6) + ball(50, 32, 9, 8, '#2fb8a8') + cuteEyes(46, 31, 54, 31, 2)],
+    ['g-wateringcan', 'Watering can', () => L('M66 40Q72 22 58 18Q44 16 40 34', '#3f9a52', 5) + S(limb(26, 56, 8, 30, 4, 3), '#5fd27a') + S('M24 44L74 44L80 86Q50 94 20 86Z', '#5fd27a', 'M64 44L74 44L80 86Q70 89 62 90Q68 66 64 44Z') +
+      [[6, 22], [2, 34], [12, 16], [10, 40]].map(([x, y]) => P('M' + x + ' ' + (y - 4) + 'Q' + (x + 3) + ' ' + y + ' ' + x + ' ' + (y + 3) + 'Q' + (x - 3) + ' ' + y + ' ' + x + ' ' + (y - 4) + 'Z', '#7fd8ff', sw(1.2))).join('') + face2(50, 64, 2.8)],
+    ['g-bench', 'Garden bench', () => S(rr(12, 30, 76, 10, 3), '#c9834a') + S(rr(12, 44, 76, 10, 3), '#c9834a') + S(rr(8, 58, 84, 10, 3), '#b8693a') + L('M20 68L18 92M80 68L82 92M20 30L20 68M80 30L80 68', '#5a3a28', 4.4) + L('M18 80L82 80', '#5a3a28', 3)],
+    ['g-pavilion', 'Pavilion', () => S('M50 6Q54 12 52 16Q50 18 48 16Q46 12 50 6Z', GOLD) + S('M20 44Q20 18 50 16Q80 18 80 44Z', '#2fb8a8', 'M64 18Q80 24 80 44L68 44Q70 28 64 18Z') + S(rr(14, 42, 72, 8, 3), '#e0a21f') +
+      [22, 40, 60, 78].map((x) => S(rr(x - 3, 50, 6, 34, 2), '#f5e6c8')).join('') + S(rr(10, 84, 80, 8, 3), '#d9c49b') + P(star8(50, 32, 6), '#ffd23f', sw(1.2))],
+    ['g-lemon', 'Lemon', () => L('M30 18Q46 20 54 30', '#7a5230', 3) + S('M30 18Q20 4 8 8Q14 22 30 18Z', '#5fae3a') + S('M54 30Q78 24 88 46Q94 70 74 84Q50 96 30 82Q14 70 18 52Q24 30 54 30Z', '#ffe066', 'M88 46Q94 70 74 84Q60 92 46 90Q76 78 80 44Z', 'M30 52Q32 40 44 36Q34 44 34 56Z') + face2(54, 60, 3)],
+    ['g-birdhouse', 'Birdhouse', () => L('M50 64L50 96', '#8a5a35', 6) + S('M18 40L50 10L82 40Z', '#ff7a59') + S(rr(24, 38, 52, 32, 4), '#ffd27a', rr(62, 38, 14, 32, 4)) + C(50, 52, 9, '#5a3a28', sw(2.4)) + ball(50, 54, 7, 6, '#5fb2ff', { hl: false }) + cuteEyes(47, 52, 53, 52, 1.6) + L('M44 72L56 72', INK, 2.4) + CF(50, 64, 1.8, INK)],
+    ['g-key', 'Garden key', () => G(C(30, 30, 18, 'none', sw(8)) + C(30, 30, 18, 'none', ' stroke="' + GOLD + '" stroke-width="4.6"') + P(star8(30, 30, 9), '#2fb8a8', sw(1.4)) + DL('M43 43L82 82', GOLD, 7) + DL('M70 70L62 78M78 78L70 86', GOLD, 6), '') +
+      L('M14 46Q10 60 18 70', '#ff5d7a', 3) + CF(18, 72, 3.4, '#ff5d7a')],
+  ];
+  GARDEN_STK.forEach((x) => (STKBY[x[0]] = x[2]));
+  [['gold', 'Gold '], ['holo', 'Shimmer ']].forEach(([foil, nm]) => GARDEN_STK.slice().forEach((x) => (STKBY[foil + '-' + x[0]] = x[2])));
+  // in the sticker list too (garden: found only in the Garden; never Juz ʿAmma's surprises or bonus ones)
+  GARDEN_STK.forEach((x) => STICKERS.push({ id: x[0], name: x[1], fill: true, garden: true }));
+  [['gold', 'Gold '], ['holo', 'Shimmer ']].forEach(([foil, nm]) => GARDEN_STK.forEach((x) => STICKERS.push({ id: foil + '-' + x[0], name: nm + x[1].charAt(0).toLowerCase() + x[1].slice(1), fill: true, garden: true, foil, of: x[0] })));
   // a foil sticker's shining edge and a few still twinkles (v2.11.0)
   const FOIL_EDGE = { gold: 'url(#lhq-foil-gold)', holo: 'url(#lhq-foil-holo)' };
   const foilOf = (id) => (/^(gold|holo)-/.exec(id) || [])[1];
@@ -3200,7 +3481,7 @@
     if (!f) return '';
     const art = stillArt(OUT(f())),
       foil = foilOf(id);
-    return svg100('lhq-sticker', G(flat(art, INK, 12), ' opacity=".16" transform="translate(1.5 3)"') + flat(art, foil ? FOIL_EDGE[foil] : '#ffffff', foil ? 13 : 11) + art + (foil ? foilTw(foil) : ''), (STICKERS.find((s) => s.id === id) || BADGES.find((s) => s.id === id) || SEASONS.find((s) => s.id === id) || {}).name);
+    return svg100('lhq-sticker', G(flat(art, INK, 12), ' opacity=".16" transform="translate(1.5 3)"') + flat(art, foil ? FOIL_EDGE[foil] : '#ffffff', foil ? 13 : 11) + art + (foil ? foilTw(foil) : ''), (STICKERS.find((s) => s.id === id) || BADGES.find((s) => s.id === id) || SEASONS.find((s) => s.id === id) || { name: (GARDEN_STK.find((x) => x[0] === id.replace(/^(gold|holo)-/, '')) || [])[1] }).name);
   }
 
   /* ---------- gifts, hearts, markers, flags, frog, stepping stones ---------- */
@@ -3279,6 +3560,7 @@
     ['starry', 'Starry Path', ['#5f4fb0', '#e48fb2'], ['#7d66c2', '#4f3f8c'], ['#cbb8f4', '#9a84d6'], '#ffd84d'],
     ['sky', 'Sky Kingdom', ['#cfe8ff', '#b9a8f0'], ['#ffffff', '#d9e2ff'], ['#ffeaf6', '#efb3d4'], '#ff8fc8'],
     ['peak', 'The Great Climb', ['#92d0ff', '#d6ecff'], ['#f6fbff', '#c6dcf0'], ['#ffffff', '#a7c4e0'], '#4aa3ff'],
+    ['garden', 'The Hidden Garden', ['#ffe2a8', '#d9f5e4'], ['#9fe08a', '#4fb06a'], ['#f5e6c8', '#d9c49b'], '#2fb89a'], // (v2.12.0: World 8, through its gate by the summit)
   ].map((w) => ({ key: w[0], name: w[1], sky: w[2], ground: w[3], path: w[4], accent: w[5], dim: { sky: w[2].map(dimC), ground: w[3].map(dimC), path: w[4].map(dimC) } }));
 
   // Props: bottom-center anchored (the point (50, height) stands on the ground).
@@ -3405,10 +3687,28 @@
       S('M30 64Q24 50 30 42L40 46Q38 56 42 62Z', '#f6f3ee') + ball(32, 42, 10, 9, '#f6f3ee', { shc: '#d6d0c4' }) + L('M28 36Q22 24 30 20M36 34Q40 24 46 26', '#8a7a62', 3) + G(eye1(34, 40, 2.2), cls('lhq-blink')) + S('M26 48Q28 58 32 52Z', '#d6d0c4')),
     'peak-cabin': prop(100, shad(100, 44) + S(rr(16, 56, 68, 40, 2), '#a86b3c', 'M70 56L84 56L84 96L70 96Z') + L('M16 66L84 66M16 76L84 76M16 86L84 86', '#7a4a28', 2) + S('M8 60L50 26L92 60Z', '#ffffff', 'M50 26L92 60L76 60Q70 42 50 26Z') + S(rr(64, 30, 10, 18, 2), '#7a4a28') + '<g class="pr-smoke">' + CF(69, 22, 5, '#ffffff', 0.8) + CF(74, 12, 6.5, '#ffffff', 0.6) + '</g>' + glow(34, 78, 18, 14) + P(rr(26, 70, 16, 14, 2), '#ffe27a', sw(2)) + P('M56 96L56 78Q56 72 62 72Q68 72 68 78L68 96Z', '#5a3a28')),
   });
-  const WALKERS = ['meadow-sheep', 'meadow-rabbit', 'forest-fox', 'forest-deer', 'forest-squirrel', 'sands-crab', 'sands-turtle', 'canyon-camel', 'canyon-lizard', 'canyon-tumbleweed', 'peak-goat', 'peak-snowman'];
+  // (v2.12.0) the Hidden Garden's scenery: its stickers' pictures standing on the ground (they are its journal's finds too)
+  const gArt = (id) => (GARDEN_STK.find((x) => x[0] === id) || [])[2];
+  const gProp = (id, w, h, k) => prop(h || 100, shad(h || 100, w) + G(gArt(id)(), tf(50 - 50 * (k || 1), (h || 100) - 98 * (k || 1), k || 1)));
+  Object.assign(props, {
+    'garden-fountain': gProp('g-fountain', 36),
+    'garden-arch': gProp('g-arch', 34, 110, 1.08),
+    'garden-pavilion': gProp('g-pavilion', 42, 110, 1.1),
+    'garden-rose': prop(100, shad(100, 34) + crown(50, 94, 74, 44, '#4caf50', 6) + [[32, 70], [52, 60], [68, 74], [42, 84], [60, 86]].map((q) => ball(q[0], q[1], 5.4, 5.4, '#ff5d7a', { hlo: 0.5 })).join('')),
+    'garden-jasmine': gProp('g-jasmine', 22),
+    'garden-lily': prop(100, shad(100, 40) + EF(50, 86, 44, 11, '#5fb2ff') + E(50, 86, 44, 11, 'none') + G(gArt('g-lily')(), tf(20, 40, 0.6))),
+    'garden-peacock': gProp('g-peacock', 30),
+    'garden-bench': gProp('g-bench', 40, 100, 0.9),
+    'garden-birdhouse': gProp('g-birdhouse', 16, 110, 1.05),
+    'garden-songbird': gProp('g-songbird', 30),
+    'garden-pomtree': props['meadow-tree'].replace(/#ff5d6c/g, '#c9283c'),
+    'garden-palm': props['sands-palm'],
+    'garden-lamp': prop(150, shad(150, 16) + S(rr(47, 60, 6, 86, 2), '#5a4a3a') + S(rr(42, 140, 16, 6, 2), '#5a4a3a') + G(gArt('g-lamp')(), tf(26, 0, 0.48))),
+  });
+  const WALKERS = ['meadow-sheep', 'meadow-rabbit', 'forest-fox', 'forest-deer', 'forest-squirrel', 'sands-crab', 'sands-turtle', 'canyon-camel', 'canyon-lizard', 'canyon-tumbleweed', 'peak-goat', 'peak-snowman', 'garden-peacock'];
   // animals drawn facing left (their head or face on the left); the rest face right or straight ahead
   const FACE_LEFT = ['meadow-sheep', 'meadow-rabbit', 'forest-fox', 'forest-deer', 'forest-squirrel', 'canyon-camel', 'peak-goat'];
-  const LANDMARKS = ['meadow-windmill', 'forest-bigtree', 'sands-lighthouse', 'canyon-arch', 'starry-observatory', 'sky-castle', 'peak-cabin'];
+  const LANDMARKS = ['meadow-windmill', 'forest-bigtree', 'sands-lighthouse', 'canyon-arch', 'starry-observatory', 'sky-castle', 'peak-cabin', 'garden-arch'];
   props['peak-summit'] = '<svg class="lhq-art lhq-prop" viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' + OUT(
     EF(100, 154, 90, 6, INK, 0.12) + glow(110, 34, 50, 40) + S('M4 156L70 52Q86 30 104 46L120 62Q132 50 146 66L196 156Z', '#9aa6bf', 'M104 46L120 62Q132 50 146 66L196 156L130 156Q136 100 104 46Z', 'M24 132L62 72Q50 100 34 136Z') +
     S('M52 82L70 52Q86 30 104 46L120 62Q132 50 146 66L158 86Q146 80 136 88Q124 78 112 90Q98 76 86 88Q72 78 62 88Q56 82 52 82Z', '#ffffff', 'M104 46L120 62Q132 50 146 66L158 86Q146 80 136 88Q124 78 118 84Q120 64 104 46Z') +
@@ -3422,6 +3722,7 @@
     ['starry-mushroom', 'starry-crystal', 'starry-lantern', 'starry-moon', 'starry-owl', 'starry-star', 'starry-pond', 'starry-mushroom', 'starry-crystal'],
     ['sky-island', 'sky-rainbow', 'sky-kite', 'sky-rock', 'sky-balloon', 'sky-cloud', 'sky-airship', 'sky-cloud', 'sky-balloon'],
     ['peak-pine', 'peak-rock', 'peak-snowman', 'peak-crystal', 'peak-flag', 'peak-igloo', 'peak-goat', 'peak-pine', 'peak-summit'],
+    ['garden-pomtree', 'garden-rose', 'garden-fountain', 'garden-jasmine', 'garden-lily', 'garden-peacock', 'garden-bench', 'garden-birdhouse', 'garden-songbird', 'garden-palm', 'garden-lamp', 'garden-rose', 'garden-pomtree', 'garden-jasmine', 'garden-pavilion'],
   ];
 
   /* ---------- ambient layers: small, slow, low-contrast decorations over a world ---------- */
@@ -3444,7 +3745,7 @@
     flake: () => mini('-10 -10 20 20', L('M0 -8L0 8M-7 -4L7 4M-7 4L7 -4', '#ffffff', 2.2) + CF(0, 0, 2.4, '#ffffff')),
   };
   function ambient(w) {
-    w = Math.max(0, Math.min(6, w | 0));
+    w = Math.max(0, Math.min(7, w | 0));
     const r = rnd(w + 3),
       p = (a, b) => n(a + (b - a) * r());
     let h = '';
@@ -3476,6 +3777,11 @@
       across(AMB.cloud(), 120, 48, p(70, 82), 80, 'amb-still');
       across(AMB.bird('#ff8fc8'), 30, 22, p(26, 36), 32);
       across(AMB.bird('#ffd23f'), 26, 20, p(30, 40), 36);
+    } else if (key === 'garden') {
+      across(AMB.bfly('#ff8fcf'), 26, 26, p(30, 50), 38);
+      across(AMB.bfly('#7fe0c0'), 22, 22, p(55, 75), 46);
+      for (let i = 0; i < 5; i++) fall(AMB.leaf(['#ffb3d1', '#ffffff', '#ff8fbf'][i % 3]), 16, p(18, 26));
+      across(AMB.bird('#2fb89a'), 32, 22, p(14, 28), 32, 'amb-bob');
     } else {
       for (let i = 0; i < 12; i++) fall(AMB.flake(), p(9, 15), p(12, 20));
       across(AMB.hawk().replace(/#8a5a36/g, '#6b4a30'), 80, 32, p(10, 22), 50);
@@ -3559,6 +3865,8 @@
     else if (kind === 'blueberry') g = ball(13, 30, 7, 7, '#6b5bd6') + ball(27, 30, 7, 7, '#6b5bd6') + ball(20, 21, 7.4, 7.4, '#7a6be2') + L('M18 17L20 15L22 17', INK, 1.6);
     else if (kind === 'acorn') g = ball(20, 27, 9, 11, '#d9a05b') + S('M9 22Q9 12 20 12Q31 12 31 22Z', '#8a5a35') + L('M13 18L27 18M12 21L28 21', dk('#8a5a35', 0.3), 1.4) + L('M20 12L21 7', '#8a5a35', 3);
     else if (kind === 'pinecone') g = S('M20 6Q32 14 30 26Q28 38 20 38Q12 38 10 26Q8 14 20 6Z', '#a86b3c') + L('M12 18Q20 22 28 18M11 25Q20 30 29 25M13 32Q20 36 27 32M20 8L20 37', dk('#a86b3c', 0.35), 1.6);
+    else if (kind === 'pomegranate') g = ball(20, 26, 12, 11.4, '#c9283c') + S('M15 16L16 10L19 14L20 8L21 14L24 10L25 16Q20 18 15 16Z', '#a01f30'); // (v2.12.0: the Hidden Garden's)
+    else if (kind === 'date') g = L('M20 6L14 16M20 6L26 16', '#8a6a3a', 2) + ball(14, 26, 6, 10, '#9a4f2c', { hlo: 0.45 }) + ball(26, 26, 6, 10, '#9a4f2c', { hlo: 0.45 });
     else if (kind === 'coconut') g = ball(20, 26, 12, 11.4, '#8a5a35', { hl: false }) + CF(15, 21, 1.8, '#3a2463') + CF(20, 19, 1.8, '#3a2463') + CF(25, 21, 1.8, '#3a2463');
     else g = ball(20, 25, 10, 13, '#e0457b') + [[15, 20], [24, 18], [18, 29], [25, 30]].map((q) => CF(q[0], q[1], 1.2, '#ffd23f')).join('') + S('M14 13Q16 6 20 10Q24 6 26 13Z', '#4fb36b');
     return '<svg class="lhq-art lhq-fruit" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' + OUT(g, 2.6) + '</svg>';
@@ -3604,6 +3912,11 @@
       g = [[40, 20], [120, 34], [200, 14], [260, 40], [330, 22], [380, 44], [80, 50]].map((q, j) => '<path class="lhq-tw" d="' + star4(q[0], q[1], 4) + '" fill="#fff8d0" stroke="none" style="animation-delay:-' + j * 0.5 + 's"/>').join('') + F(crescent(330, 40, 14, 14, -7, 5), '#fff3b0') + hills(70, 10, 1.5, far('#4f3f8c'), 0.2) + hills(90, 6, 2.4, midc('#7d66c2'), 1);
     } else if (key === 'sky') {
       g = [[60, 70, 120], [210, 80, 150], [350, 66, 110], [130, 96, 160], [300, 100, 170]].map((c) => F(cloudD(c[0], c[1], c[2], c[2] * 0.3, 5), N(c[1] > 90 ? '#ffffff' : '#ffeaf6'), 0.95)).join('') + '<g class="pr-bob">' + G(OUT(props['sky-island'].replace(/^<svg[^>]*>|<\/svg>$/g, ''), 3 / 0.3), tf(260, 30, 0.3)) + '</g>';
+    } else if (key === 'garden') {
+      g = hills(74, 5, 1.4, far('#7fcf7a'), 0.4) + F('M250 80Q250 52 280 48Q310 52 310 80Z', far('#2fb89a')) + F('M276 50L280 40L284 50Z', far('#e0a21f')) + F(rr(246, 78, 68, 14, 2), far('#f5e6c8')) +
+        [20, 70, 120, 330, 380].map((x, j) => F('M' + x + ' 96Q' + (x - 9) + ' 70 ' + x + ' ' + (44 + (j % 2) * 8) + 'Q' + (x + 9) + ' 70 ' + x + ' 96Z', midc('#2f7a4a'))).join('') +
+        F('M0 92L400 92L400 120L0 120Z', N('#e6d3a8')) + [0, 1, 2, 3, 4, 5, 6, 7].map((k) => F('M' + (k * 52 + 8) + ' 120L' + (k * 52 + 8) + ' 104Q' + (k * 52 + 26) + ' 90 ' + (k * 52 + 44) + ' 104L' + (k * 52 + 44) + ' 120Z', N('#c9ad78'))).join('') +
+        hills(108, 3, 3, N('#9fe08a'), 0);
     } else {
       g = F('M0 100L60 44L100 70L170 20L230 66L290 34L350 70L400 50L400 120L0 120Z', far('#a7c4e0')) + F('M150 38L170 20L190 38L180 34L170 42L160 34Z', '#ffffff') + F('M272 50L290 34L306 48L296 46L290 52Z', '#ffffff') + hills(94, 5, 2, N('#f6fbff'), 0.3);
     }
@@ -3784,6 +4097,9 @@
    * ================================================================================================= */
   window.LHQ_ART = {
     defs,
+    gardenGate,
+    // (v2.12.0, not given yet) the Hidden Garden's treasures, ride, editions of everyday things, stickers
+    GARDEN: { treasures: GARDEN_TREASURES.map((r) => r[0]), ride: 'garden-bike', editions: GARDEN_EDITIONS.map((r) => r[0] + '-' + r[1]), twoTones: ITEMS.filter((it) => it.two).map((it) => it.id), stickers: GARDEN_STK.map((x) => ({ id: x[0], name: x[1] })) },
     LOOKS,
     ITEMS,
     DROPS: ITEMS.filter((it) => it.drop), // everyday accessories given as random surprise gifts (also flagged drop: true)

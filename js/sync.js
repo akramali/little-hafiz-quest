@@ -26,7 +26,10 @@
   // 2 (v2.5.3): adds the starter shirt and pants colors. 3 (v2.10.0): about half as long (the order things were won
   // kept for the newest 30, campfires in hours, time per sūrah in 10 s steps) and the game version up front, outside
   // the compressed part, so a phone can always tell a link from a newer version. Format 1 and 2 codes still open.
-  const FORMAT = 3;
+  // 4 (v2.12.0): the Hidden Garden's six stops after An-Naba' in every list by sūrah, its world (8) in the worlds and
+  // journal pages done; extras 7 add where the explorer stands in the Garden and its riddles. Older codes still open
+  // (read with Juz ʿAmma's 37 sūrahs, seven worlds and its journal).
+  const FORMAT = 4;
   const RECENT = 30; // how many of the newest wins keep their order (older ones follow the game's own order)
 
   /* ---------- bits ---------- */
@@ -182,14 +185,14 @@
       w.num(ctx.surahs.findIndex((s) => s.n === x.n), 6);
     });
     ctx.surahs.forEach((s) => w.bit((p.fix || []).includes(s.n)));
-    for (let wi = 0; wi < 7; wi++) w.bit((p.wdone || []).includes(wi));
+    for (let wi = 0; wi < 8; wi++) w.bit((p.wdone || []).includes(wi));
     ['once', 'three', 'all'].forEach((f) => w.bit((p.feats || []).includes(f)));
     ctx.surahs.forEach((s) => s.P.forEach((_, q) => w.bit((p.cpg || []).includes(s.n + ':' + q))));
     w.big(p.time || 0);
     ctx.surahs.forEach((s) => w.big(Math.round(((p.stime && p.stime[s.n]) || 0) / 10))); // (in 10 s steps)
     // the extras block (v2.7.1): everything else, so the other phone shows the explorer exactly as they are
     w.num(EXTRAS, 8);
-    w.num(6, 8); // its version (2: v2.7.2 adds the comfy shoes' color; 3: v2.7.24 the Stranger's visits; 4: v2.8.4 the app version; 5: v2.9.1 the riddles, the buddies and my tree; 6: v2.11.0 the star badge pinned on, and the one put aside with the comfy clothes)
+    w.num(7, 8); // its version (2: v2.7.2 adds the comfy shoes' color; 3: v2.7.24 the Stranger's visits; 4: v2.8.4 the app version; 5: v2.9.1 the riddles, the buddies and my tree; 6: v2.11.0 the star badge pinned on, and the one put aside with the comfy clothes; 7: v2.12.0 the Hidden Garden: where in it, its riddles)
     w.num(Math.max(0, p.at || 0), 6);
     w.bit(!!p.greeted);
     const kOf = (g) => (g.k === 'i' ? 'i:' : 's:') + g.id;
@@ -246,7 +249,7 @@
     w.num(jl.sum, 16);
     w.num(jl.list.length, 12);
     jl.list.forEach((k) => w.bit((p.found || []).includes(k)));
-    for (let wi = 0; wi < 7; wi++) w.bit((p.jdone || []).includes(wi));
+    for (let wi = 0; wi < 8; wi++) w.bit((p.jdone || []).includes(wi));
     ctx.surahs.forEach((s) => s.P.forEach((_, q) => w.bit(p.prog[s.n] && p.prog[s.n].parts[q] && p.prog[s.n].parts[q].next)));
     w.num(p.look.feet || 0, 3);
     for (let k = 0; k <= 7; k++) w.bit((p.strangers || []).includes(k));
@@ -259,6 +262,9 @@
     ctx.surahs.forEach((s) => w.bit((gr[2] || []).includes(s.n)));
     w.num(p.medal ? ref('s:' + p.medal) : 0, 12);
     w.num(p.stash && p.stash.medal ? ref('s:' + p.stash.medal) : 0, 12);
+    w.num(Math.max(0, Math.min(7, p.gat || 0)), 3);
+    const gq = p.griddle || ['', 0, 0, 0, 0];
+    [dayNum(gq[0]), gq[1] || 0, gq[2] || 0, Math.round((gq[3] || 0) / 1000), gq[4] ? 1 : 0].forEach((v) => w.big(v));
     const body = w.done();
     const zip = CAN_ZIP ? await pipe(body, new CompressionStream('deflate-raw')) : body;
     const ver = String(ctx.version || '0.0.0').split('.').slice(0, 3).map((x) => Math.min(255, parseInt(x, 10) || 0));
@@ -269,12 +275,15 @@
     const raw = unb64(String(code).trim());
     const fmt = raw[0];
     // a newer format than this phone knows: from v2.10.0 on its version is up front, so it can say "update first"
-    if (fmt > 3 || !fmt) {
+    if (fmt > 4 || !fmt) {
       const e = new Error('format');
       if (raw.length > 4) e.appV = [raw[2], raw[3], raw[4]].join('.');
       throw e;
     }
     const headV = fmt >= 3 ? [raw[2], raw[3], raw[4]].join('.') : '';
+    // (before format 4: Juz ʿAmma's sūrahs only, seven worlds)
+    const SS = fmt >= 4 ? ctx.surahs : ctx.surahs.filter((s) => !s.garden),
+      NW = fmt >= 4 ? 8 : 7;
     let body = raw.slice(fmt >= 3 ? 5 : 2);
     if (raw[1] & 1) {
       if (!CAN_ZIP) throw new Error('nozip');
@@ -304,7 +313,7 @@
     const bk = key(r.num(12));
     p.badge = bk && bk.startsWith('s:') ? bk.slice(2) : '';
     p.prog = {};
-    ctx.surahs.forEach((s) => {
+    SS.forEach((s) => {
       const parts = s.P.map((P0) => {
         const size = P0.to - P0.from + 1;
         return { learn: r.bit(), words: r.bit(), path: r.num(2), order: r.bit(), next: 0, la: r.num(size), wa: r.num(size) };
@@ -318,17 +327,17 @@
     p.lost = [];
     for (let j = 0; j < lostN; j++) {
       const k = key(r.num(12)),
-        s = ctx.surahs[r.num(6)];
+        s = SS[r.num(6)];
       if (k && s && k.startsWith('i:')) p.lost.push({ id: k.slice(2), n: s.n });
     }
-    p.fix = ctx.surahs.filter(() => r.bit()).map((s) => s.n);
-    p.wdone = [0, 1, 2, 3, 4, 5, 6].filter(() => r.bit());
+    p.fix = SS.filter(() => r.bit()).map((s) => s.n);
+    p.wdone = [...Array(NW).keys()].filter(() => r.bit());
     p.feats = ['once', 'three', 'all'].filter(() => r.bit());
     p.cpg = [];
-    ctx.surahs.forEach((s) => s.P.forEach((_, q) => r.bit() && p.cpg.push(s.n + ':' + q)));
+    SS.forEach((s) => s.P.forEach((_, q) => r.bit() && p.cpg.push(s.n + ':' + q)));
     p.time = r.big();
     p.stime = {};
-    ctx.surahs.forEach((s) => {
+    SS.forEach((s) => {
       const t = r.big() * (fmt >= 3 ? 10 : 1);
       if (t) p.stime[s.n] = t;
     });
@@ -381,35 +390,35 @@
       Object.assign(p, { daily: dayStr(daily), teacherGift: dayStr(eg), streak: [dayStr(sd), sn], best, dayT: [dayStr(td), ts], teacherAt: ea * 60000 });
       p.rematch = [];
       p.rematchReady = [];
-      ctx.surahs.forEach((s) => {
+      SS.forEach((s) => {
         if (r.bit()) p.rematch.push(s.n);
         if (r.bit()) p.rematchReady.push(s.n);
       });
       p.lostSt = [];
       for (let j = r.num(6); j > 0; j--) {
         const k = key(r.num(12)),
-          s = ctx.surahs[r.num(6)];
+          s = SS[r.num(6)];
         if (k && s && k.startsWith('s:')) p.lostSt.push({ id: k.slice(2), n: s.n });
       }
       p.fire = {};
       const hr = fmt >= 3 ? r.big() : 0;
-      ctx.surahs.forEach((s) => {
+      SS.forEach((s) => {
         if (r.bit()) p.fire[s.n] = fmt >= 3 ? [(hr - r.num(10)) * 3.6e6, r.num(3)] : [r.big() * 60000, r.num(3)];
       });
-      const jl = listOf(ctx.journal || []),
+      const jl = listOf((fmt >= 4 ? ctx.journal : ctx.journalJuz || ctx.journal) || []),
         jsum = r.num(16),
         jn = r.num(12),
         jsame = jsum === jl.sum && jn === jl.list.length;
       p.found = [];
       for (let j = 0; j < jn; j++) if (r.bit() && jsame) p.found.push(jl.list[j]);
-      p.jdone = [0, 1, 2, 3, 4, 5, 6].filter(() => r.bit());
-      ctx.surahs.forEach((s) => s.P.forEach((_, q) => r.bit() && p.prog[s.n] && (p.prog[s.n].parts[q].next = 1)));
+      p.jdone = [...Array(NW).keys()].filter(() => r.bit());
+      SS.forEach((s) => s.P.forEach((_, q) => r.bit() && p.prog[s.n] && (p.prog[s.n].parts[q].next = 1)));
       if (xv >= 2) p.look.feet = r.num(3);
       if (xv >= 3) p.strangers = [0, 1, 2, 3, 4, 5, 6, 7].filter(() => r.bit());
       if (xv >= 4) p.appV = [r.num(8), r.num(8), r.num(8)].join('.');
       if (xv >= 5) {
         const [rd, rn, rdone, rat, rgift, bd, bn, ball, gn, gd] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0].map(() => r.big());
-        const gs = ctx.surahs.filter(() => r.bit()).map((s) => s.n);
+        const gs = SS.filter(() => r.bit()).map((s) => s.n);
         Object.assign(p, { riddle: [dayStr(rd), rn, rdone, rat * 1000, rgift], buddy: [dayStr(bd), bn, ball], grow: [gn, dayStr(gd), gs] });
       }
       if (xv >= 6) {
@@ -417,6 +426,11 @@
           sm = key(r.num(12));
         p.medal = m && m.startsWith('s:') ? m.slice(2) : '';
         if (p.stash) p.stash.medal = sm && sm.startsWith('s:') ? sm.slice(2) : '';
+      }
+      if (xv >= 7) {
+        p.gat = r.num(3);
+        const [gd, gn, gdone, gat, ggift] = [0, 0, 0, 0, 0].map(() => r.big());
+        p.griddle = [dayStr(gd), gn, gdone, gat * 1000, ggift];
       }
     }
     if (headV) p.appV = headV;

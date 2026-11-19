@@ -18,6 +18,8 @@
   if (Q.get('lost')) { const pr = L.store().profiles[0]; const [id, n] = Q.get('lost').split('@'); pr.items.push(id); pr.lost.push({ id, n: +n }); pr.fix.push(+n); }
   // wear=<item>,<item>: the explorer owns and wears those
   if (Q.get('wear')) { const pr = L.store().profiles[0]; Q.get('wear').split(',').forEach((id) => { const it = w.LHQ_ART.ITEMS.find((x) => x.id === id); if (it) { pr.items.push(id); pr.outfit[it.slot] = id; } }); }
+  if (Q.get('garden')) L.garden(true); // (v2.12.0: the Hidden Garden's map, journal…)
+  if (Q.get('gprog')) { const pr = L.store().profiles[0]; Q.get('gprog').split(',').forEach((x) => { const [k, lv] = x.split(':'); const s = w.LHQ_DATA.surahs.find((q) => q.n === +k); pr.prog[k] = { parts: s.parts.map(() => ({ learn: 1, words: 1, order: +lv > 1 ? 1 : 0, next: 1, path: 3, la: 0, wa: 0 })), all: s.parts.length > 1 ? 3 : 0, big: +lv > 1 ? 1 : 0 }; }); }
   const v = Q.get('v'), n = +(Q.get('n') || 114), i = idx(n), p = Q.get('p') == null ? 0 : Q.get('p') === 'all' ? 'all' : +Q.get('p');
   const a = +(Q.get('a') || 0);
   if (v === 'map') L.go('map');

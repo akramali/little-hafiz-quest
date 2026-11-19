@@ -149,6 +149,15 @@
 
   function mount(root, cfg) {
     const ART = cfg.art;
+    // (v2.12.0) the same map draws the Hidden Garden on its own: its world 0 is the art's world 7, its stops carry
+    // the game's own index (idx), and a gate takes you there from beside the summit, and back from its start
+    const aw = (wi) => (cfg.artWorld ? cfg.artWorld(wi) : wi);
+    const gi = (i) => (cfg.surahs[i] && cfg.surahs[i].idx != null ? cfg.surahs[i].idx : i); // the game's index of a stop
+    const li = (i) => {
+      const k = cfg.surahs.findIndex((s) => s.idx === i);
+      return k < 0 ? i : k;
+    };
+    const badgeNum = (s) => (cfg.badgeNum ? cfg.badgeNum(s) : s.n);
     let width = Math.max(320, root.clientWidth || innerWidth);
     let L = layout(cfg, width);
     let items = []; // {el, x, y, kind}
@@ -158,7 +167,7 @@
     const exState = { s: 0, i: cfg.current, face: 1 };
 
     function pal(wi) {
-      const w = ART.WORLDS[wi];
+      const w = ART.WORLDS[aw(wi)];
       return cfg.night && w.dim ? Object.assign({}, w, w.dim) : w;
     }
 
@@ -174,7 +183,7 @@
           ? `background:linear-gradient(180deg, ${p.sky[0]} 0%, ${p.sky[1]} 12%, ${p.ground[0]} 30%, ${p.ground[1]} 100%)`
           : `--g0:${p.ground[0]};--g1:${p.ground[1]}`;
         html.push(
-          `<div class="mband mb-${p.key}${top ? ' mb-top' : ''}" style="top:${b.top}px;height:${b.bottom - b.top + 2}px;${st}"><div class="mamb" data-w="${b.wi}">${ART.ambient(b.wi)}</div></div>`,
+          `<div class="mband mb-${p.key}${top ? ' mb-top' : ''}" style="top:${b.top}px;height:${b.bottom - b.top + 2}px;${st}"><div class="mamb" data-w="${aw(b.wi)}">${ART.ambient(aw(b.wi))}</div></div>`,
         );
       });
       // where one world turns into the next: a river, the sea, a gorge, a wall, the clouds, a frozen river
@@ -230,7 +239,7 @@
         const svg = ART.props[name] || '';
         // walkers stroll to and fro on the spot (css .mwalk)
         const inner = walkers.has(name) ? `<div class="mwalk${(ART.FACE_LEFT || []).includes(name) ? ' lf' : ''}" style="animation-duration:${(7 + rnd() * 6).toFixed(1)}s;animation-delay:-${(rnd() * 8).toFixed(1)}s">${svg}</div>` : svg;
-        return `<div class="mprop${walkers.has(name) ? ' walker' : ''}" data-act="poke" data-k="${name}" data-w="${wi}" data-x="${x.toFixed(1)}" data-y="${y.toFixed(1)}" style="left:${(x - size / 2).toFixed(1)}px;top:${(y - hgt).toFixed(1)}px;width:${size}px;height:${hgt}px">${inner}</div>`;
+        return `<div class="mprop${walkers.has(name) ? ' walker' : ''}" data-act="poke" data-k="${name}" data-w="${aw(wi)}" data-x="${x.toFixed(1)}" data-y="${y.toFixed(1)}" style="left:${(x - size / 2).toFixed(1)}px;top:${(y - hgt).toFixed(1)}px;width:${size}px;height:${hgt}px">${inner}</div>`;
       };
       // a picture's box (a little inside its edges, so things may just touch)
       const boxOf = (x, y, w, h) => ({ x0: x - w * 0.38, x1: x + w * 0.38, y0: y - h * 0.85, y1: y + 4 });
@@ -243,8 +252,11 @@
         return { x: left ? Math.max(70, nd.x - 150) : Math.min(width - 90, nd.x + 150), y: nd.y + 74 };
       });
       signs.forEach((q) => boxes.push({ x0: q.x - 70, x1: q.x + 70, y0: q.y - 50, y1: q.y + 6 }));
-      const szS = Math.min(width * 0.9, 420); // the summit mountain
+      const szS = cfg.topProp ? Math.min(width * 0.6, 260) : Math.min(width * 0.9, 420); // the summit mountain (or the Garden's pavilion)
       boxes.push({ x0: L.summit.x - szS * 0.42, x1: L.summit.x + szS * 0.42, y0: L.summit.y + 60 - szS * 0.8, y1: L.summit.y + 66 });
+      // the gate to the Hidden Garden, by the summit (or, in the Garden, the gate back, at its start)
+      const gateAt = cfg.gate ? (cfg.gate.at === 'start' ? { x: Math.min(width - 70, L.startPt.x + 110), y: L.startPt.y + 6 } : { x: Math.min(width - 62, L.summit.x + szS * 0.3), y: L.summit.y + 112 }) : null;
+      if (gateAt) boxes.push({ x0: gateAt.x - 52, x1: gateAt.x + 52, y0: gateAt.y - 112, y1: gateAt.y + 10 });
       const exAt = exPos();
       boxes.push(boxOf(exAt.x, exAt.y, 72, 108));
       // each stop's campfire burns on its outer side once the sūrah is memorized: scenery keeps clear of that spot
@@ -256,7 +268,7 @@
       const pals = cfg.others || [];
       L.bands.forEach((b) => {
         const rnd = seeded(97 + b.wi * 131),
-          names = (ART.PROPS_BY_WORLD[b.wi] || []).filter((nm) => nm !== 'peak-summit');
+          names = (ART.PROPS_BY_WORLD[aw(b.wi)] || []).filter((nm) => nm !== 'peak-summit' && nm !== cfg.topProp);
         if (!names.length) return;
         const lo = b.wi ? b.bottom - BH / 2 - 10 : b.bottom - 30,
           hi = b.wi < L.bands.length - 1 ? b.top + BH / 2 + 96 : b.top + 300;
@@ -269,7 +281,7 @@
           !placed.some((q) => Math.hypot(q.x - x, q.y - y) < 48 + room + q.room) &&
           !(width < 700 && x > width - 80 - room) && // leave the worlds and journal buttons clear on phones
           !(box && boxes.some((q) => hits(q, box)));
-        const lm = ART.LANDMARKS && ART.LANDMARKS[b.wi];
+        const lm = ART.LANDMARKS && ART.LANDMARKS[aw(b.wi)];
         if (lm && ART.props[lm]) {
           const size = Math.round(Math.min(120, width * 0.3) * grow), // grows with the screen too
             hgt = Math.round(isTall(lm) ? size * 1.5 : size);
@@ -315,7 +327,7 @@
             y,
             // the same size as the explorer by their sūrah, feet at the same point
             // (the Wise Elder is taller: 84×126, his feet at the middle of the bottom)
-            html: `<div class="mpal${q.elder ? ' melder' : ''}" data-act="pal" data-id="${q.id}" data-w="${b.wi}" data-x="${x.toFixed(1)}" data-y="${y.toFixed(1)}" style="left:${(x - (q.elder ? 42 : EX_FOOT)).toFixed(1)}px;top:${(y - (q.elder ? 123 : 108)).toFixed(1)}px" aria-label="${q.name}"><div class="mpal-in">${q.svg}</div></div>`,
+            html: `<div class="mpal${q.elder ? ' melder' : ''}" data-act="pal" data-id="${q.id}" data-w="${aw(b.wi)}" data-x="${x.toFixed(1)}" data-y="${y.toFixed(1)}" style="left:${(x - (q.elder ? 42 : EX_FOOT)).toFixed(1)}px;top:${(y - (q.elder ? 123 : 108)).toFixed(1)}px" aria-label="${q.name}"><div class="mpal-in">${q.svg}</div></div>`,
           });
         });
         // every kind of thing at least once (they're in the journal, to be found), then any of them. Each kind
@@ -352,17 +364,22 @@
           { x, y } = signs[b.wi],
           pr = cfg.worldProgress ? cfg.worldProgress(b.wi) : {};
         html.push(
-          `<div class="msign ${pr.gold ? 'gold' : pr.done ? 'done' : ''}" data-w="${b.wi}" data-x="${x.toFixed(1)}" data-y="${y.toFixed(1)}" style="left:${(x - 70).toFixed(1)}px;top:${(y - 50).toFixed(1)}px"><b>World ${b.wi + 1}</b><span>${w.name}</span>${cfg.worldThrows && cfg.worldThrows(b.wi) ? `<small class="msthrows">${cfg.worldThrows(b.wi)}</small>` : ''}</div>`,
+          `<div class="msign ${pr.gold ? 'gold' : pr.done ? 'done' : ''}" data-w="${aw(b.wi)}" data-x="${x.toFixed(1)}" data-y="${y.toFixed(1)}" style="left:${(x - 70).toFixed(1)}px;top:${(y - 50).toFixed(1)}px"><b>World ${aw(b.wi) + 1}</b><span>${w.name}</span>${cfg.worldThrows && cfg.worldThrows(b.wi) ? `<small class="msthrows">${cfg.worldThrows(b.wi)}</small>` : ''}</div>`,
         );
       });
       // start and summit
       html.push(
-        `<div class="mstart" data-x="${L.startPt.x.toFixed(1)}" data-y="${(L.startPt.y + 10).toFixed(1)}" style="left:${(L.startPt.x - 60).toFixed(1)}px;top:${(L.startPt.y - 40).toFixed(1)}px">🚩 Start</div>`,
+        `<div class="mstart" data-x="${L.startPt.x.toFixed(1)}" data-y="${(L.startPt.y + 10).toFixed(1)}" style="left:${(L.startPt.x - 60).toFixed(1)}px;top:${(L.startPt.y - 40).toFixed(1)}px">${cfg.startLabel || '🚩 Start'}</div>`,
       );
-      const sz = Math.min(width * 0.9, 420); // the summit is drawn 200×160
+      const sz = szS; // the summit is drawn 200×160 (the Garden's pavilion 100×100)
+      const topH = cfg.topProp ? sz : sz * 0.8;
       html.push(
-        `<div class="msummit" data-x="${L.summit.x.toFixed(1)}" data-y="${(L.summit.y + 60).toFixed(1)}" style="left:${(L.summit.x - sz / 2).toFixed(1)}px;top:${(L.summit.y + 60 - sz * 0.8).toFixed(1)}px;width:${sz}px;height:${(sz * 0.8).toFixed(0)}px">${ART.props['peak-summit'] || ''}</div>`,
+        `<div class="msummit${cfg.topProp ? ' mtop-' + cfg.topProp : ''}" data-x="${L.summit.x.toFixed(1)}" data-y="${(L.summit.y + 60).toFixed(1)}" style="left:${(L.summit.x - sz / 2).toFixed(1)}px;top:${(L.summit.y + 60 - topH).toFixed(1)}px;width:${sz}px;height:${topH.toFixed(0)}px">${ART.props[cfg.topProp || 'peak-summit'] || ''}</div>`,
       );
+      if (gateAt)
+        html.push(
+          `<button class="mgate8 ${cfg.gate.at === 'start' ? 'back' : ''}" data-act="${cfg.gate.act}" data-x="${gateAt.x.toFixed(1)}" data-y="${gateAt.y.toFixed(1)}" style="left:${(gateAt.x - 50).toFixed(1)}px;top:${(gateAt.y - 106).toFixed(1)}px" aria-label="${cfg.gate.label}"><span class="mg8-art">${ART.gardenGate ? ART.gardenGate(cfg.gate.at === 'start') : '🚪'}</span><span class="mg8-lab">${cfg.gate.label}</span></button>`,
+        );
       // sūrah stops
       const lostSpots = []; // where lost things lie (so two never land on each other)
       L.nodes.forEach((nd) => {
@@ -371,9 +388,9 @@
         const cls = st.done ? 'st-done' : nd.i === cfg.current ? 'st-cur' : st.started ? 'st-part' : 'st-new';
         const pct = st.max ? Math.round((st.stars / st.max) * 100) : 0;
         html.push(
-          `<button class="node ${cls} ${st.gold ? 'st-gold' : ''} ${nd.i === cfg.suggest ? 'suggest' : ''}" data-act="surah" data-i="${nd.i}" data-x="${nd.x.toFixed(1)}" data-y="${nd.y.toFixed(1)}" style="left:${(nd.x - 44).toFixed(1)}px;top:${(nd.y - 44).toFixed(1)}px;--p:${pct}" aria-label="${s.n}. ${s.name}${st.done ? ', memorized' : ''}">
+          `<button class="node ${cls} ${st.gold ? 'st-gold' : ''} ${nd.i === cfg.suggest ? 'suggest' : ''}" data-act="surah" data-i="${gi(nd.i)}" data-x="${nd.x.toFixed(1)}" data-y="${nd.y.toFixed(1)}" style="left:${(nd.x - 44).toFixed(1)}px;top:${(nd.y - 44).toFixed(1)}px;--p:${pct}" aria-label="${badgeNum(s)}. ${s.name}${st.done ? ', memorized' : ''}">
             <span class="nring"></span><span class="nplat"><span class="nico">${s.icon}</span></span>
-            <span class="nnum">${s.n}</span>
+            <span class="nnum">${badgeNum(s)}</span>
             ${st.done ? '<span class="ncheck">✓</span>' : ''}
             ${st.fix ? '<span class="nfix" title="Needs fixing">💔</span>' : ''}
             ${st.fire >= 0 && ART.campfire ? `<span class="nfire ${nd.x > L.cx ? 'fr' : 'fl'} f${st.fire}" data-act="fireinfo" data-n="${s.n}" role="button" aria-label="Campfire">${ART.campfire(st.fire)}</span>` : ''}
@@ -410,7 +427,7 @@
           const lx = xs[j],
             ly = ys[j];
           html.push(
-            `<button class="mlost" data-act="surah" data-i="${nd.i}" data-x="${lx.toFixed(1)}" data-y="${ly.toFixed(1)}" style="left:${(lx - 26).toFixed(1)}px;top:${(ly - 52).toFixed(1)}px" aria-label="A lost item is waiting here"><span class="mlost-it">${ART.item(id)}</span></button>`,
+            `<button class="mlost" data-act="surah" data-i="${gi(nd.i)}" data-x="${lx.toFixed(1)}" data-y="${ly.toFixed(1)}" style="left:${(lx - 26).toFixed(1)}px;top:${(ly - 52).toFixed(1)}px" aria-label="A lost item is waiting here"><span class="mlost-it">${ART.item(id)}</span></button>`,
           );
         });
       });
@@ -475,7 +492,7 @@
     hzEl.className = 'mhz';
     hzEl.setAttribute('aria-hidden', 'true');
     hzEl.innerHTML = cfg.worlds
-      .map((w, wi) => `<div class="mhz-w" style="--s0:${pal(wi).sky[0]};--s1:${pal(wi).sky[1]}"><div class="mhz-far">${ART.horizon(wi, cfg.night)}</div></div>`)
+      .map((w, wi) => `<div class="mhz-w" style="--s0:${pal(wi).sky[0]};--s1:${pal(wi).sky[1]}"><div class="mhz-far">${ART.horizon(aw(wi), cfg.night)}</div></div>`)
       .join('');
     const hzLayers = [...hzEl.children];
     let hzH = 0,
@@ -520,21 +537,36 @@
     function drawRail() {
       const cur = Math.max(0, railW);
       railEl.innerHTML =
-        `<button class="wr-toggle ${cfg.worldProgress(cur).gold ? 'gold' : cfg.worldProgress(cur).done ? 'done' : ''}" data-act="worlds" aria-expanded="false" aria-label="Worlds: jump to another world">${MAP_ICON}<span class="wr-cur">World ${cur + 1}</span></button><div class="wr-list">` +
+        `<button class="wr-toggle ${cfg.worldProgress(cur).gold ? 'gold' : cfg.worldProgress(cur).done ? 'done' : ''}" data-act="worlds" aria-expanded="false" aria-label="Worlds: jump to another world">${MAP_ICON}<span class="wr-cur">World ${aw(cur) + 1}</span></button><div class="wr-list">` +
+        extraRail('top') +
         cfg.worlds
           .map((w, wi) => {
             const pr = cfg.worldProgress(wi),
               pl = pal(wi);
-            const names = ART.PROPS_BY_WORLD[wi] || [];
+            const names = ART.PROPS_BY_WORLD[aw(wi)] || [];
             const ic = ART.props[cfg.worldIcon ? cfg.worldIcon(wi) : names[0]] || '';
             const land = `background:linear-gradient(180deg,${pl.sky[0]},${pl.sky[1]} 58%,${pl.ground[0]} 58%,${pl.ground[1]})`;
             const mark = pr.gold ? ' <i class="wr-mark">⭐</i>' : pr.done ? ' <i class="wr-mark">✓</i>' : '';
-            return `<button class="wr ${pr.done ? 'done' : ''} ${pr.gold ? 'gold' : ''} ${wi === cur ? 'on' : ''}" data-act="world" data-w="${wi}" style="--wc:${pl.accent};--p:${Math.round(pr.frac * 100)}" aria-label="World ${wi + 1}: ${w.name}${pr.gold ? ', golden' : pr.done ? ', done' : ''}"><span class="wr-dot"><span class="wr-ic" style="${land}">${ic}</span></span><span class="wr-tx"><b><span>World ${wi + 1}${mark}</span>${cfg.worldThrows && cfg.worldThrows(wi) ? `<span class="wr-thr" aria-hidden="true">${cfg.worldThrows(wi)}</span>` : ''}</b><small>${w.name}</small></span></button>`;
+            return `<button class="wr ${pr.done ? 'done' : ''} ${pr.gold ? 'gold' : ''} ${wi === cur ? 'on' : ''}" data-act="world" data-w="${wi}" style="--wc:${pl.accent};--p:${Math.round(pr.frac * 100)}" aria-label="World ${aw(wi) + 1}: ${w.name}${pr.gold ? ', golden' : pr.done ? ', done' : ''}"><span class="wr-dot"><span class="wr-ic" style="${land}">${ic}</span></span><span class="wr-tx"><b><span>World ${aw(wi) + 1}${mark}</span>${cfg.worldThrows && cfg.worldThrows(wi) ? `<span class="wr-thr" aria-hidden="true">${cfg.worldThrows(wi)}</span>` : ''}</b><small>${w.name}</small></span></button>`;
           })
           .reverse()
           .join('') +
+        extraRail('bottom') +
         '</div>';
       document.body.appendChild(railEl);
+    }
+    // worlds drawn on the other map (each: { pos: 'top'|'bottom', act, w, num, name, art, icon, pr })
+    function extraRail(pos) {
+      return (cfg.railExtra || [])
+        .filter((x) => x.pos === pos)
+        .map((x) => {
+          const pl = ART.WORLDS[x.art],
+            pr = x.pr || {},
+            land = `background:linear-gradient(180deg,${pl.sky[0]},${pl.sky[1]} 58%,${pl.ground[0]} 58%,${pl.ground[1]})`,
+            mark = pr.gold ? ' <i class="wr-mark">⭐</i>' : pr.done ? ' <i class="wr-mark">✓</i>' : '';
+          return `<button class="wr wr-x ${pr.done ? 'done' : ''} ${pr.gold ? 'gold' : ''}" data-act="${x.act}" data-w="${x.w}" style="--wc:${pl.accent};--p:${Math.round((pr.frac || 0) * 100)}" aria-label="World ${x.num}: ${x.name}"><span class="wr-dot"><span class="wr-ic" style="${land}">${ART.props[x.icon] || ''}</span></span><span class="wr-tx"><b><span>World ${x.num}${mark}</span></b><small>${x.name}</small></span></button>`;
+        })
+        .join('');
     }
     let railW = -1;
     function rail() {
@@ -544,9 +576,9 @@
       const b = L.bands.find((bb) => mid >= bb.top && mid <= bb.bottom) || L.bands[0];
       if (b.wi === railW) return;
       railW = b.wi;
-      railEl.querySelectorAll('.wr').forEach((el) => el.classList.toggle('on', +el.dataset.w === b.wi));
+      railEl.querySelectorAll('.wr:not(.wr-x)').forEach((el) => el.classList.toggle('on', +el.dataset.w === b.wi));
       const cur = railEl.querySelector('.wr-cur');
-      if (cur) cur.textContent = 'World ' + (b.wi + 1);
+      if (cur) cur.textContent = 'World ' + (aw(b.wi) + 1);
       const tg = railEl.querySelector('.wr-toggle'),
         pr = cfg.worldProgress ? cfg.worldProgress(b.wi) : {};
       if (tg) {
@@ -579,7 +611,7 @@
       return root.getBoundingClientRect().top + scrollY;
     }
     function focusNode(i, smooth) {
-      const nd = L.nodes[i];
+      const nd = L.nodes[li(i)];
       if (!nd) return;
       const y = mapTop() + nd.y - innerHeight * 0.6;
       if (smooth) smoothScrollTo(y, 700);
@@ -588,7 +620,8 @@
 
     /* Tapping a stop: the explorer doesn't trek along the whole path. They vanish in a puff, pop up a few
        steps before the chosen stop, and walk into it. Then done() is called (the map zooms in). */
-    function walkTo(i, done) {
+    function walkTo(gIdx, done) {
+      const i = li(gIdx);
       if (walking) return;
       const ex = items.find((it) => it.ex);
       const target = L.nodes[i];
@@ -681,7 +714,7 @@
 
     /* zoom the whole map into stop i (used just before opening a sūrah) */
     function zoomInto(i, done) {
-      const nd = L.nodes[i];
+      const nd = L.nodes[li(i)];
       if (!nd || reduceMotion) {
         done();
         return;

@@ -1,7 +1,12 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.11.1",
+ "latest": "2.12.0",
  "versions": [
+  { "v": "2.12.0", "notes": [
+   "World 8, the Hidden Garden: through a gate by the Summit",
+   "Al-Fātiḥah, Āyat al-Kursī, the end of Al-Baqarah, Al-Kahf 1–10, Al-Mulk and Al-Wāqiʿah",
+   "Lanterns on My Tree, new treasures, a ride and cooler gear to win"
+  ] },
   { "v": "2.11.1", "notes": [
    "A badge for every world you memorize",
    "35 new stickers to win",

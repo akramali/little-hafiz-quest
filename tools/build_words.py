@@ -25,7 +25,7 @@ import time
 import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from build_audio import ROOT, SURAHS, letters, load_game_text, words_of  # noqa: E402
+from build_audio import GARDEN, ROOT, SURAHS, letters, load_game_text, words_of  # noqa: E402
 
 API = 'https://api.quran.com/api/v4'
 CACHE = os.path.join(os.path.expanduser('~'), '.cache', 'little-hafiz-quest-words')
@@ -47,6 +47,9 @@ def get(url, path):
 
 
 def verses(n):
+    if n in GARDEN:  # (a Hidden Garden stop: its āyāt of the sūrah)
+        sura, a, b = GARDEN[n]
+        return verses(sura)[a - 1:b]
     out, page = [], 1
     while page:
         url = f'{API}/verses/by_chapter/{n}?words=true&word_fields=text_uthmani&language=en&per_page=50&page={page}'

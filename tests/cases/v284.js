@@ -84,7 +84,7 @@
   log('designs owned', designs.filter((it) => p2.items.includes(it.id)).length, 'of', designs.length, '| versions owned', versions.filter((it) => p2.items.includes(it.id)).length, 'of', versions.length, '| stickers', p2.stickers.length);
   ok('every design is theirs', designs.every((it) => p2.items.includes(it.id)));
   ok('colour and pattern versions are still to win', versions.some((it) => !p2.items.includes(it.id) && !p2.pending.some((g) => g.id === it.id)));
-  ok('every sticker is theirs', A.STICKERS.every((x) => p2.stickers.includes(x.id)));
+  ok('every sticker is theirs (not the foil ones or the Garden’s)', A.STICKERS.filter((x) => !x.garden && !x.foil).every((x) => p2.stickers.includes(x.id)), A.STICKERS.filter((x) => !x.garden && !x.foil && !p2.stickers.includes(x.id)).map((x) => x.id).slice(0, 12).join(' '));
   ok('the Summit crown comes now', p2.items.includes('summit-crown') || p2.pending.some((g) => g.id === 'summit-crown'));
   g2.L.go('show'); await wait(300);
   const box = [...g2.d.querySelectorAll('.ach')].find((e) => /things won/.test(e.textContent));

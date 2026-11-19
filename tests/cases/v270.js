@@ -47,7 +47,7 @@
   // 3. the journal: hold a thing on the map to add it; a quick tap or something not in it does nothing
   L.go('map'); await wait(1500);
   const keys = [...X.journal];
-  const missing = keys.filter((k) => k[0] === 'p' && !d.querySelector(`.mprop[data-k="${k.slice(2)}"]`));
+  const missing = keys.filter((k) => k[0] === 'p' && !/^p:garden-/.test(k) && !d.querySelector(`.mprop[data-k="${k.slice(2)}"]`)); // (the Hidden Garden's are on its own map, v2.12.0)
   ok('every thing of the journal is somewhere on the map', !missing.length, missing.join());
   p.found = [];
   const sheep = d.querySelector('.mprop[data-k="meadow-sheep"]');

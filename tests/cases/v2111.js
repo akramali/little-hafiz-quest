@@ -8,7 +8,7 @@
   const { w, d, L, idx } = await openGame();
   const errs = watchErrors(w);
   const A = w.LHQ_ART, prof = L.store().profiles[0];
-  ok('seven world badges, each its own crest', A.BADGES.filter((b) => b.world).length === 7 && new Set(A.BADGES.filter((b) => b.world).map((b) => A.sticker(b.id))).size === 7);
+  ok('eight world badges (v2.12.0: the Hidden Garden\'s too), each its own crest', A.BADGES.filter((b) => b.world).length === 8 && new Set(A.BADGES.filter((b) => b.world).map((b) => A.sticker(b.id))).size === 8);
   ok('not given before the world is memorized', !prof.pending.some((g) => g.id === 'world1') && !prof.stickers.includes('world1'));
   L.go('bag', { tab: 'badges' }); await wait(300);
   ok('the Badges tab shows it still to win: "Memorize World 1"', /Memorize World 1/.test(d.querySelector('.wbody').textContent));

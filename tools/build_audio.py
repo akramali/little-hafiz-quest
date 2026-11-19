@@ -100,7 +100,11 @@ QUA = {
     },
 }
 
-SURAHS = [1] + list(range(78, 115))      # 1 = the Basmalah (Sūrah 1, āyah 1 only)
+JUZ = [1] + list(range(78, 115))         # 1 = the Basmalah (Sūrah 1, āyah 1 only)
+# The Hidden Garden (v2.12.0): each stop's game key -> (sūrah, first āyah, last āyah). Their files are named by key.
+GARDEN = {201: (1, 1, 7), 202: (2, 255, 255), 203: (2, 285, 286), 204: (18, 1, 10), 205: (67, 1, 30), 206: (56, 1, 96)}
+SURAHS = JUZ + list(GARDEN)
+ONLY = None  # --only: build just these files and merge their timings into the reciter's timings.json
 API = 'https://api.quran.com/api/v4'
 RATE = 44100                             # samples per second, mono
 KBPS = 48
@@ -205,9 +209,14 @@ def check_mp3(body):
 
 
 def api_verses(cache, rid, surah):
-    """All verses of a sūrah (or just 1:1 for the Basmalah) with audio URL, segments and words."""
+    """All verses of a sūrah (or just 1:1 for the Basmalah, or a Garden stop's āyāt) with audio URL, segments and words."""
+    if surah in GARDEN:
+        sura, a, b = GARDEN[surah]
+        return api_verses(cache, rid, -sura)[a - 1:b]
+    whole = surah < 0      # (a whole sūrah, asked for by a Garden stop: 1 here is Al-Fātiḥah, not the Basmalah)
+    surah = abs(surah)
     folder = os.path.join(cache, 'api', str(rid))
-    if surah == 1:
+    if surah == 1 and not whole:
         url = f'{API}/verses/by_key/1:1?audio={rid}&words=true&word_fields=text_uthmani'
         path = fetch(url, os.path.join(folder, '001.json'), check_json)
         with open(path, encoding='utf-8') as f:
@@ -476,6 +485,15 @@ def tidy(spans, window_start, window_end):
 
 # ---------------------------------------------------------------- building one reciter
 
+def old_timings(out_dir):
+    """with --only: the timings already built, so the new files are merged in"""
+    path = os.path.join(out_dir, 'timings.json')
+    if ONLY and os.path.isfile(path):
+        with open(path, encoding='utf-8') as f:
+            return json.load(f)['surahs']
+    return {}
+
+
 def reference_verses(cache, rid, surah, index):
     """The same verse from the other reciters in RECITERS (used only to repair broken timings)."""
     out = []
@@ -493,13 +511,14 @@ def build_reciter(slug, ffmpeg, cache, game):
     out_dir = os.path.join(AUDIO_DIR, slug)
     os.makedirs(out_dir, exist_ok=True)
 
-    verses = {n: api_verses(cache, rid, n) for n in SURAHS}
-    for n in SURAHS:
+    keys = ONLY or SURAHS
+    verses = {n: api_verses(cache, rid, n) for n in keys}
+    for n in keys:
         if len(verses[n]) != len(game[n]):
             sys.exit(f'Sūrah {n}: Quran.com has {len(verses[n])} āyāt, data.js has {len(game[n])}')
 
     jobs = []
-    for n in SURAHS:
+    for n in keys:
         for v in verses[n]:
             url = audio_url(v['audio']['url'])
             jobs.append((url, mp3_cache_path(cache, rid, url)))
@@ -510,8 +529,8 @@ def build_reciter(slug, ffmpeg, cache, game):
             if k % 50 == 0:
                 print(f'   … {k}/{len(todo)}')
 
-    timings, mismatches = {}, []
-    for n in SURAHS:
+    timings, mismatches = old_timings(out_dir), []
+    for n in keys:
         pcm, pos, ayat = [silence(LEAD)], round(LEAD * RATE), []    # pos counts samples
         for i, v in enumerate(verses[n]):
             url = audio_url(v['audio']['url'])
@@ -615,11 +634,15 @@ def build_qua(slug, ffmpeg, cache, game):
     out_dir = os.path.join(AUDIO_DIR, slug)
     os.makedirs(out_dir, exist_ok=True)
     rows = qua_rows(cache, slug)
-    timings, notes = {}, []
-    for n in SURAHS:
-        src = fetch(q['audio'].format(n=n), os.path.join(cache, 'qua', slug, f'{n:03d}.mp3'), check_mp3)
+    timings, notes = old_timings(out_dir), []
+    for n in ONLY or SURAHS:
+        sura, a1 = (GARDEN[n][0], GARDEN[n][1]) if n in GARDEN else (n, 1)
+        refs = ['1:1'] if n == 1 else [f'{sura}:{a}' for a in range(a1, a1 + len(game[n]))]
+        if any(r not in rows for r in refs):
+            print(f'   {n:03d}: no timings in this recording, skipped (the game uses another voice for it)')
+            continue
+        src = fetch(q['audio'].format(n=sura), os.path.join(cache, 'qua', slug, f'{sura:03d}.mp3'), check_mp3)
         full = decode(ffmpeg, src)
-        refs = ['1:1'] if n == 1 else [f'{n}:{a}' for a in range(1, len(game[n]) + 1)]
         qc = api_verses(cache, 7, n)                 # Quran.com's words (text and positions) for the letters
         pcm, pos, ayat = [silence(LEAD)], round(LEAD * RATE), []
         for i, ref in enumerate(refs):
@@ -674,13 +697,14 @@ def write_index():
     every += [(slug, q['name'], q['note'], q['source']) for slug, q in QUA.items()]
     for slug, name, note, source in every:
         folder = os.path.join(AUDIO_DIR, slug)
-        needed = ['timings.json'] + [f'{n:03d}.mp3' for n in SURAHS]
+        needed = ['timings.json'] + [f'{n:03d}.mp3' for n in JUZ]
         if not all(os.path.isfile(os.path.join(folder, x)) for x in needed):
             continue
+        garden = all(os.path.isfile(os.path.join(folder, f'{n:03d}.mp3')) for n in GARDEN)  # (else the Garden uses another voice)
         size = sum(os.path.getsize(os.path.join(folder, x)) for x in os.listdir(folder)
                    if os.path.isfile(os.path.join(folder, x)))
-        index.append({'id': slug, 'name': name, 'note': note,
-                      'mb': round(size / 1e6, 1), 'source': source})
+        index.append(dict({'id': slug, 'name': name, 'note': note,
+                           'mb': round(size / 1e6, 1), 'source': source}, **({} if garden else {'garden': False})))
     with open(os.path.join(AUDIO_DIR, 'reciters.json'), 'w', encoding='utf-8') as f:
         json.dump(index, f, indent=1, ensure_ascii=False)
         f.write('\n')
@@ -695,10 +719,13 @@ if __name__ == '__main__':
     p.add_argument('--index-only', action='store_true', help='only rewrite audio/reciters.json')
     p.add_argument('--snap-only', action='store_true',
                    help='only re-cut the word timings of reciters already built (see snap_words)')
+    p.add_argument('--only', help='comma-separated sūrah keys to build (e.g. 201,202): the rest stay as built')
     p.add_argument('--ffmpeg', default=os.environ.get('FFMPEG', 'ffmpeg'))
     p.add_argument('--cache', default=os.environ.get('LHQ_AUDIO_CACHE', os.path.join(
         os.path.expanduser('~'), '.cache', 'little-hafiz-quest-audio')))
     args = p.parse_args()
+    if args.only:
+        ONLY = [int(x) for x in args.only.split(',')]
 
     if args.list:
         for slug, (rid, name, _) in RECITERS.items():

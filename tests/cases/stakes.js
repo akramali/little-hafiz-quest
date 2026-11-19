@@ -48,7 +48,7 @@
   r = X.strikeFor('rock', prof, false);
   ok('nothing left but comfy clothes and badges: hurt, nothing falls', r.hurt && !r.falls);
   // 7. throws come from the sūrah's world
-  ok('each world throws its own two', X.WORLD_THROWS.length === 7 && X.WORLD_THROWS.every((t) => t.length === 2));
+  ok('each world throws its own two (the Garden too)', X.WORLD_THROWS.length === 8 && X.WORLD_THROWS.every((t) => t.length === 2));
   // 8. a real battle: a right answer is acknowledged, a miss hurts and things fall to the ground
   prof.items = ['explorer-cap', 'rain-boots']; prof.stickers = ['star']; prof.lost = []; prof.lostSt = []; prof.fix = []; prof.rematch = []; prof.rematchReady = [];
   wear({ hat: 'explorer-cap', shoes: 'rain-boots' });

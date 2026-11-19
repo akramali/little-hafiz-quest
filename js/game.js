@@ -37,14 +37,16 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.11.1';
+  const VERSION = '2.12.0';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
   const MAP = window.LHQ_MAP;
   const SND = window.LHQ_SOUNDS;
   if (!ART || !MAP || !SND) throw new Error('Little Hafiz Quest: js/art.js, js/map.js or js/sounds.js did not load.');
-  const S = DATA.surahs; // learning order: An-Nās (114) → An-Naba’ (78)
+  const S = DATA.surahs; // learning order: An-Nās (114) → An-Naba’ (78), then the Hidden Garden's stops (201–206)
+  const J = S.filter((s) => !s.garden); // (v2.12.0) Juz ʿAmma: its stars, %, worlds, prizes and summit are its own
+  const GS = S.filter((s) => s.garden); // the Hidden Garden (World 8): Al-Fātiḥah, Āyat al-Kursī, the end of Al-Baqarah, Al-Kahf 1–10, Al-Mulk, Al-Wāqiʿah
   const BYN = Object.create(null); // sūrah number -> sūrah (no inherited keys)
   S.forEach((s, i) => {
     s.idx = i;
@@ -61,7 +63,14 @@
     { name: 'Sky Kingdom', from: 85, to: 82 },
     { name: 'The Great Climb', from: 81, to: 78 },
   ];
-  const worldOf = (s) => WORLDS.findIndex((w) => s.n <= w.from && s.n >= w.to);
+  const GARDEN_W = 7; // the Hidden Garden's world number (from 0): it isn't in WORLDS, which are Juz ʿAmma's seven
+  const GARDEN_NAME = 'The Hidden Garden';
+  const worldOf = (s) => (s.garden ? GARDEN_W : WORLDS.findIndex((w) => s.n <= w.from && s.n >= w.to));
+  const worldName = (wi) => (wi === GARDEN_W ? GARDEN_NAME : WORLDS[wi].name);
+  // how a stop is numbered for people: its sūrah number, or (a Garden stop from inside a sūrah) sūrah:āyāt
+  const snum = (s) => (s.garden ? (s.from ? s.sura + ':' + s.from + (s.ayat.length > 1 ? '–' + (s.from + s.ayat.length - 1) : '') : String(s.sura)) : String(s.n));
+  const ayNo = (s, k) => (s.from || 1) + k; // an āyah's own number (k counts from 0 in the stop)
+  const whole = (s) => (s.garden && (s.from || s.sura === 18) ? 'all of it' : 'whole sūrah'); // a Garden passage is not a whole sūrah
   const WORLD_ICON = ['meadow-flower-pink', 'forest-pine', 'sands-palm', 'canyon-cactus', 'starry-moon', 'sky-balloon', 'peak-summit']; // props shown on the world rail
   const WCOL = ['#e74c3c', '#f39c12', '#d4a20b', '#27ae60', '#16a085', '#2e86de', '#8e44ad', '#e84393'];
 
@@ -74,8 +83,9 @@
   const GOLD_ITEM = Object.create(null); // sūrah number -> its golden edition (every star)
   ITEMS.forEach((it) => {
     if (it.from) (it.gold ? GOLD_ITEM : SURAH_ITEM)[it.from] = it;
+    else if (typeof it.garden === 'number') (it.gold ? GOLD_ITEM : SURAH_ITEM)[GS[it.garden - 1].n] = it; // (a Garden stop's treasure: when memorized)
   });
-  const starter = (it) => !it.from && !it.feat && !it.track && !it.drop && !it.wgold && !it.quest; // the comfy clothes everyone starts with
+  const starter = (it) => !it.from && !it.feat && !it.track && !it.drop && !it.wgold && !it.quest && !it.garden; // the comfy clothes everyone starts with
   const DROPS = ITEMS.filter((it) => it.drop); // everyday accessories that come as surprise gifts (art.js)
   const wornByDefault = (it) => starter(it) && ART.DEFAULTS[it.slot] === it.id; // the everyday glasses are owned, not worn
   const TRACK = ITEMS.filter((it) => it.track).sort((a, b) => a.track - b.track); // a prize every few stars
@@ -253,6 +263,8 @@
       dayT: ['', 0], // [today, seconds learned today] (a day counts after a minute)
       strangers: [], // worlds where the Stranger has come (0-6), and 7: the last time, with the whole Juz memorized
       riddle: ['', 0, 0, 0, 0], // the Teacher's riddles: [day, stamps, done that day, the next opens at (ms), the day's gift given] (v2.9.1)
+      griddle: ['', 0, 0, 0, 0], // (v2.12.0) the Hidden Garden's own riddles, the same way
+      gat: 0, // (v2.12.0) where the explorer stands in the Hidden Garden (its stop, from 0)
       buddy: ['', 0, 0], // the buddies at my tree: [day, fed that day, feeds in all] (v2.9.1)
       grow: [0, '', []], // my tree: [growth from practice, day, sūrahs practised that day (a sūrah grows it once a day)]
       at: 0,
@@ -363,7 +375,7 @@
         if (ITEM[id] && ITEM[id].slot === sl && p.items.includes(id)) p.stash.outfit[sl] = id;
       });
     }
-    p.cpg = uniq((Array.isArray(o.cpg) ? o.cpg : []).filter((k) => typeof k === 'string' && /^\d{2,3}:\d$/.test(k))).slice(0, 200);
+    p.cpg = uniq((Array.isArray(o.cpg) ? o.cpg : []).filter((k) => typeof k === 'string' && /^\d{2,3}:\d{1,2}$/.test(k))).slice(0, 260); // (Al-Wāqiʿah has 12 checkpoints)
     p.feats = uniq((Array.isArray(o.feats) ? o.feats : []).filter((k) => FEAT_ITEM[k]));
     p.fix = uniq((Array.isArray(o.fix) ? o.fix : []).filter((n) => BYN[n]));
     // the Wise Elder: where he took things, whether he comes back, stickers he holds (saved as strangerAt before v2.6.11)
@@ -377,10 +389,11 @@
     const g0 = typeof o.teacherGift === 'string' ? o.teacherGift : o.elderGift;
     if (typeof g0 === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(g0)) p.teacherGift = g0;
     p.wdone = Array.isArray(o.wdone)
-      ? uniq(o.wdone.filter((w) => Number.isInteger(w) && w >= 0 && w < WORLDS.length))
+      ? uniq(o.wdone.filter((w) => Number.isInteger(w) && w >= 0 && w <= GARDEN_W))
       : WORLDS.map((_, wi) => wi).filter((wi) => worldDone(wi, p)); // no party for worlds finished before v2.1
     if (typeof o.daily === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(o.daily)) p.daily = o.daily;
-    p.at = int(o.at, 0, S.length - 1, 0);
+    p.at = int(o.at, 0, J.length - 1, 0); // (on Juz ʿAmma's path; the Garden has its own, gat)
+    p.gat = int(o.gat, 0, GS.length - 1, 0);
     p.made = !!o.made;
     const secs = (v) => (typeof v === 'number' && isFinite(v) && v > 0 ? Math.min(Math.round(v), 1e8) : 0);
     p.time = secs(o.time);
@@ -400,12 +413,13 @@
     });
     // (pictures from checkpoints with no step finished came in before v2.8.4: they go)
     p.found = uniq((Array.isArray(o.found) ? o.found : []).filter((k) => JKEYS.has(k) && (k[0] !== 'e' || jEarnable(k, p))));
-    p.jdone = uniq((Array.isArray(o.jdone) ? o.jdone : []).filter((w) => Number.isInteger(w) && w >= 0 && w < WORLDS.length));
+    p.jdone = uniq((Array.isArray(o.jdone) ? o.jdone : []).filter((w) => Number.isInteger(w) && w >= 0 && w <= GARDEN_W));
     const day = (v) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '');
     if (Array.isArray(o.streak)) p.streak = [day(o.streak[0]), int(o.streak[1], 0, 1e5, 0)];
     p.best = Math.max(p.streak[1], int(o.best, 0, 1e5, 0));
     if (Array.isArray(o.dayT) && day(o.dayT[0])) p.dayT = [o.dayT[0], Math.min(86400, Math.max(0, +o.dayT[1] || 0))];
     if (Array.isArray(o.riddle)) p.riddle = [day(o.riddle[0]), int(o.riddle[1], 0, 1e5, 0), int(o.riddle[2], 0, 7, 0), typeof o.riddle[3] === 'number' && o.riddle[3] > 0 && isFinite(o.riddle[3]) ? Math.round(o.riddle[3]) : 0, o.riddle[4] ? 1 : 0];
+    if (Array.isArray(o.griddle)) p.griddle = [day(o.griddle[0]), int(o.griddle[1], 0, 1e5, 0), int(o.griddle[2], 0, 7, 0), typeof o.griddle[3] === 'number' && o.griddle[3] > 0 && isFinite(o.griddle[3]) ? Math.round(o.griddle[3]) : 0, o.griddle[4] ? 1 : 0];
     if (Array.isArray(o.buddy)) p.buddy = [day(o.buddy[0]), int(o.buddy[1], 0, 99, 0), int(o.buddy[2], 0, 1e6, 0)];
     if (Array.isArray(o.grow)) p.grow = [int(o.grow[0], 0, 1e6, 0), day(o.grow[1]), day(o.grow[1]) ? nums(o.grow[2]).sort((x, y) => x - y) : []];
     return p;
@@ -625,8 +639,10 @@
     for (let i = 0; i < max; i++) o += i < k ? '⭐' : '☆';
     return o;
   }
-  const totalStars = (prof) => S.reduce((t, s) => t + surahStars(s, prof), 0);
-  const MAX_STARS = S.reduce((t, s) => t + surahMax(s), 0);
+  const totalStars = (prof) => J.reduce((t, s) => t + surahStars(s, prof), 0); // (Juz ʿAmma's: the Garden's stars are its own)
+  const MAX_STARS = J.reduce((t, s) => t + surahMax(s), 0);
+  const gardenStars = (prof) => GS.reduce((t, s) => t + surahStars(s, prof), 0);
+  const GARDEN_MAX = GS.reduce((t, s) => t + surahMax(s), 0);
   /* A world is complete when every sūrah in it has at least one star. Review games have 3 hearts; finishing the
      Starry Path (world 5) adds a 4th and the Sky Kingdom (world 6) a 5th, for the long sūrahs at the top (v2.7.24:
      before, every world added one, so five came far too early). */
@@ -638,9 +654,9 @@
   const maxHearts = (prof, but) => 3 + HEART_WORLDS.filter((wi) => wi !== but && worldDone(wi, prof)).length;
   /* The summit milestones for the whole Juz: a star in every sūrah, three in every sūrah, every star */
   const FEAT_TEST = {
-    once: (prof) => S.every((s) => surahStars(s, prof) > 0),
-    three: (prof) => S.every((s) => surahStars(s, prof) >= Math.min(3, surahMax(s))),
-    all: (prof) => S.every((s) => surahStars(s, prof) >= surahMax(s)),
+    once: (prof) => J.every((s) => surahStars(s, prof) > 0),
+    three: (prof) => J.every((s) => surahStars(s, prof) >= Math.min(3, surahMax(s))),
+    all: (prof) => J.every((s) => surahStars(s, prof) >= surahMax(s)),
   };
   const STAFF = 'elder-staff'; // the Wise Elder's own staff, a summit reward with the Summit cloak
   function giveStaff(prof) {
@@ -671,7 +687,8 @@
     // An-Naba's treasure is the Summit crown: it waits for the whole Juz memorized (v2.8.4; it came with its first star)
     if (s.n === CROWN_N && !allMemorized(prof)) return '';
     const got = surahStars(s, prof);
-    if (got > 0 && give(SURAH_ITEM[s.n])) given = 'item';
+    // (v2.12.0) a Hidden Garden stop's treasure comes once it is memorized (green), not with its first star
+    if ((s.garden ? surahDone(s, prof) : got > 0) && give(SURAH_ITEM[s.n])) given = 'item';
     if (got >= surahMax(s) && give(GOLD_ITEM[s.n])) given = given ? 'both' : 'gold';
     return given;
   }
@@ -750,7 +767,7 @@
       n++;
     });
     ART.STICKERS.forEach((x) => {
-      if (x.foil || prof.stickers.includes(x.id) || prof.lostSt.some((l) => l.id === x.id)) return; // (the Teacher's held ones come back by revising)
+      if (x.foil || x.garden || prof.stickers.includes(x.id) || prof.lostSt.some((l) => l.id === x.id)) return; // (the Teacher's held ones come back by revising; the Garden's are found there)
       prof.stickers.push(x.id);
       prof.pending = prof.pending.filter((g) => !(g.k === 's' && g.id === x.id));
       gotIt(prof, 's:' + x.id);
@@ -760,7 +777,8 @@
   }
   const NEWDOT = '<i class="newdot" aria-label="new"></i>';
   // everything there is to win for this explorer, stickers aside (golden editions, rides and specials included)
-  const winnable = (prof, slot) => ITEMS.filter((it) => !starter(it) && forKid(it, prof) && (!slot || it.slot === slot));
+  const winnable = (prof, slot) => ITEMS.filter((it) => !starter(it) && !it.garden && forKid(it, prof) && (!slot || it.slot === slot)); // (Juz ʿAmma's: the Garden's are its own)
+  const gardenThings = (prof) => ITEMS.filter((it) => it.garden && forKid(it, prof));
   // the journal: a little book with a bookmark
   const BOOK_IC =
     '<svg class="wr-mapic" viewBox="0 0 48 40" aria-hidden="true"><g stroke="#2b2340" stroke-width="2.4" stroke-linejoin="round"><path d="M9 4H38Q41 4 41 7V36H12Q9 36 9 33Z" fill="#c0703a"/><path d="M12 30H41V36H12Q9 36 9 33Q9 30 12 30Z" fill="#fff6dc"/></g>' +
@@ -1320,7 +1338,7 @@
       if (st.sel === -1) return { key: `${s.n}:bism`, label: 'Bismillah', items: [[1, 1]], loop: true };
       if (st.sel != null) return Object.assign(one(st.sel), { loop: true });
       const all = many(range({ from: 0, to: s.ayat.length - 1 }), 'Whole sūrah');
-      return Object.assign(all, { items: [[1, 1], ...all.items], loop: true });
+      return Object.assign(all, { items: s.bism === false ? all.items : [[1, 1], ...all.items], loop: true }); // (no Basmalah before Al-Fātiḥah, whose first āyah it is, or before āyāt from inside a sūrah)
     }
     return null;
   }
@@ -1465,6 +1483,8 @@
     return a;
   };
   const toArNum = (n) => String(n).replace(/\d/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d]);
+  // the Arabic title: سورة + its name, or just the name for āyāt from inside a sūrah (آية الكرسي)
+  const sTitle = (s) => (s.garden && s.from ? s.ar : 'سُورَةُ ' + s.ar);
   const AR_LETTER = /[ء-يٮ-ۓۺ-ۼ]/;
   function wordsOf(ar) {
     const out = [];
@@ -1568,11 +1588,11 @@
   }
   function tag(s, k) {
     const a = s.ayat[k];
-    return `<span class="ayah-tag"><span class="num">${k + 1}</span>${a.hook}</span>${a.twin ? `<span class="twin">👯 twin of #${a.twin}</span>` : ''}`;
+    return `<span class="ayah-tag"><span class="num">${ayNo(s, k)}</span>${a.hook}</span>${a.twin ? `<span class="twin">👯 twin of #${ayNo(s, a.twin - 1)}</span>` : ''}`;
   }
   function partLabel(s, p) {
     const P = s.P[p];
-    return `Part ${p + 1} · āyāt ${P.from + 1}–${P.to + 1}`;
+    return `Part ${p + 1} · āyāt ${ayNo(s, P.from)}–${ayNo(s, P.to)}`;
   }
   // chain now? after every new āyah from the second one on, or after every 3, 4 or 5 (and always at the last one)
   function chainNow() {
@@ -1685,6 +1705,8 @@
   let arriving = ''; // the screen just left, while the new one is drawn
   let mapCtl = null;
   function go(view, params = {}) {
+    // (v2.12.0) a stop's page or game: the map behind it is its own (the Garden's, or Juz ʿAmma's)
+    if (params.i != null && S[params.i] && ['surah', 'learn', 'words', 'path', 'order', 'mushaf', 'done'].includes(view)) inGarden = !!S[params.i].garden;
     if (view === 'map' && ['surah', 'done', 'learn', 'words', 'path', 'order', 'mushaf'].includes(st.view)) setTimeout(maybeElder, 1400);
     if (view === 'map' && !noExplorers() && P().made && !begun(P())) setTimeout(maybeIntro, 900);
     if (view === 'map' && relit) setTimeout(flareFire, 1100); // a campfire just relit flares up
@@ -1997,16 +2019,17 @@
     };
   }
   function suggestIdx() {
-    const i = S.findIndex((s) => !surahStars(s)); // one star is enough to move on
-    return i < 0 ? S.length - 1 : i;
+    const i = J.findIndex((s) => !surahStars(s)); // one star is enough to move on
+    return i < 0 ? J.length - 1 : i;
   }
   V.map = () => {
     const prof = P();
     return `<div class="mapscr ${arriving && arriving !== 'splash' ? 'arrive' : ''}">
     <div class="hud">
       <button class="icon-btn" data-act="home" aria-label="Back to the start">${ICON.home}</button>
-      <button class="hud-stars hud-sur" data-act="progress" data-t="surahs" aria-label="Sūrahs done: ${doneSurahs()} of ${S.length}">📖 <b>${doneSurahs()}</b><small>/${S.length}</small></button>
-      <button class="hud-stars" data-act="progress" data-t="stars" aria-label="Stars: ${totalStars()} of ${MAX_STARS}">⭐ <b>${totalStars()}</b><small>/${MAX_STARS}</small></button>
+      ${inGarden ? `<button class="hud-stars hud-sur" data-act="progress" data-t="garden" aria-label="The Hidden Garden: ${gardenProgress(prof).n} of ${GS.length} memorized">🏮 <b>${gardenProgress(prof).n}</b><small>/${GS.length}</small></button>
+      <button class="hud-stars" data-act="progress" data-t="garden" aria-label="Garden stars: ${gardenStars(prof)} of ${GARDEN_MAX}">⭐ <b>${gardenStars(prof)}</b><small>/${GARDEN_MAX}</small></button>` : `<button class="hud-stars hud-sur" data-act="progress" data-t="surahs" aria-label="Sūrahs done: ${doneSurahs()} of ${J.length}">📖 <b>${doneSurahs()}</b><small>/${J.length}</small></button>
+      <button class="hud-stars" data-act="progress" data-t="stars" aria-label="Stars: ${totalStars()} of ${MAX_STARS}">⭐ <b>${totalStars()}</b><small>/${MAX_STARS}</small></button>`}
       ${giftIcon(prof)}
       <button class="icon-btn hud-bag hud-me" data-act="bag" aria-label="My explorer: dress up, collection and achievements"><span class="phead">${explorer({ cls: 'mini' })}</span>${prof.fresh.length ? NEWDOT : ''}</button>
     </div>
@@ -2017,19 +2040,35 @@
     <div id="map" class="mroot"></div>
   </div>`;
   };
+  // (v2.12.0) the Hidden Garden: its own map, through the gate by the summit (and back through the gate at its start)
+  let inGarden = false;
+  const gardenProgress = (prof) => {
+    const done = GS.filter((s) => surahDone(s, prof)).length;
+    return { frac: done / GS.length, done: done === GS.length, gold: GS.every((s) => surahStars(s, prof) >= surahMax(s)), n: done };
+  };
+  const juzWorldProgress = (wi) => {
+    const list = J.filter((s) => worldOf(s) === wi);
+    const done = list.filter((s) => surahDone(s)).length;
+    // green: every sūrah memorized; golden: every star in every sūrah
+    return { frac: done / list.length, done: done === list.length, gold: list.every((s) => surahStars(s) >= surahMax(s)) };
+  };
   function mountMap() {
     if (mapCtl) {
       mapCtl.destroy(); // re-drawing the map (after a gift, a setting…) replaces the old one
       document.body.classList.remove('busy'); // and ends any walk on it
     }
     const prof = P();
-    const reached = Math.max(prof.at, ...S.map((s, i) => (surahStars(s) > 0 ? i : 0)));
+    if (inGarden) return mountGarden(prof);
+    const reached = Math.max(prof.at, ...J.map((s, i) => (surahStars(s) > 0 ? i : 0)));
     mapCtl = MAP.mount(document.getElementById('map'), {
-      surahs: S,
+      surahs: J,
       worlds: WORLDS,
       art: ART,
       night: isNight(),
       current: prof.at,
+      focus: st.focusTop ? J.length - 1 : undefined, // (back from the Garden: at the summit)
+      gate: { at: 'summit', act: 'garden', label: 'The Hidden Garden' },
+      railExtra: [{ pos: 'top', act: 'garden', w: GARDEN_W, num: GARDEN_W + 1, name: GARDEN_NAME, art: GARDEN_W, icon: 'garden-arch', pr: gardenProgress(prof) }],
       reached,
       suggest: suggestIdx(),
       status: surahStatus,
@@ -2046,22 +2085,49 @@
         const w = ART.WORLDS[wi];
         setTopColor(isNight() && w.dim ? w.dim.sky[0] : w.sky[0]); // the status bar follows the world in view
       },
-      worldProgress: (wi) => {
-        const list = S.filter((s) => worldOf(s) === wi);
-        const done = list.filter((s) => surahDone(s)).length;
-        // green: every sūrah memorized; golden: every star in every sūrah
-        return { frac: done / list.length, done: done === list.length, gold: list.every((s) => surahStars(s) >= surahMax(s)) };
+      worldProgress: juzWorldProgress,
+    });
+  }
+  function mountGarden(prof) {
+    const at = Math.max(0, Math.min(GS.length - 1, prof.gat || 0)),
+      reached = Math.max(at, ...GS.map((s, i) => (surahStars(s) > 0 ? i : 0))),
+      sug = GS.findIndex((s) => !surahStars(s));
+    mapCtl = MAP.mount(document.getElementById('map'), {
+      surahs: GS,
+      worlds: [{ name: GARDEN_NAME, from: GS[GS.length - 1].n, to: GS[0].n }],
+      art: ART,
+      artWorld: () => GARDEN_W,
+      badgeNum: (s) => s.sura,
+      topProp: 'garden-pavilion',
+      startLabel: '🌷 Start',
+      gate: { at: 'start', act: 'gardenout', label: 'Back to the Summit' },
+      night: isNight(),
+      current: at,
+      reached,
+      suggest: sug < 0 ? GS.length - 1 : sug,
+      status: (i) => surahStatus(GS[i].idx),
+      explorerSVG: () => explorer({ view: 'front' }),
+      others: prefs.teacher && elderWorld() === GARDEN_W ? [{ id: 'elder', name: 'Your Teacher', svg: elderArt(''), wi: 0, elder: true }] : [],
+      worldIcon: () => 'garden-arch',
+      worldThrows: () => (prefs.teacher ? worldThrowIcons(GARDEN_W) : ''),
+      onWorld: () => {
+        const w = ART.WORLDS[GARDEN_W];
+        setTopColor(isNight() && w.dim ? w.dim.sky[0] : w.sky[0]);
       },
+      worldProgress: () => gardenProgress(P()),
+      railExtra: WORLDS.map((w, wi) => ({ pos: 'bottom', act: 'world', w: wi, num: wi + 1, name: w.name, art: wi, icon: WORLD_ICON[wi], pr: juzWorldProgress(wi) })),
     });
   }
   // a sūrah counts as done once it has at least one star
-  const doneSurahs = (prof) => S.filter((s) => surahStars(s, prof) > 0).length;
+  const doneSurahs = (prof) => J.filter((s) => surahStars(s, prof) > 0).length;
   /* The progress view (tap the counters at the top of the map): every sūrah with its stars; tap one to go there. */
   function showProgress(tab) {
     const prof = P(),
       m = document.getElementById('modal');
-    const rows = S.map((s, i) => {
-      const got = surahStars(s),
+    const garden = tab === 'garden'; // (v2.12.0: the Hidden Garden's stops, from its map)
+    const rows = (garden ? GS : J).map((s) => {
+      const i = s.idx,
+        got = surahStars(s),
         max = surahMax(s),
         fix = prof.fix.includes(s.n);
       const right =
@@ -2072,12 +2138,12 @@
         fl = fireOf(s, prof);
       // the number ringed like the map's stops: gold with every star, green once memorized
       const ring = got >= max ? ' gold' : surahDone(s) ? ' green' : '';
-      return `<button class="pgrow ${got ? 'done' : ''}" data-act="jump" data-i="${i}"><span class="pn${ring}">${s.n}</span><span class="pgname">${s.name}${fix ? ' <span class="pgfix" title="Needs fixing">💔</span>' : ''}<small><span>${s.icon} ${s.meaning}</span>${t >= 30 ? `<span>\u00a0· ⏱️ ${fmtTime(t)}</span>` : ''}</small></span>${fl >= 0 && tab !== 'stars' ? `<span class="pgfire f${fl}" title="Campfire: ${FIRE_WORD[fl]}">${ART.campfire(fl)}</span>` : ''}${right}</button>`;
+      return `<button class="pgrow ${got ? 'done' : ''}" data-act="jump" data-i="${i}"><span class="pn${ring}">${s.garden ? s.sura : s.n}</span><span class="pgname">${s.name}${fix ? ' <span class="pgfix" title="Needs fixing">💔</span>' : ''}<small><span>${s.icon} ${s.meaning}</span>${t >= 30 ? `<span>\u00a0· ⏱️ ${fmtTime(t)}</span>` : ''}</small></span>${fl >= 0 && tab !== 'stars' ? `<span class="pgfire f${fl}" title="Campfire: ${FIRE_WORD[fl]}">${ART.campfire(fl)}</span>` : ''}${right}</button>`;
     }).join('');
     const fixes = prof.fix.length ? `<p class="saveinfo center">💔 ${prof.fix.length === 1 ? 'One sūrah needs' : prof.fix.length + ' sūrahs need'} a little fixing: tap it to play a review game there.</p>` : '';
     m.innerHTML = `<div class="card progcard">
-      <div class="pgtabs"><button class="${tab !== 'stars' ? 'on' : ''}" data-act="progress" data-t="surahs">📖 Sūrahs <b>${doneSurahs()}/${S.length}</b></button><button class="${tab === 'stars' ? 'on' : ''}" data-act="progress" data-t="stars">⭐ Stars <b>${totalStars()}/${MAX_STARS}</b></button></div>
-      <p class="saveinfo center">${tab === 'stars' ? 'Every star in every sūrah. Tap a sūrah to go there.' : 'A sūrah is done with at least one star. Tap one to go there.'} ⏱️ ${fmtTime(prof.time || 0)} learning in all.</p>${fixes}
+      <div class="pgtabs">${garden ? `<button class="on" data-act="progress" data-t="garden">🏮 Lanterns <b>${gardenProgress(prof).n}/${GS.length}</b></button><button class="on" data-act="progress" data-t="garden">⭐ Stars <b>${gardenStars(prof)}/${GARDEN_MAX}</b></button>` : `<button class="${tab !== 'stars' ? 'on' : ''}" data-act="progress" data-t="surahs">📖 Sūrahs <b>${doneSurahs()}/${J.length}</b></button><button class="${tab === 'stars' ? 'on' : ''}" data-act="progress" data-t="stars">⭐ Stars <b>${totalStars()}/${MAX_STARS}</b></button>`}</div>
+      <p class="saveinfo center">${garden ? 'A lantern lights up on My Tree for each one memorized. Tap one to go there.' : tab === 'stars' ? 'Every star in every sūrah. Tap a sūrah to go there.' : 'A sūrah is done with at least one star. Tap one to go there.'} ⏱️ ${fmtTime(prof.time || 0)} learning in all.</p>${fixes}
       <div class="pglist${tab === 'stars' ? ' stars' : ''}">${rows}</div>
       <div class="row"><button class="btn wide" data-act="cno">Close</button></div></div>`;
     m.classList.add('show');
@@ -2088,6 +2154,15 @@
   /* go to sūrah i from anywhere: the map, the explorer walks in, then its next lesson starts */
   function jumpTo(i) {
     hideModal();
+    if (!!S[i].garden !== inGarden) {
+      // (a stop on the other map: that map first, then the walk)
+      inGarden = !!S[i].garden;
+      if (S[i].garden) P().gat = GS.indexOf(S[i]);
+      else P().at = i;
+      go('map');
+      setTimeout(() => st.view === 'map' && !document.getElementById('modal').classList.contains('show') && enterSurah(i), 450);
+      return;
+    }
     const walk = () =>
       enterSurah(i, () => {
         const next = $app.querySelector('.qstep.next');
@@ -2100,10 +2175,13 @@
       setTimeout(() => st.view === 'map' && !document.getElementById('modal').classList.contains('show') && walk(), 450);
     }
   }
+  // where the explorer stands: on the Juz's path (at), or in the Hidden Garden (gat, its own stop number)
+  const setAt = (prof, i) => (S[i].garden ? (prof.gat = GS.indexOf(S[i])) : (prof.at = i));
   function enterSurah(i, then) {
     const prof = P();
-    if (!mapCtl) {
-      prof.at = i;
+    if (!mapCtl || !!S[i].garden !== inGarden) {
+      // (no map, or the stop is on the other one: straight there)
+      setAt(prof, i);
       save();
       openSurah(i);
       if (then) then();
@@ -2116,7 +2194,7 @@
     // the game must not stay deaf to taps
     const guard = setTimeout(() => document.body.classList.remove('busy'), 4000);
     ctl.walkTo(i, () => {
-      prof.at = i;
+      setAt(prof, i);
       save();
       ctl.zoomInto(i, () => {
         clearTimeout(guard);
@@ -2131,6 +2209,7 @@
   function openSurah(i) {
     const s = S[i],
       r = P().prog[s.n];
+    inGarden = !!s.garden; // (back on the map, the Garden's own if it is one of its stops)
     bismSaid = null;
     let p = 0;
     if (multi(s)) {
@@ -2147,11 +2226,11 @@
       const got = (r && r.all) || 0;
       const ready = bigReady(s);
       return [
-        { key: 'pathpick', ico: '🐸', t: 'Stepping Stones · whole sūrah', d: 'Every part in one go, from the pictures', done: !!got, stars: [got ? 1 : 0, 1], review: true },
+        { key: 'pathpick', ico: '🐸', t: `Stepping Stones · ${whole(s)}`, d: 'Every part in one go, from the pictures', done: !!got, stars: [got ? 1 : 0, 1], review: true },
         {
           key: ready ? 'order' : 'biglocked',
           ico: '🧩',
-          t: 'Big Puzzle · whole sūrah',
+          t: `Big Puzzle · ${whole(s)}`,
           d: ready ? "Fit every checkpoint's puzzle together" : "Finish the Picture Puzzle in every checkpoint first",
           done: !!(r && r.big),
           stars: [0, 0],
@@ -2179,13 +2258,13 @@
         got = partStars(x);
       return `<button class="cpf ${st.p === p ? 'sel' : ''} ${done ? 'done' : ''}" data-act="part" data-p="${p}">
         <span class="cpflag">${ART.flag(done ? '#2fbf71' : st.p === p ? '#ff9f1c' : '#b9b1dc')}</span>
-        <b>${p + 1}</b><small>āyāt ${P.from + 1}–${P.to + 1}</small><span class="cpst">⭐ ${got}/4</span></button>`;
+        <b>${p + 1}</b><small>${P.from === P.to ? `āyah ${ayNo(s, P.from)}` : `āyāt ${ayNo(s, P.from)}–${ayNo(s, P.to)}`}</small><span class="cpst">⭐ ${got}/4</span></button>`;
     });
     const allGot = (r && r.all) || 0;
     cps.push(`<button class="cpf summit ${st.p === 'all' ? 'sel' : ''} ${allGot ? 'done' : ''}" data-act="part" data-p="all">
-      <span class="cpflag">🏁</span><b>All</b><small>whole sūrah</small><span class="cpst">${starRow(allGot ? 1 : 0, 1)}</span></button>`);
+      <span class="cpflag">🏁</span><b>All</b><small>${whole(s)}</small><span class="cpst">${starRow(allGot ? 1 : 0, 1)}</span></button>`);
     // one row that scrolls sideways; faded edges and a bouncing arrow show there is more
-    return `<div class="h2">🚩 Checkpoints <small>One part at a time, then the whole sūrah · swipe for more</small></div><div class="cpwrap"><div class="cptrail" id="cptrail">${cps.join('<i class="cpline"></i>')}</div><button class="cpmore cpless" data-act="cpscroll" data-d="-1" aria-label="Earlier checkpoints">‹</button><button class="cpmore" data-act="cpscroll" data-d="1" aria-label="More checkpoints">›</button></div>`;
+    return `<div class="h2">🚩 Checkpoints <small>One part at a time, then ${whole(s)} · swipe for more</small></div><div class="cpwrap"><div class="cptrail" id="cptrail">${cps.join('<i class="cpline"></i>')}</div><button class="cpmore cpless" data-act="cpscroll" data-d="-1" aria-label="Earlier checkpoints">‹</button><button class="cpmore" data-act="cpscroll" data-d="1" aria-label="More checkpoints">›</button></div>`;
   }
   /* keep the chosen checkpoint in view, and show the "more" cue only while there is more to swipe to */
   // a sideways row: its wrapper shows ‹ › arrows while there is more to see that way
@@ -2233,14 +2312,14 @@
         ${x.locked ? '<span class="qgo lock">🔒</span>' : ''}</button>`; // (each review game's hearts left, on its star line, v2.9.5)
     });
     return `<div class="screen ${st.enter ? 'zoomin' : ''}" style="${cv(s.color)}">
-    ${bar(`${s.n}. ${s.name}`, `World ${wi + 1} · ${WORLDS[wi].name}`, 'map')}
-    <div class="hero"><button class="bookbtn" data-act="mushaf" aria-label="Read the whole sūrah">📖<small>Read</small></button>${fireChip(s)}<div class="hero-icon bob">${s.icon}</div><div class="hero-ar">سُورَةُ ${s.ar}</div>
+    ${bar(s.from ? s.name : `${snum(s)}. ${s.name}`, `World ${wi + 1} · ${worldName(wi)}`, 'map')}
+    <div class="hero"><button class="bookbtn" data-act="mushaf" aria-label="Read the whole sūrah">📖<small>Read</small></button>${fireChip(s)}<div class="hero-icon bob">${s.icon}</div><div class="hero-ar">${sTitle(s)}</div>
       <div class="hero-en">${s.meaning} · ${s.ayat.length} āyāt${multi(s) ? ` · ${s.P.length} checkpoints` : ''}</div>
       <div class="hero-st ${done ? 'done' : ''}">${done ? '✓ Memorized! MāshāAllāh' : `⭐ ${surahStars(s)} / ${surahMax(s)} stars`}</div></div>
     ${lostAt(s.n).length ? `<div class="lostnote">${lostAt(s.n).map((x) => `<span class="lostit">${itemPic(x.id)}</span>`).join('')}<span>Your <b>${lostAt(s.n).map((x) => itemName(x.id)).join(', ')}</b> fell off here! Finish a review game to get it back.</span></div>` : ''}
     ${multi(s) ? checkpointTrail(s) : ''}
-    <div class="h2 qhead2"><span>${p === 'all' ? '🏁 The whole sūrah' : multi(s) ? `🧭 Part ${p + 1}: your quest` : '🧭 Your quest'}<small>${nextIdx < 0 ? 'All done here! Play any game again to revise.' : 'Pick a step to start'}</small></span>
-      <button class="bismbtn ${bismSaid === s.n ? '' : 'breathe'}" data-act="bism" aria-label="Say Bismillah first">${ICON.moon}<small>Bismillah</small></button></div>
+    <div class="h2 qhead2"><span>${p === 'all' ? `🏁 ${whole(s) === 'whole sūrah' ? 'The whole sūrah' : 'All of it'}` : multi(s) ? `🧭 Part ${p + 1}: your quest` : '🧭 Your quest'}<small>${nextIdx < 0 ? 'All done here! Play any game again to revise.' : 'Pick a step to start'}</small></span>
+      ${s.bism === false ? '' : `<button class="bismbtn ${bismSaid === s.n ? '' : 'breathe'}" data-act="bism" aria-label="Say Bismillah first">${ICON.moon}<small>Bismillah</small></button>`}</div>
     <div class="qsteps">${stepsHTML}</div>
     <div class="tip"><div class="tip-h">💡 Tip for grown-ups</div><div class="tip-b">${s.pattern}</div>${s.toy ? `<div class="tip-toy">${toyBtn(s)}<span>Tap the ${s.toy[0]} together with your child each time you hear it.</span></div>` : ''}</div>
   </div>`;
@@ -2334,18 +2413,18 @@
         const words = wordsOf(a.ar)
           .map((w, j) => (sel ? `<span class="mw" style="${wv(WCOL[j % WCOL.length])}">${w}</span>` : w))
           .join(' ');
-        return `<span class="mayah ${sel ? 'sel' : ''}" data-k="${k}">${words} <span class="mnum">﴿${toArNum(k + 1)}﴾</span></span>`;
+        return `<span class="mayah ${sel ? 'sel' : ''}" data-k="${k}">${words} <span class="mnum">﴿${toArNum(ayNo(s, k))}﴾</span></span>`;
       })
       .join(' ');
     const focus = st.sel != null && st.focus ? focusCard(s, st.sel) : '';
     return `<div class="screen mushafscr" style="${cv(s.color)}" data-act="mclear">
-    ${bar(`📖 ${s.name}`, `${s.ayat.length} āyāt · ${st.sel === -1 ? 'Bismillah chosen' : st.sel != null ? `āyah ${st.sel + 1} chosen` : 'the whole sūrah'}`, 'surah')}
+    ${bar(`📖 ${s.name}`, `${s.ayat.length} āyāt · ${st.sel === -1 ? 'Bismillah chosen' : st.sel != null ? `āyah ${ayNo(s, st.sel)} chosen` : 'the whole ' + (whole(s) === 'whole sūrah' ? 'sūrah' : 'passage')}`, 'surah')}
     <div class="mtools"><span>${st.sel != null ? (st.focus ? 'Listen plays this āyah. Tap anywhere to close.' : '<b>Tap the āyah again</b> to look closer. Tap anywhere else to clear the colors.') : '<b>Hold an āyah</b> to color its words, like Word Steps.'}</span></div>
     <div class="card mushaf ${focus ? 'focusing' : ''}">
-      <div class="mtitle" lang="ar">سُورَةُ ${s.ar}</div>
-      <div class="mbism" lang="ar" dir="rtl"><span class="mayah ${st.sel === -1 ? 'sel' : ''}" data-k="-1">${wordsOf(BISM)
+      <div class="mtitle" lang="ar">${sTitle(s)}</div>
+      ${s.bism === false ? '' : `<div class="mbism" lang="ar" dir="rtl"><span class="mayah ${st.sel === -1 ? 'sel' : ''}" data-k="-1">${wordsOf(BISM)
         .map((w, j) => (st.sel === -1 ? `<span class="mw" style="${wv(WCOL[j % WCOL.length])}">${w}</span>` : w))
-        .join(' ')}</span></div>
+        .join(' ')}</span></div>`}
       <div class="mtext" lang="ar" dir="rtl">${ayat}</div>
     </div>
     ${focus}
@@ -2363,7 +2442,7 @@
       })
       .join('');
     return `<div class="mfocus" role="dialog" aria-label="${k === -1 ? 'Bismillah' : 'Āyah ' + (k + 1)}"><div class="mfcard">
-      <div class="mfhead"><span class="ayah-tag">${k === -1 ? '<span class="num">🌙</span>Bismillah' : `<span class="num">${k + 1}</span>Āyah ${k + 1}`}</span><span class="mfbtns">${prefs.translit || prefs.wordmean ? '<button class="mfx" data-act="wordset" aria-label="Word meaning and transliteration settings">⚙️</button>' : ''}<button class="mfx" data-act="mclear" aria-label="Close">✕</button></span></div>
+      <div class="mfhead"><span class="ayah-tag">${k === -1 ? '<span class="num">🌙</span>Bismillah' : `<span class="num">${ayNo(s, k)}</span>Āyah ${ayNo(s, k)}`}</span><span class="mfbtns">${prefs.translit || prefs.wordmean ? '<button class="mfx" data-act="wordset" aria-label="Word meaning and transliteration settings">⚙️</button>' : ''}<button class="mfx" data-act="mclear" aria-label="Close">✕</button></span></div>
       <div class="mfwords" dir="rtl">${words}</div>
       ${prefs.meaning ? `<div class="mean">💬 ${a.kid}</div>` : ''}
       ${!prefs.translit && !prefs.wordmean ? '<div class="mfhint"><span>See how each word sounds and what it means: switch on transliteration and word meanings.</span><button class="icon-btn sm" data-act="wordset" aria-label="Open the word settings">⚙️</button></div>' : ''}
@@ -2535,6 +2614,7 @@
     { water: ['#5a4bb4', '#2a2270'], bank: ['#7d66c2', '#4f3f8c'], props: ['starry-mushroom', 'starry-crystal', 'starry-lantern', 'starry-star'], stars: true },
     { water: ['#eef5ff', '#c5d6ff'], bank: ['#ffffff', '#dfe6ff'], props: ['sky-balloon', 'sky-kite', 'sky-rainbow', 'sky-cloud'], sky: true },
     { water: ['#bfe8ff', '#7fc0ea'], bank: ['#ffffff', '#d4e6f6'], props: ['peak-pine', 'peak-rock', 'peak-snowman', 'peak-pine'], ice: true },
+    { water: ['#8fdcd0', '#3fa596'], bank: ['#9fe08a', '#4fb06a'], props: ['garden-rose', 'garden-jasmine', 'garden-fountain', 'garden-lily'] }, // (v2.12.0) the Hidden Garden's lily pond
   ];
   function streamBack(wi) {
     const W = ART.WORLDS[wi],
@@ -2624,7 +2704,7 @@
         ? `<div class="first-word" lang="ar">${cl.W.slice(0, cl.words).join(' ')} …</div>`
         : '';
     return `<div class="screen" style="${cv(s.color)}">
-    ${bar('Stepping Stones', `${s.name}${c.all ? ' · whole sūrah' : multi(s) ? ' · ' + partLabel(s, st.p) : ''}`, 'surah')}
+    ${bar('Stepping Stones', `${s.name}${c.all ? ' · ' + whole(s) : multi(s) ? ' · ' + partLabel(s, st.p) : ''}`, 'surah')}
     ${heartsBar()}
     <div class="stream w${wi}">${streamBack(wi)}${stonesHTML(idx, wi)}<span class="taplbl" aria-hidden="true">tap me!</span></div>
     <div class="row pathbtns">
@@ -2806,7 +2886,7 @@
     const left = st.deck.filter((j) => !st.placed[j]);
     const full = !left.length;
     return `<div class="screen" style="${cv(s.color)}">
-    ${bar(big ? 'Big Puzzle' : 'Picture Puzzle', `${s.name}${big ? ' · whole sūrah' : multi(s) ? ' · ' + partLabel(s, st.p) : ''}`, 'surah')}
+    ${bar(big ? 'Big Puzzle' : 'Picture Puzzle', `${s.name}${big ? ' · ' + whole(s) : multi(s) ? ' · ' + partLabel(s, st.p) : ''}`, 'surah')}
     ${heartsBar()}
     ${coach(
       full
@@ -2891,7 +2971,7 @@
           })()
         : '';
     const world = st.world
-      ? `<div class="worlddone"><b>🌍 World ${st.world.wi + 1} complete!</b><span>${esc(WORLDS[st.world.wi].name)}: a star in every sūrah.</span>${st.world.heart ? `<span class="hup">${ART.heart(true)} +1 heart! You now have ${st.world.hearts} hearts in review games.</span>` : ''}</div>`
+      ? `<div class="worlddone"><b>🌍 World ${st.world.wi + 1} complete!</b><span>${esc(worldName(st.world.wi))}: a star in every ${st.world.wi === GARDEN_W ? 'stop' : 'sūrah'}.</span>${st.world.heart ? `<span class="hup">${ART.heart(true)} +1 heart! You now have ${st.world.hearts} hearts in review games.</span>` : ''}</div>`
       : '';
     const g = prof.pending[0];
     return `<div class="screen donescr" style="${cv(s.color)}">
@@ -2925,6 +3005,17 @@
   /* ---------- MY EXPLORER (wardrobe + collection) ---------- */
   /* newest win first: position in prof.got (higher = newer), -1 if never won */
   const gotAt = (prof, key) => prof.got.indexOf(key);
+  // why a Hidden Garden thing was given, on its gift card (v2.12.0)
+  const gardenWhy = (it) =>
+    it.garden === 'drop'
+      ? 'A surprise from the Hidden Garden!'
+      : it.garden === 'ride'
+        ? 'For making the whole Hidden Garden golden: every star in every stop! Climb aboard!'
+        : it.gold
+          ? `For every star in ${GS[it.garden - 1].name}. MāshāAllāh!`
+          : `For memorizing ${GS[it.garden - 1].name}. MāshāAllāh!`;
+  // how a Hidden Garden thing is won (v2.12.0)
+  const gardenHint = (it) => (it.garden === 'drop' ? 'A Garden surprise' : it.garden === 'ride' ? 'The whole Garden golden' : it.gold ? `Every star in ${GS[it.garden - 1].name}` : `Memorize ${GS[it.garden - 1].name}`);
   function itemCell(it, prof, worn) {
     const owned = starter(it) || prof.items.includes(it.id);
     const lost = prof.lost.find((x) => x.id === it.id);
@@ -2933,7 +3024,7 @@
       return `<button class="icell lost" data-act="goto" data-i="${BYN[lost.n].idx}"><span class="iart">${itemPic(it.id)}</span><span class="lostbadge">${ART.lostMarker()}</span><small>Lost at ${BYN[lost.n].name}!</small></button>`;
     if (owned)
       return `<button class="icell t${it.tier || 0} ${it.gold ? 'gold' : ''} ${on ? 'on' : ''}" data-act="equip" data-id="${it.id}" aria-pressed="${on}"><span class="iart">${itemPic(it.id)}</span><small>${itemName(it.id)}</small>${prefs.teacher && blocksOf(it.id).length ? `<span class="iblk" aria-label="Blocks ${blocksOf(it.id).map((k) => THROW[k].name).join(', ')}">${blockIcons(blocksOf(it.id))}</span>` : ''}${prof.fresh.includes('i:' + it.id) ? NEWDOT : ''}</button>`;
-    return `<div class="icell locked ${it.gold || it.wgold ? 'goldlock' : ''}"><span class="iart">${ART.silhouette(it.id, P().look)}</span><small>${it.wgold ? `World ${it.wgold} all golden` : it.quest === 'staff' ? 'At the summit' : it.quest ? 'Pass your Teacher’s test' : it.feat ? FEAT_HINT[it.feat] : it.drop ? 'A surprise gift' : it.track ? `At ${it.track} ⭐` : it.from === CROWN_N ? (it.gold ? `Every star in ${BYN[it.from].name}, all memorized` : 'Every sūrah memorized') : it.gold ? `Every star in ${BYN[it.from].name}` : `A star in ${BYN[it.from].name}`}</small></div>`;
+    return `<div class="icell locked ${it.gold || it.wgold ? 'goldlock' : ''}"><span class="iart">${ART.silhouette(it.id, P().look)}</span><small>${it.garden ? gardenHint(it) : it.wgold ? `World ${it.wgold} all golden` : it.quest === 'staff' ? 'At the summit' : it.quest ? 'Pass your Teacher’s test' : it.feat ? FEAT_HINT[it.feat] : it.drop ? 'A surprise gift' : it.track ? `At ${it.track} ⭐` : it.from === CROWN_N ? (it.gold ? `Every star in ${BYN[it.from].name}, all memorized` : 'Every sūrah memorized') : it.gold ? `Every star in ${BYN[it.from].name}` : `A star in ${BYN[it.from].name}`}</small></div>`;
   }
   function stickerCell(id, prof) {
     const on = prof.badge === id || prof.medal === id;
@@ -2974,7 +3065,7 @@
       // won things newest first, then the starting clothes, then the ones still to find
       const list = ITEMS.filter((it) => it.slot === tab && forKid(it, prof) && (!it.gold || prof.items.includes(it.id) || prof.items.includes(it.base)));
       const won = list.filter((it) => !starter(it) && prof.items.includes(it.id)).sort((a, b) => gotAt(prof, 'i:' + b.id) - gotAt(prof, 'i:' + a.id));
-      const rank = (it) => (starter(it) ? 0 : it.drop ? 1500 : it.track ? 2000 + it.track : 1000); // to find: sūrah treasures, surprises, the star track
+      const rank = (it) => (starter(it) ? 0 : it.garden ? 3000 + (it.garden === 'drop' ? 10 : 0) : it.drop ? 1500 : it.track ? 2000 + it.track : 1000); // to find: sūrah treasures, surprises, the star track, the Garden's
       const rest = list.filter((it) => !won.includes(it)).sort((a, b) => rank(a) - rank(b));
       body = `<div class="wrow">${[...won, ...rest].map((it) => itemCell(it, prof, worn)).join('')}</div><p class="wnote2">${SLOT_INFO[tab][1]} · won ${winnable(prof, tab).filter((it) => prof.items.includes(it.id)).length} of ${winnable(prof, tab).length} · tap to ${tab === 'stick' || tab === 'shield' ? 'hold' : tab === 'pet' ? 'take along' : 'wear'}${nextPrize(prof) ? ` · next prize at ${nextPrize(prof).track} ⭐` : ''}</p>`;
     }
@@ -3034,10 +3125,10 @@
     return {
       stars: totalStars(prof),
       surahs: doneSurahs(prof),
-      memorized: S.filter((s) => surahDone(s, prof)).length,
+      memorized: J.filter((s) => surahDone(s, prof)).length,
       ayat,
-      allAyat: S.reduce((t, s) => t + s.ayat.length, 0),
-      items: prof.items.filter((id) => ITEM[id] && !starter(ITEM[id])).length + prof.stickers.filter((id) => !STICKER[id].badge && !STICKER[id].year && !STICKER[id].fill).length,
+      allAyat: J.reduce((t, s) => t + s.ayat.length, 0),
+      items: prof.items.filter((id) => ITEM[id] && !starter(ITEM[id]) && !ITEM[id].garden).length + prof.stickers.filter((id) => !STICKER[id].badge && !STICKER[id].year && !STICKER[id].fill).length,
       allItems: winnable(prof).length + REG_STK.length + ART.SEASONS.filter((x) => !x.year).length, // (v2.8.4: so a child can aim for 100%; a year's special-day stickers are a bonus)
       badges: prof.stickers.filter((id) => STICKER[id].badge).length,
       time: prof.time || 0,
@@ -3057,8 +3148,8 @@
   // growth without the practice on top), to one decimal, never rounded up to 100 before it is
   function questPct(prof) {
     const a = achievements(prof),
-      gold = S.filter((s) => surahStars(s, prof) >= surahMax(s)).length,
-      v = 100 * ((0.3 * a.ayat) / a.allAyat + (0.3 * a.memorized) / S.length + (0.4 * gold) / S.length);
+      gold = J.filter((s) => surahStars(s, prof) >= surahMax(s)).length,
+      v = 100 * ((0.3 * a.ayat) / a.allAyat + (0.3 * a.memorized) / J.length + (0.4 * gold) / J.length);
     return (Math.floor(v * 10) / 10).toFixed(1);
   }
   // (v2.10.0) ten boxes, by priority: memorizing (how much, sūrahs, āyāt) and the things won, then stars and star
@@ -3066,12 +3157,13 @@
   const ACH_ROWS = (a, prof) => [
     ['🧠', `${questPct(prof)}%`, 'memorized'],
     ['🌸', `${a.memorized}`, 'sūrahs memorized'],
+    ...(gardenStars(prof) ? [['🏮', `${gardenProgress(prof).n}`, `of ${GS.length} Garden stops memorized`]] : []), // (v2.12.0, once the Garden is begun)
     ['🍃', `${a.ayat}`, `of ${a.allAyat} āyāt learned`],
     ['🎁', `${a.items}`, `of ${a.allItems} things won`],
     ['⭐', `${a.stars}`, `of ${MAX_STARS} stars`],
     ['🏅', `${a.badges}`, a.badges === 1 ? 'badge' : 'badges'],
     [BOOK_IC, `${a.found}`, `of ${JKEYS.size} journal finds`], // (the map's journal book, v2.10.1)
-    ['🔎', `${Math.min(a.riddles, riddleCount())}`, `of ${riddleCount()} riddles found`],
+    ['🔎', `${Math.min(a.riddles, riddleCount('j'))}`, `of ${riddleCount('j')} riddles found`],
     ['🏃', `${a.streak} ${a.streak === 1 ? 'day' : 'days'}`, `in a row · best ${a.best}`],
     ['⏱️', fmtTime(a.time), 'spent learning'],
   ];
@@ -3119,7 +3211,7 @@
       })
       .join('');
     const ex = explorer({ view: 'front' }).replace('<svg ', '<svg x="345" y="180" width="400" height="600" ');
-    const rows = ACH_ROWS(a, prof);
+    const rows = ACH_ROWS(a, prof).slice(0, 10); // (five rows of two: the first ten by priority)
     const cells = rows
       .map(([ic, big, sub], j) => {
         const col = j % 2,
@@ -3293,7 +3385,7 @@
 
   /* ---------- FAMILY SYNC: one explorer, as a link or a QR code (js/sync.js) ---------- */
   const SYNC = window.LHQ_SYNC;
-  const syncCtx = () => ({ surahs: S, items: ITEMS, stickers: [...ART.STICKERS, ...ART.BADGES, ...ART.SEASONS], looks: ART.LOOKS, slots: SLOTS, journal: [...JKEYS], version: VERSION });
+  const syncCtx = () => ({ surahs: S, items: ITEMS, stickers: [...ART.STICKERS, ...ART.BADGES, ...ART.SEASONS], looks: ART.LOOKS, slots: SLOTS, journal: [...JKEYS], journalJuz: JKEYS_JUZ, version: VERSION });
   const appURL = () => location.origin + location.pathname.replace(/index\.html$/, '');
   function qrSVG(text) {
     const q = window.qrcode(0, 'L');
@@ -3416,6 +3508,7 @@
       into.lost = from.lost.filter((x) => into.items.includes(x.id));
       into.fix = from.fix.slice();
       into.at = from.at;
+      into.gat = from.gat || 0;
       into.stash = from.stash ? JSON.parse(JSON.stringify(from.stash)) : null;
       into.rematch = from.rematch.slice();
       into.rematchReady = from.rematchReady.slice();
@@ -3445,7 +3538,7 @@
     if (from.streak[0] > into.streak[0] || (from.streak[0] === into.streak[0] && from.streak[1] > into.streak[1])) into.streak = from.streak.slice();
     into.greeted = into.greeted || !!from.greeted;
     // the riddles and the buddies: the later day's, with the higher counts (more stamps, more feeds)
-    ['riddle', 'buddy'].forEach((k) => {
+    ['riddle', 'griddle', 'buddy'].forEach((k) => {
       const a = into[k],
         b = from[k],
         late = (b[0] || '') > (a[0] || '') ? b : (a[0] || '') > (b[0] || '') ? a : null;
@@ -3950,16 +4043,16 @@
       extra.world = { wi, heart: maxHearts(prof) > before, hearts: maxHearts(prof) };
     }
     // crossing a checkpoint's stepping stones for the first time: a small gift (a sticker)
-    if (st.view === 'path' && multi(s) && st.p !== 'all' && giveCheckpointGift(s, st.p)) extra.cpGift = true;
+    if (st.view === 'path' && multi(s) && st.p !== 'all' && !s.garden && giveCheckpointGift(s, st.p)) extra.cpGift = true;
     // winning back what fell is the gift: no surprise or level gift on top (prizes won by new stars still come)
     const wonBack = !!(extra.found || extra.wonBack);
     if (!wonBack) giveDailyGift();
     extra.prizes = giveTrackPrizes(prof);
     extra.badge = giveStarBadges(prof);
     extra.rides = giveWorldRides(prof);
-    if (!wonBack && (newStar || extra.firstTime) && prof.pending.length === giftsBefore && giveLevelGift(prof)) extra.levelGift = true;
-    // (v2.11.0) a game finished the first time always brings something: when nothing else came, a bonus sticker
-    if (!wonBack && (newStar || extra.firstTime) && prof.pending.length === giftsBefore && giveBonusSticker(prof)) extra.levelGift = true;
+    // (v2.11.0) a game finished the first time always brings something: when nothing else came, a surprise, else a
+    // bonus sticker (v2.12.0: in the Hidden Garden, one of its own)
+    if (!wonBack && (newStar || extra.firstTime) && prof.pending.length === giftsBefore && (s.garden ? giveGardenGift(prof) : giveLevelGift(prof) || giveBonusSticker(prof))) extra.levelGift = true;
     // the summit milestones for the whole Juz
     const feats = Object.keys(FEAT_TEST).filter((f) => !prof.feats.includes(f) && FEAT_TEST[f](prof));
     feats.forEach((f) => {
@@ -3967,7 +4060,7 @@
       if (f === 'once') {
         // everything unlocked at once: every sticker, and every treasure still waiting in a gift box
         ART.STICKERS.forEach((x) => {
-          if (!x.foil && !prof.stickers.includes(x.id)) {
+          if (!x.foil && !x.garden && !prof.stickers.includes(x.id)) {
             prof.stickers.push(x.id);
             gotIt(prof, 's:' + x.id);
           }
@@ -4022,7 +4115,31 @@
       prof.pending.push({ k: 'i', id: it.id });
       n++;
     });
+    // (v2.12.0) the Hidden Garden all golden: its ride
+    if (GARDEN_RIDE && gardenProgress(prof).gold && !hasOrWaits(GARDEN_RIDE, prof)) {
+      prof.pending.push({ k: 'i', id: GARDEN_RIDE.id });
+      n++;
+    }
     return n;
+  }
+  const GARDEN_RIDE = ITEMS.find((it) => it.garden === 'ride');
+  /* (v2.12.0) The Hidden Garden's own surprises, never held back: when a game there finished the first time brought
+     nothing else, a riddle there's every seventh, its journal page complete. Its editions of everyday things first, then
+     its stickers, then a gold edition of one collected, then a shimmer edition of a gold one. */
+  function giveGardenGift(prof) {
+    const things = ITEMS.filter((it) => it.garden === 'drop' && forKid(it, prof) && !hasOrWaits(it, prof));
+    if (things.length) {
+      prof.pending.push({ k: 'i', id: things[(Math.random() * things.length) | 0].id });
+      return true;
+    }
+    const have = new Set([...prof.stickers, ...prof.pending.filter((g) => g.k === 's').map((g) => g.id), ...(prof.lostSt || []).map((x) => x.id)]),
+      left = ART.STICKERS.filter((x) => x.garden && !have.has(x.id));
+    const tier = (x) => (!x.foil ? 0 : x.foil === 'gold' ? (have.has(x.of) ? 1 : 3) : have.has('gold-' + x.of) ? 2 : 4),
+      best = Math.min(...left.map(tier)),
+      pool = left.filter((x) => tier(x) === best);
+    if (!pool.length) return false;
+    prof.pending.push({ k: 's', id: pool[(Math.random() * pool.length) | 0].id, m: 1 });
+    return true;
   }
   /* a star badge for every 100 stars (100 stars, 200 stars …), and (v2.11.1) a world badge for every world memorized */
   function giveStarBadges(prof) {
@@ -4052,7 +4169,7 @@
      collected, then a shimmer edition of a gold one; a foil edition of one not collected yet last of all. */
   function giveBonusSticker(prof) {
     const have = new Set([...prof.stickers, ...prof.pending.filter((g) => g.k === 's').map((g) => g.id), ...(prof.lostSt || []).map((x) => x.id)]),
-      left = ART.STICKERS.filter((x) => x.fill && !have.has(x.id));
+      left = ART.STICKERS.filter((x) => x.fill && !x.garden && !have.has(x.id));
     const tier = (x) => (!x.foil ? 0 : x.foil === 'gold' ? (have.has(x.of) ? 1 : 3) : have.has('gold-' + x.of) ? 2 : 4),
       best = Math.min(...left.map(tier)),
       pool = left.filter((x) => tier(x) === best);
@@ -4138,7 +4255,9 @@
       gotIt(prof, 'i:' + g.id);
       art = itemPic(g.id);
       name = itemName(g.id);
-      sub = it.wgold
+      sub = it.garden
+        ? gardenWhy(it)
+        : it.wgold
         ? `For making World ${it.wgold}, ${WORLDS[it.wgold - 1].name}, all golden: every star in every sūrah! Climb aboard!`
         : it.quest === 'staff'
           ? 'Your Teacher gives you his staff. You are the master now!'
@@ -4175,7 +4294,7 @@
   function nextSuggestion(s, p) {
     if (p === 'all') return {};
     if (multi(s) && p + 1 < s.P.length) return { nextAct: 'part', nextP: p + 1, nextLabel: `Next checkpoint 🚩 ${p + 2}` };
-    if (multi(s)) return { nextAct: 'part', nextP: 'all', nextLabel: '🏁 The whole sūrah' };
+    if (multi(s)) return { nextAct: 'part', nextP: 'all', nextLabel: `🏁 ${whole(s) === 'whole sūrah' ? 'The whole sūrah' : 'All of it'}` };
     return {};
   }
   function startPath() {
@@ -4698,15 +4817,38 @@
         break;
       case 'goto':
         sfx.tap();
-        P().at = +b.dataset.i;
+        setAt(P(), +b.dataset.i);
+        inGarden = !!S[+b.dataset.i].garden;
         save();
         go('map');
         break;
       case 'world': {
-        if (mapCtl) mapCtl.scrollToWorld(+b.dataset.w);
         closeRail();
+        if (inGarden) {
+          // (from the Garden: back to the Juz, at that world)
+          inGarden = false;
+          go('map');
+          const w = +b.dataset.w;
+          setTimeout(() => mapCtl && mapCtl.scrollToWorld(w), 60);
+          break;
+        }
+        if (mapCtl) mapCtl.scrollToWorld(+b.dataset.w);
         break;
       }
+      case 'garden':
+        // the gate by the summit: into the Hidden Garden
+        sfx.whoosh ? sfx.whoosh() : sfx.tap();
+        closeRail();
+        inGarden = true;
+        go('map');
+        break;
+      case 'gardenout':
+        // the Garden's gate: back to the summit of Juz ʿAmma
+        sfx.tap();
+        closeRail();
+        inGarden = false;
+        go('map', { focusTop: true });
+        break;
       case 'worlds': {
         // the world-map button opens (or closes) the list of worlds
         sfx.tap();
@@ -5873,8 +6015,10 @@
     'peak-pine': 'pinecone',
     'sands-palm': 'coconut',
     'canyon-cactus': 'pear',
+    'garden-pomtree': 'pomegranate',
+    'garden-palm': 'date',
   };
-  const EATER = /sheep|rabbit|fox|owl|deer|squirrel|crab|turtle|camel|lizard|goat/;
+  const EATER = /sheep|rabbit|fox|owl|deer|squirrel|crab|turtle|camel|lizard|goat|peacock|songbird/;
   function dropFruit(tree) {
     const layer = tree.parentNode;
     if (!layer || !mapCtl || reduceMotion || layer.querySelectorAll('.mfruit').length >= 4) return;
@@ -6268,15 +6412,15 @@
   // how grown my tree is (0-1), and what's on it: a sapling, a plant, blossoms (one a sūrah memorized), then fruit,
   // more and more kinds as it grows (ART.TREE_STAGE)
   function treeInfo(prof) {
-    let mem = S.filter((s) => surahDone(s, prof));
+    let mem = J.filter((s) => surahDone(s, prof));
     const a = achievements(prof),
-      gold = S.filter((s) => surahStars(s, prof) >= surahMax(s)).length,
+      gold = J.filter((s) => surahStars(s, prof) >= surahMax(s)).length,
       G = prof.grow[0],
       T = ART.TREE_STAGE;
     // āyāt learned 30%, green sūrahs 30%, golden sūrahs 40% (every one golden: 100%), and practice on top (up to 15%,
     // so it grows sooner, never past 100%)
-    let size = Math.min(1, (0.3 * a.ayat) / a.allAyat + (0.3 * mem.length) / S.length + (0.4 * gold) / S.length + 0.15 * Math.min(1, G / 200));
-    if (window.__treeSize != null) (size = window.__treeSize), (mem = S.slice(0, Math.round(size * S.length))), (a.ayat = Math.round(size * a.allAyat)); // (tests only: any size)
+    let size = Math.min(1, (0.3 * a.ayat) / a.allAyat + (0.3 * mem.length) / J.length + (0.4 * gold) / J.length + 0.15 * Math.min(1, G / 200));
+    if (window.__treeSize != null) (size = window.__treeSize), (mem = J.slice(0, Math.round(size * J.length))), (a.ayat = Math.round(size * a.allAyat)); // (tests only: any size)
     const ripe = size < T.fruit ? 0 : (size - T.fruit) / (1 - T.fruit),
       nf = size < T.fruit ? 0 : Math.round(2 + ripe * 30),
       kinds = ART.FRUIT_TYPES.slice(0, 1 + Math.floor(Math.min(1, ripe * 1.6) * (ART.FRUIT_TYPES.length - 0.01))), // (v2.10.0: a second kind soon after the first, all of them by about 75%)
@@ -6288,6 +6432,8 @@
       blossoms: mem.slice(0, nb).map((s) => ({ n: s.n, c: FLOWER_C[S.indexOf(s) % FLOWER_C.length] })),
       flowers: mem.map((s) => ({ n: s.n, c: FLOWER_C[S.indexOf(s) % FLOWER_C.length] })), // (one in the grass for each)
       fruits: Array.from({ length: nf }, (_, j) => kinds[j % kinds.length]),
+      // (v2.12.0) the Hidden Garden's lanterns, once it is begun: 0 dark, 1 lit (memorized), 2 golden (every star)
+      lanterns: gardenStars(prof) ? GS.map((s) => (surahStars(s, prof) >= surahMax(s) ? 2 : surahDone(s, prof) ? 1 : 0)) : [],
     };
   }
   // the buddies around the tree (animals get hungry; rides just park), in a steady order
@@ -6535,7 +6681,7 @@
     const prof = P(),
       info = treeInfo(prof),
       night = isNight(),
-        t = treeArt({ seed: seedOf(prof.id), size: info.size, leaves: info.leaves, blossoms: info.blossoms, flowers: info.flowers, fruits: info.fruits, seen: st.seen, night });
+        t = treeArt({ seed: seedOf(prof.id), size: info.size, leaves: info.leaves, blossoms: info.blossoms, flowers: info.flowers, fruits: info.fruits, lanterns: info.lanterns, seen: st.seen, night });
     // (a fruit that fell stays off the tree, also when the screen is drawn again, until it grows back)
     const treeG = t.tree.replace(/<g class="tfruit" data-act="tfruit" data-j="(\d+)"/g, (m, j) => (treeFallen[j] ? '<g class="tfruit fall' + (treeFallen[j].gone ? ' gone' : '') + '" data-act="tfruit" data-j="' + j + '"' : m));
     const SV = (cls, inner) => `<svg class="tsvg ${cls}" viewBox="0 -200 400 900" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
@@ -6794,6 +6940,20 @@
     'peak-flag': ['It waves at the top of the mountain.', 'A cloth on a pole that flutters in the wind.'],
     'peak-igloo': ['A round house made of snow blocks.', 'A cold house with a little round door.'],
     'peak-goat': ['It climbs steep mountains with strong hooves.', 'A sure-footed animal with curly horns.'],
+    // (v2.12.0) the Hidden Garden's own riddles (looked for only there)
+    'garden-arch': ['An arched gateway covered in pink roses.', 'Walk under its round top, with flowers all around.'],
+    'garden-pavilion': ['A little round house with a green dome and pillars.', 'A shady place to rest, with a golden star on top.'],
+    'garden-fountain': ['Water springs up and splashes into its bowl.', 'It sprays water in the middle of the garden.'],
+    'garden-rose': ['A green bush with pink flowers that smell sweet.', 'Its flowers are lovely, but mind the thorns!'],
+    'garden-jasmine': ['Little white flowers with five petals.', 'Tiny white blossoms with a sweet smell.'],
+    'garden-lily': ['A pink flower floating on a pond.', 'Its big green leaf floats on the water.'],
+    'garden-peacock': ['A bird with a giant fan of feathers with eyes on them.', 'It spreads a colourful tail like a fan.'],
+    'garden-bench': ['A wooden seat to rest in the garden.', 'Sit on it and look at the flowers.'],
+    'garden-birdhouse': ['A little house on a pole, with a round door for a bird.', 'A tiny home where a blue bird peeks out.'],
+    'garden-songbird': ['A little brown bird on a branch.', 'A small bird sitting on a twig, with a heart beside it.'],
+    'garden-pomtree': ['A tree with round red fruit full of seeds.', 'Its fruit has a little crown on top.'],
+    'garden-palm': ['A tall tree that gives sweet brown dates.', 'Its leaves spread out like a big green star.'],
+    'garden-lamp': ['A lamp on a tall post, to light the garden at night.', 'It glows on a post when it gets dark.'],
   };
   // (v2.10.0) more to find, beyond the journal's things: fruit that only falls when you tap its tree (catch it before
   // an animal does), the map's own parts, and the sūrah stops by their pictures. Only tappable while a riddle is open.
@@ -6809,8 +6969,15 @@
   };
   // (v2.10.0) each world's sign, and every sūrah's stop: by its picture, and by what its name means
   WORLDS.forEach((w, wi) => (RIDDLE_EXTRA['w:' + wi] = [`World ${wi + 1} sign`, `Find the sign of World ${wi + 1}.`, `Which sign says “${w.name}”? Find it!`]));
-  S.forEach((x) => (RIDDLE_EXTRA['s:' + x.n] = [x.name, `Find the sūrah with this picture: ${x.icon}`, `Find the sūrah called “${x.meaning}”.`]));
-  const riddleName = (k) => (RIDDLE_EXTRA[k] ? RIDDLE_EXTRA[k][0] : PROP_NAME[k]);
+  J.forEach((x) => (RIDDLE_EXTRA['s:' + x.n] = [x.name, `Find the sūrah with this picture: ${x.icon}`, `Find the sūrah called “${x.meaning}”.`]));
+  // (v2.12.0) the Hidden Garden's extras: its stops, its sign, and its fruit to catch
+  const RIDDLE_G = {
+    'x:pomegranate': ['Pomegranate', 'Tap a pomegranate tree and catch the fruit that falls!', 'Round and red with a little crown. Tap its tree and catch it!'],
+    'x:date': ['Date', 'Tap a date palm and catch what drops, before a bird gets it!', 'Sweet and brown, it falls from a palm. Be quick!'],
+    ['w:' + GARDEN_W]: ['World 8 sign', 'Find the sign of World 8.', `Which sign says “${GARDEN_NAME}”? Find it!`],
+  };
+  GS.forEach((x) => (RIDDLE_G['s:' + x.n] = [x.name, `Find the stop with this picture: ${x.icon}`, `Find the stop called “${x.meaning.replace(/ \(.*\)$/, '')}”.`]));
+  const riddleName = (k) => (RIDDLE_EXTRA[k] || RIDDLE_G[k] ? (RIDDLE_EXTRA[k] || RIDDLE_G[k])[0] : PROP_NAME[k]);
   const RIDDLE_DAY = 7, // (at most seven a day, so at most one gift a day)
     RIDDLE_GIFT = 7, // (v2.10.0: a gift for every seven found, however many days that takes)
     RIDDLE_GAP = 120000; // (v2.10.0: two minutes apart)
@@ -6820,17 +6987,26 @@
   // on the end, so the ones already found stay found. All found: they come round again in a new order (the
   // achievement stays complete), so the gifts keep coming.
   // (built on first use: the journal's pages, JPAGE, are set up further down)
-  let riddleSets = null;
-  const RIDDLE_SETS = () => riddleSets || (riddleSets = [[...Object.keys(RIDDLES).filter((k) => JPAGE.has('p:' + k)), ...Object.keys(RIDDLE_EXTRA)]]);
-  const riddleCount = () => RIDDLE_SETS().reduce((n, a) => n + a.length * 2, 0);
-  let riddleMemo = null; // [explorer, round, list]
-  function riddleList(prof, round) {
-    if (riddleMemo && riddleMemo[0] === prof.id && riddleMemo[1] === round) return riddleMemo[2];
+  // (v2.12.0) two sets of riddles, each with its own place in it: Juz ʿAmma's (prof.riddle, 'j') and the Hidden Garden's
+  // (prof.griddle, 'g'), looked for only there; which one is the map on screen
+  const RZ = () => (inGarden ? 'g' : 'j');
+  const rKey = (rz) => (rz === 'g' ? 'griddle' : 'riddle');
+  const riddleSets = {};
+  const RIDDLE_SETS = (rz) =>
+    riddleSets[rz] ||
+    (riddleSets[rz] =
+      rz === 'g'
+        ? [[...Object.keys(RIDDLES).filter((k) => JPAGE.get('p:' + k) === GARDEN_W), ...Object.keys(RIDDLE_G)]]
+        : [[...Object.keys(RIDDLES).filter((k) => JPAGE.has('p:' + k) && JPAGE.get('p:' + k) !== GARDEN_W), ...Object.keys(RIDDLE_EXTRA)]]);
+  const riddleCount = (rz = RZ()) => RIDDLE_SETS(rz).reduce((n, a) => n + a.length * 2, 0);
+  let riddleMemo = null; // [explorer, round, set, list]
+  function riddleList(prof, round, rz = RZ()) {
+    if (riddleMemo && riddleMemo[0] === prof.id && riddleMemo[1] === round && riddleMemo[2] === rz) return riddleMemo[3];
     let h = 2166136261;
-    for (const ch of prof.id + (round ? '#' + round : '')) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+    for (const ch of prof.id + (round ? '#' + round : '') + (rz === 'g' ? '~g' : '')) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
     const rnd = () => (h = (Math.imul(h, 1103515245) + 12345) >>> 0) / 4294967296;
     const list = [];
-    RIDDLE_SETS().forEach((set) => {
+    RIDDLE_SETS(rz).forEach((set) => {
       const a = set.slice();
       for (let i = a.length - 1; i > 0; i--) {
         const j = Math.floor(rnd() * (i + 1));
@@ -6838,28 +7014,32 @@
       }
       [0, 1].forEach((c) => a.forEach((k) => list.push([k, c])));
     });
-    riddleMemo = [prof.id, round, list];
+    riddleMemo = [prof.id, round, rz, list];
     return list;
   }
   // the riddle after this many stamps: [the thing, its clue]
-  function riddleAt(prof, stamps) {
-    const T = riddleCount(),
-      [k, c] = riddleList(prof, Math.floor(stamps / T))[stamps % T];
-    return [k, (RIDDLE_EXTRA[k] ? RIDDLE_EXTRA[k].slice(1) : RIDDLES[k])[c]];
+  function riddleAt(prof, stamps, rz = RZ()) {
+    const T = riddleCount(rz),
+      [k, c] = riddleList(prof, Math.floor(stamps / T), rz)[stamps % T];
+    const x = RIDDLE_EXTRA[k] || RIDDLE_G[k];
+    return [k, (x ? x.slice(1) : RIDDLES[k])[c]];
   }
   // today's state (a new day starts afresh, the stamps kept)
-  const riddleToday = (prof) => (prof.riddle[0] === today() ? prof.riddle.slice() : [today(), prof.riddle[1], 0, 0, 0]);
+  const riddleToday = (prof, rz = RZ()) => {
+    const v = prof[rKey(rz)];
+    return v[0] === today() ? v.slice() : [today(), v[1], 0, 0, 0];
+  };
   // the riddle waiting now: [thing, clue], or null (all seven done today, or the next opens in a moment)
-  function riddleNow(prof) {
-    const r = riddleToday(prof);
+  function riddleNow(prof, rz = RZ()) {
+    const r = riddleToday(prof, rz);
     if (!prof.made || r[2] >= RIDDLE_DAY || Date.now() < r[3]) return null;
-    return riddleAt(prof, r[1]);
+    return riddleAt(prof, r[1], rz);
   }
   const riddleOpen = (prof) => !!riddleNow(prof);
   let riddleOn = null; // the riddle opened, while on the map: { k, clue }
   // the riddle in the journal's header (v2.10.0): the way to the next gift (3/7), glowing while a riddle waits; tapped
   // with none waiting, it says when the next comes
-  const riddleToGift = (prof) => RIDDLE_GIFT - (prof.riddle[1] % RIDDLE_GIFT);
+  const riddleToGift = (prof) => RIDDLE_GIFT - (prof[rKey(RZ())][1] % RIDDLE_GIFT);
   function riddleBtn(prof) {
     const on = !!riddleNow(prof),
       n = RIDDLE_GIFT - riddleToGift(prof);
@@ -6891,8 +7071,8 @@
     r[1]++; // (all the stamps ever won: how far along the list, in My Achievements)
     let gift = r[1] % RIDDLE_GIFT === 0; // (v2.10.0) every seventh: a gift
     if (gift) r[4] = 1; // (a gift today)
-    prof.riddle = r;
-    if (gift) gift = giveSurprise(prof, false, true) || giveLevelGift(prof, true);
+    prof[rKey(RZ())] = r;
+    if (gift) gift = inGarden ? giveGardenGift(prof) : giveSurprise(prof, false, true) || giveLevelGift(prof, true);
     riddleOn = null;
     save();
     return { n: r[1], gift, last: r[2] >= RIDDLE_DAY };
@@ -7001,6 +7181,9 @@
     'sky-rainbow': 'Rainbow', 'sky-kite': 'Kite', 'sky-rock': 'Sky rock', 'sky-balloon': 'Hot-air balloon', 'sky-cloud': 'Cloud', 'sky-airship': 'Airship', 'sky-castle': 'Sky castle',
     'peak-pine': 'Snowy pine', 'peak-rock': 'Boulder', 'peak-snowman': 'Snowman', 'peak-crystal': 'Ice crystal', 'peak-flag': 'Flag', 'peak-igloo': 'Igloo', 'peak-goat': 'Mountain goat',
     'peak-cabin': 'Cabin',
+    // (v2.12.0) the Hidden Garden
+    'garden-arch': 'Garden arch', 'garden-pavilion': 'Pavilion', 'garden-fountain': 'Fountain', 'garden-rose': 'Rose bush', 'garden-jasmine': 'Jasmine', 'garden-lily': 'Lily pond',
+    'garden-peacock': 'Peacock', 'garden-bench': 'Garden bench', 'garden-birdhouse': 'Birdhouse', 'garden-songbird': 'Songbird', 'garden-pomtree': 'Pomegranate tree', 'garden-palm': 'Date palm', 'garden-lamp': 'Garden lamp',
   };
   // the things worth finding in the āyāt's pictures: creatures, nature, food, buildings and objects (no people,
   // hands, faces or signs, and no square scenes like a sunrise, whose shadow would be just a square)
@@ -7010,20 +7193,27 @@
       '🏅 🎈 🐫 📦 🔊 ⛈️ 🌵 🌸 🌤️ 🧺 🍎 🧸 🛷 🧼 🌕 ☁️ 🥇 🥀 🏠 💧 🌩️ 🏚️ 🛣️ ⛓️ 🏜️ 🏰 ⛏️ ⛺ 📌 🗑️ 🍗 🔨 📮 🕊️ 🌊 🍽️ 🌻 🍇 ⛲ 🛋️ 🥤 🎮 ⚡ 🍂 ' +
       '📢 🍃 🍭 🦴 🐣 🌧️ 🃏 🪑 💎 🗒️ 📗 📕 🎉 🏺 🥣 📆 🕰️ 🌞 🏁 🎣 🧩 🍉 🦒 📃 🍌 ☄️ 🌬️ 🦯 🚿 👟 🥬 🫒 🌴 💍 🌏 🎓 🗻 ⚓ 🗂️ 📰 🛏️ 🧥 🪔 📯 🧊 🧾 🎂 🥛 🌀').split(' '),
   );
-  const JOURNAL = WORLDS.map((_, wi) => ({ wi, map: [], suras: [] }));
+  const JOURNAL = [...WORLDS, null].map((_, wi) => ({ wi, map: [], suras: [] })); // (v2.12.0: page 8, the Hidden Garden's)
   const JPAGE = new Map(); // key -> world
-  ART.PROPS_BY_WORLD.forEach((names, wi) => {
+  const jProps = (wi) => {
+    const names = ART.PROPS_BY_WORLD[wi];
     const list = [...new Set([ART.LANDMARKS[wi], ...(names || []), ...(wi === 2 ? ['sands-boat'] : [])])].filter((k) => k && PROP_NAME[k] && ART.props[k]);
     JOURNAL[wi].map = list;
     list.forEach((k) => JPAGE.set('p:' + k, wi));
-  });
-  [...S]
-    .sort((a, b) => b.n - a.n) // the journey: An-Nās first
-    .forEach((s) => {
-      const es = [];
-      s.ayat.forEach((a) => a.scene.forEach((e) => JOURNAL_EMOJI.has(e) && !JPAGE.has('e:' + e) && (JPAGE.set('e:' + e, worldOf(s)), es.push(e))));
-      if (es.length) JOURNAL[worldOf(s)].suras.push({ n: s.n, es });
-    });
+  };
+  // (v2.12.0) things worth finding in the Hidden Garden's pictures that Juz ʿAmma's don't have (only on its page, so the
+  // Juz's pages stay as they were)
+  const GARDEN_EMOJI = new Set('🌺 🕯️ 🫧 🪨 🪽 🧵 🫖 🍑 🦪 ⛱️ 🍊 🧲 ⌛ 🫙 🧂 🪵 🏕️ 🌷'.split(' '));
+  const jPics = (s) => {
+    const es = [];
+    s.ayat.forEach((a) => a.scene.forEach((e) => (JOURNAL_EMOJI.has(e) || (s.garden && GARDEN_EMOJI.has(e))) && !JPAGE.has('e:' + e) && (JPAGE.set('e:' + e, worldOf(s)), es.push(e))));
+    if (es.length) JOURNAL[worldOf(s)].suras.push({ n: s.n, es });
+  };
+  WORLDS.forEach((_, wi) => jProps(wi));
+  [...J].sort((a, b) => b.n - a.n).forEach(jPics); // the journey: An-Nās first
+  const JKEYS_JUZ = [...JPAGE.keys()]; // (the list family links knew before the Garden: they still open)
+  jProps(GARDEN_W);
+  GS.forEach(jPics); // (pictures new to the Garden: the ones from Juz ʿAmma stay on their pages)
   const JKEYS = new Set(JPAGE.keys());
   const pageKeys = (wi) => [...JPAGE].filter(([, w]) => w === wi).map(([k]) => k);
   const jName = (k) => (k[0] === 'p' ? PROP_NAME[k.slice(2)] : k.slice(2));
@@ -7063,8 +7253,9 @@
     let msg = `📔 ${jName(key)} is in your journal!`;
     if (!prof.jdone.includes(wi) && pageKeys(wi).every((k) => prof.found.includes(k))) {
       prof.jdone.push(wi);
-      giveSurprise(prof, false, true) || giveLevelGift(prof, true);
-      msg = `📔 The ${WORLDS[wi].name} page is complete! A gift for you 🎁`;
+      if (wi === GARDEN_W) giveGardenGift(prof);
+      else giveSurprise(prof, false, true) || giveLevelGift(prof, true);
+      msg = `📔 The ${worldName(wi)} page is complete! A gift for you 🎁`;
       sfx.win();
     }
     save();
@@ -7126,12 +7317,12 @@
   addEventListener('scroll', dropChip, { passive: true });
   V.journal = () => {
     const prof = P(),
-      wi = st.w != null ? st.w : Math.max(0, worldOf(S[prof.at] || S[0])),
+      wi = inGarden ? GARDEN_W : st.w != null && st.w !== GARDEN_W ? st.w : Math.max(0, worldOf(S[prof.at] || S[0])),
       pg = JOURNAL[wi],
       has = (k) => prof.found.includes(k),
       keys = pageKeys(wi),
       got = keys.filter(has).length;
-    const tabs = WORLDS.map((_, w) => {
+    const tabs = inGarden ? '' : WORLDS.map((_, w) => {
       const done = pageKeys(w).every(has);
       return `<button class="jtab ${w === wi ? 'on' : ''} ${done ? 'done' : ''}" data-act="jpage" data-w="${w}" style="--tc:${ART.WORLDS[w].accent}" aria-label="World ${w + 1}">${ART.props[WORLD_ICON[w]] || ''}${done ? '<i>✓</i>' : ''}</button>`;
     }).join('');
@@ -7142,17 +7333,17 @@
       .map((x) => `<div class="jsura"><button class="jsname" data-act="jgo" data-n="${x.n}">${BYN[x.n].name} ›</button><div class="jems">${x.es.map((e) => `<span class="jem ${has('e:' + e) ? 'got' : ''}">${e}</span>`).join('')}</div></div>`)
       .join('');
     return `<div class="screen jscr">
-    ${bar('My Journal', `${prof.found.length} of ${JKEYS.size} found`, 'map', riddleBtn(prof))}
-    <div class="jtabs">${tabs}</div>
-    <div class="jbook">
+    ${bar(inGarden ? 'The Garden Journal' : 'My Journal', inGarden ? `${got} of ${keys.length} found` : `${prof.found.length} of ${JKEYS.size} found`, 'map', riddleBtn(prof))}
+    ${tabs ? `<div class="jtabs">${tabs}</div>` : ''}
+    <div class="jbook${inGarden ? ' jgarden' : ''}">
       <div class="jpage" data-w="${wi}">
         <i class="jribbon" aria-hidden="true"></i>
-        <div class="jhead"><b>World ${wi + 1}<small>${WORLDS[wi].name}</small></b><span>${got}/${keys.length}${prof.jdone.includes(wi) ? ' ✓' : ' 🎁'}</span></div>
+        <div class="jhead"><b>World ${wi + 1}<small>${worldName(wi)}</small></b><span>${got}/${keys.length}${prof.jdone.includes(wi) ? ' ✓' : ' 🎁'}</span></div>
         <div class="jsec">On the map</div>
         <div class="jgrid">${things}</div>
         <div class="jsec">In the sūrahs' pictures</div>
         ${suras}
-        <div class="jfoot"><span>‹</span> ${wi + 1} / ${WORLDS.length} <span>›</span></div>
+        ${inGarden ? '<div class="jfoot">🌷 🏮 🌷</div>' : `<div class="jfoot"><span>‹</span> ${wi + 1} / ${WORLDS.length} <span>›</span></div>`}
       </div>
     </div>
     <p class="saveinfo center">Tap a thing on the map, or a picture in Look &amp; Repeat, to add it.</p>
@@ -7160,7 +7351,7 @@
   };
   // turn the page: tap a tab, or swipe the book left and right
   function turnPage(w, dir) {
-    if (w < 0 || w >= WORLDS.length || w === st.w) return;
+    if (inGarden || w < 0 || w >= WORLDS.length || w === st.w) return; // (the Garden's journal: its one page)
     sfx.tap();
     st.w = w;
     render();
@@ -7252,7 +7443,7 @@
      element of every world, none reach you, and he wishes you well and never comes again.
      prof.strangers: the gates he has kept (2-5: after Worlds 3-6), 7 = the last. Switch: prefs.stranger. */
   const worldMemorized = (wi, prof) => S.filter((s) => worldOf(s) === wi).every((s) => surahDone(s, prof));
-  const allMemorized = (prof) => S.every((s) => surahDone(s, prof));
+  const allMemorized = (prof) => J.every((s) => surahDone(s, prof)); // (Juz ʿAmma: the Summit crown, the Stranger's farewell)
   const strangerDue = (prof) => WORLDS.map((_, wi) => wi).filter((wi) => worldMemorized(wi, prof));
   // the last world memorized counting from the start, with every one before it memorized too (-1: not even World 1)
   function memorizedUpTo(prof) {
@@ -7495,8 +7686,9 @@
      and patting the animals. Tap him to take his test any time (its gift comes once a day). */
   const ELDER_STAY = 4 * 60000;
   function elderWorld() {
-    const k = Math.floor(Date.now() / ELDER_STAY) % 12;
-    return k <= 6 ? k : 12 - k;
+    // (v2.12.0) up through all eight worlds and back down: the Hidden Garden too
+    const k = Math.floor(Date.now() / ELDER_STAY) % 14;
+    return k <= 7 ? k : 14 - k;
   }
   function tapElder(el) {
     const prof = P();
@@ -7563,11 +7755,11 @@
     vines: { ic: '🌿', name: 'a tangle of vines', slots: ['stick'] },
     ice: { ic: '🧊', name: 'a shower of hailstones', slots: ['top', 'hat'] }, // jackets and winter hats
   };
-  const WORLD_THROWS = [['rock', 'acorn'], ['vines', 'acorn'], ['sand', 'water'], ['rock', 'sand'], ['wind', 'sand'], ['wind', 'water'], ['wind', 'ice']];
+  const WORLD_THROWS = [['rock', 'acorn'], ['vines', 'acorn'], ['sand', 'water'], ['rock', 'sand'], ['wind', 'sand'], ['wind', 'water'], ['wind', 'ice'], ['water', 'acorn']]; // (the Hidden Garden's: its fountain and its fruit trees)
   // the same throw, as each world has it
   // (the meadow's are apples from its apple trees: the same as acorns, stopped by a hat or hijab)
-  const THROW_AS = { 0: { acorn: 'a shower of apples' }, 4: { sand: 'a swirl of stardust' }, 5: { water: 'a burst of rain' } };
-  const THROW_IC = { 0: { acorn: '🍎' } };
+  const THROW_AS = { 0: { acorn: 'a shower of apples' }, 4: { sand: 'a swirl of stardust' }, 5: { water: 'a burst of rain' }, 7: { water: 'a splash from the fountain', acorn: 'a shower of pomegranates' } };
+  const THROW_IC = { 0: { acorn: '🍎' }, 7: { water: '⛲', acorn: '🍎' } };
   const throwName = (k, wi) => (THROW_AS[wi] && THROW_AS[wi][k]) || THROW[k].name;
   const throwIc = (k, wi) => (THROW_IC[wi] && THROW_IC[wi][k]) || THROW[k].ic;
   // what a thing blocks, in its tile's corner, all still (v2.9.4): its throw, a second one beside it, and the same
@@ -7582,7 +7774,7 @@
   const worldThrowIcons = (wi) => (WORLD_THROWS[wi] || []).map((k) => throwIc(k, wi)).join(' ');
   const WINTER_HATS = /beanie|earflap/; // the hats that keep off the hail
   const JACKETS = /jacket|coat|hoodie|cloak|suit|vest|armor/;
-  const RIDE_PET = /rocket|car|plane|train|boat|truck|helicopter/;
+  const RIDE_PET = /rocket|car|plane|train|boat|truck|helicopter|bike/;
   const animalBuddy = (id) => !!id && ITEM[id] && ITEM[id].slot === 'pet' && !ITEM[id].wgold && !RIDE_PET.test(id);
   // special things block more (a future item only needs its list here)
   const EXTRA_BLOCKS = { 'hero-sword': ['rock'], 'hafiz-crown': ['sand'], 'hero-armor': Object.keys(THROW) };
@@ -8164,5 +8356,5 @@
   registerOffline();
   if (linkCode) setTimeout(() => openSync(linkCode, `${appURL()}#sync=${linkCode}`), 400);
   if (justUpdated) loadChangelog().then(() => st.view === 'splash' && render());
-  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder, world: elderWorld, size: testSize, tap: tapElder }, sunDown, journal: JKEYS, countDay, installSteps: showInstallSteps, cleanStore, cleanProfile, syncCtx, openSync, markNow, fabTarget, riddleNow, riddleCount, occasion, treeInfo, hungry: () => treeHungry, treeReset: () => (treeFedAt = 0), critterFor, riddleSet: (k) => riddleOn && (riddleOn.k = k), riddleKey: () => riddleOn && riddleOn.k, bonusSticker: giveBonusSticker }; // for testing in the browser console
+  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder, world: elderWorld, size: testSize, tap: tapElder }, sunDown, journal: JKEYS, countDay, installSteps: showInstallSteps, cleanStore, cleanProfile, syncCtx, openSync, markNow, fabTarget, riddleNow, riddleCount, occasion, treeInfo, hungry: () => treeHungry, treeReset: () => (treeFedAt = 0), critterFor, riddleSet: (k) => riddleOn && (riddleOn.k = k), riddleKey: () => riddleOn && riddleOn.k, bonusSticker: giveBonusSticker, garden: (v) => (v != null && (inGarden = !!v), inGarden), gardenGift: giveGardenGift }; // for testing in the browser console
 })();

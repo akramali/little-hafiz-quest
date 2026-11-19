@@ -27,7 +27,7 @@
   d.querySelector('[data-act=comfy]').click(); await wait(200);
   ok('Comfy takes both off, Back puts both back', off && prof.medal === 'stars100' && prof.badge === 'moon');
   // 3. bonus stickers
-  ok('290 bonus stickers: 35 from the map, 35 new drawings (v2.11.1), a gold and a shimmer edition of each of the 110', A.STICKERS.filter((x) => x.fill).length === 290 && A.STICKERS.filter((x) => x.foil).length === 220 && A.STICKERS.filter((x) => /^d-/.test(x.id)).length === 35);
+  ok('290 bonus stickers: 35 from the map, 35 new drawings (v2.11.1), a gold and a shimmer edition of each of the 110', A.STICKERS.filter((x) => x.fill && !x.garden).length === 290 && A.STICKERS.filter((x) => x.foil && !x.garden).length === 220 && A.STICKERS.filter((x) => /^d-/.test(x.id)).length === 35);
   const gold = A.sticker('gold-moon');
   ok('a gold sticker has a foil edge', gold.includes('url(#lhq-foil-gold)'));
   // the order: a new map picture first; with every one of those, a gold edition of one collected (not of one missing)
