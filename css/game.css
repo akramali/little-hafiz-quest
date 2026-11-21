@@ -10590,3 +10590,177 @@ html:has(.bagscr.fullv) body {
 .jbook.jgarden .jhead {
   border-bottom-color: rgba(47, 184, 154, 0.4);
 }
+
+/* ---------- 2026-11-20 · v2.12.1 ---------- */
+/* Word Steps: a long āyah's pieces, little steps beside its number in the tracker */
+.wtrack .wpcs {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.wtrack .wpcs button {
+  min-width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+.wtrack .wpcs button.cur {
+  transform: scale(1.08);
+}
+/* the Hidden Garden's gate: just the gate (no label), a soft glow through it rather than a halo */
+.mgate8 .mg8-art {
+  width: 112px;
+  height: 110px;
+  margin-left: -6px;
+  filter: drop-shadow(0 0 6px rgba(255, 246, 200, 0.55));
+  animation-name: mg8glow2;
+}
+@keyframes mg8glow2 {
+  to {
+    filter: drop-shadow(0 0 12px rgba(255, 246, 200, 0.9));
+  }
+}
+/* a riddle's clue at the bottom never covers the end of the map (the Garden's gate is there) */
+body.riddling #map {
+  margin-bottom: 96px;
+}
+/* the Garden's pavilion: tap it and it lights up */
+.msummit[data-k] {
+  pointer-events: auto;
+  cursor: pointer;
+}
+.msummit.poke-shine {
+  animation: pavShine 1.6s ease-out;
+}
+@keyframes pavShine {
+  0% {
+    transform: none;
+    filter: none;
+  }
+  18% {
+    transform: scale(1.06, 0.95);
+  }
+  36% {
+    transform: scale(0.97, 1.05);
+    filter: drop-shadow(0 0 22px rgba(255, 220, 90, 0.95)) brightness(1.12);
+  }
+  60% {
+    transform: none;
+    filter: drop-shadow(0 0 16px rgba(255, 220, 90, 0.8)) brightness(1.06);
+  }
+  100% {
+    filter: none;
+  }
+}
+/* going through the Garden's gate: the gate swings open, the map zooms into it, a glow fills the screen (petals in,
+   snowflakes out) and fades away over the other map */
+.mgate8.opening .mg8-art {
+  animation: mg8open 0.45s ease-out;
+}
+@keyframes mg8open {
+  from {
+    transform: scale(0.96);
+  }
+  60% {
+    transform: scale(1.05);
+  }
+}
+.mroot.gzoom {
+  transition:
+    transform 0.9s cubic-bezier(0.55, 0, 0.7, 0.3),
+    filter 0.9s ease-in;
+  transform: scale(3.2);
+  filter: blur(1px) brightness(1.15);
+}
+.gtrip {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  overflow: hidden;
+  transition: opacity 1s ease-out;
+}
+.gtrip.done {
+  opacity: 0;
+}
+.gtrip .gt-glow {
+  position: absolute;
+  left: var(--gx);
+  top: var(--gy);
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fffdf0 0%, #fff6c8 35%, #c8f0c0 60%, rgba(200, 240, 192, 0) 72%);
+  animation: gtGlow 1.3s cubic-bezier(0.5, 0, 0.6, 1) forwards;
+}
+.gtrip.out .gt-glow {
+  background: radial-gradient(circle, #ffffff 0%, #f2f8ff 35%, #d9ecfb 60%, rgba(217, 236, 251, 0) 72%);
+}
+@keyframes gtGlow {
+  0% {
+    transform: scale(0.4);
+    opacity: 0.4;
+  }
+  35% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: scale(70);
+    opacity: 1;
+  }
+}
+.gtrip b {
+  position: absolute;
+  left: var(--gx);
+  top: var(--gy);
+  font-size: 22px;
+  opacity: 0;
+  animation: gtFly 1.4s ease-out forwards;
+  animation-delay: calc(var(--j) * 0.04s);
+}
+.gtrip.in b {
+  animation-name: gtIn; /* petals swirl in toward the gate */
+}
+@keyframes gtFly {
+  0% {
+    transform: translate(-50%, -50%) scale(0.4);
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.2) rotate(120deg);
+    opacity: 0;
+  }
+}
+@keyframes gtIn {
+  0% {
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.2) rotate(-90deg);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(0.3);
+    opacity: 0;
+  }
+}
+/* the Garden is one world, the top one, so its lawn had no pattern: the same little stars and petals below its sky */
+.mb-garden.mb-top::before {
+  content: '';
+  position: absolute;
+  inset: 26% 0 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle 2.5px at 25% 30%, rgba(255, 143, 191, 0.75) 60%, transparent 70%),
+    radial-gradient(circle 2px at 75% 70%, rgba(255, 255, 255, 0.85) 60%, transparent 70%),
+    radial-gradient(ellipse 9px 4px at 50% 50%, rgba(63, 154, 82, 0.18) 60%, transparent 70%);
+  background-size: 46px 52px, 60px 44px, 38px 30px;
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 6%);
+  mask-image: linear-gradient(180deg, transparent, #000 6%);
+}

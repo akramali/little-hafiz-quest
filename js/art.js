@@ -724,6 +724,8 @@
     ['flower-watch', 'watch', 'Flower watch'], ['sun-watch', 'watch', 'Sunny watch'], ['smile-watch', 'watch', 'Smiley watch'], ['leaf-watch', 'watch', 'Leaf watch'],
     ['neon-watch', 'watch', 'Glowing neon watch', 2], ['galaxy-watch', 'watch', 'Glowing galaxy watch', 2], ['lava-watch', 'watch', 'Glowing lava watch', 2], ['moon-watch', 'watch', 'Glowing moon watch', 2],
     ['rainbow-watch', 'watch', 'Rainbow watch'], ['rocket-watch', 'watch', 'Rocket watch'], ['crystal-watch', 'watch', 'Glowing crystal watch', 2], ['ball-watch', 'watch', 'Football watch'],
+    // v2.12.1: toy vehicles to ride along
+    ['fire-truck', 'pet', 'Fire truck', 2], ['ambulance', 'pet', 'Ambulance', 2], ['police-car', 'pet', 'Police car', 2], ['crane-truck', 'pet', 'Crane truck', 2], ['digger', 'pet', 'Digger', 2], ['school-bus', 'pet', 'School bus', 2],
   ];
   const DROP_COLORS = [
     ['red', 'basic-shirt', 153], ['teal', 'basic-shirt', 330], ['olive', 'basic-pants', 199], ['purple', 'basic-shoes', 252], ['green', 'hoodie', 229],
@@ -796,6 +798,10 @@
     const b = ITEMS.find((i) => i.id === base);
     ITEMS.push({ id: pat + '-' + base, slot: b.slot, name: PAT_NAME[pat] + ' ' + b.name.charAt(0).toLowerCase() + b.name.slice(1), tier: 2, from: null, vof: base, deg, pat, garden: 'drop' });
   });
+  // (v2.12.1) more bags, the Garden's surprises too
+  [['hiking-pack', 'Hiking backpack'], ['messenger-bag', 'Messenger bag'], ['tassel-pouch', 'Tassel pouch'], ['basket-pack', 'Flower basket pack'], ['duffel-bag', 'Duffel bag']].forEach(([id, name]) =>
+    ITEMS.push({ id, slot: 'bag', name, tier: 2, from: null, garden: 'drop' }),
+  );
   const twoOf = (k) => TWO_TONES.find((t) => t[0] === k);
   ITEMS.forEach((it) => (BYID[it.id] = it));
   const DEFAULTS = { top: 'basic-shirt', pants: 'basic-pants', shoes: 'basic-shoes', stick: 'twig' };
@@ -1339,7 +1345,27 @@
         F('M68 263L68 261Q68 256 73 256L87.5 256Q92.6 256 92.6 261L92.6 263Z', b) + L('M72 266L86 266M72 270L86 270M73 274L85 274', '#fff', 2) + L('M70 280Q80 270 92 276', b === '#f6f6f8' ? INK : '#fff', 2) + P(d, 'none') + L('M68 263L92.6 263', INK, 1.8);
     };
   });
-  Object.keys(SHOE).forEach((id) => (ART[id] = { shoe: SHOE[id], box: [52, 236, 132, 296], fx: SHOEFX[id] }));
+  /* (v2.12.1) Seen from behind: the shoe's own outline and colour, a darker heel, a seam up the back and the sole; no
+     toe caps, laces or faces (they were drawn on the back too). Sandals: the heel of the foot and a strap round it. */
+  function shoeBack(m, sandal) {
+    const body = /<path d="([^"]+)" fill="([^"]+)" stroke="none"\/>/.exec(m);
+    if (!body) return m;
+    const d = body[1],
+      c = body[2],
+      nums = (d.match(/-?\d+(\.\d+)?/g) || []).map(Number),
+      pts = [];
+    for (let i = 0; i + 1 < nums.length; i += 2) if (nums[i] > 50 && nums[i] < 110 && nums[i + 1] > 225 && nums[i + 1] < 300) pts.push([nums[i], nums[i + 1]]); // (points of the shoe only, not an arc's radii)
+    const top = Math.min(...pts.map((q) => q[1])),
+      low = pts.filter((q) => q[1] > 278),
+      x0 = Math.min(...low.map((q) => q[0])),
+      x1 = Math.max(...low.map((q) => q[0])),
+      mid = n((x0 + x1) / 2);
+    const sole = 'M' + n(x0 - 0.6) + ' 285L' + n(x1 + 0.6) + ' 285L' + n(x1 + 0.6) + ' 287C' + n(x1 + 0.6) + ' 290 ' + n(x1 - 1.4) + ' 292 ' + n(x1 - 4.4) + ' 292L' + n(x0 + 4) + ' 292C' + n(x0 + 1) + ' 292 ' + n(x0 - 0.6) + ' 290 ' + n(x0 - 0.6) + ' 287Z';
+    if (sandal) return F(d, c) + P(d, 'none') + S(sole, '#ece4d8') + DL('M' + n(x0 + 3) + ' 279Q' + mid + ' 284 ' + n(x1 - 3) + ' 279', '#2fbfa6', 2.4);
+    const dark = c[0] === '#' ? dk(c, 0.22) : c;
+    return F(d, c) + EF(mid, 283, n((x1 - x0) * 0.34), 7, dark) + L('M' + mid + ' ' + n(top + 5) + 'L' + mid + ' 277', dark, 1.6) + P(d, 'none') + S(sole, c[0] === '#' ? dk(c, 0.42) : '#5a4a3a');
+  }
+  Object.keys(SHOE).forEach((id) => (ART[id] = { shoe: (sk, back) => (back ? shoeBack(SHOE[id](sk), id === 'sandals') : SHOE[id](sk)), box: [52, 236, 132, 296], fx: SHOEFX[id] }));
 
   /* ---------- capes: f = front view (behind the body), b = back view (over the back) ---------- */
   const CAPE_F = 'M70 156L114 156C124 186 138 226 152 262Q142 270 132 264Q122 272 112 266Q102 274 92 268Q82 274 72 266Q62 272 52 264Q42 270 32 262C46 226 60 186 70 156Z';
@@ -1514,6 +1540,69 @@
     },
   };
 
+
+  /* (v2.12.1) more bags to win in the Hidden Garden: a hiking backpack with a bedroll, a messenger bag, a tassel pouch, a
+     woven basket pack with flowers in it and a duffel bag */
+  const twoStraps = (st) => DL('M73 155L75 212', st, 4.6) + DL('M111 155L109 212', st, 4.6);
+  ART['hiking-pack'] = {
+    box: [58, 140, 126, 236],
+    ex(v) {
+      const c = '#3f9a52', st = '#2f6b3e';
+      if (v !== 'back') return twoStraps(st) + DL('M74 194L110 194', st, 3);
+      return S(rr(66, 166, 52, 64, 12), c, 'M104 166Q118 166 118 178L118 218Q118 230 106 230L100 230Q110 200 104 166Z', 'M71 182Q71 172 78 170Q74 180 74 194Z') +
+        S(rr(60, 152, 64, 16, 8), '#e8894a', rr(104, 152, 20, 16, 8)) + L('M72 152L72 168M112 152L112 168', '#8a4a26', 3) + L('M64 160L120 160', dk('#e8894a', 0.2), 1.4, ' stroke-dasharray="2 3"') +
+        S(rr(74, 196, 36, 26, 7), dk(c, 0.12)) + L('M74 204L110 204', st, 1.8) + P(rr(88, 200, 8, 7, 2), GOLD, sw(1.4)) + S(rr(62, 186, 8, 26, 3), dk(c, 0.18)) + S(rr(114, 186, 8, 26, 3), dk(c, 0.18));
+    },
+  };
+  const messenger = () => {
+    const c = '#2f7fb8';
+    return S(rr(98, 198, 46, 34, 6), c, 'M134 198Q144 198 144 206L144 224Q144 232 136 232L130 232Q138 216 134 198Z') + S('M98 206Q98 198 106 198L136 198Q144 198 144 206L144 216Q121 226 98 216Z', dk(c, 0.12)) +
+      L('M102 212Q121 220 140 212', '#ffffff', 1.4, ' stroke-dasharray="3 3"') + S('M114 204L128 204L128 214L121 218L114 214Z', '#ffd23f') + P(star5(121, 210, 3.4), '#ffffff', sw(1));
+  };
+  ART['messenger-bag'] = {
+    box: [64, 150, 148, 236],
+    ic: () => DL('M70 156Q80 196 104 204', '#1f5f8a', 4.4) + messenger(),
+    ex(v) {
+      if (v === 'back') return DL('M114 156L64 210', '#1f5f8a', 4.4) + G(messenger(), MIR);
+      return DL('M70 156L108 202', '#1f5f8a', 4.4) + messenger();
+    },
+  };
+  const tasselPouch = (x, y) => {
+    const c = '#d9483a';
+    return S('M' + (x - 11) + ' ' + (y - 10) + 'L' + (x + 11) + ' ' + (y - 10) + 'L' + (x + 12) + ' ' + (y + 8) + 'Q' + x + ' ' + (y + 16) + ' ' + (x - 12) + ' ' + (y + 8) + 'Z', c) + S('M' + (x - 11) + ' ' + (y - 10) + 'L' + (x + 11) + ' ' + (y - 10) + 'L' + x + ' ' + (y + 2) + 'Z', '#ffd23f') +
+      P(star8(x, y + 6, 3.4), '#ffffff', sw(1)) + L('M' + x + ' ' + (y + 12) + 'L' + x + ' ' + (y + 18), '#ffd23f', 2) + S('M' + (x - 3) + ' ' + (y + 18) + 'L' + (x + 3) + ' ' + (y + 18) + 'L' + (x + 4) + ' ' + (y + 27) + 'L' + (x - 4) + ' ' + (y + 27) + 'Z', '#ffd23f');
+  };
+  ART['tassel-pouch'] = {
+    box: [66, 150, 132, 244],
+    ic: () => DL('M72 156Q80 196 110 200', '#ffd23f', 2.4) + tasselPouch(116, 210),
+    ex(v) {
+      if (v === 'back') return DL('M112 156L70 202', '#ffd23f', 2.4) + G(tasselPouch(116, 212), MIR);
+      return DL('M72 156L112 202', '#ffd23f', 2.4) + tasselPouch(116, 212);
+    },
+  };
+  ART['basket-pack'] = {
+    box: [58, 140, 126, 234],
+    ex(v) {
+      const c = '#d9a45a', st = '#8a5a35';
+      if (v !== 'back') return twoStraps(st);
+      return S(cloudD(92, 172, 50, 26, 4), '#5fbf4a') + [[74, 156, '#ff5d7a'], [86, 150, '#ffffff'], [98, 152, '#ff8fbf'], [110, 158, '#ffd23f'], [92, 160, '#ff5d7a']].map(([x, y, f]) => ball(x, y, 4.4, 4.4, f, { hl: false })).join('') +
+        S('M64 170L120 170L116 222Q116 230 108 230L76 230Q68 230 68 222Z', c, 'M106 170L120 170L116 222Q116 230 108 230L102 230Q110 200 106 170Z') +
+        L('M66 182L118 182M67 194L117 194M68 206L117 206M68 218L116 218', dk(c, 0.25), 1.6) + L('M76 170L78 230M88 170L89 230M100 170L100 230M110 170L108 230', dk(c, 0.18), 1.4) + S(rr(62, 166, 60, 8, 4), dk(c, 0.1));
+    },
+  };
+  const duffel = () => {
+    const c = '#8a63d2';
+    return S(rr(96, 202, 50, 26, 13), c, 'M132 202Q146 202 146 215Q146 228 132 228L126 228Q136 214 132 202Z') + C(98, 215, 9, lt(c, 0.25), sw(1.8)) + C(144, 215, 9, lt(c, 0.25), sw(1.8)) +
+      L('M104 208L138 208', '#ffd23f', 2) + L('M114 202Q121 192 128 202', dk(c, 0.3), 3);
+  };
+  ART['duffel-bag'] = {
+    box: [64, 150, 152, 234],
+    ic: () => DL('M70 156Q82 196 104 206', '#5a3fa0', 4) + duffel(),
+    ex(v) {
+      if (v === 'back') return DL('M114 156L62 212', '#5a3fa0', 4) + G(duffel(), MIR);
+      return DL('M70 156L106 206', '#5a3fa0', 4) + duffel();
+    },
+  };
 
   /* ---------- sticks: upright at x=46, held by the character's right hand (viewer's left) ---------- */
   /* ---------- the summit rewards ---------- */
@@ -2196,6 +2285,51 @@
         S('M18 -44L38 -44L35 -30L21 -30Z', '#c98d4e', null, null) + L('M20 -40L36 -40M21 -35L35 -35', '#9a6a3a', 1.4) + [[23, -46], [30, -48], [36, -46]].map(([x, y]) => ball(x, y, 4, 4, '#d8344a', { hl: false })).join('') + S('M28 -52Q32 -58 37 -56Q33 -51 29 -51Z', '#5fae3a');
     },
   };
+  /* (v2.12.1) more toy vehicles to win (everyday surprises): a fire truck, an ambulance, a police car, a crane truck,
+     a digger and a school bus. Their lights flash softly. */
+  const flash = (x, y, c, d) => G(EF(x, y, 7, 6, c, 0.35), cls('lhq-pulse') + (d ? ' style="animation-delay:' + d + 's"' : '')) + S(rr(x - 4, y - 3, 8, 6, 2.4), c);
+  PET['fire-truck'] = {
+    box: [-46, -66, 46, 2],
+    d: () =>
+      shadow(42) + S(rr(-42, -36, 60, 24, 4), '#e8433a', rr(8, -36, 10, 24, 3)) + S('M16 -36L16 -54Q16 -58 20 -58L32 -58Q38 -58 41 -48L44 -36Z', '#e8433a', 'M32 -58Q38 -58 41 -48L44 -36L36 -36Q36 -50 32 -58Z') + F('M22 -54L32 -54Q35 -54 37 -46L22 -46Z', '#bfe8ff') +
+      S(rr(16, -36, 28, 24, 5), '#e8433a', rr(34, -36, 10, 24, 4)) + L('M-40 -22L42 -22', '#ffffff', 2.6) + S(rr(-38, -48, 50, 6, 2), '#c9d2e3') + L('M-32 -48L-32 -42M-22 -48L-22 -42M-12 -48L-12 -42M-2 -48L-2 -42M8 -48L8 -42', '#8d97b0', 1.6) +
+      S(rr(-30, -32, 16, 12, 3), '#b8302a') + C(-22, -26, 3.4, '#ffd23f', sw(1.4)) + flash(26, -61, '#ff4f4f') + C(41, -26, 2.6, '#ffe066', sw(1.4)) + wheel(-26, 10) + wheel(28, 10),
+  };
+  PET['ambulance'] = {
+    box: [-46, -66, 46, 2],
+    d: () =>
+      shadow(40) + S(rr(-40, -54, 58, 42, 6), '#ffffff', rr(6, -54, 12, 42, 5)) + S('M18 -42L32 -42Q38 -42 41 -34L42 -24Q42 -12 36 -12L18 -12Z', '#ffffff', 'M32 -42Q38 -42 41 -34L42 -24Q42 -12 36 -12L32 -12Q36 -28 32 -42Z') + F('M22 -38L31 -38Q35 -38 37 -30L22 -30Z', '#bfe8ff') +
+      L('M-40 -24L42 -24', '#ef4b4b', 3.4) + S('M-16 -46L-10 -46L-10 -40L-4 -40L-4 -34L-10 -34L-10 -28L-16 -28L-16 -34L-22 -34L-22 -40L-16 -40Z', '#ef4b4b') + F(rr(-36, -50, 12, 8, 3), '#bfe8ff') +
+      flash(-28, -58, '#4a8cff') + flash(4, -58, '#ff4f4f', 0.5) + C(38, -18, 2.6, '#ffe066', sw(1.4)) + wheel(-24, 10) + wheel(26, 10),
+  };
+  PET['police-car'] = {
+    box: [-44, -64, 44, 2],
+    d: () =>
+      shadow(36) + S('M-20 -30Q-15 -48 -2 -48L12 -48Q22 -48 27 -30Z', '#2b3a6b', 'M14 -48Q22 -48 27 -30L18 -30Q18 -42 14 -48Z') + F('M-14 -32Q-11 -44 -3 -44L3 -44L3 -32Z', '#bfe8ff') + F('M7 -44L12 -44Q18 -44 21 -32L7 -32Z', '#bfe8ff') +
+      S(rr(-38, -32, 76, 20, 8), '#ffffff', rr(14, -32, 24, 20, 8)) + F('M-38 -24L38 -24L38 -18Q38 -12 30 -12L-30 -12Q-38 -12 -38 -18Z', '#2b3a6b') + P(star5(0, -25, 5), GOLD, sw(1.4)) +
+      S(rr(-8, -54, 16, 6, 2), '#3a2f45') + flash(-4, -57, '#4a8cff') + flash(5, -57, '#ff4f4f', 0.5) + C(33, -26, 3, '#ffe066', sw(1.6)) + wheel(-22, 10) + wheel(22, 10),
+  };
+  PET['crane-truck'] = {
+    box: [-46, -88, 46, 2],
+    d: () =>
+      shadow(42) + L('M-26 -34L18 -78', '#e0a21f', 6.4) + L('M-26 -34L18 -78', INK, 1.2, ' stroke-dasharray="4 5"') + L('M18 -78L18 -52', '#3a2f45', 1.8) + P('M15 -52Q15 -46 18 -46Q22 -46 22 -50', 'none', sw(2.4)) +
+      S(rr(-42, -36, 56, 22, 4), '#ffc23d', rr(4, -36, 10, 22, 3)) + S('M14 -36L14 -50Q14 -54 18 -54L30 -54Q36 -54 39 -44L42 -36Z', '#ffc23d', 'M30 -54Q36 -54 39 -44L42 -36L34 -36Q34 -48 30 -54Z') + F('M19 -50L30 -50Q33 -50 35 -42L19 -42Z', '#bfe8ff') +
+      S(rr(14, -36, 28, 22, 5), '#ffc23d', rr(32, -36, 10, 22, 4)) + S(rr(-32, -42, 14, 10, 3), '#3a2f45') + CF(-26, -34, 3.4, '#c9d2e3') + L('M-40 -22L12 -22', '#3a2f45', 2, ' stroke-dasharray="6 4"') + flash(24, -57, '#ff9f1c') + wheel(-28, 10) + wheel(-6, 10) + wheel(28, 10),
+  };
+  PET['digger'] = {
+    box: [-46, -70, 46, 2],
+    d: () =>
+      shadow(42) + S(rr(-40, -16, 56, 16, 8), '#3a2f45') + [-30, -18, -6, 6].map((x) => C(x, -8, 4, '#8d97b0', sw(1.6))).join('') +
+      S(rr(-36, -40, 46, 24, 4), '#ffc23d', rr(-4, -40, 14, 24, 3)) + S('M-34 -40L-34 -62Q-34 -66 -30 -66L-12 -66Q-8 -66 -8 -62L-8 -40Z', '#ffc23d') + F(rr(-30, -62, 18, 16, 3), '#bfe8ff') +
+      L('M6 -34L26 -56L40 -36', '#ffc23d', 7) + L('M6 -34L26 -56L40 -36', INK, 1.2, ' opacity=".4"') + CF(26, -56, 3, '#3a2f45') + S('M34 -38L46 -36L44 -24Q38 -22 32 -28Z', '#8d97b0') + L('M36 -24L36 -20M40 -24L40 -20', INK, 1.6) + flash(-21, -69, '#ff9f1c'),
+  };
+  PET['school-bus'] = {
+    box: [-48, -66, 48, 2],
+    d: () =>
+      shadow(44) + S('M-44 -54Q-44 -58 -40 -58L30 -58Q38 -58 40 -50L44 -30L44 -16Q44 -12 40 -12L-40 -12Q-44 -12 -44 -16Z', '#ffc23d', 'M30 -58Q38 -58 40 -50L44 -30L44 -16Q44 -12 40 -12L32 -12Q38 -34 30 -58Z') +
+      [-38, -24, -10, 4].map((x) => F(rr(x, -52, 11, 12, 2.4), '#bfe8ff')).join('') + F('M20 -52L30 -52Q35 -52 37 -46L39 -38L20 -38Z', '#bfe8ff') + L('M-44 -32L44 -32', '#3a2f45', 2.4) + L('M-44 -26L44 -26', '#3a2f45', 1.4) +
+      C(40, -20, 2.6, '#ffe066', sw(1.4)) + CF(-44, -40, 2.4, '#ef4b4b') + wheel(-26, 10) + wheel(28, 10),
+  };
   Object.keys(PET).forEach((id) => (ART[id] = { pet: PET[id], box: PET[id].box, aura: PET[id].aura }));
 
   /* ---------- tier effects on the explorer ---------- */
@@ -2347,7 +2481,7 @@
       else if (s === 'stick' && back) a = [184 - a[0], a[1], a[2], a[3]];
       auras += aura(n(a[0]), n(a[1]), n(a[2]), n(a[3]));
     });
-    const leg = legOf(ART[o.pants]) + ART[o.shoes].shoe(sk) + fxOf('shoes');
+    const leg = legOf(ART[o.pants]) + ART[o.shoes].shoe(sk, back) + (back ? '' : fxOf('shoes')); // (v2.12.1: from behind, the heels)
     const legs = back ? G(leg, cls('ex-leg-l')) + G(G(leg, MIR), cls('ex-leg-r')) : G(leg, cls('ex-leg-r')) + G(G(leg, MIR), cls('ex-leg-l'));
     const sleeve = S(SLEEVE, top.sl, SLEEVE_SH) + S(CUFF, top.cf);
     const hand = ball(HAND[0], HAND[1], HAND[2], HAND[2], sk, { hl: false, dx: 0.2, dy: 0.25 });
@@ -2481,7 +2615,7 @@
   function garland(kind) {
     const yAt = (x) => {
       const t = (x % 200) / 200;
-      return (1 - t) * (1 - t) * 4 + 2 * (1 - t) * t * 26 + t * t * 4;
+      return (1 - t) * (1 - t) * 4 + 2 * (1 - t) * t * 48 + t * t * 4; // (the wire's own curve, so everything hangs from it: v2.12.1)
     };
     const xs = [];
     for (let x = 14; x < 400; x += 28) xs.push(x);
@@ -2491,7 +2625,12 @@
     if (kind === 'ramadan')
       g += xs.map((x, j) => (Math.abs(x - 200) < 20 ? '' : hang(x, j % 3 === 0 ? fanous(GLASS[(j / 3) % GLASS.length | 0], 0.62) : j % 3 === 1 ? drop(5, P(star8(0, 6, 6), '#ffd23f', sw(1.4))) : drop(7, G(hilal(5.4), ' transform="translate(0 5)"'))))).join('') +
         hang(200, drop(4, G(hilal(11), ' transform="translate(0 12)"')));
-    else if (kind === 'jumuah') g += xs.map((x, j) => hang(x, L('M0 0L0 ' + (j % 2 ? 4 : 9), INK, 1.2) + P(star5(0, j % 2 ? 9 : 14, 5, 2.2), '#ffd23f', sw(1.4)))).join('');
+    else if (kind === 'jumuah')
+      // (v2.12.1) each star on its own string from the wire, a little its own size, with a soft glow
+      g += xs.map((x, j) => {
+        const r = [5.4, 4.2, 6, 4.6, 5, 3.9, 5.6][j % 7], len = [3, 7, 4, 8, 2, 6, 5][j % 7];
+        return hang(x, L('M0 -1L0 ' + (len + 1), INK, 1.2) + G(EF(0, len + r, r * 1.9, r * 1.9, 'url(#lhq-g-aura)', 0.55), cls('pr-glow') + ' style="animation-delay:-' + ((j * 0.7) % 3).toFixed(1) + 's"') + P(star5(0, len + r, r, r * 0.45), '#ffd23f', sw(1.3)));
+      }).join('');
     else {
       const cs = kind === 'eid-adha' ? ['#3fae6a', '#ffd23f', '#ffffff', '#5fc9b6'] : ['#ff6b6b', '#ffd23f', '#5fb2ff', '#5fd27a', '#ff8fcf'];
       g += xs.map((x, j) => hang(x, j % 2 ? (j % 4 === 1 ? drop(6, G(hilal(5.4), ' transform="translate(0 5)"')) : drop(4, P(star8(0, 6, 6), '#ffd23f', sw(1.4)))) : P('M-9 0L9 0L0 16Z', cs[(j / 2) % cs.length | 0], sw(1.4)))).join('');
@@ -3013,21 +3152,22 @@
     g += fruits
       .map((q, j) => '<g class="tfruit" data-act="tfruit" data-j="' + j + '" data-t="' + q.t + '" style="--dy:' + n(612 - q.y) + 'px"><circle cx="' + q.x + '" cy="' + q.y + '" r="13" fill="transparent" stroke="none"/>' + G(L('M' + q.x + ' ' + (q.y - 9) + 'L' + q.x + ' ' + (q.y - 4), '#6a4a2a', 1.4) + OUT(FRUIT[q.t](q.x, q.y), 1.4), ' transform="translate(' + q.x + ' ' + q.y + ') scale(' + q.k + ') translate(' + -q.x + ' ' + -q.y + ')"') + '</g>')
       .join('');
-    // (v2.12.0) the Hidden Garden's lanterns, one for each of its stops: dark until the stop is memorized, lit then,
-    // golden with every star. They hang from the lowest leafy branches, spread out (or, while the tree is too young
-    // for that, on a line between two little posts in front of it)
-    const LN = o.lanterns || [];
+    // (v2.12.0) the Hidden Garden's lanterns: one for each of its stops memorized (golden with every star; v2.12.1: only
+    // the lit ones, none waiting dark). They hang from the lowest leafy branches, spread out; while the tree is too young
+    // for that, they stand in the grass about its foot, glowing
+    const LN = (o.lanterns || []).filter((v) => v > 0);
     let posts = '';
     if (LN.length) {
       const low = area.filter((b) => b[1] < GY - 80).map((b) => [n(b[0]), n(b[1] + b[2] * 0.45)]).sort((p2, q2) => q2[1] - p2[1]);
       const pick = [];
       for (const p2 of low) if (pick.length < LN.length && pick.every((q2) => Math.hypot(q2[0] - p2[0], q2[1] - p2[1]) > 44)) pick.push(p2);
-      if (pick.length >= LN.length) g += pick.sort((p2, q2) => p2[0] - q2[0]).map((p2, j) => L('M' + p2[0] + ' ' + (p2[1] - 18) + 'L' + p2[0] + ' ' + (p2[1] - 7), '#6a4a2a', 1.4) + treeLantern(p2[0], p2[1], LN[j])).join('');
+      if (size >= 0.35 && pick.length >= LN.length) g += pick.sort((p2, q2) => p2[0] - q2[0]).map((p2, j) => L('M' + p2[0] + ' ' + (p2[1] - 18) + 'L' + p2[0] + ' ' + (p2[1] - 7), '#6a4a2a', 1.4) + treeLantern(p2[0], p2[1], LN[j])).join('');
       else {
-        const x0 = 116, x1 = 284, yT = GY - 96, sag = 26,
-          at = (f) => [n(x0 + (x1 - x0) * f), n(yT + 4 * sag * f * (1 - f))];
-        posts = S(rr(x0 - 3, yT - 4, 6, GY - yT + 6, 2), '#9a6a40') + S(rr(x1 - 3, yT - 4, 6, GY - yT + 6, 2), '#9a6a40') + CF(x0, yT - 4, 3.4, GOLD) + CF(x1, yT - 4, 3.4, GOLD) +
-          L('M' + x0 + ' ' + yT + 'Q200 ' + n(yT + 2 * sag) + ' ' + x1 + ' ' + yT, '#6a4a2a', 1.6) + LN.map((v, j) => { const q = at((j + 0.5) / LN.length); return L('M' + q[0] + ' ' + q[1] + 'L' + q[0] + ' ' + (q[1] + 6), '#6a4a2a', 1.4) + treeLantern(q[0], q[1] + 13, v); }).join('');
+        const Wf = live[0].seg[4];
+        posts = [[-1, 2], [1, 6], [-1, 10], [1, -2], [-1, -4], [1, 12]].slice(0, LN.length).map(([sd, dy], j) => {
+          const x = n(cx + sd * (Math.max(Wf, 10) * 0.5 + 24 + Math.floor(j / 2) * 24)), y = 600 + dy;
+          return EF(x, y + 9, 10, 2.6, INK, 0.15) + G(treeLantern(x, y - 3, LN[j]), ' transform="translate(' + x + ' ' + (y + 9) + ') scale(1.3) translate(' + -x + ' ' + -(y + 9) + ')"');
+        }).join('');
       }
     }
     // where a leaf may fall from now and then: points in the crown (none on a young plant)
@@ -3065,7 +3205,7 @@
     // tree, front (the mound; the screen adds the buddies and tufts there)
     const back = treeSky(o.night, o.seed) + treeFar(o.night) + groundN + OUT(meadow, 1.4),
       tree = OUT(g, 2),
-      front = nightTint(OUT(mound, 2), o.night) + (posts ? OUT(posts, 1.6) : '');
+      front = nightTint(OUT(mound, 2), o.night) + (posts ? OUT(posts, 1.6) : ''); // (the young tree's lanterns stand in the grass, in front)
     return { back, tree, front, svg: back + '<g class="tgustw"><g class="tsway">' + tree + '</g></g>' + front, tufts, fruits, lobes: li, drop };
   }
 
@@ -3073,19 +3213,53 @@
   function treeLantern(x, y, v) {
     const frame = v === 2 ? GOLD : '#c9a25a',
       glass = v ? '#fff3b0' : '#5d6a8c';
-    return (v ? G(EF(x, y, 16, 16, v === 2 ? '#ffd84d' : '#ffe27a', 0.4), cls('pr-glow')) : '') + S('M' + (x - 6) + ' ' + (y - 8) + 'Q' + x + ' ' + (y - 15) + ' ' + (x + 6) + ' ' + (y - 8) + 'Z', frame) +
+    return (v ? G(EF(x, y, 22, 22, 'url(#lhq-g-aura)', v === 2 ? 0.95 : 0.8), cls('pr-glow')) : '') + S('M' + (x - 6) + ' ' + (y - 8) + 'Q' + x + ' ' + (y - 15) + ' ' + (x + 6) + ' ' + (y - 8) + 'Z', frame) +
       S(rr(x - 6, y - 8, 12, 15, 3.5), glass) + (v ? F('M' + x + ' ' + (y + 4) + 'Q' + (x - 3.6) + ' ' + y + ' ' + (x - 0.6) + ' ' + (y - 4) + 'Q' + x + ' ' + (y - 1) + ' ' + (x + 1.4) + ' ' + (y - 4) + 'Q' + (x + 3.6) + ' ' + y + ' ' + x + ' ' + (y + 4) + 'Z', '#ff9f1c') : '') +
       L('M' + (x - 2) + ' ' + (y - 7) + 'L' + (x - 2) + ' ' + (y + 6) + 'M' + (x + 2) + ' ' + (y - 7) + 'L' + (x + 2) + ' ' + (y + 6), frame, 1.2) + S(rr(x - 7, y + 6, 14, 3.6, 1.6), frame) +
       (v === 2 ? F(star4(x + 10, y - 10, 3.4), '#fff') : '');
   }
 
-  // the Hidden Garden's gate (100×110): an arch in a garden wall, roses either side, a lantern; back: the door open
-  function gardenGate(back) {
-    const door = back ? F('M30 104L30 56Q30 32 50 28Q70 32 70 56L70 104Z', '#ffe9b0') + F('M30 104L30 56Q30 32 50 28L50 104Z', '#2fb89a', 0.25) + L('M50 104L50 70M42 92L50 84L58 92', '#e0a21f', 3) :
-      F('M30 104L30 56Q30 32 50 28Q70 32 70 56L70 104Z', '#2fb89a') + L('M50 104L50 40', dk('#2fb89a', 0.3), 2) + CF(44, 76, 2.6, GOLD) + CF(56, 76, 2.6, GOLD) + P(star8(50, 52, 7), '#ffd23f', sw(1.2));
-    return svg100x('0 0 100 110', OUT(S('M14 106L14 48Q14 12 50 8Q86 12 86 48L86 106Z', '#f5e6c8', 'M70 14Q86 22 86 48L86 106L76 106L76 48Q76 26 70 14Z') + door + P('M30 104L30 56Q30 32 50 28Q70 32 70 56L70 104', 'none') +
-      L('M50 8L50 16', INK, 2) + S('M44 18Q50 12 56 18Z', GOLD) + S(rr(45, 18, 10, 12, 3), '#fff3b0') + S(cloudD(14, 108, 24, 18, 3), '#4fb06a') + S(cloudD(86, 108, 24, 18, 3), '#4fb06a') +
-      [[6, 98], [16, 94], [84, 96], [94, 100], [10, 104]].map(([x, y]) => CF(x, y, 3, '#ff5d7a')).join('')));
+  // the Hidden Garden's gate (100×110; v2.12.1): an iron gate of upright bars between two stone pillars. By the summit
+  // it is shut, snow drifted up its feet, a boulder and ice crystals creeping up it, and the garden's green glimpsed
+  // through the bars; in the Garden (back) it stands open, roses climbing it and the snowy peak seen through it
+  function gardenGate(back, open) {
+    if (open == null) open = back; // (open: swung open, as one goes through it)
+    const IRON = '#3a3550', ST = '#bfc6d4', STD = '#939bb0';
+    const archY = (x) => { const t = (x - 26) / 48; return n((1 - t) * (1 - t) * 48 + 2 * (1 - t) * t * 24 + t * t * 48); };
+    const pillar = (x) =>
+      S(rr(x, 32, 16, 76, 2), ST, 'M' + (x + 11) + ' 32L' + (x + 16) + ' 32L' + (x + 16) + ' 108L' + (x + 11) + ' 108Z') +
+      L('M' + x + ' 52L' + (x + 16) + ' 52M' + x + ' 74L' + (x + 16) + ' 74M' + x + ' 94L' + (x + 16) + ' 94M' + (x + 8) + ' 32L' + (x + 8) + ' 52M' + (x + 5) + ' 52L' + (x + 5) + ' 74M' + (x + 10) + ' 74L' + (x + 10) + ' 94', STD, 1.2) +
+      S(rr(x - 3, 26, 22, 8, 2), ST, rr(x + 12, 26, 7, 8, 2)) + ball(x + 8, 20, 5.4, 5.4, ST, { shc: STD });
+    // what is seen through the gate: the garden (green, a little tree, roses) or, from inside, the snowy peak
+    const view = back && open
+      ? F('M26 108L26 48Q50 24 74 48L74 108Z', '#d9ecfb') + F('M26 90L40 62L50 74L60 58L74 84L74 108L26 108Z', '#ffffff') + F('M40 62L50 74L45 74Z', '#c6dcf0') + F('M26 98Q50 90 74 98L74 108L26 108Z', '#eef6ff')
+      : F('M26 108L26 48Q50 24 74 48L74 108Z', '#c8f0c0') + EF(50, 70, 22, 22, 'url(#lhq-g-glow)', 0.9) + F('M26 92Q50 82 74 92L74 108L26 108Z', '#6cc65a') + F(cloudD(42, 90, 18, 16, 3), '#4fb06a') + CF(36, 84, 2, '#ff5d7a') + CF(46, 80, 2, '#ffd23f') + CF(62, 86, 2, '#ff8fcf') + F(rr(57, 70, 2.4, 14, 1), '#8a5a35') + F(cloudD(58, 72, 14, 14, 3), '#5fbf6a');
+    const bars = (x0, x1, open) => {
+      let d = '', tips = '';
+      const cnt = open ? 3 : 4;
+      for (let q = 0; q <= cnt; q++) {
+        const x = n(x0 + ((x1 - x0) * q) / cnt), top = open ? 50 : archY(x) + 2;
+        d += 'M' + x + ' ' + top + 'L' + x + ' 106';
+        tips += 'M' + n(x - 1.8) + ' ' + (top + 1) + 'L' + x + ' ' + (top - 4) + 'L' + n(x + 1.8) + ' ' + (top + 1) + 'Z';
+      }
+      return L(d, IRON, 2.2) + L('M' + x0 + ' 64L' + x1 + ' 64M' + x0 + ' 98L' + x1 + ' 98', IRON, 2.2) + P(tips, IRON, sw(1));
+    };
+    const gate = open
+      ? bars(27, 35, true) + bars(65, 73, true) // (swung open against the pillars)
+      : bars(27, 49, false) + bars(51, 73, false) + L('M50 ' + archY(50) + 'L50 106', IRON, 3) + C(43, 80, 3, 'none', ' stroke="' + IRON + '" stroke-width="1.6"') + C(57, 80, 3, 'none', ' stroke="' + IRON + '" stroke-width="1.6"') + S(rr(47, 76, 6, 8, 2), GOLD);
+    const arch = L('M26 48Q50 24 74 48', IRON, 3.4) + L('M34 40Q38 34 44 36Q40 40 44 42M66 40Q62 34 56 36Q60 40 56 42', IRON, 1.6) + P(star8(50, 30, 5), GOLD, sw(1.2));
+    // around it: snow, a boulder and ice (by the summit), or climbing roses and bushes (in the Garden)
+    const around = back
+      ? L('M14 106Q8 86 16 70Q22 56 14 40M86 106Q92 88 84 72Q78 58 86 42', '#3f9a52', 2.2) +
+        [[13, 92, -30], [18, 76, 30], [14, 58, -30], [86, 94, 30], [82, 78, -30], [86, 60, 30]].map(([x, y, a]) => E(x, y, 4, 2.2, '#5fd27a', ' transform="rotate(' + a + ' ' + x + ' ' + y + ')"')).join('') +
+        [[16, 66], [12, 48], [84, 68], [88, 50], [18, 86]].map(([x, y]) => ball(x, y, 3.4, 3.4, '#ff5d7a', { hl: false })).join('') +
+        S(cloudD(10, 110, 26, 16, 3), '#4fb06a') + S(cloudD(90, 110, 26, 16, 3), '#4fb06a')
+      : S('M-4 110Q-2 96 8 88Q14 80 22 84Q26 92 24 100L26 110Z', '#9aa6bf', 'M14 84Q22 82 24 92Q24 102 26 110L18 110Q20 96 14 84Z') + F('M2 92Q10 82 22 85Q14 86 8 92Z', '#ffffff') +
+        S('M76 108L79 84L84 96L88 74L93 98L96 90L98 108Z', '#d8f6ff', 'M88 74L93 98L90 108L86 108Z') + L('M79 84L80 100M88 74L88 96', '#ffffff', 1.2) + S('M72 86L74 72L78 86Z', '#bfefff') +
+        P('M26 50L28 56L30 50M33 44L34.5 49L36 44M64 44L65.5 49L67 44M70 50L72 55L74 50', '#e9fbff', sw(1)) +
+        S('M7 34Q16 28 25 34Q18 30 7 34Z', '#ffffff') + F('M6 34Q8 26 16 26Q24 26 26 34Z', '#ffffff') + F('M74 34Q76 26 84 26Q92 26 94 34Z', '#ffffff') + CF(16, 16, 3, '#ffffff') + CF(84, 16, 3, '#ffffff') +
+        S('M-6 110Q2 98 16 100Q24 94 34 102Q44 98 52 104Q62 98 72 102Q84 96 92 102Q100 98 106 110Z', '#ffffff', 'M72 102Q84 96 92 102Q100 98 106 110L80 110Q90 104 72 102Z');
+    return svg100x('-6 0 112 110', OUT(view + gate + arch + pillar(10) + pillar(74) + around));
   }
   const svg100x = (vb, inner) => '<svg class="lhq-art" viewBox="' + vb + '" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' + inner + '</svg>';
 
@@ -3692,7 +3866,16 @@
   const gProp = (id, w, h, k) => prop(h || 100, shad(h || 100, w) + G(gArt(id)(), tf(50 - 50 * (k || 1), (h || 100) - 98 * (k || 1), k || 1)));
   Object.assign(props, {
     'garden-fountain': gProp('g-fountain', 36),
-    'garden-arch': gProp('g-arch', 34, 110, 1.08),
+    // (v2.12.1) a rose arbour with a bench under it (it was an arch with a door: it looked like a second gate)
+    'garden-arch': prop(110, shad(110, 42) +
+      S(rr(14, 40, 8, 66, 2), '#f5efe2', rr(19, 40, 3, 66, 1.5)) + S(rr(78, 40, 8, 66, 2), '#f5efe2', rr(83, 40, 3, 66, 1.5)) +
+      L('M14 56L22 64M22 56L14 64M14 76L22 84M22 76L14 84M78 56L86 64M86 56L78 64M78 76L86 84M86 76L78 84', '#d8ccb4', 1.2) +
+      S('M14 46Q14 10 50 8Q86 10 86 46L78 46Q78 18 50 16Q22 18 22 46Z', '#f5efe2') +
+      S(rr(30, 62, 40, 6, 2), '#c9834a') + S(rr(28, 76, 44, 7, 2.4), '#b8693a') + L('M33 68L33 76M67 68L67 76M32 83L30 102M68 83L70 102', '#5a3a28', 3.4) +
+      L('M18 104Q12 86 20 70Q26 56 18 44M82 104Q88 88 80 72Q74 58 82 44', '#3f9a52', 2.2) +
+      [[16, 90, -30], [22, 76, 30], [17, 60, -30], [84, 92, 30], [78, 78, -30], [84, 62, 30]].map(([x, y, a]) => E(x, y, 4.4, 2.4, '#5fd27a', ' transform="rotate(' + a + ' ' + x + ' ' + y + ')"')).join('') +
+      [[18, 40], [22, 24], [34, 12], [50, 8], [66, 12], [78, 24], [82, 40]].map(([x, y]) => S(cloudD(x, y + 8, 22, 16, 3), '#4caf50')).join('') +
+      [[20, 34], [30, 16], [44, 6], [58, 8], [72, 18], [82, 32], [26, 26], [66, 6], [16, 70], [84, 76]].map(([x, y], j) => ball(x, y, 3.8, 3.8, j % 3 ? '#ff5d7a' : '#ff8fbf', { hl: false })).join('')),
     'garden-pavilion': gProp('g-pavilion', 42, 110, 1.1),
     'garden-rose': prop(100, shad(100, 34) + crown(50, 94, 74, 44, '#4caf50', 6) + [[32, 70], [52, 60], [68, 74], [42, 84], [60, 86]].map((q) => ball(q[0], q[1], 5.4, 5.4, '#ff5d7a', { hlo: 0.5 })).join('')),
     'garden-jasmine': gProp('g-jasmine', 22),
@@ -3703,7 +3886,20 @@
     'garden-songbird': gProp('g-songbird', 30),
     'garden-pomtree': props['meadow-tree'].replace(/#ff5d6c/g, '#c9283c'),
     'garden-palm': props['sands-palm'],
-    'garden-lamp': prop(150, shad(150, 16) + S(rr(47, 60, 6, 86, 2), '#5a4a3a') + S(rr(42, 140, 16, 6, 2), '#5a4a3a') + G(gArt('g-lamp')(), tf(26, 0, 0.48))),
+    'garden-lamp': prop(150, shad(150, 16) + S(rr(47, 40, 6, 102, 2), '#3f4f47') + S(rr(40, 138, 20, 8, 3), '#3f4f47') + S(rr(43, 130, 14, 9, 3), '#4f6157') + L('M42 64Q50 58 58 64', '#3f4f47', 2.4) + G(gArt('g-lamp')(), tf(26, 0, 0.48))), // (v2.12.1: the post holds the lamp: no gap)
+  });
+  // (v2.12.1) more of the Garden, to fill it out like the other worlds: just scenery (not journal finds)
+  const tulip = (x, y, c) => L('M' + x + ' ' + (y + 12) + 'L' + x + ' ' + y, '#3f9a52', 1.8) + S('M' + (x - 4.4) + ' ' + y + 'Q' + (x - 5) + ' ' + (y - 9) + ' ' + (x - 2) + ' ' + (y - 8) + 'L' + x + ' ' + (y - 5) + 'L' + (x + 2) + ' ' + (y - 8) + 'Q' + (x + 5) + ' ' + (y - 9) + ' ' + (x + 4.4) + ' ' + y + 'Q' + x + ' ' + (y + 4) + ' ' + (x - 4.4) + ' ' + y + 'Z', c);
+  Object.assign(props, {
+    'garden-cypress': prop(150, shad(150, 18) + S(rr(46, 128, 8, 18, 2), '#8a5a35') + sway(S('M50 10Q66 42 66 84Q66 124 50 132Q34 124 34 84Q34 42 50 10Z', '#2f8a4c', 'M50 10Q66 42 66 84Q66 124 50 132Q60 100 56 60Q54 30 50 10Z', 'M44 50Q42 70 44 96Q40 70 44 50Z') + L('M44 66Q50 70 56 64M42 92Q50 98 58 90M44 116Q50 120 56 114', dk('#2f8a4c', 0.25), 1.4))),
+    'garden-hedge': prop(100, shad(100, 46) + S('M6 94L6 66Q6 56 16 56L84 56Q94 56 94 66L94 94Z', '#4caf50', 'M70 56L84 56Q94 56 94 66L94 94L76 94Q80 74 70 56Z', 'M12 64Q14 60 20 60L40 60Q20 62 14 70Z') +
+      L('M20 70L24 74M36 66L40 70M54 72L58 76M70 66L74 70M28 84L32 88M48 86L52 90M66 84L70 88M82 76L86 80', dk('#4caf50', 0.25), 1.6) + [[22, 60], [46, 58], [68, 60], [86, 64]].map(([x, y]) => CF(x, y, 2.6, '#ffffff')).join('')),
+    'garden-tulips': prop(100, shad(100, 44) + S('M8 82Q8 64 50 62Q92 64 92 82Q92 96 50 96Q8 96 8 82Z', '#d9c49b') + F('M16 82Q16 70 50 69Q84 70 84 82Q84 90 50 90Q16 90 16 82Z', '#8a5a35') +
+      [[24, 74, '#ff5d7a'], [36, 70, '#ffd23f'], [50, 68, '#ff8fbf'], [64, 70, '#ff5d7a'], [76, 74, '#ffd23f'], [30, 82, '#ff8fbf'], [44, 80, '#ff5d7a'], [58, 80, '#ffd23f'], [70, 82, '#ff8fbf']].map(([x, y, c]) => tulip(x, y - 4, c)).join('')),
+    'garden-orangetree': prop(150, shad(150, 24) + S('M30 120L70 120L64 146L36 146Z', '#d9733a', 'M58 120L70 120L64 146L56 146Z') + S(rr(26, 114, 48, 9, 3), '#e8894a') + S('M47 114Q48 96 46 82L54 82Q52 96 53 114Z', '#a86b3c') +
+      sway(crown(50, 90, 70, 62, '#45a84a', 7) + [[32, 62], [56, 50], [66, 74], [42, 80], [50, 64], [72, 56], [28, 80]].map((q) => ball(q[0], q[1], 5, 5, '#ff9f1c', { sh: false })).join(''))),
+    'garden-urn': prop(100, shad(100, 22) + S('M32 62Q30 76 38 88L36 94L64 94L62 88Q70 76 68 62Z', '#d9733a', 'M60 62L68 62Q70 76 62 88L64 94L58 94Q64 76 60 62Z') + S(rr(28, 56, 44, 8, 3), '#e8894a') + L('M36 76L64 76', '#b85a2a', 1.6) +
+      S(cloudD(50, 58, 46, 26, 4), '#5fbf4a') + [[36, 44], [50, 38], [64, 44], [44, 50], [58, 50]].map(([x, y], j) => ball(x, y, 4, 4, ['#ff5d7a', '#ffffff', '#ff8fbf', '#ffd23f', '#ff5d7a'][j], { hl: false })).join('') + L('M30 58Q22 66 26 76M70 58Q78 66 74 78', '#3f9a52', 1.8)),
   });
   const WALKERS = ['meadow-sheep', 'meadow-rabbit', 'forest-fox', 'forest-deer', 'forest-squirrel', 'sands-crab', 'sands-turtle', 'canyon-camel', 'canyon-lizard', 'canyon-tumbleweed', 'peak-goat', 'peak-snowman', 'garden-peacock'];
   // animals drawn facing left (their head or face on the left); the rest face right or straight ahead
@@ -3724,6 +3920,9 @@
     ['peak-pine', 'peak-rock', 'peak-snowman', 'peak-crystal', 'peak-flag', 'peak-igloo', 'peak-goat', 'peak-pine', 'peak-summit'],
     ['garden-pomtree', 'garden-rose', 'garden-fountain', 'garden-jasmine', 'garden-lily', 'garden-peacock', 'garden-bench', 'garden-birdhouse', 'garden-songbird', 'garden-palm', 'garden-lamp', 'garden-rose', 'garden-pomtree', 'garden-jasmine', 'garden-pavilion'],
   ];
+  // (v2.12.1) the Garden's scenery that isn't in its journal: placed with the rest, more of it, so the Garden is as full as
+  // the other worlds (kept apart from PROPS_BY_WORLD, which the journal reads)
+  const SCENERY_EXTRA = { 7: ['garden-cypress', 'garden-hedge', 'garden-tulips', 'garden-orangetree', 'garden-urn', 'garden-cypress', 'garden-hedge', 'garden-tulips', 'garden-cypress', 'garden-urn'] };
 
   /* ---------- ambient layers: small, slow, low-contrast decorations over a world ---------- */
   function rnd(seed) {
@@ -3782,6 +3981,8 @@
       across(AMB.bfly('#7fe0c0'), 22, 22, p(55, 75), 46);
       for (let i = 0; i < 5; i++) fall(AMB.leaf(['#ffb3d1', '#ffffff', '#ff8fbf'][i % 3]), 16, p(18, 26));
       across(AMB.bird('#2fb89a'), 32, 22, p(14, 28), 32, 'amb-bob');
+      across(AMB.bfly('#ffd23f'), 20, 20, p(70, 88), 52); // (v2.12.1: a little fuller, like the Meadow)
+      [[4, 99], [24, 100], [46, 99], [70, 99.5], [88, 98.5]].forEach((q) => spot('amb-still', AMB.tuft(q[0] % 3 ? '#5fba52' : '#6cc65a'), 54, q[0], q[1], 4));
     } else {
       for (let i = 0; i < 12; i++) fall(AMB.flake(), p(9, 15), p(12, 20));
       across(AMB.hawk().replace(/#8a5a36/g, '#6b4a30'), 80, 32, p(10, 22), 50);
@@ -4125,6 +4326,7 @@
     WORLDS,
     props,
     PROPS_BY_WORLD,
+    SCENERY_EXTRA,
     WALKERS,
     FACE_LEFT,
     LANDMARKS,

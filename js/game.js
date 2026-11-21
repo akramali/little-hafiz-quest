@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.12.0';
+  const VERSION = '2.12.1';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -642,6 +642,7 @@
   const totalStars = (prof) => J.reduce((t, s) => t + surahStars(s, prof), 0); // (Juz ʿAmma's: the Garden's stars are its own)
   const MAX_STARS = J.reduce((t, s) => t + surahMax(s), 0);
   const gardenStars = (prof) => GS.reduce((t, s) => t + surahStars(s, prof), 0);
+  const starsOf = (s, prof) => (s && s.garden ? gardenStars(prof) : totalStars(prof)); // (v2.12.1) the stars of its own journey: a Garden stop's count in the Garden's
   const GARDEN_MAX = GS.reduce((t, s) => t + surahMax(s), 0);
   /* A world is complete when every sūrah in it has at least one star. Review games have 3 hearts; finishing the
      Starry Path (world 5) adds a 4th and the Sky Kingdom (world 6) a 5th, for the long sūrahs at the top (v2.7.24:
@@ -1118,6 +1119,8 @@
         // after its stated end, so it plays to the end of the āyah.
         const lastW = wz === ay[2].length - 1;
         seg = { start: Math.max(0, w[0] - (it[2] === 0 ? 0.03 : 0)), end: lastW ? ay[1] + 0.06 : we[1], word: !lastW };
+        // (v2.12.1) a piece of a long āyah in Word Steps: its words light up as they're recited
+        if (st.view === 'words' && it.length > 3 && S[st.i].n === it[0] && st.a === it[1] - 1) seg.ws = ay[2].slice(it[2], wz + 1);
       } else {
         seg = { start: Math.max(0, ay[0] - 0.05), end: ay[1] + 0.15 };
         // Word Steps: the whole āyah plays, and each word lights up as it's recited (v2.8.4)
@@ -1326,7 +1329,12 @@
       const ks = items[j].say;
       return ks.length > 1 ? many(ks, `Next: āyāt ${ks[0] + 1}–${ks[ks.length - 1] + 1}`) : Object.assign(one(ks[0]), { label: `Next: āyah ${ks[0] + 1}` });
     }
-    if (v === 'words') return Object.assign(one(st.a), { loop: true });
+    if (v === 'words') {
+      // (v2.12.1) a piece of a long āyah: just its words
+      const pcs = piecesOf(s.ayat[st.a].ar),
+        q = Math.min(st.pc || 0, pcs.length - 1);
+      return pcs.length > 1 ? { key: `${s.n}:${st.a}:p${q}`, label: `Part ${q + 1}`, items: [[s.n, st.a + 1, pcs[q][0], pcs[q][1]]], loop: true } : Object.assign(one(st.a), { loop: true });
+    }
     if (v === 'elder') {
       // the Teacher's test: only what the question shows (the āyah given, or the start of the āyah to finish)
       if (st.phase !== 'ask') return null;
@@ -1496,6 +1504,42 @@
     return out;
   }
   const firstWord = (ar) => wordsOf(ar)[0];
+  /* (v2.12.1) Word Steps takes a long āyah (over PIECE_OVER words, like Āyat al-Kursī's 50) one sentence at a time:
+     cut at its own pause marks (ۖ ۗ ۚ …), a short sentence joined to the next (pieces of about 4 to 10 words), a long
+     one without marks cut evenly. [from, to] word ranges (to included); a short āyah is one piece. */
+  const PIECE_OVER = 16;
+  const pieceMemo = new Map();
+  function piecesOf(ar) {
+    if (pieceMemo.has(ar)) return pieceMemo.get(ar);
+    const W = wordsOf(ar),
+      out = [];
+    if (W.length <= PIECE_OVER) out.push([0, W.length - 1]);
+    else {
+      const sent = [];
+      let a = 0;
+      W.forEach((w, j) => {
+        if (/[\u06D6-\u06DB]/.test(w) || j === W.length - 1) {
+          const len = j - a + 1,
+            parts = Math.ceil(len / 10); // (a long sentence with no mark in it: even pieces)
+          for (let q = 0; q < parts; q++) sent.push([a + Math.round((len * q) / parts), a + Math.round((len * (q + 1)) / parts) - 1]);
+          a = j + 1;
+        }
+      });
+      let cur = null;
+      sent.forEach((x) => {
+        if (cur && cur[1] - cur[0] + 1 < 4 && x[1] - cur[0] + 1 <= 10) cur[1] = x[1];
+        else {
+          if (cur) out.push(cur);
+          cur = x.slice();
+        }
+      });
+      const last = out[out.length - 1];
+      if (last && cur[1] - cur[0] + 1 < 4 && cur[1] - last[0] + 1 <= 12) last[1] = cur[1];
+      else out.push(cur);
+    }
+    pieceMemo.set(ar, out);
+    return out;
+  }
   function ctx() {
     const s = S[st.i];
     if (st.p === 'all') return { s, from: 0, to: s.ayat.length - 1, all: true };
@@ -1727,7 +1771,7 @@
     oopsAt = 0; // (a new screen: a frog's misstep there is a new one)
     arriving = st.view !== view ? st.view : ''; // (the start screen and the map arrive with their own animation)
     st = Object.assign({ view }, params);
-    if (GAMES.includes(view)) st.starsBefore = totalStars(); // a first finish (a new star) always brings a gift
+    if (GAMES.includes(view)) st.starsBefore = starsOf(S[st.i]); // a first finish (a new star) always brings a gift (v2.12.1: in the Garden too)
     render(true);
     arriving = '';
     if (view === 'splash' || view === 'map') maybeForce();
@@ -2028,7 +2072,7 @@
     <div class="hud">
       <button class="icon-btn" data-act="home" aria-label="Back to the start">${ICON.home}</button>
       ${inGarden ? `<button class="hud-stars hud-sur" data-act="progress" data-t="garden" aria-label="The Hidden Garden: ${gardenProgress(prof).n} of ${GS.length} memorized">🏮 <b>${gardenProgress(prof).n}</b><small>/${GS.length}</small></button>
-      <button class="hud-stars" data-act="progress" data-t="garden" aria-label="Garden stars: ${gardenStars(prof)} of ${GARDEN_MAX}">⭐ <b>${gardenStars(prof)}</b><small>/${GARDEN_MAX}</small></button>` : `<button class="hud-stars hud-sur" data-act="progress" data-t="surahs" aria-label="Sūrahs done: ${doneSurahs()} of ${J.length}">📖 <b>${doneSurahs()}</b><small>/${J.length}</small></button>
+      <button class="hud-stars" data-act="progress" data-t="gstars" aria-label="Garden stars: ${gardenStars(prof)} of ${GARDEN_MAX}">⭐ <b>${gardenStars(prof)}</b><small>/${GARDEN_MAX}</small></button>` : `<button class="hud-stars hud-sur" data-act="progress" data-t="surahs" aria-label="Sūrahs done: ${doneSurahs()} of ${J.length}">📖 <b>${doneSurahs()}</b><small>/${J.length}</small></button>
       <button class="hud-stars" data-act="progress" data-t="stars" aria-label="Stars: ${totalStars()} of ${MAX_STARS}">⭐ <b>${totalStars()}</b><small>/${MAX_STARS}</small></button>`}
       ${giftIcon(prof)}
       <button class="icon-btn hud-bag hud-me" data-act="bag" aria-label="My explorer: dress up, collection and achievements"><span class="phead">${explorer({ cls: 'mini' })}</span>${prof.fresh.length ? NEWDOT : ''}</button>
@@ -2068,7 +2112,7 @@
       current: prof.at,
       focus: st.focusTop ? J.length - 1 : undefined, // (back from the Garden: at the summit)
       gate: { at: 'summit', act: 'garden', label: 'The Hidden Garden' },
-      railExtra: [{ pos: 'top', act: 'garden', w: GARDEN_W, num: GARDEN_W + 1, name: GARDEN_NAME, art: GARDEN_W, icon: 'garden-arch', pr: gardenProgress(prof) }],
+      railExtra: [{ pos: 'top', act: 'garden', w: GARDEN_W, num: GARDEN_W + 1, name: GARDEN_NAME, art: GARDEN_W, icon: 'garden-pavilion', pr: gardenProgress(prof) }],
       reached,
       suggest: suggestIdx(),
       status: surahStatus,
@@ -2087,6 +2131,47 @@
       },
       worldProgress: juzWorldProgress,
     });
+  }
+  /* (v2.12.1) Going through the gate: it swings open, the map zooms into it while a glow fills the screen (petals
+     going in, snowflakes coming back out), and the other map comes up through it. From the worlds list, the same
+     from the middle of the screen. */
+  function gardenTrip(into, gate) {
+    if (document.body.classList.contains('busy')) return;
+    sfx.whoosh ? sfx.whoosh() : sfx.tap();
+    const r = gate && gate.getBoundingClientRect(),
+      x = r && r.bottom > 0 && r.top < innerHeight ? r.left + r.width / 2 : innerWidth / 2,
+      y = r && r.bottom > 0 && r.top < innerHeight ? r.top + r.height * 0.55 : innerHeight / 2;
+    const swap = () => {
+      inGarden = into;
+      go('map', into ? {} : { focusTop: true });
+    };
+    if (reduceMotion) return swap();
+    document.body.classList.add('busy');
+    if (gate) {
+      const art = gate.querySelector('.mg8-art');
+      if (art) art.innerHTML = ART.gardenGate(!into, true); // (the gate swings open)
+      gate.classList.add('opening');
+    }
+    const ov = document.createElement('div');
+    ov.className = 'gtrip ' + (into ? 'in' : 'out');
+    ov.style.setProperty('--gx', x + 'px');
+    ov.style.setProperty('--gy', y + 'px');
+    ov.innerHTML = '<i class="gt-glow"></i>' + [...Array(14).keys()].map((j) => `<b style="--j:${j};--dx:${Math.round((((j * 37) % 14) - 7) * 26)}px;--dy:${Math.round((((j * 53) % 14) - 7) * 34)}px">${into ? ['🌸', '🍃', '✨', '🌷'][j % 4] : ['❄️', '✨', '❄️', '⭐'][j % 4]}</b>`).join('');
+    document.body.appendChild(ov);
+    const root = document.getElementById('map');
+    setTimeout(() => {
+      if (root) {
+        const rr = root.getBoundingClientRect();
+        root.style.transformOrigin = `${x - rr.left}px ${y - rr.top}px`;
+        root.classList.add('gzoom');
+      }
+    }, 380);
+    setTimeout(() => {
+      document.body.classList.remove('busy');
+      swap();
+      ov.classList.add('done'); // (the glow fades away over the other map)
+      setTimeout(() => ov.remove(), 1100);
+    }, 1250);
   }
   function mountGarden(prof) {
     const at = Math.max(0, Math.min(GS.length - 1, prof.gat || 0)),
@@ -2108,7 +2193,7 @@
       status: (i) => surahStatus(GS[i].idx),
       explorerSVG: () => explorer({ view: 'front' }),
       others: prefs.teacher && elderWorld() === GARDEN_W ? [{ id: 'elder', name: 'Your Teacher', svg: elderArt(''), wi: 0, elder: true }] : [],
-      worldIcon: () => 'garden-arch',
+      worldIcon: () => 'garden-pavilion',
       worldThrows: () => (prefs.teacher ? worldThrowIcons(GARDEN_W) : ''),
       onWorld: () => {
         const w = ART.WORLDS[GARDEN_W];
@@ -2124,31 +2209,34 @@
   function showProgress(tab) {
     const prof = P(),
       m = document.getElementById('modal');
-    const garden = tab === 'garden'; // (v2.12.0: the Hidden Garden's stops, from its map)
+    const garden = tab === 'garden' || tab === 'gstars', // (v2.12.0: the Hidden Garden's stops, from its map; v2.12.1: its two tabs)
+      starsTab = tab === 'stars' || tab === 'gstars';
     const rows = (garden ? GS : J).map((s) => {
       const i = s.idx,
         got = surahStars(s),
         max = surahMax(s),
         fix = prof.fix.includes(s.n);
       const right =
-        tab === 'stars'
+        starsTab
           ? `<span class="pgbar"><i style="width:${Math.round((got / max) * 100)}%"></i></span><span class="pgst">${got}/${max} ⭐</span>`
-          : `<span class="pgok ${got ? 'on' : ''}">${got ? '✓' : ''}</span>`;
+          : garden
+            ? `<span class="pgok ${surahDone(s) ? 'on' : ''}">${surahDone(s) ? '🏮' : ''}</span>` // (a lantern: memorized)
+            : `<span class="pgok ${got ? 'on' : ''}">${got ? '✓' : ''}</span>`;
       const t = prof.stime[s.n],
         fl = fireOf(s, prof);
       // the number ringed like the map's stops: gold with every star, green once memorized
       const ring = got >= max ? ' gold' : surahDone(s) ? ' green' : '';
-      return `<button class="pgrow ${got ? 'done' : ''}" data-act="jump" data-i="${i}"><span class="pn${ring}">${s.garden ? s.sura : s.n}</span><span class="pgname">${s.name}${fix ? ' <span class="pgfix" title="Needs fixing">💔</span>' : ''}<small><span>${s.icon} ${s.meaning}</span>${t >= 30 ? `<span>\u00a0· ⏱️ ${fmtTime(t)}</span>` : ''}</small></span>${fl >= 0 && tab !== 'stars' ? `<span class="pgfire f${fl}" title="Campfire: ${FIRE_WORD[fl]}">${ART.campfire(fl)}</span>` : ''}${right}</button>`;
+      return `<button class="pgrow ${got ? 'done' : ''}" data-act="jump" data-i="${i}"><span class="pn${ring}">${s.garden ? s.sura : s.n}</span><span class="pgname">${s.name}${fix ? ' <span class="pgfix" title="Needs fixing">💔</span>' : ''}<small><span>${s.icon} ${s.meaning}</span>${t >= 30 ? `<span>\u00a0· ⏱️ ${fmtTime(t)}</span>` : ''}</small></span>${fl >= 0 && !starsTab ? `<span class="pgfire f${fl}" title="Campfire: ${FIRE_WORD[fl]}">${ART.campfire(fl)}</span>` : ''}${right}</button>`;
     }).join('');
     const fixes = prof.fix.length ? `<p class="saveinfo center">💔 ${prof.fix.length === 1 ? 'One sūrah needs' : prof.fix.length + ' sūrahs need'} a little fixing: tap it to play a review game there.</p>` : '';
     m.innerHTML = `<div class="card progcard">
-      <div class="pgtabs">${garden ? `<button class="on" data-act="progress" data-t="garden">🏮 Lanterns <b>${gardenProgress(prof).n}/${GS.length}</b></button><button class="on" data-act="progress" data-t="garden">⭐ Stars <b>${gardenStars(prof)}/${GARDEN_MAX}</b></button>` : `<button class="${tab !== 'stars' ? 'on' : ''}" data-act="progress" data-t="surahs">📖 Sūrahs <b>${doneSurahs()}/${J.length}</b></button><button class="${tab === 'stars' ? 'on' : ''}" data-act="progress" data-t="stars">⭐ Stars <b>${totalStars()}/${MAX_STARS}</b></button>`}</div>
-      <p class="saveinfo center">${garden ? 'A lantern lights up on My Tree for each one memorized. Tap one to go there.' : tab === 'stars' ? 'Every star in every sūrah. Tap a sūrah to go there.' : 'A sūrah is done with at least one star. Tap one to go there.'} ⏱️ ${fmtTime(prof.time || 0)} learning in all.</p>${fixes}
-      <div class="pglist${tab === 'stars' ? ' stars' : ''}">${rows}</div>
+      <div class="pgtabs">${garden ? `<button class="${!starsTab ? 'on' : ''}" data-act="progress" data-t="garden">🏮 Lanterns <b>${gardenProgress(prof).n}/${GS.length}</b></button><button class="${starsTab ? 'on' : ''}" data-act="progress" data-t="gstars">⭐ Stars <b>${gardenStars(prof)}/${GARDEN_MAX}</b></button>` : `<button class="${tab !== 'stars' ? 'on' : ''}" data-act="progress" data-t="surahs">📖 Sūrahs <b>${doneSurahs()}/${J.length}</b></button><button class="${tab === 'stars' ? 'on' : ''}" data-act="progress" data-t="stars">⭐ Stars <b>${totalStars()}/${MAX_STARS}</b></button>`}</div>
+      <p class="saveinfo center">${garden ? (starsTab ? 'Every star in every stop. Tap one to go there.' : 'A lantern lights up on My Tree for each one memorized. Tap one to go there.') : tab === 'stars' ? 'Every star in every sūrah. Tap a sūrah to go there.' : 'A sūrah is done with at least one star. Tap one to go there.'}${prof.time ? ` ⏱️ ${fmtTime(prof.time)} learning in all.` : ''}</p>${fixes}
+      <div class="pglist${starsTab ? ' stars' : ''}">${rows}</div>
       <div class="row"><button class="btn wide" data-act="cno">Close</button></div></div>`;
     m.classList.add('show');
     const list = m.querySelector('.pglist'),
-      cur = list && list.children[prof.at];
+      cur = list && list.children[garden ? prof.gat || 0 : prof.at];
     if (cur) list.scrollTop = Math.max(0, cur.offsetTop - list.clientHeight / 2);
   }
   /* go to sūrah i from anywhere: the map, the explorer walks in, then its next lesson starts */
@@ -2525,11 +2613,16 @@
       c = ctx(),
       k = st.a,
       a = s.ayat[k],
-      W = wordsOf(a.ar),
+      pcs = piecesOf(a.ar),
+      pc = Math.min(st.pc || 0, pcs.length - 1),
+      [w0, w1] = pcs[pc],
+      W = wordsOf(a.ar).slice(w0, w1 + 1), // (v2.12.1: a long āyah one piece at a time; j counts within it, w0 + j in the āyah)
       n = W.length;
     const col = (j) => WCOL[j % WCOL.length];
+    // (v2.12.1) a long āyah's pieces: little steps beside its number in the tracker
+    const pieceBtns = pcs.length > 1 ? `<span class="wpcs" aria-label="Part ${pc + 1} of ${pcs.length}">${pcs.map((_, q) => `<button class="${q === pc ? 'cur' : q < pc ? 'done' : ''}" data-act="wpiece" data-q="${q}" aria-label="Part ${q + 1}">${q < pc ? '✓' : q + 1}</button>`).join('')}</span>` : '';
     const track = `<div class="wlabel">Āyah tracker</div><div class="wtrack">${range(c)
-      .map((x) => `<button class="${x === k ? 'cur' : st.doneA.includes(x) || (st.savedA || []).includes(x) ? 'done' : ''}" data-act="wjump" data-k="${x}">${x + 1}<small>${toArNum(x + 1)}</small></button>`)
+      .map((x) => `<button class="${x === k ? 'cur' : st.doneA.includes(x) || (st.savedA || []).includes(x) ? 'done' : ''}" data-act="wjump" data-k="${x}">${x + 1}<small>${toArNum(x + 1)}</small></button>${x === k ? pieceBtns : ''}`)
       .join('')}</div>`;
     const beads = `<div class="beads" aria-label="Word ${Math.min(st.w, n)} of ${n}">${W.map((_, j) => {
       const on = st.phase === 'build' ? j < st.w : st.shown.includes(j);
@@ -2540,8 +2633,8 @@
     if (st.phase === 'build') {
       stage = `<div class="wflow">${W.map((w, j) =>
         j < st.w
-          ? wbox(w, j, `word ${j === st.w - 1 ? 'new' : ''}`, `data-act="sayw" data-n="${s.n}" data-k="${k}" data-w="${j}"`, wordLines(s.n, k, j))
-          : wbox(w, j, 'word ph', '', wordLines(s.n, k, j)),
+          ? wbox(w, j, `word ${j === st.w - 1 ? 'new' : ''}`, `data-act="sayw" data-n="${s.n}" data-k="${k}" data-w="${w0 + j}"`, wordLines(s.n, k, w0 + j))
+          : wbox(w, j, 'word ph', '', wordLines(s.n, k, w0 + j)),
       ).join('')}</div>`;
       note =
         st.w === 1
@@ -2553,13 +2646,13 @@
       const all = st.shown.length === n;
       stage = `<div class="wflow">${W.map((w, j) =>
         st.shown.includes(j)
-          ? wbox(w, j, 'wtile shown', `data-act="sayw" data-n="${s.n}" data-k="${k}" data-w="${j}"`, wordLines(s.n, k, j))
-          : wbox(w, j, 'wtile', `data-act="wshow" data-j="${j}" aria-label="Word ${j + 1}"`, wordLines(s.n, k, j)),
+          ? wbox(w, j, 'wtile shown', `data-act="sayw" data-n="${s.n}" data-k="${k}" data-w="${w0 + j}"`, wordLines(s.n, k, w0 + j))
+          : wbox(w, j, 'wtile', `data-act="wshow" data-j="${j}" aria-label="Word ${j + 1}"`, wordLines(s.n, k, w0 + j)),
       ).join('')}</div>`;
-      note = all ? 'Every word in its place. Well done!' : 'Child says the whole āyah from memory. Grown-up taps each tile as the word is said.';
+      note = all ? 'Every word in its place. Well done!' : `Child says the whole ${pcs.length > 1 ? 'part' : 'āyah'} from memory. Grown-up taps each tile as the word is said.`;
       const last = nextTodo(c, k, [...st.doneA, k]) < 0;
       controls = all
-        ? `<button class="btn wide" data-act="whide">Again</button><button class="btn go wide" data-act="wdone">${last ? 'Finish part ›' : 'Next āyah ›'}</button>`
+        ? `<button class="btn wide" data-act="whide">Again</button>${pc < pcs.length - 1 ? `<button class="btn go wide" data-act="wpiece" data-q="${pc + 1}">Next part ›</button>` : `<button class="btn go wide" data-act="wdone">${last ? 'Finish part ›' : 'Next āyah ›'}</button>`}`
         : `<button class="btn wide" data-act="wbuild">‹ Practice</button><button class="btn go wide" data-act="wreveal">Show next word</button>`;
     }
     return `<div class="screen" style="${cv(s.color)}">
@@ -2568,7 +2661,7 @@
     <div class="wlabel" style="margin-top:6px">Word order</div>
     ${beads}
     <div class="wstage"><div class="lchead"><div class="wpic"><span class="num">${k + 1}</span>${pics(a)}<b>${a.hook}</b></div><span class="lcbtns">${speedChip()}${loopBtn()}</span></div>${stage}
-      <div class="wcount">${st.phase === 'build' ? `Word ${st.w} of ${n}` : `${st.shown.length} of ${n} words`}</div></div>
+      <div class="wcount">${st.phase === 'build' ? `Word ${st.w} of ${n}` : `${st.shown.length} of ${n} words`}${pcs.length > 1 ? ` · part ${pc + 1} of ${pcs.length}` : ''}</div></div>
     <div class="wnote">${note}</div>
     <div class="row">${controls}</div>
   </div>`;
@@ -2991,7 +3084,7 @@
     ${st.prizes ? `<div class="memo">⭐ ${totalStars()} stars! ${st.prizes > 1 ? st.prizes + ' prizes' : 'A prize'} for you.</div>` : ''}
     ${st.badge ? `<div class="memo gold">🏅 ${st.badge}! A special badge for you.</div>` : ''}
     ${st.rides ? `<div class="memo gold">🚀 A whole world all golden! A special ride is waiting for you.</div>` : ''}
-    ${st.noStar ? '' : nextPrizeNote(prof, st.gained)}
+    ${st.noStar || s.garden ? '' : nextPrizeNote(prof, st.gained)}
     ${g ? `<button class="giftbtn dgift" data-act="opengift"><span class="rattle">${giftArt(g)}</span>${prof.pending.length > 1 ? `<span class="badge">${prof.pending.length}</span>` : ''}<b>${prof.pending.length > 1 ? prof.pending.length + ' gifts' : 'A gift'} for you!</b><small>Tap to open</small></button>` : ''}
     <div class="row drow">
       ${st.nextAct ? `<button class="btn go wide" data-act="${st.nextAct}" ${st.nextP != null ? `data-p="${st.nextP}"` : ''}>${st.nextLabel}</button>` : ''}
@@ -3157,7 +3250,6 @@
   const ACH_ROWS = (a, prof) => [
     ['🧠', `${questPct(prof)}%`, 'memorized'],
     ['🌸', `${a.memorized}`, 'sūrahs memorized'],
-    ...(gardenStars(prof) ? [['🏮', `${gardenProgress(prof).n}`, `of ${GS.length} Garden stops memorized`]] : []), // (v2.12.0, once the Garden is begun)
     ['🍃', `${a.ayat}`, `of ${a.allAyat} āyāt learned`],
     ['🎁', `${a.items}`, `of ${a.allItems} things won`],
     ['⭐', `${a.stars}`, `of ${MAX_STARS} stars`],
@@ -4011,7 +4103,7 @@
     const s = S[st.i];
     const prof = P();
     const giftsBefore = prof.pending.length,
-      newStar = st.starsBefore != null && totalStars(prof) > st.starsBefore;
+      newStar = st.starsBefore != null && starsOf(s, prof) > st.starsBefore;
     // lost items at this sūrah come back after finishing a review game here
     if (['path', 'order'].includes(st.view)) {
       prof.fix = prof.fix.filter((n) => n !== s.n);
@@ -4085,7 +4177,7 @@
     }
     save();
     stopAudio();
-    const done = Object.assign({ i: st.i, p: st.p, gained: st.starsBefore != null ? Math.max(0, totalStars(prof) - st.starsBefore) : 0 }, extra);
+    const done = Object.assign({ i: st.i, p: st.p, gained: st.starsBefore != null ? Math.max(0, starsOf(s, prof) - st.starsBefore) : 0 }, extra);
     if (feats.length) {
       go('summit', { i: st.i, feats, after: done });
       return;
@@ -4837,17 +4929,13 @@
       }
       case 'garden':
         // the gate by the summit: into the Hidden Garden
-        sfx.whoosh ? sfx.whoosh() : sfx.tap();
         closeRail();
-        inGarden = true;
-        go('map');
+        gardenTrip(true, b.classList.contains('mgate8') ? b : document.querySelector('.mgate8'));
         break;
       case 'gardenout':
         // the Garden's gate: back to the summit of Juz ʿAmma
-        sfx.tap();
         closeRail();
-        inGarden = false;
-        go('map', { focusTop: true });
+        gardenTrip(false, b.classList.contains('mgate8') ? b : document.querySelector('.mgate8'));
         break;
       case 'worlds': {
         // the world-map button opens (or closes) the list of worlds
@@ -5518,7 +5606,7 @@
         break;
       }
       case 'wreveal': {
-        const n = wordsOf(s.ayat[st.a].ar).length;
+        const n = wordLen();
         for (let j = 0; j < n; j++)
           if (!st.shown.includes(j)) {
             st.shown.push(j);
@@ -5529,9 +5617,18 @@
         checkWordsAll();
         break;
       }
+      case 'wpiece': // (v2.12.1) the next piece of a long āyah, or one tapped in the tracker
+        sfx.tap();
+        st.pc = +b.dataset.q;
+        st.w = 1;
+        st.phase = 'build';
+        st.shown = [];
+        render(true);
+        break;
       case 'wjump':
         sfx.tap();
         st.a = +b.dataset.k;
+        st.pc = 0;
         st.w = 1;
         st.phase = 'build';
         st.shown = [];
@@ -5545,6 +5642,7 @@
         if (nx >= 0) {
           sfx.chime();
           st.a = nx;
+          st.pc = 0;
           st.w = 1;
           st.phase = 'build';
           st.shown = [];
@@ -5653,8 +5751,14 @@
       });
     }
   }
+  // the words of Word Steps' piece on screen (the whole āyah, or a piece of a long one)
+  const wordPiece = () => {
+    const pcs = piecesOf(S[st.i].ayat[st.a].ar);
+    return pcs[Math.min(st.pc || 0, pcs.length - 1)];
+  };
+  const wordLen = () => wordPiece()[1] - wordPiece()[0] + 1;
   function checkWordsAll() {
-    const n = wordsOf(S[st.i].ayat[st.a].ar).length;
+    const n = wordLen();
     if (st.shown.length === n) {
       sfx.chime();
       burstAt($app.querySelector('.wstage'), 18, ['★', '✦', '●']);
@@ -5720,7 +5824,7 @@
   ];
   const STONE = /rock|mesa|arch|dune/; // they don't move: a little thud and some dust
   const ANIMAL = /sheep|rabbit|fox|owl|deer|squirrel|crab|turtle|camel|lizard|goat|starfish|snowman/,
-    PLANT = /tree|pine|oak|bush|grass|flower|fern|palm|cactus|mushroom|berries|crystal/;
+    PLANT = /tree|pine|oak|bush|grass|flower|fern|palm|cactus|mushroom|berries|crystal|cypress|hedge|tulips|rose|jasmine|urn/;
   function poke(el) {
     const k = el.dataset.k || '';
     // on the start screen the explorer has a few moves of their own
@@ -5732,6 +5836,8 @@
           : 'joy'
         : k === 'flag'
           ? 'flag'
+          : k === 'garden-pavilion'
+            ? 'shine' // (v2.12.1: the Garden's pavilion lights up; one day a house to go into)
           : k === 'cloud'
             ? 'puff'
             : ANIMAL.test(k)
@@ -5749,15 +5855,15 @@
       if (el._away || el._busy) return; // already running off, or on its way to a fruit
       if (el._taps.length >= 3 && runAway(el)) return;
     }
-    el.classList.remove('poke-joy', 'poke-puff', 'poke-hop', 'poke-shake', 'poke-bounce', 'poke-spin', 'poke-dance', 'poke-hops', 'poke-flag', 'poke-thud');
+    el.classList.remove('poke-joy', 'poke-puff', 'poke-hop', 'poke-shake', 'poke-bounce', 'poke-spin', 'poke-dance', 'poke-hops', 'poke-flag', 'poke-thud', 'poke-shine');
     if (el._away) return; // drifting off: it'll be back
     void el.getBoundingClientRect();
     el.classList.add('poke-' + kind);
     clearTimeout(el._pk);
-    el._pk = setTimeout(() => el.classList.remove('poke-' + kind), kind === 'flag' ? 1600 : 1100);
+    el._pk = setTimeout(() => el.classList.remove('poke-' + kind), kind === 'flag' || kind === 'shine' ? 1600 : 1100);
     const own = (BURST.find(([re]) => re.test(k)) || [])[1];
-    const set = own || { joy: ['⭐', '✨', '💛'], spin: ['✨', '⭐'], dance: ['🎵', '✨'], hops: ['⭐', '✨'], flag: ['🎉', '⭐', '✨'], puff: ['☁️', '✨'], hop: ['💕', '✨'], shake: ['🍃', '🌸'], bounce: ['✨', '⭐'], thud: ['💨', '·'] }[kind];
-    burstAt(el, kind === 'joy' || kind === 'flag' ? 10 : 5, set);
+    const set = own || { joy: ['⭐', '✨', '💛'], spin: ['✨', '⭐'], dance: ['🎵', '✨'], hops: ['⭐', '✨'], flag: ['🎉', '⭐', '✨'], shine: ['✨', '🌟', '⭐'], puff: ['☁️', '✨'], hop: ['💕', '✨'], shake: ['🍃', '🌸'], bounce: ['✨', '⭐'], thud: ['💨', '·'] }[kind];
+    burstAt(el, kind === 'joy' || kind === 'flag' || kind === 'shine' ? 10 : 5, set);
     if (kind === 'shake' && FRUIT_OF[k] && el.classList.contains('mprop')) dropFruit(el);
     // tap a windmill, a cottage, a lighthouse, a flag… a few times in a row: it gets excited
     // a few taps in a row: a boat sails off, a kite or balloon floats away (both come back); a windmill, a
@@ -5771,7 +5877,7 @@
         else excite(el);
       }
     }
-    ({ joy: sfx.hop, spin: sfx.whoosh, dance: sfx.dance, hops: sfx.hop, flag: sfx.win, puff: sfx.whoosh, hop: sfx.pop, shake: sfx.rustle, bounce: sfx.tap, thud: sfx.boop })[kind]();
+    ({ joy: sfx.hop, spin: sfx.whoosh, dance: sfx.dance, hops: sfx.hop, flag: sfx.win, shine: sfx.chime, puff: sfx.whoosh, hop: sfx.pop, shake: sfx.rustle, bounce: sfx.tap, thud: sfx.boop })[kind]();
   }
 
   /* A windmill spins fast, a chimney puffs more smoke, a lighthouse beam whirls, flags flap: everything that
@@ -6941,8 +7047,8 @@
     'peak-igloo': ['A round house made of snow blocks.', 'A cold house with a little round door.'],
     'peak-goat': ['It climbs steep mountains with strong hooves.', 'A sure-footed animal with curly horns.'],
     // (v2.12.0) the Hidden Garden's own riddles (looked for only there)
-    'garden-arch': ['An arched gateway covered in pink roses.', 'Walk under its round top, with flowers all around.'],
-    'garden-pavilion': ['A little round house with a green dome and pillars.', 'A shady place to rest, with a golden star on top.'],
+    'garden-arch': ['A bench under an arch of pink roses.', 'Sit in the shade under its round top of roses.'],
+    'garden-pavilion': ['A round shelter with a green dome and pillars, at the very top of the garden.', 'At the end of the garden path: a green dome with a golden star on top.'],
     'garden-fountain': ['Water springs up and splashes into its bowl.', 'It sprays water in the middle of the garden.'],
     'garden-rose': ['A green bush with pink flowers that smell sweet.', 'Its flowers are lovely, but mind the thorns!'],
     'garden-jasmine': ['Little white flowers with five petals.', 'Tiny white blossoms with a sweet smell.'],
@@ -7182,7 +7288,7 @@
     'peak-pine': 'Snowy pine', 'peak-rock': 'Boulder', 'peak-snowman': 'Snowman', 'peak-crystal': 'Ice crystal', 'peak-flag': 'Flag', 'peak-igloo': 'Igloo', 'peak-goat': 'Mountain goat',
     'peak-cabin': 'Cabin',
     // (v2.12.0) the Hidden Garden
-    'garden-arch': 'Garden arch', 'garden-pavilion': 'Pavilion', 'garden-fountain': 'Fountain', 'garden-rose': 'Rose bush', 'garden-jasmine': 'Jasmine', 'garden-lily': 'Lily pond',
+    'garden-arch': 'Rose arbour', 'garden-pavilion': 'Pavilion', 'garden-fountain': 'Fountain', 'garden-rose': 'Rose bush', 'garden-jasmine': 'Jasmine', 'garden-lily': 'Lily pond',
     'garden-peacock': 'Peacock', 'garden-bench': 'Garden bench', 'garden-birdhouse': 'Birdhouse', 'garden-songbird': 'Songbird', 'garden-pomtree': 'Pomegranate tree', 'garden-palm': 'Date palm', 'garden-lamp': 'Garden lamp',
   };
   // the things worth finding in the āyāt's pictures: creatures, nature, food, buildings and objects (no people,
@@ -7292,11 +7398,12 @@
       if (e.target.closest && e.target.closest('.jchip')) return;
       dropChip();
       if (noExplorers() || !P().made || ['elder', 'order'].includes(st.view)) return;
-      const el = e.target.closest && e.target.closest('.e, .mprop');
+      const el = e.target.closest && e.target.closest('.e, .mprop, .msummit[data-k]'); // (v2.12.1: the Garden's pavilion too)
+      const prop = !!el && !el.classList.contains('e');
       // things on the map; pictures only in Look & Repeat itself (not chain time or the other games)
-      if (!el || (el.classList.contains('mprop') ? st.view !== 'map' : st.view !== 'learn' || st.phase === 'chain')) return;
-      const key = el.classList.contains('mprop') ? 'p:' + el.dataset.k : 'e:' + el.textContent.trim();
-      if (el.classList.contains('mprop') && riddleOn && riddleTap(el, el.dataset.k)) return; // a riddle opened: found it!
+      if (!el || (prop ? st.view !== 'map' : st.view !== 'learn' || st.phase === 'chain')) return;
+      const key = prop ? 'p:' + el.dataset.k : 'e:' + el.textContent.trim();
+      if (prop && riddleOn && riddleTap(el, el.dataset.k)) return; // a riddle opened: found it!
       if (!JKEYS.has(key) || P().found.includes(key)) return; // not in the journal, or already in it: nothing
       const locked = key[0] === 'e' && !partBegun(S[st.i], st.p || 0); // its checkpoint has no step finished yet
       const r = el.getBoundingClientRect(),
@@ -7404,10 +7511,13 @@
     (t) => st.view === 'words' && !!t.closest('.wstage'),
     (dir) => {
       const c = ctx(),
+        q = (st.pc || 0) + dir,
         k = st.a + dir;
-      if (k < c.from || k > c.to) return;
       sfx.tap();
-      Object.assign(st, { a: k, w: 1, phase: 'build', shown: [] });
+      // (v2.12.1) a long āyah: its pieces first, then on to the next āyah
+      if (q >= 0 && q < piecesOf(S[st.i].ayat[st.a].ar).length) Object.assign(st, { pc: q, w: 1, phase: 'build', shown: [] });
+      else if (k < c.from || k > c.to) return;
+      else Object.assign(st, { a: k, pc: dir < 0 ? piecesOf(S[st.i].ayat[k].ar).length - 1 : 0, w: 1, phase: 'build', shown: [] });
       render(true); // (it slides in: render)
     },
   );
@@ -7774,7 +7884,7 @@
   const worldThrowIcons = (wi) => (WORLD_THROWS[wi] || []).map((k) => throwIc(k, wi)).join(' ');
   const WINTER_HATS = /beanie|earflap/; // the hats that keep off the hail
   const JACKETS = /jacket|coat|hoodie|cloak|suit|vest|armor/;
-  const RIDE_PET = /rocket|car|plane|train|boat|truck|helicopter|bike/;
+  const RIDE_PET = /rocket|car|plane|train|boat|truck|helicopter|bike|ambulance|digger|bus/;
   const animalBuddy = (id) => !!id && ITEM[id] && ITEM[id].slot === 'pet' && !ITEM[id].wgold && !RIDE_PET.test(id);
   // special things block more (a future item only needs its list here)
   const EXTRA_BLOCKS = { 'hero-sword': ['rock'], 'hafiz-crown': ['sand'], 'hero-armor': Object.keys(THROW) };
@@ -8356,5 +8466,5 @@
   registerOffline();
   if (linkCode) setTimeout(() => openSync(linkCode, `${appURL()}#sync=${linkCode}`), 400);
   if (justUpdated) loadChangelog().then(() => st.view === 'splash' && render());
-  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder, world: elderWorld, size: testSize, tap: tapElder }, sunDown, journal: JKEYS, countDay, installSteps: showInstallSteps, cleanStore, cleanProfile, syncCtx, openSync, markNow, fabTarget, riddleNow, riddleCount, occasion, treeInfo, hungry: () => treeHungry, treeReset: () => (treeFedAt = 0), critterFor, riddleSet: (k) => riddleOn && (riddleOn.k = k), riddleKey: () => riddleOn && riddleOn.k, bonusSticker: giveBonusSticker, garden: (v) => (v != null && (inGarden = !!v), inGarden), gardenGift: giveGardenGift }; // for testing in the browser console
+  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder, world: elderWorld, size: testSize, tap: tapElder }, sunDown, journal: JKEYS, countDay, installSteps: showInstallSteps, cleanStore, cleanProfile, syncCtx, openSync, markNow, fabTarget, riddleNow, riddleCount, occasion, treeInfo, hungry: () => treeHungry, treeReset: () => (treeFedAt = 0), critterFor, riddleSet: (k) => riddleOn && (riddleOn.k = k), riddleKey: () => riddleOn && riddleOn.k, bonusSticker: giveBonusSticker, garden: (v) => (v != null && (inGarden = !!v), inGarden), gardenGift: giveGardenGift, riddleKeys: (rz) => RIDDLE_SETS(rz).flat(), pieces: piecesOf }; // for testing in the browser console
 })();

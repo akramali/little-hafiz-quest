@@ -4,6 +4,7 @@
   fixture();
   const s0 = JSON.parse(localStorage.getItem('lhq2')); s0.prefs.sfx = true; localStorage.setItem('lhq2', JSON.stringify(s0));
   const { w, d, L, idx } = await openGame();
+  w.__occasion = ''; // (not a special day: a Friday would add its sticker to the gifts counted)
   const errs = []; w.addEventListener('error', (e) => errs.push(e.message)); w.addEventListener('unhandledrejection', (e) => errs.push('promise: ' + (e.reason && e.reason.message)));
   const A = w.LHQ_ART, prof = () => L.store().profiles[0];
   const pool = [...A.STICKERS.map((x) => ({ k: 's', id: x.id })), ...A.ITEMS.filter((it) => it.drop).map((it) => ({ k: 'i', id: it.id }))];

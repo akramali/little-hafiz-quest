@@ -1,7 +1,12 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.12.0",
+ "latest": "2.12.1",
  "versions": [
+  { "v": "2.12.1", "notes": [
+   "Every star in the Hidden Garden now brings a gift",
+   "Word Steps takes long āyāt like Āyat al-Kursī a sentence at a time",
+   "New toy vehicles and bags to win; small visual tweaks"
+  ] },
   { "v": "2.12.0", "notes": [
    "World 8, the Hidden Garden: through a gate by the Summit",
    "Al-Fātiḥah, Āyat al-Kursī, the end of Al-Baqarah, Al-Kahf 1–10, Al-Mulk and Al-Wāqiʿah",

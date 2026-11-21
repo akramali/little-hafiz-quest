@@ -268,12 +268,12 @@
       const pals = cfg.others || [];
       L.bands.forEach((b) => {
         const rnd = seeded(97 + b.wi * 131),
-          names = (ART.PROPS_BY_WORLD[aw(b.wi)] || []).filter((nm) => nm !== 'peak-summit' && nm !== cfg.topProp);
+          names = [...(ART.PROPS_BY_WORLD[aw(b.wi)] || []), ...((ART.SCENERY_EXTRA || {})[aw(b.wi)] || [])].filter((nm) => nm !== 'peak-summit' && nm !== cfg.topProp);
         if (!names.length) return;
         const lo = b.wi ? b.bottom - BH / 2 - 10 : b.bottom - 30,
           hi = b.wi < L.bands.length - 1 ? b.top + BH / 2 + 96 : b.top + 300;
         const h = lo - hi,
-          count = Math.round((h / 44) * Math.min(1.8, width / 400));
+          count = Math.round((h / (aw(b.wi) === 7 ? 34 : 44)) * Math.min(1.8, width / 400)); // (v2.12.1: the Garden a little fuller)
         const placed = signs.map((q) => ({ x: q.x, y: q.y - 30, room: 50 }));
         const free = (x, y, room, box) =>
           !L.pathXs(y).some((px) => Math.abs(px - x) < 70 + room) &&
@@ -374,11 +374,11 @@
       const sz = szS; // the summit is drawn 200×160 (the Garden's pavilion 100×100)
       const topH = cfg.topProp ? sz : sz * 0.8;
       html.push(
-        `<div class="msummit${cfg.topProp ? ' mtop-' + cfg.topProp : ''}" data-x="${L.summit.x.toFixed(1)}" data-y="${(L.summit.y + 60).toFixed(1)}" style="left:${(L.summit.x - sz / 2).toFixed(1)}px;top:${(L.summit.y + 60 - topH).toFixed(1)}px;width:${sz}px;height:${topH.toFixed(0)}px">${ART.props[cfg.topProp || 'peak-summit'] || ''}</div>`,
+        `<div class="msummit${cfg.topProp ? ' mtop-' + cfg.topProp : ''}"${cfg.topProp ? ` data-act="poke" data-k="${cfg.topProp}" role="button" aria-label="Pavilion"` : ''} data-x="${L.summit.x.toFixed(1)}" data-y="${(L.summit.y + 60).toFixed(1)}" style="left:${(L.summit.x - sz / 2).toFixed(1)}px;top:${(L.summit.y + 60 - topH).toFixed(1)}px;width:${sz}px;height:${topH.toFixed(0)}px">${ART.props[cfg.topProp || 'peak-summit'] || ''}</div>`,
       );
       if (gateAt)
         html.push(
-          `<button class="mgate8 ${cfg.gate.at === 'start' ? 'back' : ''}" data-act="${cfg.gate.act}" data-x="${gateAt.x.toFixed(1)}" data-y="${gateAt.y.toFixed(1)}" style="left:${(gateAt.x - 50).toFixed(1)}px;top:${(gateAt.y - 106).toFixed(1)}px" aria-label="${cfg.gate.label}"><span class="mg8-art">${ART.gardenGate ? ART.gardenGate(cfg.gate.at === 'start') : '🚪'}</span><span class="mg8-lab">${cfg.gate.label}</span></button>`,
+          `<button class="mgate8 ${cfg.gate.at === 'start' ? 'back' : ''}" data-act="${cfg.gate.act}" data-x="${gateAt.x.toFixed(1)}" data-y="${gateAt.y.toFixed(1)}" style="left:${(gateAt.x - 50).toFixed(1)}px;top:${(gateAt.y - 106).toFixed(1)}px" aria-label="${cfg.gate.label}"><span class="mg8-art">${ART.gardenGate ? ART.gardenGate(cfg.gate.at === 'start') : '🚪'}</span></button>`, // (v2.12.1: no label, just the gate)
         );
       // sūrah stops
       const lostSpots = []; // where lost things lie (so two never land on each other)

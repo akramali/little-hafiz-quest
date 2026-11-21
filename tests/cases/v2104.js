@@ -30,7 +30,7 @@
   w.__occasion = '';
   // 2. every animal buddy has shut eyes, shown only while it sleeps
   const A = w.LHQ_ART,
-    animals = A.ITEMS.filter((it) => it.slot === 'pet' && !it.wgold && !/rocket|car|plane|train|boat|truck|helicopter|bike/.test(it.id)).map((it) => it.id),
+    animals = A.ITEMS.filter((it) => it.slot === 'pet' && !it.wgold && !/rocket|car|plane|train|boat|truck|helicopter|bike|ambulance|digger|bus/.test(it.id)).map((it) => it.id),
     noShut = animals.filter((id) => !/lhq-shut/.test(A.item(id)) || !/lhq-blink/.test(A.item(id)));
   log('animal buddies', animals.length, '| without shut eyes:', noShut.join(' ') || 'none');
   ok('every animal buddy can shut its eyes', animals.length >= 10 && !noShut.length, noShut.join(' '));

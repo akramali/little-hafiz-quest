@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is a short public overview (highlights, install, privacy, credits); this file holds the detail.
 
-**Current version:** v2.12.0 (2026-11-19) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.12.1 (2026-11-20) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -126,6 +126,47 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
   key to its sūrah and āyāt; timings merged into the existing `timings.json`), `tools/build_words.py` slices the same.
   Text was converted from the QPC Hafs text to the game's own convention and checked against all 564 Juz āyāt; the
   146 simple meanings are kid wording on Saheeh International: **the user still needs to read them over.**
+- **The Hidden Garden, fine-tuned (v2.12.1).**
+  - **Its stars count:** a new star is judged by `starsOf(s)` (the Garden's own count for a Garden stop, Juz ʿAmma's
+    for the rest). Before, every Garden step looked like a revision (no gift, no star on the done page), because
+    `totalStars` is the Juz's only. Garden done pages don't show the Juz's "next prize" line.
+  - **One gate, no label:** `ART.gardenGate(back, open)`, an iron gate of upright bars between stone pillars (viewBox
+    `-6 0 112 110`). By the summit it is shut, snow drifted up its feet, a boulder and ice crystals at its sides, green
+    seen through the bars; in the Garden it stands open, roses climbing it, the snowy peak seen through. The landmark
+    `garden-arch` (it had a green door, a "second gate") is now a **rose arbour** with a bench (same key, so journals
+    and links are unchanged; journal name "Rose arbour"). The worlds list and journal tab use the pavilion as the
+    Garden's icon. While a riddle is open the map has 96 px more at its foot (`body.riddling #map`), so the clue never
+    covers the gate.
+  - **Through the gate** (`gardenTrip`): the gate swings open, the map zooms into it (`.mroot.gzoom`), a glow fills the
+    screen (`.gtrip`: petals going in, snowflakes coming out) and fades over the other map. From the worlds list, from
+    the middle of the screen. Reduced motion: straight there.
+  - **The pavilion** at the top (`.msummit[data-k=garden-pavilion]`) can be tapped: it lights up with a chime and
+    sparkles (`poke` kind `shine`), solves its riddle and goes in the journal (it couldn't before: it isn't an
+    `.mprop`). One day a house to go into (open items).
+  - **Fuller:** `ART.SCENERY_EXTRA[7]` (cypresses, clipped hedges, tulip beds, a potted orange tree, flower urns) is
+    placed with the rest but isn't in the journal or riddles (`PROPS_BY_WORLD` stays as it was, so journal bitmaps
+    don't move); the Garden places a prop every 34 px of height (others 44); its lawn pattern shows on its one (top)
+    band too (`.mb-garden.mb-top::before`); grass tufts and a third butterfly in its ambient layer; the garden lamp
+    hangs on its post (it floated above it).
+  - **Every Garden riddle has an answer on its map** (`tests/cases/v2121.js` checks each one).
+  - **My Tree's lanterns:** only the lit ones (memorized, golden with every star), none waiting dark; from size 0.35
+    they hang from the low branches and glow; on a younger tree they stand in the grass by the trunk (no posts).
+  - **Progress page:** the Garden's two tabs work on their own (🏮 Lanterns: memorized; ⭐ Stars: `gstars`); before
+    both were lit. My Achievements has no Garden box (kept even, the user's call).
+- **Word Steps a piece at a time (v2.12.1):** an āyah over `PIECE_OVER` (16) words is taken a sentence at a time
+  (`piecesOf`: cut at its pause marks ۖ ۗ ۚ…, a sentence under 4 words joined to the next, a long one without marks cut
+  evenly; about 4–10 words a piece). `st.pc` is the piece; little part buttons sit beside the āyah's number in the
+  tracker (`.wpcs`, `wpiece`), "Next part ›" after each, swipes go through the pieces first; Listen plays just the
+  piece (`[n, k, from, to]`, its words lighting up). Nothing new is saved: the āyah counts when its last piece is done.
+  Six āyāt: 98:8, 202:1 (Āyat al-Kursī: 8 pieces), 203:1, 203:2, 205:3, 205:9. Look & Repeat still shows the whole
+  āyah (phrase bites, open items).
+- **New things to win (v2.12.1):** six toy vehicles among the everyday surprises (`DROP_NEW`: fire truck, ambulance,
+  police car, crane truck, digger, school bus; lights flash; `RIDE_PET` knows them as rides, so they never get hungry)
+  and five bags among the Garden's surprises (hiking backpack, messenger bag, tassel pouch, flower basket pack, duffel
+  bag).
+- **Shoes from behind (v2.12.1):** `ART[shoe].shoe(skin, back)`: the shoe's own outline and colour with a darker heel,
+  a seam and the sole (`shoeBack`), no laces, toe caps or frog faces; sandals show the heel of the foot and a strap.
+  Colour, pattern and golden versions pass `back` along.
 - **Watches on the wrist** (v2.11.0; v2.11.1 a little smaller: dial 7.5, face 5.6) draw their real face scaled onto a bigger dial (`watch(…, false)`); the old
   `face.mini` stand-ins (half a smile, an arrow) are no longer drawn.
 - **Pattern versions** (art.js `DROP_PATTERNS`, `patterned`): a base item's drawing with a hue turn and a pattern
@@ -259,7 +300,8 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
     it in tests): a garland under the top buttons of the start screen, the map and done pages (`festiveBar` from
     `render`, `FESTIVE_VIEWS`; `ART.garland`, `.festive`: fanous lamps, eight-pointed stars (`star8`, as in the Rub el Hizb)
     and little hilals with a big hilal in the middle in Ramadan, bunting with hilals and stars on the Eids, gold stars on
-    Fridays), the corners of the start screen and done pages (`ART.festSky`, `.festsky-wrap`: a glowing hilal, swaying
+    Fridays: since v2.12.1 each star on its own string from the wire, a little its own size, glowing; `yAt` follows the
+    wire's real curve, so everything hangs from it), the corners of the start screen and done pages (`ART.festSky`, `.festsky-wrap`: a glowing hilal, swaying
     fanous lamps in Ramadan, small fireworks on the Eids), a greeting toast once a day per phone
     (`localStorage.lhq_greet`), the Teacher's card and the done page greet too (a 🌙 for Ramadan, its own confetti
     `FEST_SET`), and the day's sticker (`ART.SEASONS`): Jumuʿah's once ever; **Ramadan's and each Eid's once per Hijri
@@ -458,8 +500,9 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
 ## Open items and ideas
 
 - **The Hidden Garden (v2.12.0):** the user to read over the 146 simple meanings (and hooks) of its stops; the
-  trail idea (scenes where gear helps, a campfire rest) is pinned for later.
-- **Gifts for new sūrahs (v2.11.0–v2.11.1).** Still to do: **phrase bites** in Look & Repeat (an āyah over ~7 words in 2–4 phrases,
+  trail idea (scenes where gear helps, a campfire rest) is pinned for later. **Later (the user's plan): a house at the
+  pavilion** at the top of the Garden that the explorer can go into (the pavilion lights up when tapped since v2.12.1).
+- **Gifts for new sūrahs (v2.11.0–v2.11.1).** Still to do: **phrase bites** in Look & Repeat (could reuse Word Steps' `piecesOf`, v2.12.1; an āyah over ~7 words in 2–4 phrases,
   by pause marks or word timings; the leaf only for the whole āyah; where a child stopped kept with the explorer, so a
   new field for backups and links). **On hold, the user is thinking it over:** a gear piece for each checkpoint of a
   long sūrah (it must feel substantial, not just another colour version). Ruled out by the user: Fading Words, Act it
@@ -490,6 +533,8 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
 - Not done (offered): a random starting face for new explorers, so no skin tone is "the default".
 - The Wise Elder (called the Stranger, drawn as a hooded figure, until v2.6.11) was a test concept in v2.6.0–2.6.3 and is now part of the game; tune `1 / 3`, `ELDER_EVERY` (7 min),
   `WORLD_THROWS`, `EXTRA_BLOCKS` if play-testing says so.
+- `tag` and `excite` (map area) fail on a Friday (seen 2026-11-20, v2.12.0 too: the Friday garland/greeting); they
+  should set `w.__occasion = ''` as `giftrun` now does.
 - Known, accepted test oddities: some buttons covered while a page scrolls, three captions on bright scenery
   (whitelisted in `tests/cases/hit.js` and `contrast.js`).
 
