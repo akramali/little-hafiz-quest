@@ -10694,7 +10694,8 @@ body.riddling #map {
   margin: -20px 0 0 -20px;
   border-radius: 50%;
   background: radial-gradient(circle, #fffdf0 0%, #fff6c8 35%, #c8f0c0 60%, rgba(200, 240, 192, 0) 72%);
-  animation: gtGlow 1.3s cubic-bezier(0.5, 0, 0.6, 1) forwards;
+  animation: gtGlow 1.05s cubic-bezier(0.5, 0, 0.6, 1) forwards;
+  will-change: transform, opacity;
 }
 .gtrip.out .gt-glow {
   background: radial-gradient(circle, #ffffff 0%, #f2f8ff 35%, #d9ecfb 60%, rgba(217, 236, 251, 0) 72%);
@@ -10718,8 +10719,9 @@ body.riddling #map {
   top: var(--gy);
   font-size: 22px;
   opacity: 0;
-  animation: gtFly 1.4s ease-out forwards;
-  animation-delay: calc(var(--j) * 0.04s);
+  animation: gtFly 0.85s ease-out forwards;
+  will-change: transform, opacity;
+  animation-delay: calc(var(--j) * 0.02s);
 }
 .gtrip.in b {
   animation-name: gtIn; /* petals swirl in toward the gate */
@@ -10763,4 +10765,85 @@ body.riddling #map {
   background-size: 46px 52px, 60px 44px, 38px 30px;
   -webkit-mask-image: linear-gradient(180deg, transparent, #000 6%);
   mask-image: linear-gradient(180deg, transparent, #000 6%);
+}
+
+/* ---------- 2026-11-24 · v2.12.2 ---------- */
+/* a riddle's "find the stop with this picture": the picture big enough to see */
+.mriddle .rpic {
+  display: inline-block;
+  font-size: 34px;
+  line-height: 1;
+  vertical-align: middle;
+  margin: -4px 0 -2px 2px;
+}
+/* smoother on phones (v2.12.2): nothing animates a filter or repaints a whole layer every frame */
+/* the Garden's gate: a still soft shadow; the breathing light is a layer of its own, only its opacity changing */
+.mgate8 .mg8-art {
+  animation: none;
+  filter: drop-shadow(0 0 6px rgba(255, 246, 200, 0.6));
+}
+.mgate8::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  right: -10px;
+  top: 6px;
+  height: 110px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 246, 200, 0.75), rgba(255, 246, 200, 0));
+  animation: mg8breathe 2.6s ease-in-out infinite alternate;
+  will-change: opacity;
+  pointer-events: none;
+  z-index: -1;
+}
+@keyframes mg8breathe {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* zooming the map (into a stop, or through the gate): one still picture scaled, no blur, nothing moving inside it */
+.mroot.zooming,
+.mroot.gzoom {
+  will-change: transform, opacity;
+}
+.mroot.gzoom {
+  transition:
+    transform 0.8s cubic-bezier(0.55, 0, 0.7, 0.3),
+    opacity 0.8s ease-in;
+  filter: none;
+  opacity: 0.6;
+}
+.mroot.zooming *,
+.mroot.gzoom *,
+.mroot.prezoom * {
+  animation-play-state: paused !important;
+}
+.mroot.prezoom {
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mgate8::before {
+    animation: none;
+  }
+}
+/* going through the Garden's gate: the gate itself grows toward you (cheap: one small layer) */
+.mgate8.gzoom {
+  transition:
+    transform 0.85s cubic-bezier(0.55, 0, 0.7, 0.3),
+    opacity 0.85s ease-in;
+  transform: scale(2.4);
+  opacity: 0.4;
+  z-index: 8;
+}
+/* My Tree comes in with a fade only: scaling the whole tree as it appears stuttered on phones */
+.treescr.screen {
+  animation: treeIn 0.35s ease-out;
+}
+@keyframes treeIn {
+  from {
+    opacity: 0;
+  }
 }

@@ -779,6 +779,7 @@
     ['cave-lantern-staff', 'stick', 'Cave lantern staff', 4],
     ['sky-falcon', 'pet', 'Sky falcon', 5],
     ['pearl-shell-pack', 'bag', 'Pearl shell pack', 6],
+    ['tasbih-bracelet', 'watch', 'Tasbīḥ bead bracelet', 7], // (v2.12.2: the 99 Names, stop 207)
   ];
   GARDEN_TREASURES.forEach(([id, slot, name, k]) => {
     ITEMS.push({ id, slot, name, tier: 4, from: null, garden: k });
@@ -1927,6 +1928,23 @@
     box: [-27, -46, 27, 46],
     w: (big) => watch('#3fae6a', { rim: GOLD, c: '#fff', mini: F('M0 -3.2L1.2 0L-1.2 0Z', '#ef4b4b') }, F('M0 -14L4 0L-4 0Z', '#ef4b4b') + F('M0 14L4 0L-4 0Z', '#4a6cff') + CF(0, 0, 2.4, INK) + L('M0 -17L0 -15M17 0L15 0M0 17L0 15M-17 0L-15 0', INK, 2), big),
   };
+  // (v2.12.2) the 99 Names' treasure: a tasbīḥ of wooden beads round the wrist, with a little tassel; big: the whole
+  // string of beads in a loop
+  ART['tasbih-bracelet'] = {
+    box: [-27, -46, 27, 46],
+    w: (big) => {
+      const c = '#c98a4b',
+        bead = (x, y, r) => ball(n(x), n(y), r, r, c, { hlo: 0.5 });
+      if (!big || big === 'back')
+        return [-9.6, -6.4, -3.2, 0, 3.2, 6.4, 9.6].map((x) => bead(x, 0, 2.2)).join('') + (big ? '' : L('M0 2L0 7', '#2fb8a8', 1.4) + ball(0, 8.6, 2, 2, GOLD, { sh: false }));
+      let g = '';
+      for (let j = 0; j < 18; j++) {
+        const a = (j / 18) * Math.PI * 2 + Math.PI / 2;
+        g += bead(20 * Math.cos(a), -6 + 20 * Math.sin(a) * 0.92, 4.6);
+      }
+      return g + S('M-4 16L4 16L3 24L-3 24Z', GOLD) + L('M-2 24L-4 40M0 24L0 42M2 24L4 40', '#2fb8a8', 2.4) + ball(0, 14, 4.4, 4.4, '#2fb8a8');
+    },
+  };
   ART['comet-watch'] = {
     box: [-27, -46, 27, 46],
     fx: [[-14, -14], [14, 12]],
@@ -2629,7 +2647,7 @@
       // (v2.12.1) each star on its own string from the wire, a little its own size, with a soft glow
       g += xs.map((x, j) => {
         const r = [5.4, 4.2, 6, 4.6, 5, 3.9, 5.6][j % 7], len = [3, 7, 4, 8, 2, 6, 5][j % 7];
-        return hang(x, L('M0 -1L0 ' + (len + 1), INK, 1.2) + G(EF(0, len + r, r * 1.9, r * 1.9, 'url(#lhq-g-aura)', 0.55), cls('pr-glow') + ' style="animation-delay:-' + ((j * 0.7) % 3).toFixed(1) + 's"') + P(star5(0, len + r, r, r * 0.45), '#ffd23f', sw(1.3)));
+        return hang(x, L('M0 -1L0 ' + (len + 1), INK, 1.2) + EF(0, len + r, r * 1.9, r * 1.9, 'url(#lhq-g-aura)', 0.55) + P(star5(0, len + r, r, r * 0.45), '#ffd23f', sw(1.3)));
       }).join('');
     else {
       const cs = kind === 'eid-adha' ? ['#3fae6a', '#ffd23f', '#ffffff', '#5fc9b6'] : ['#ff6b6b', '#ffd23f', '#5fb2ff', '#5fd27a', '#ff8fcf'];
@@ -3161,10 +3179,11 @@
       const low = area.filter((b) => b[1] < GY - 80).map((b) => [n(b[0]), n(b[1] + b[2] * 0.45)]).sort((p2, q2) => q2[1] - p2[1]);
       const pick = [];
       for (const p2 of low) if (pick.length < LN.length && pick.every((q2) => Math.hypot(q2[0] - p2[0], q2[1] - p2[1]) > 44)) pick.push(p2);
-      if (size >= 0.35 && pick.length >= LN.length) g += pick.sort((p2, q2) => p2[0] - q2[0]).map((p2, j) => L('M' + p2[0] + ' ' + (p2[1] - 18) + 'L' + p2[0] + ' ' + (p2[1] - 7), '#6a4a2a', 1.4) + treeLantern(p2[0], p2[1], LN[j])).join('');
+      const lk = n(1 + 0.9 * Math.max(0, size - 0.35)); // (v2.12.2: they grow with the tree, so a big tree's aren't tiny)
+      if (size >= 0.35 && pick.length >= LN.length) g += pick.sort((p2, q2) => p2[0] - q2[0]).map((p2, j) => G(L('M' + p2[0] + ' ' + (p2[1] - 18) + 'L' + p2[0] + ' ' + (p2[1] - 7), '#6a4a2a', 1.4) + treeLantern(p2[0], p2[1], LN[j]), ' transform="translate(' + p2[0] + ' ' + (p2[1] - 18) + ') scale(' + lk + ') translate(' + -p2[0] + ' ' + -(p2[1] - 18) + ')"')).join('');
       else {
         const Wf = live[0].seg[4];
-        posts = [[-1, 2], [1, 6], [-1, 10], [1, -2], [-1, -4], [1, 12]].slice(0, LN.length).map(([sd, dy], j) => {
+        posts = [[-1, 2], [1, 6], [-1, 10], [1, -2], [-1, -4], [1, 12], [-1, 8]].slice(0, LN.length).map(([sd, dy], j) => {
           const x = n(cx + sd * (Math.max(Wf, 10) * 0.5 + 24 + Math.floor(j / 2) * 24)), y = 600 + dy;
           return EF(x, y + 9, 10, 2.6, INK, 0.15) + G(treeLantern(x, y - 3, LN[j]), ' transform="translate(' + x + ' ' + (y + 9) + ') scale(1.3) translate(' + -x + ' ' + -(y + 9) + ')"');
         }).join('');
@@ -3619,8 +3638,16 @@
       L('M50 60L50 94', dk('#2fb89a', 0.3), 2) + CF(44, 76, 2.4, GOLD) + CF(56, 76, 2.4, GOLD) + [[18, 30], [14, 56], [82, 34], [86, 60], [50, 8]].map(([x, y]) => ball(x, y, 5.4, 5.4, '#ff5d7a', { hl: false })).join('')],
     ['g-lamp', 'Garden lamp', () => L('M50 4L50 16', INK, 2.4) + S('M34 28Q50 12 66 28Z', '#e0a21f') + G(EF(50, 50, 30, 30, '#ffe27a', 0.35), '') + S('M32 28L68 28L72 68L28 68Z', '#ffd36b', 'M60 28L68 28L72 68L62 68Z') +
       [[42, 44], [58, 44], [50, 58]].map(([x, y]) => P(star8(x, y, 5), '#fff6c8', sw(1.2))).join('') + S('M26 68L74 68L66 80L34 80Z', '#e0a21f') + L('M50 80L50 92', INK, 2.4) + CF(50, 94, 3, '#e0a21f')],
-    ['g-peacock', 'Peacock', () => [-70, -45, -20, 5, 30, 55, 80].map((a) => G(L('M50 70L50 18', '#3f9a52', 2) + E(50, 16, 8, 11, '#2fb8a8') + E(50, 17, 4.4, 6, '#1f6fb0') + CF(50, 18, 2.2, '#ffd23f'), ' transform="rotate(' + a + ' 50 70)"')).join('') +
-      ball(50, 70, 12, 18, '#1f6fb0') + ball(50, 48, 9, 9, '#1f6fb0') + L('M48 39L46 32M52 39L54 32', INK, 1.6) + CF(46, 31, 2, '#2fb8a8') + CF(54, 31, 2, '#2fb8a8') + P('M56 49L63 51L56 53Z', '#ffb23d') + cuteEyes(48, 47, 48, 47, 2) + L('M44 86L42 94M56 86L58 94', '#ffb23d', 2.4)],
+    // (v2.12.1 → v2.12.2) a peacock with its tail spread as one full fan of feathers (no loose lines): two rows of
+    // feathers, each with its eye, a slender blue neck and a little crest
+    ['g-peacock', 'Peacock', () => {
+      const feather = (a, len, w, eye) => G(F('M50 70Q' + (50 - w) + ' ' + (70 - len * 0.55) + ' 50 ' + (70 - len) + 'Q' + (50 + w) + ' ' + (70 - len * 0.55) + ' 50 70Z', '#2f9a6a') + P('M50 70Q' + (50 - w) + ' ' + (70 - len * 0.55) + ' 50 ' + (70 - len) + 'Q' + (50 + w) + ' ' + (70 - len * 0.55) + ' 50 70Z', 'none', sw(1.4)) +
+        (eye ? E(50, 70 - len + 9, 5.6, 7.4, '#ffd23f', sw(1.2)) + EF(50, 70 - len + 9.6, 3.8, 5, '#2fb8a8') + EF(50, 70 - len + 10.4, 2, 2.8, '#1f4f9a') : ''), ' transform="rotate(' + a + ' 50 70)"');
+      return S('M8 70Q8 18 50 14Q92 18 92 70Z', '#3fae7a', null, null) + [-80, -60, -40, -20, 0, 20, 40, 60, 80].map((a) => feather(a, 56, 9, true)).join('') + [-70, -50, -30, -10, 10, 30, 50, 70].map((a) => feather(a, 40, 7, true)).join('') +
+        S('M42 90Q38 74 44 62Q47 54 47 46Q47 40 51 38Q56 38 56 44Q55 54 58 64Q62 76 58 90Q50 96 42 90Z', '#1f6fb0', 'M56 44Q55 54 58 64Q62 76 58 90Q54 93 52 93Q58 74 54 58Q53 48 56 44Z') +
+        EF(52, 78, 5, 9, '#2fb8a8', 0.55) + P('M56 41L62 43L56 45Z', '#ffb23d') + cuteEyes(52, 41, 52, 41, 1.8) +
+        L('M50 38L47 30M52 37L52 29M54 38L57 30', INK, 1.2) + CF(47, 29, 1.8, '#2fb8a8') + CF(52, 28, 1.8, '#2fb8a8') + CF(57, 29, 1.8, '#2fb8a8') + L('M46 92L45 97M54 92L55 97', '#ffb23d', 2.2);
+    }],
     ['g-songbird', 'Songbird', () => L('M10 78Q50 70 92 76', '#8a5a35', 4) + S('M80 52Q94 46 96 56Q88 58 84 60Z', '#c9834a') + S('M24 60Q22 36 48 32Q70 30 80 48Q82 66 60 72Q34 76 24 60Z', '#e8a26a', 'M80 48Q82 66 60 72Q74 60 72 44Z') + EF(46, 60, 14, 9, '#fff3df') +
       S('M44 46Q60 40 70 52Q58 60 44 54Z', '#c9834a') + P('M24 42L12 44L24 48Z', '#ffd23f') + cuteEyes(32, 42, 32, 42, 2.6) + EF(36, 50, 3.4, 2, '#ff8fa3', 0.6) + L('M44 74L42 80M56 72L56 79', '#ffb23d', 2.2) + P('M4 22C4 16 12 16 12 22C12 16 20 16 20 22C20 28 12 32 12 34C12 32 4 28 4 22Z', '#ff5d7a', sw(1.6))],
     ['g-koi', 'Koi fish', () => C(50, 50, 40, '#9fe0f0', sw(2.4)) + G(S('M50 18Q66 30 64 50Q62 70 50 78Q38 70 36 50Q34 30 50 18Z', '#ffffff') + F('M50 18Q60 24 62 36Q52 40 44 30Q46 22 50 18Z', '#ff7a2b') + F('M40 52Q50 46 60 56Q54 64 44 62Z', '#ff7a2b') + S('M50 76Q40 88 44 94Q50 86 56 94Q60 88 50 76Z', '#ff9a52') + E(40, 44, 6, 3, '#ffffff', ' transform="rotate(30 40 44)"') + E(60, 44, 6, 3, '#ffffff', ' transform="rotate(-30 60 44)"') + CF(45, 28, 1.6, INK) + CF(55, 28, 1.6, INK), ' transform="rotate(20 50 50)"') + C(24, 30, 3, 'none', sw(1.6)) + C(78, 72, 2.4, 'none', sw(1.6))],
@@ -3876,7 +3903,12 @@
       [[16, 90, -30], [22, 76, 30], [17, 60, -30], [84, 92, 30], [78, 78, -30], [84, 62, 30]].map(([x, y, a]) => E(x, y, 4.4, 2.4, '#5fd27a', ' transform="rotate(' + a + ' ' + x + ' ' + y + ')"')).join('') +
       [[18, 40], [22, 24], [34, 12], [50, 8], [66, 12], [78, 24], [82, 40]].map(([x, y]) => S(cloudD(x, y + 8, 22, 16, 3), '#4caf50')).join('') +
       [[20, 34], [30, 16], [44, 6], [58, 8], [72, 18], [82, 32], [26, 26], [66, 6], [16, 70], [84, 76]].map(([x, y], j) => ball(x, y, 3.8, 3.8, j % 3 ? '#ff5d7a' : '#ff8fbf', { hl: false })).join('')),
-    'garden-pavilion': gProp('g-pavilion', 42, 110, 1.1),
+    // (v2.12.2) on the map, the pavilion stands in its own little garden: cypresses behind, stone steps, hedges and roses
+    'garden-pavilion': prop(110, EF(50, 104, 50, 7, INK, 0.12) + F('M2 106Q8 92 50 90Q92 92 98 106Z', '#8fd67c') +
+      S('M9 98Q14 56 12 36Q10 28 8 36Q4 56 9 98Z', '#2f8a4c') + S('M91 98Q86 56 88 36Q90 28 92 36Q96 56 91 98Z', '#2f8a4c') +
+      G(gArt('g-pavilion')(), tf(14, 16, 0.72)) + S(rr(20, 88, 60, 6, 2), '#e6d6b4', rr(66, 88, 14, 6, 2)) + S(rr(28, 94, 44, 6, 2), '#d9c49b', rr(62, 94, 10, 6, 2)) +
+      S(cloudD(13, 106, 22, 12, 3), '#4caf50') + S(cloudD(87, 106, 22, 12, 3), '#4caf50') +
+      [[7, 99], [14, 96], [19, 101], [81, 101], [86, 96], [93, 99]].map(([x, y]) => ball(x, y, 2.4, 2.4, '#ff5d7a', { hl: false })).join('')),
     'garden-rose': prop(100, shad(100, 34) + crown(50, 94, 74, 44, '#4caf50', 6) + [[32, 70], [52, 60], [68, 74], [42, 84], [60, 86]].map((q) => ball(q[0], q[1], 5.4, 5.4, '#ff5d7a', { hlo: 0.5 })).join('')),
     'garden-jasmine': gProp('g-jasmine', 22),
     'garden-lily': prop(100, shad(100, 40) + EF(50, 86, 44, 11, '#5fb2ff') + E(50, 86, 44, 11, 'none') + G(gArt('g-lily')(), tf(20, 40, 0.6))),
@@ -3908,7 +3940,14 @@
   props['peak-summit'] = '<svg class="lhq-art lhq-prop" viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' + OUT(
     EF(100, 154, 90, 6, INK, 0.12) + glow(110, 34, 50, 40) + S('M4 156L70 52Q86 30 104 46L120 62Q132 50 146 66L196 156Z', '#9aa6bf', 'M104 46L120 62Q132 50 146 66L196 156L130 156Q136 100 104 46Z', 'M24 132L62 72Q50 100 34 136Z') +
     S('M52 82L70 52Q86 30 104 46L120 62Q132 50 146 66L158 86Q146 80 136 88Q124 78 112 90Q98 76 86 88Q72 78 62 88Q56 82 52 82Z', '#ffffff', 'M104 46L120 62Q132 50 146 66L158 86Q146 80 136 88Q124 78 118 84Q120 64 104 46Z') +
-    S(rr(105, 4, 5, 40, 2.4), '#d7deea') + G(S('M110 6Q124 2 132 8Q140 14 150 10L146 22L150 34Q140 38 132 32Q124 26 110 32Z', '#ff5d6c', 'M132 32Q140 38 150 34L146 22L150 10Q142 20 132 26Z') + P(star5(128, 19, 5.4), '#fff', sw(2)), cls('lhq-wave')) + ball(107.5, 4, 4.4, 4.4, GOLD, { sh: false }) + tw(84, 24, 6, 0) + tw(150, 46, 5, 1)
+    S(rr(105, 4, 5, 40, 2.4), '#d7deea') + G(S('M110 6Q124 2 132 8Q140 14 150 10L146 22L150 34Q140 38 132 32Q124 26 110 32Z', '#ff5d6c', 'M132 32Q140 38 150 34L146 22L150 10Q142 20 132 26Z') + P(star5(128, 19, 5.4), '#fff', sw(2)), cls('lhq-wave')) + ball(107.5, 4, 4.4, 4.4, GOLD, { sh: false }) + tw(84, 24, 6, 0) + tw(150, 46, 5, 1) +
+    // (v2.12.2) its foot in the snow: drifts over the straight edge, rocks, little snowy pines and a bit of mist, so
+    // the mountain stands in the world instead of on it
+    F('M0 150Q40 132 80 142Q100 136 124 142Q160 130 200 148L200 160L0 160Z', '#eef4fb', 0.85) +
+    S('M30 156Q26 144 38 142Q48 140 52 150L54 156Z', '#8f9bb5', 'M44 142Q52 144 54 156L46 156Q48 148 44 142Z') + S('M150 156Q148 146 158 145Q166 146 168 156Z', '#8f9bb5') +
+    PINE(14, 158, 0.42, '#2f8a5c') + PINE(186, 158, 0.36, '#2f8a5c') + PINE(172, 160, 0.3, '#3f9a6c') +
+    [[14, 0.42], [186, 0.36], [172, 0.3]].map(([x, k]) => F('M' + n(x - 9 * k) + ' ' + n(160 - 14 * k - 66 * k) + 'Q' + x + ' ' + n(160 - 14 * k - 80 * k) + ' ' + n(x + 9 * k) + ' ' + n(160 - 14 * k - 66 * k) + 'Z', '#ffffff')).join('') +
+    F('M-4 162Q10 148 30 152Q46 146 62 154Q84 146 104 154Q124 146 142 154Q164 146 182 152Q196 148 204 162Z', '#ffffff') + L('M30 152Q46 146 62 154M104 154Q124 146 142 154', '#d6e2f0', 1.6)
   ) + '</svg>';
   const PROPS_BY_WORLD = [
     ['meadow-grass', 'meadow-flower-pink', 'meadow-flower-yellow', 'meadow-flower-blue', 'meadow-bush', 'meadow-tree', 'meadow-fence', 'meadow-sign', 'meadow-sheep', 'meadow-rabbit', 'meadow-pond', 'meadow-cottage', 'meadow-sheep', 'meadow-rabbit', 'meadow-tree'],

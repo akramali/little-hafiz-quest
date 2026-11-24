@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.12.1';
+  const VERSION = '2.12.2';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -68,9 +68,11 @@
   const worldOf = (s) => (s.garden ? GARDEN_W : WORLDS.findIndex((w) => s.n <= w.from && s.n >= w.to));
   const worldName = (wi) => (wi === GARDEN_W ? GARDEN_NAME : WORLDS[wi].name);
   // how a stop is numbered for people: its sūrah number, or (a Garden stop from inside a sūrah) sūrah:āyāt
-  const snum = (s) => (s.garden ? (s.from ? s.sura + ':' + s.from + (s.ayat.length > 1 ? '–' + (s.from + s.ayat.length - 1) : '') : String(s.sura)) : String(s.n));
+  const snum = (s) => (s.asma ? '99' : s.garden ? (s.from ? s.sura + ':' + s.from + (s.ayat.length > 1 ? '–' + (s.from + s.ayat.length - 1) : '') : String(s.sura)) : String(s.n));
   const ayNo = (s, k) => (s.from || 1) + k; // an āyah's own number (k counts from 0 in the stop)
-  const whole = (s) => (s.garden && (s.from || s.sura === 18) ? 'all of it' : 'whole sūrah'); // a Garden passage is not a whole sūrah
+  const AY = (s) => (s && s.asma ? 'line' : 'āyah'), // (v2.12.2: the 99 Names come in lines, not āyāt)
+    AYS = (s) => (s && s.asma ? 'lines' : 'āyāt');
+  const whole = (s) => (s.garden && (s.from || s.sura === 18 || s.asma) ? 'all of it' : 'whole sūrah'); // a Garden passage is not a whole sūrah
   const WORLD_ICON = ['meadow-flower-pink', 'forest-pine', 'sands-palm', 'canyon-cactus', 'starry-moon', 'sky-balloon', 'peak-summit']; // props shown on the world rail
   const WCOL = ['#e74c3c', '#f39c12', '#d4a20b', '#27ae60', '#16a085', '#2e86de', '#8e44ad', '#e84393'];
 
@@ -865,6 +867,10 @@
   const FALLBACK_RECITERS = [{ id: 'alafasy', name: 'Mishary Rashid Alafasy', note: 'Clear and melodic', mb: 0 }];
   let RECITERS = FALLBACK_RECITERS;
   const TIM = Object.create(null); // reciter -> { "<sūrah>": [[start, end, [[ws, we], ...]], ...] }
+  // (v2.12.2) a stop with a voice of its own (the 99 Names): that voice whatever reciter is chosen
+  const VOICE = Object.create(null);
+  S.forEach((s) => s.voice && !s.silent && (VOICE[s.n] = s.voice));
+  const recOf = (id, n) => VOICE[n] || id;
   const timLoad = Object.create(null);
   function reciter() {
     return RECITERS.find((r) => r.id === prefs.reciter) || RECITERS[0];
@@ -909,6 +915,11 @@
      opts: once (ignore the repeat setting), loop (play the whole list that many times), reciter. */
   function playList(items, opts) {
     opts = opts || {};
+    // (v2.12.2) a stop whose recitation hasn't come yet (the 99 Names)
+    if (items.some((it) => BYN[it[0]] && BYN[it[0]].silent)) {
+      toast('The recitation of the names is coming in an update soon');
+      return;
+    }
     if (!prefs.audio) {
       toast('The reciter is switched off in the Grown-up Corner');
       return;
@@ -928,11 +939,11 @@
     keepAwake(true);
     const tok = ++playTok;
     updateFab();
-    loadTimings(id)
+    Promise.all([...new Set([id, ...items.map((it) => recOf(id, it[0]))])].map(loadTimings))
       .catch(() => {
         throw new Error(navigator.onLine === false ? 'This reciter is not saved for offline use yet.' : 'The recitation could not load. Try again in a moment.');
       })
-      .then(() => prepFile(id, items[0][0], tok))
+      .then(() => prepFile(recOf(id, items[0][0]), items[0][0], tok))
       .then(() => {
         if (!playing || tok !== playTok) return;
         playNext();
@@ -1081,9 +1092,9 @@
       return;
     }
     // each item plays from its own sūrah's file: get it ready first if it isn't (the Basmalah, then the sūrah)
-    if (FETCH_OK && !fileUrls.has(fileKey(playRec, it[0]))) {
+    if (FETCH_OK && !fileUrls.has(fileKey(recOf(playRec, it[0]), it[0]))) {
       const tok = playTok;
-      prepFile(playRec, it[0], tok)
+      prepFile(recOf(playRec, it[0]), it[0], tok)
         .then(() => {
           if (!playing || tok !== playTok) return;
           queue.unshift(it);
@@ -1097,7 +1108,7 @@
       return;
     }
     try {
-      const id = playRec,
+      const id = recOf(playRec, it[0]),
         T = TIM[id] && TIM[id][it[0]];
       const ay = T && T[it[1] - 1];
       if (!ay) {
@@ -1307,7 +1318,7 @@
   function fabTarget() {
     const v = st.view,
       s = S[st.i];
-    if (!s || !['surah', 'learn', 'path', 'order', 'words', 'mushaf', 'elder'].includes(v)) return null;
+    if (!s || s.silent || !['surah', 'learn', 'path', 'order', 'words', 'mushaf', 'elder'].includes(v)) return null; // (no Listen where there's no recitation yet)
     const one = (k) => ({ key: `${s.n}:${k}`, label: `Āyah ${k + 1}`, items: [[s.n, k + 1]] });
     const many = (ks, label) => ({ key: `${s.n}:${ks.join(',')}`, label, items: ks.map((k) => [s.n, k + 1]) });
     const c = ctx();
@@ -1318,7 +1329,10 @@
       const L = chainList();
       return Object.assign(one(L[Math.min(st.chain, L.length - 1)]), { loop: true });
     }
-    if (v === 'path') return Object.assign(one(c.from + st.k), { loop: true });
+    if (v === 'path') {
+      const u = units(c)[st.k];
+      return u.q == null ? Object.assign(one(u.k), { loop: true }) : { key: `${s.n}:${u.k}:p${u.q}`, label: `Part ${u.q + 1}`, items: [[s.n, u.k + 1, u.w[0], u.w[1]]], loop: true };
+    }
     if (v === 'order') {
       const all = st.p === 'all' ? range({ from: 0, to: s.ayat.length - 1 }) : range(c);
       // the piece to place next (the first one still missing, in order), so every piece can be practiced; once
@@ -1327,11 +1341,12 @@
         j = items.findIndex((_, x) => !st.placed[x]);
       if (j < 0) return many(all, st.p === 'all' ? 'Whole sūrah' : 'In order');
       const ks = items[j].say;
-      return ks.length > 1 ? many(ks, `Next: āyāt ${ks[0] + 1}–${ks[ks.length - 1] + 1}`) : Object.assign(one(ks[0]), { label: `Next: āyah ${ks[0] + 1}` });
+      if (items[j].play) return { key: `${s.n}:pz:${j}`, label: `Next: ${items[j].label}`, items: items[j].play };
+      return ks.length > 1 ? many(ks, `Next: ${AYS(s)} ${ks[0] + 1}–${ks[ks.length - 1] + 1}`) : Object.assign(one(ks[0]), { label: `Next: ${AY(s)} ${ks[0] + 1}` });
     }
     if (v === 'words') {
       // (v2.12.1) a piece of a long āyah: just its words
-      const pcs = piecesOf(s.ayat[st.a].ar),
+      const pcs = piecesOf(s.ayat[st.a]),
         q = Math.min(st.pc || 0, pcs.length - 1);
       return pcs.length > 1 ? { key: `${s.n}:${st.a}:p${q}`, label: `Part ${q + 1}`, items: [[s.n, st.a + 1, pcs[q][0], pcs[q][1]]], loop: true } : Object.assign(one(st.a), { loop: true });
     }
@@ -1492,7 +1507,7 @@
   };
   const toArNum = (n) => String(n).replace(/\d/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d]);
   // the Arabic title: سورة + its name, or just the name for āyāt from inside a sūrah (آية الكرسي)
-  const sTitle = (s) => (s.garden && s.from ? s.ar : 'سُورَةُ ' + s.ar);
+  const sTitle = (s) => (s.garden && (s.from || s.asma) ? s.ar : 'سُورَةُ ' + s.ar);
   const AR_LETTER = /[ء-يٮ-ۓۺ-ۼ]/;
   function wordsOf(ar) {
     const out = [];
@@ -1509,11 +1524,13 @@
      one without marks cut evenly. [from, to] word ranges (to included); a short āyah is one piece. */
   const PIECE_OVER = 16;
   const pieceMemo = new Map();
-  function piecesOf(ar) {
+  function piecesOf(a) {
+    const ar = typeof a === 'string' ? a : a.ar;
     if (pieceMemo.has(ar)) return pieceMemo.get(ar);
     const W = wordsOf(ar),
       out = [];
-    if (W.length <= PIECE_OVER) out.push([0, W.length - 1]);
+    if (a.cuts) a.cuts.forEach((f, q) => out.push([f, (a.cuts[q + 1] || W.length) - 1])); // (v2.12.2: set by hand where an even cut would split a phrase)
+    else if (W.length <= PIECE_OVER) out.push([0, W.length - 1]);
     else {
       const sent = [];
       let a = 0;
@@ -1540,6 +1557,31 @@
     pieceMemo.set(ar, out);
     return out;
   }
+  // (v2.12.2) a piece of a long āyah as an āyah of its own for the pictures: its own pictures and caption (`bites`), or
+  // its share of the āyah's
+  function bite(a, q) {
+    const pcs = piecesOf(a);
+    if (q == null || pcs.length < 2) return a;
+    const b = a.bites && a.bites[q],
+      n = a.scene.length,
+      from = Math.floor((q * n) / pcs.length),
+      scene = b ? b.scene : a.scene.slice(from, Math.max(from + 1, Math.floor(((q + 1) * n) / pcs.length)));
+    return Object.assign({}, a, { scene, hook: b ? b.hook : a.hook, twin: 0 });
+  }
+  // the stones of Stepping Stones and the pieces of the Picture Puzzle: an āyah each, or each piece of a long one
+  function units(c) {
+    const s = S[st.i],
+      out = [];
+    range(c).forEach((k) => {
+      const pcs = piecesOf(s.ayat[k]);
+      if (pcs.length < 2) out.push({ k, q: null });
+      else pcs.forEach((w, q) => out.push({ k, q, w }));
+    });
+    return out;
+  }
+  const oneAyah = (us) => us.every((u) => u.k === us[0].k); // (Āyat al-Kursī: its pieces numbered 1, 2, 3…)
+  const unitNum = (u, us) => (u.q == null ? String(u.k + 1) : oneAyah(us) ? String(u.q + 1) : `${u.k + 1}·${u.q + 1}`);
+  const unitName = (u, us) => (u.q == null ? `${AY(S[st.i])} ${u.k + 1}` : oneAyah(us) ? `part ${u.q + 1}` : `${AY(S[st.i])} ${u.k + 1}, part ${u.q + 1}`);
   function ctx() {
     const s = S[st.i];
     if (st.p === 'all') return { s, from: 0, to: s.ayat.length - 1, all: true };
@@ -1566,7 +1608,7 @@
   function arHTML(s, a, k, opts = {}) {
     return `<div class="ar-box">
     <div class="ar-label">${opts.label || '📖 Grown-up reads'}</div>
-    <div class="ar ${opts.blur ? 'blur' : ''} ${opts.sm ? 'sm' : ''}" lang="ar" ${opts.quiet ? '' : `data-act="say" data-n="${s.n}" data-k="${k}"`}>${a.ar} ﴿${toArNum(k + 1)}﴾</div>
+    <div class="ar ${opts.blur ? 'blur' : ''} ${opts.sm ? 'sm' : ''}" lang="ar" ${opts.quiet ? '' : `data-act="say" data-n="${s.n}" data-k="${k}"`}>${a.ar} ${s.asma ? '✦' : `﴿${toArNum(k + 1)}﴾`}</div>
     ${prefs.translit && !opts.blur ? `<div class="tr">${a.tr}</div>` : ''}
     ${prefs.meaning && !opts.blur ? `<div class="mean">💬 ${a.kid}</div>` : ''}
   </div>`;
@@ -1638,11 +1680,14 @@
     const P = s.P[p];
     return `Part ${p + 1} · āyāt ${ayNo(s, P.from)}–${ayNo(s, P.to)}`;
   }
-  // chain now? after every new āyah from the second one on, or after every 3, 4 or 5 (and always at the last one)
+  // chain now? after every new āyah from the second one on, or after every 3, 4 or 5 (and always at the last one).
+  // (v2.12.2) Not when only one more āyah (or a third of a chain) is left after it: that one joins this chain at the
+  // end, so 7 āyāt chained every 3 are chained at 3 and then at 7, not at 3, 6 and 7.
   function chainNow() {
     const c = ctx(),
-      at = st.a - c.from + 1;
-    return chainList().length > 1 && (at % prefs.chain === 0 || st.a === c.to);
+      at = st.a - c.from + 1,
+      slack = prefs.chain >= 3 ? Math.max(1, Math.floor(prefs.chain / 3)) : 0;
+    return chainList().length > 1 && ((at % prefs.chain === 0 && c.to - st.a > slack) || st.a === c.to);
   }
   function chainList() {
     const c = ctx();
@@ -2131,6 +2176,7 @@
       },
       worldProgress: juzWorldProgress,
     });
+    warmTree();
   }
   /* (v2.12.1) Going through the gate: it swings open, the map zooms into it while a glow fills the screen (petals
      going in, snowflakes coming back out), and the other map comes up through it. From the worlds list, the same
@@ -2158,20 +2204,15 @@
     ov.style.setProperty('--gy', y + 'px');
     ov.innerHTML = '<i class="gt-glow"></i>' + [...Array(14).keys()].map((j) => `<b style="--j:${j};--dx:${Math.round((((j * 37) % 14) - 7) * 26)}px;--dy:${Math.round((((j * 53) % 14) - 7) * 34)}px">${into ? ['🌸', '🍃', '✨', '🌷'][j % 4] : ['❄️', '✨', '❄️', '⭐'][j % 4]}</b>`).join('');
     document.body.appendChild(ov);
-    const root = document.getElementById('map');
-    setTimeout(() => {
-      if (root) {
-        const rr = root.getBoundingClientRect();
-        root.style.transformOrigin = `${x - rr.left}px ${y - rr.top}px`;
-        root.classList.add('gzoom');
-      }
-    }, 380);
+    // (v2.12.2) the gate itself grows toward you (zooming the whole map, thousands of drawings, stuttered on phones)
+    if (gate) setTimeout(() => gate.classList.add('gzoom'), 250);
+    // the other map is drawn only once the glow covers the screen and the petals are gone, so nothing visibly stops
     setTimeout(() => {
       document.body.classList.remove('busy');
       swap();
-      ov.classList.add('done'); // (the glow fades away over the other map)
-      setTimeout(() => ov.remove(), 1100);
-    }, 1250);
+      requestAnimationFrame(() => requestAnimationFrame(() => ov.classList.add('done'))); // (the glow fades away over the other map)
+      setTimeout(() => ov.remove(), 1200);
+    }, 1150);
   }
   function mountGarden(prof) {
     const at = Math.max(0, Math.min(GS.length - 1, prof.gat || 0)),
@@ -2182,7 +2223,7 @@
       worlds: [{ name: GARDEN_NAME, from: GS[GS.length - 1].n, to: GS[0].n }],
       art: ART,
       artWorld: () => GARDEN_W,
-      badgeNum: (s) => s.sura,
+      badgeNum: (s) => (s.asma ? '99' : s.sura),
       topProp: 'garden-pavilion',
       startLabel: '🌷 Start',
       gate: { at: 'start', act: 'gardenout', label: 'Back to the Summit' },
@@ -2202,6 +2243,7 @@
       worldProgress: () => gardenProgress(P()),
       railExtra: WORLDS.map((w, wi) => ({ pos: 'bottom', act: 'world', w: wi, num: wi + 1, name: w.name, art: wi, icon: WORLD_ICON[wi], pr: juzWorldProgress(wi) })),
     });
+    warmTree();
   }
   // a sūrah counts as done once it has at least one star
   const doneSurahs = (prof) => J.filter((s) => surahStars(s, prof) > 0).length;
@@ -2226,7 +2268,7 @@
         fl = fireOf(s, prof);
       // the number ringed like the map's stops: gold with every star, green once memorized
       const ring = got >= max ? ' gold' : surahDone(s) ? ' green' : '';
-      return `<button class="pgrow ${got ? 'done' : ''}" data-act="jump" data-i="${i}"><span class="pn${ring}">${s.garden ? s.sura : s.n}</span><span class="pgname">${s.name}${fix ? ' <span class="pgfix" title="Needs fixing">💔</span>' : ''}<small><span>${s.icon} ${s.meaning}</span>${t >= 30 ? `<span>\u00a0· ⏱️ ${fmtTime(t)}</span>` : ''}</small></span>${fl >= 0 && !starsTab ? `<span class="pgfire f${fl}" title="Campfire: ${FIRE_WORD[fl]}">${ART.campfire(fl)}</span>` : ''}${right}</button>`;
+      return `<button class="pgrow ${got ? 'done' : ''}" data-act="jump" data-i="${i}"><span class="pn${ring}">${s.asma ? '99' : s.garden ? s.sura : s.n}</span><span class="pgname">${s.name}${fix ? ' <span class="pgfix" title="Needs fixing">💔</span>' : ''}<small><span>${s.icon} ${s.meaning}</span>${t >= 30 ? `<span>\u00a0· ⏱️ ${fmtTime(t)}</span>` : ''}</small></span>${fl >= 0 && !starsTab ? `<span class="pgfire f${fl}" title="Campfire: ${FIRE_WORD[fl]}">${ART.campfire(fl)}</span>` : ''}${right}</button>`;
     }).join('');
     const fixes = prof.fix.length ? `<p class="saveinfo center">💔 ${prof.fix.length === 1 ? 'One sūrah needs' : prof.fix.length + ' sūrahs need'} a little fixing: tap it to play a review game there.</p>` : '';
     m.innerHTML = `<div class="card progcard">
@@ -2332,9 +2374,9 @@
       .map((c) => `<i style="background:${c}"></i>`)
       .join('')}</span>`;
     return [
-      { key: 'learn', ico: '👀', t: 'Look & Repeat', d: 'See the picture, hear the āyah, say it 3 times', done: !!x.learn, stars: [x.learn, 1] },
-      { key: 'words', ico: beads, t: 'Word Steps', d: 'Build each āyah word by word', done: !!x.words, stars: [x.words, 1] },
-      { key: 'pathpick', ico: '🐸', t: 'Stepping Stones', d: 'Say each āyah from its picture; hints help', done: !!x.path, stars: [x.path ? 1 : 0, 1], review: true },
+      { key: 'learn', ico: '👀', t: 'Look & Repeat', d: `See the picture, hear the ${AY(s)}, say it 3 times`, done: !!x.learn, stars: [x.learn, 1] },
+      { key: 'words', ico: beads, t: 'Word Steps', d: `Build each ${AY(s)} word by word`, done: !!x.words, stars: [x.words, 1] },
+      { key: 'pathpick', ico: '🐸', t: 'Stepping Stones', d: `Say each ${AY(s)} from its picture; hints help`, done: !!x.path, stars: [x.path ? 1 : 0, 1], review: true },
       { key: 'order', ico: '🧩', t: 'Picture Puzzle', d: 'Fit the pieces together in order', done: !!x.order, stars: [x.order, 1], review: true },
     ];
   }
@@ -2346,7 +2388,7 @@
         got = partStars(x);
       return `<button class="cpf ${st.p === p ? 'sel' : ''} ${done ? 'done' : ''}" data-act="part" data-p="${p}">
         <span class="cpflag">${ART.flag(done ? '#2fbf71' : st.p === p ? '#ff9f1c' : '#b9b1dc')}</span>
-        <b>${p + 1}</b><small>${P.from === P.to ? `āyah ${ayNo(s, P.from)}` : `āyāt ${ayNo(s, P.from)}–${ayNo(s, P.to)}`}</small><span class="cpst">⭐ ${got}/4</span></button>`;
+        <b>${p + 1}</b><small>${P.from === P.to ? `${AY(s)} ${ayNo(s, P.from)}` : `${AYS(s)} ${ayNo(s, P.from)}–${ayNo(s, P.to)}`}</small><span class="cpst">⭐ ${got}/4</span></button>`;
     });
     const allGot = (r && r.all) || 0;
     cps.push(`<button class="cpf summit ${st.p === 'all' ? 'sel' : ''} ${allGot ? 'done' : ''}" data-act="part" data-p="all">
@@ -2400,9 +2442,9 @@
         ${x.locked ? '<span class="qgo lock">🔒</span>' : ''}</button>`; // (each review game's hearts left, on its star line, v2.9.5)
     });
     return `<div class="screen ${st.enter ? 'zoomin' : ''}" style="${cv(s.color)}">
-    ${bar(s.from ? s.name : `${snum(s)}. ${s.name}`, `World ${wi + 1} · ${worldName(wi)}`, 'map')}
+    ${bar(s.from || s.asma ? s.name : `${snum(s)}. ${s.name}`, `World ${wi + 1} · ${worldName(wi)}`, 'map')}
     <div class="hero"><button class="bookbtn" data-act="mushaf" aria-label="Read the whole sūrah">📖<small>Read</small></button>${fireChip(s)}<div class="hero-icon bob">${s.icon}</div><div class="hero-ar">${sTitle(s)}</div>
-      <div class="hero-en">${s.meaning} · ${s.ayat.length} āyāt${multi(s) ? ` · ${s.P.length} checkpoints` : ''}</div>
+      <div class="hero-en">${s.meaning} · ${s.ayat.length} ${AYS(s)}${multi(s) ? ` · ${s.P.length} checkpoints` : ''}</div>
       <div class="hero-st ${done ? 'done' : ''}">${done ? '✓ Memorized! MāshāAllāh' : `⭐ ${surahStars(s)} / ${surahMax(s)} stars`}</div></div>
     ${lostAt(s.n).length ? `<div class="lostnote">${lostAt(s.n).map((x) => `<span class="lostit">${itemPic(x.id)}</span>`).join('')}<span>Your <b>${lostAt(s.n).map((x) => itemName(x.id)).join(', ')}</b> fell off here! Finish a review game to get it back.</span></div>` : ''}
     ${multi(s) ? checkpointTrail(s) : ''}
@@ -2454,7 +2496,7 @@
         ck = L[Math.min(st.chain, L.length - 1)],
         cur = s.ayat[ck];
       body = `
-      ${coach(`🔗 <b>Chain time!</b> Say from āyah ${L[0] + 1} all the way to āyah ${k + 1}.${prefs.actions ? ' Do the actions too!' : ''}`, '🦉', toyBtn(s))}
+      ${coach(`🔗 <b>Chain time!</b> Say from ${AY(s)} ${L[0] + 1} all the way to ${AY(s)} ${k + 1}.${prefs.actions ? ' Do the actions too!' : ''}`, '🦉', toyBtn(s))}
       <div class="lchead chainhead"><span class="lctags">${tag(s, ck)}</span><span class="lcbtns">${speedChip()}${loopBtn()}</span></div>
       <div class="chain">${L.map((x, j) => `<button class="link ${j < st.chain ? 'lit' : j === st.chain ? 'cur' : ''} ${!c.all && st.p > 0 && j === 0 ? 'bridge' : ''}" data-act="chainstep" data-j="${j}" aria-label="Āyah ${x + 1}${j < st.chain ? ', said: tap to go back to it' : ''}"><span class="num">${x + 1}</span>${pics(s.ayat[x])}</button>`).join('')}</div>
       ${prefs.actions ? `<div style="text-align:center">${gest(cur)}</div>` : ''}
@@ -2484,7 +2526,7 @@
       }
     }
     return `<div class="screen" style="${cv(s.color)}">
-    ${bar('Look & Repeat', `${s.name} · āyah ${k + 1} of ${s.ayat.length}`, 'surah')}
+    ${bar('Look & Repeat', `${s.name} · ${AY(s)} ${k + 1} of ${s.ayat.length}`, 'surah')}
     ${dots(c, k, [...(st.saidA || []), ...(st.savedA || [])])}
     ${body}
   </div>`;
@@ -2501,12 +2543,12 @@
         const words = wordsOf(a.ar)
           .map((w, j) => (sel ? `<span class="mw" style="${wv(WCOL[j % WCOL.length])}">${w}</span>` : w))
           .join(' ');
-        return `<span class="mayah ${sel ? 'sel' : ''}" data-k="${k}">${words} <span class="mnum">﴿${toArNum(ayNo(s, k))}﴾</span></span>`;
+        return `<span class="mayah ${sel ? 'sel' : ''}" data-k="${k}">${words} <span class="mnum">${s.asma ? '✦' : `﴿${toArNum(ayNo(s, k))}﴾`}</span></span>`;
       })
       .join(' ');
     const focus = st.sel != null && st.focus ? focusCard(s, st.sel) : '';
     return `<div class="screen mushafscr" style="${cv(s.color)}" data-act="mclear">
-    ${bar(`📖 ${s.name}`, `${s.ayat.length} āyāt · ${st.sel === -1 ? 'Bismillah chosen' : st.sel != null ? `āyah ${ayNo(s, st.sel)} chosen` : 'the whole ' + (whole(s) === 'whole sūrah' ? 'sūrah' : 'passage')}`, 'surah')}
+    ${bar(`📖 ${s.name}`, `${s.ayat.length} ${AYS(s)} · ${st.sel === -1 ? 'Bismillah chosen' : st.sel != null ? `${AY(s)} ${ayNo(s, st.sel)} chosen` : 'the whole ' + (whole(s) === 'whole sūrah' ? 'sūrah' : 'passage')}`, 'surah')}
     <div class="mtools"><span>${st.sel != null ? (st.focus ? 'Listen plays this āyah. Tap anywhere to close.' : '<b>Tap the āyah again</b> to look closer. Tap anywhere else to clear the colors.') : '<b>Hold an āyah</b> to color its words, like Word Steps.'}</span></div>
     <div class="card mushaf ${focus ? 'focusing' : ''}">
       <div class="mtitle" lang="ar">${sTitle(s)}</div>
@@ -2613,7 +2655,7 @@
       c = ctx(),
       k = st.a,
       a = s.ayat[k],
-      pcs = piecesOf(a.ar),
+      pcs = piecesOf(a),
       pc = Math.min(st.pc || 0, pcs.length - 1),
       [w0, w1] = pcs[pc],
       W = wordsOf(a.ar).slice(w0, w1 + 1), // (v2.12.1: a long āyah one piece at a time; j counts within it, w0 + j in the āyah)
@@ -2621,7 +2663,7 @@
     const col = (j) => WCOL[j % WCOL.length];
     // (v2.12.1) a long āyah's pieces: little steps beside its number in the tracker
     const pieceBtns = pcs.length > 1 ? `<span class="wpcs" aria-label="Part ${pc + 1} of ${pcs.length}">${pcs.map((_, q) => `<button class="${q === pc ? 'cur' : q < pc ? 'done' : ''}" data-act="wpiece" data-q="${q}" aria-label="Part ${q + 1}">${q < pc ? '✓' : q + 1}</button>`).join('')}</span>` : '';
-    const track = `<div class="wlabel">Āyah tracker</div><div class="wtrack">${range(c)
+    const track = `<div class="wlabel">${s.asma ? 'Line' : 'Āyah'} tracker</div><div class="wtrack">${range(c)
       .map((x) => `<button class="${x === k ? 'cur' : st.doneA.includes(x) || (st.savedA || []).includes(x) ? 'done' : ''}" data-act="wjump" data-k="${x}">${x + 1}<small>${toArNum(x + 1)}</small></button>${x === k ? pieceBtns : ''}`)
       .join('')}</div>`;
     const beads = `<div class="beads" aria-label="Word ${Math.min(st.w, n)} of ${n}">${W.map((_, j) => {
@@ -2649,14 +2691,14 @@
           ? wbox(w, j, 'wtile shown', `data-act="sayw" data-n="${s.n}" data-k="${k}" data-w="${w0 + j}"`, wordLines(s.n, k, w0 + j))
           : wbox(w, j, 'wtile', `data-act="wshow" data-j="${j}" aria-label="Word ${j + 1}"`, wordLines(s.n, k, w0 + j)),
       ).join('')}</div>`;
-      note = all ? 'Every word in its place. Well done!' : `Child says the whole ${pcs.length > 1 ? 'part' : 'āyah'} from memory. Grown-up taps each tile as the word is said.`;
+      note = all ? 'Every word in its place. Well done!' : `Child says the whole ${pcs.length > 1 ? 'part' : AY(s)} from memory. Grown-up taps each tile as the word is said.`;
       const last = nextTodo(c, k, [...st.doneA, k]) < 0;
       controls = all
         ? `<button class="btn wide" data-act="whide">Again</button>${pc < pcs.length - 1 ? `<button class="btn go wide" data-act="wpiece" data-q="${pc + 1}">Next part ›</button>` : `<button class="btn go wide" data-act="wdone">${last ? 'Finish part ›' : 'Next āyah ›'}</button>`}`
         : `<button class="btn wide" data-act="wbuild">‹ Practice</button><button class="btn go wide" data-act="wreveal">Show next word</button>`;
     }
     return `<div class="screen" style="${cv(s.color)}">
-    ${bar('Word Steps', `${s.name} · āyah ${k + 1} of ${s.ayat.length}`, 'surah')}
+    ${bar('Word Steps', `${s.name} · ${AY(s)} ${k + 1} of ${s.ayat.length}`, 'surah')}
     ${track}
     <div class="wlabel" style="margin-top:6px">Word order</div>
     ${beads}
@@ -2670,8 +2712,8 @@
   /* ---------- STEPPING STONES ---------- */
   /* Clues for Stepping Stones. It starts with the picture (L 2; the old levels 1 and 3 are gone since v2.4.3),
      and the 💡 hint shows one more word at a time, then the full āyah to hear. */
-  function pathClues(s, k, L, h) {
-    const W = wordsOf(s.ayat[k].ar);
+  function pathClues(s, u, L, h) {
+    const W = wordsOf(s.ayat[u.k].ar).slice(u.w ? u.w[0] : 0, u.w ? u.w[1] + 1 : undefined); // (v2.12.2: a stone is an āyah or a piece of a long one)
     const picAt = L === 3 ? 1 : 0; // hint number that shows the picture
     const pic = h >= picAt;
     const words = Math.max(0, Math.min(W.length, (L === 1 ? 1 : 0) + h - picAt));
@@ -2684,7 +2726,7 @@
     const stone = (x, j) =>
       j === st.k
         ? `<button class="stone cur" data-j="${j}" data-act="hop" aria-label="Hop to the next stone"><span class="stbg">${ART.stone(wi)}</span><span class="frog">${ART.frog()}</span></button>`
-        : `<span class="stone ${j < st.k ? 'done' : ''}" data-j="${j}"><span class="stbg">${ART.stone(wi)}</span><b>${j < st.k ? '✓' : x + 1}</b></span>`;
+        : `<span class="stone ${j < st.k ? 'done' : ''}" data-j="${j}"><span class="stbg">${ART.stone(wi)}</span><b>${j < st.k ? '✓' : unitNum(x, idx)}</b></span>`;
     const set = (from) => {
       const xs = idx.slice(from, from + STONES_PER);
       return `<div class="stones" style="--cols:${Math.min(5, xs.length)}">${xs.map((x, q) => stone(x, from + q)).join('')}</div>`;
@@ -2694,7 +2736,7 @@
     for (let j = 0; j < idx.length; j += STONES_PER) sets.push(j);
     const cur = Math.floor(st.k / STONES_PER);
     return `<div class="stsets" id="stsets">${sets.map((j) => `<div class="stset">${set(j)}</div>`).join('')}</div>
-      <div class="stdots">${sets.map((j, q) => `<button class="${q === cur ? 'on' : ''}" data-act="stset" data-q="${q}" aria-label="Āyāt ${idx[j] + 1} to ${idx[Math.min(idx.length, j + STONES_PER) - 1] + 1}"></button>`).join('')}</div>`;
+      <div class="stdots">${sets.map((j, q) => `<button class="${q === cur ? 'on' : ''}" data-act="stset" data-q="${q}" aria-label="Stones ${j + 1} to ${Math.min(idx.length, j + STONES_PER)}"></button>`).join('')}</div>`;
   }
   /* Where the stones lie, in each world: a pond with grassy banks, a forest stream, a lagoon on the beach,
      a river through the canyon, a starlit pool, the open sky with clouds, an icy river between snowbanks.
@@ -2784,15 +2826,19 @@
   V.path = () => {
     const s = S[st.i],
       c = ctx(),
-      idx = range(c),
-      k = idx[st.k],
-      a = s.ayat[k],
+      idx = units(c),
+      u = idx[st.k],
+      k = u.k,
+      a = bite(s.ayat[k], u.q), // (v2.12.2: a piece of a long āyah has its own pictures)
       L = st.L,
       wi = worldOf(s);
-    const cl = pathClues(s, k, L, st.hint);
-    const prev = st.k > 0 ? s.ayat[idx[st.k - 1]] : null;
+    const cl = pathClues(s, u, L, st.hint);
+    const prev = st.k > 0 ? bite(s.ayat[idx[st.k - 1].k], idx[st.k - 1].q) : null,
+      name = unitName(u, idx);
     const shown = cl.full
-      ? arHTML(s, a, k, { label: '💡 The whole āyah · tap to hear it', sm: true })
+      ? u.q == null
+        ? arHTML(s, a, k, { label: '💡 The whole āyah · tap to hear it', sm: true })
+        : `<div class="ar-box"><div class="ar-label">💡 The whole part · tap to hear it</div><div class="ar sm" lang="ar" data-act="sayr" data-n="${s.n}" data-k="${k}" data-f="${u.w[0]}" data-t="${u.w[1]}">${cl.W.join(' ')}</div></div>`
       : cl.words
         ? `<div class="first-word" lang="ar">${cl.W.slice(0, cl.words).join(' ')} …</div>`
         : '';
@@ -2805,13 +2851,13 @@
       <button class="btn go wide" data-act="hop">✅ Said it!</button>
     </div>
     <div class="card">
-      <div class="lchead"><span class="lctags">${cl.pic ? tag(s, k) : `<span class="ayah-tag"><span class="num">${k + 1}</span>Āyah ${k + 1}</span>`}</span><span class="lcbtns">${speedChip()}${loopBtn()}</span></div>
+      <div class="lchead"><span class="lctags">${cl.pic ? (u.q == null ? tag(s, k) : `<span class="ayah-tag"><span class="num">${unitNum(u, idx)}</span>${a.hook}</span>`) : `<span class="ayah-tag"><span class="num">${unitNum(u, idx)}</span>${name.charAt(0).toUpperCase() + name.slice(1)}</span>`}</span><span class="lcbtns">${speedChip()}${loopBtn()}</span></div>
       ${cl.pic ? sceneHTML(a) : `<div class="mystery-q">?</div>`}
       ${cl.pic ? gest(a) : ''}
       ${shown}
       ${cl.full ? '' : '<button class="hintbtn" data-act="hint" aria-label="A hint: one more word">💡 Hint</button>'}
     </div>
-    ${coach(prev ? `What comes after ${pics(prev)}? Say <b>āyah ${k + 1}</b>, then tap the frog!` : `Say <b>āyah ${k + 1}</b>, then tap the frog to hop!`, `<span class="frogico">${ART.frog()}</span>`)}
+    ${coach(prev ? `What comes after ${pics(prev)}? Say <b>${name}</b>, then tap the frog!` : `Say <b>${name}</b>, then tap the frog to hop!`, `<span class="frogico">${ART.frog()}</span>`)}
   </div>`;
   };
 
@@ -2947,7 +2993,7 @@
     if (st.p === 'all')
       return bigGroups(s).map((ks) =>
         ks.length === 1
-          ? { html: fit(s.ayat[ks[0]]), say: ks, label: `āyah ${ks[0] + 1}`, ems: s.ayat[ks[0]].scene }
+          ? { html: fit(s.ayat[ks[0]]), say: ks, label: `${AY(s)} ${ks[0] + 1}`, ems: s.ayat[ks[0]].scene }
           : {
               html: `<span class="pzgroup"><span class="gm">${ks.map((k) => s.ayat[k].scene[0]).join('')}</span><b>${groupLabel(ks)}</b></span>`,
               say: ks,
@@ -2955,7 +3001,14 @@
               ems: ks.map((k) => s.ayat[k].scene[0]),
             },
       );
-    return range(ctx()).map((k) => ({ html: fit(s.ayat[k]), say: [k], label: `āyah ${k + 1}`, ar: s.ayat[k].ar, ems: s.ayat[k].scene }));
+    // (v2.12.2) a long āyah gives a piece for each of its parts, with that part's pictures and words
+    const us = units(ctx());
+    return us.map((u) => {
+      const a = bite(s.ayat[u.k], u.q);
+      return u.q == null
+        ? { html: fit(a), say: [u.k], label: `${AY(s)} ${u.k + 1}`, num: unitNum(u, us), ar: a.ar, ems: a.scene }
+        : { html: fit(a), say: [u.k], play: [[s.n, u.k + 1, u.w[0], u.w[1]]], label: unitName(u, us), num: unitNum(u, us), ar: wordsOf(a.ar).slice(u.w[0], u.w[1] + 1).join(' '), ems: a.scene };
+    });
   }
   V.order = () => {
     const s = S[st.i],
@@ -2966,7 +3019,7 @@
     const pct = (v, of) => ((v / of) * 100).toFixed(3) + '%';
     const box = (c, r, pad) => `left:${pct(c * 100 + pad, J.W)};top:${pct(r * 100 + pad, J.H)};width:${pct(100 + 2 * (PZ_M - pad), J.W)};height:${pct(100 + 2 * (PZ_M - pad), J.H)}`;
     const outlines = J.cells
-      .map((cl, j) => (st.placed[j] ? '' : `<g data-j="${j}" transform="translate(${cl.c * 100} ${cl.r * 100})"><path class="pz-hole" d="${cl.path}"/><text x="50" y="62" text-anchor="middle">${big ? groupLabel(items[j].say) : range(ctx())[j] + 1}</text></g>`))
+      .map((cl, j) => (st.placed[j] ? '' : `<g data-j="${j}" transform="translate(${cl.c * 100} ${cl.r * 100})"><path class="pz-hole" d="${cl.path}"/><text x="50" y="62" text-anchor="middle">${big ? groupLabel(items[j].say) : items[j].num}</text></g>`))
       .join('');
     const saying = st.say != null ? items[st.say] : null;
     const slots = J.cells
@@ -2992,7 +3045,7 @@
               ? s.P.length >= 6
                 ? 'Each checkpoint is a big piece. <b>Drag</b> them together in order!'
                 : 'The whole sūrah in one puzzle. <b>Drag</b> every piece into its place!'
-              : '<b>Drag</b> each piece to where it fits, and say that āyah! Each piece fits in only one place.',
+              : `<b>Drag</b> each piece to where it fits, and say that ${items.some((it) => it.play) ? 'part' : AY(s)}! Each piece fits in only one place.`,
       '🧩',
     )}
     <div class="pzboard ${full ? 'full' : ''}" style="aspect-ratio:${J.W}/${J.H}">
@@ -3000,7 +3053,7 @@
       ${slots}
     </div>
     <div class="deck pzdeck">${left.map((j) => `<div class="pcard pzt ${st.sel === j ? 'sel' : ''}" data-k="${j}" role="button" aria-label="Puzzle piece">${pieceSVG(J.cells[j].path, pzFill(items[j], j))}<span class="pzbody">${items[j].html}</span></div>`).join('')}</div>
-    ${saying && !big ? `<details class="adult"><summary>👁️ Grown-up check · ${saying.label}</summary><div class="ar sm" lang="ar">${s.ayat[saying.say[0]].ar}</div></details>` : ''}
+    ${saying && !big ? `<details class="adult"><summary>👁️ Grown-up check · ${saying.label}</summary><div class="ar sm" lang="ar">${saying.ar || s.ayat[saying.say[0]].ar}</div></details>` : ''}
   </div>`;
   };
 
@@ -3477,7 +3530,7 @@
 
   /* ---------- FAMILY SYNC: one explorer, as a link or a QR code (js/sync.js) ---------- */
   const SYNC = window.LHQ_SYNC;
-  const syncCtx = () => ({ surahs: S, items: ITEMS, stickers: [...ART.STICKERS, ...ART.BADGES, ...ART.SEASONS], looks: ART.LOOKS, slots: SLOTS, journal: [...JKEYS], journalJuz: JKEYS_JUZ, version: VERSION });
+  const syncCtx = () => ({ surahs: S, items: ITEMS, stickers: [...ART.STICKERS, ...ART.BADGES, ...ART.SEASONS], looks: ART.LOOKS, slots: SLOTS, journal: [...JKEYS], journalJuz: JKEYS_JUZ, journalV4: JKEYS_V4, version: VERSION });
   const appURL = () => location.origin + location.pathname.replace(/index\.html$/, '');
   function qrSVG(text) {
     const q = window.qrcode(0, 'L');
@@ -3925,8 +3978,10 @@
   const AUDIO_CACHE = 'lhq2-audio'; // must match sw.js
   const audioFiles = (id) => {
     const T = TIM[id];
-    const nums = T ? Object.keys(T) : ['1', ...S.map((s) => String(s.n))];
-    return [`audio/${id}/timings.json`, ...nums.map((n) => `audio/${id}/${pad(+n)}.mp3`)];
+    const nums = T ? Object.keys(T) : ['1', ...S.filter((s) => !s.voice && !s.silent).map((s) => String(s.n))];
+    // (v2.12.2) and the stops with a voice of their own, saved with every reciter
+    const own = Object.keys(VOICE).flatMap((n) => [`audio/${VOICE[n]}/timings.json`, `audio/${VOICE[n]}/${pad(+n)}.mp3`]);
+    return [`audio/${id}/timings.json`, ...nums.filter((n) => !VOICE[n]).map((n) => `audio/${id}/${pad(+n)}.mp3`), ...own];
   };
   let offline = { saved: null, busy: false, done: 0, id: '' };
   function countSavedAudio(id) {
@@ -4399,7 +4454,7 @@
     const s = S[st.i];
     const p = st.p === 'all' && multi(s) ? 'all' : pnum(st.p);
     st.p = p;
-    const n = p === 'all' ? bigGroups(s).length : range(ctx()).length;
+    const n = p === 'all' ? bigGroups(s).length : units(ctx()).length;
     const order = range({ from: 0, to: n - 1 });
     let deck = shuffle(order);
     while (n > 1 && deck.every((v, j) => v === order[j])) deck = shuffle(order);
@@ -5467,6 +5522,9 @@
         playList([[+b.dataset.n, +b.dataset.k + 1, +b.dataset.w]]);
         wobble(b);
         break;
+      case 'sayr': // (v2.12.2) a piece of a long āyah: just its words
+        playList([[+b.dataset.n, +b.dataset.k + 1, +b.dataset.f, +b.dataset.t]]);
+        break;
 
       /* look & repeat */
       case 'learn': {
@@ -5669,7 +5727,7 @@
         break;
       case 'hint':
         sfx.tap();
-        if (pathClues(s, range(ctx())[st.k], st.L, st.hint).full) break;
+        if (pathClues(s, units(ctx())[st.k], st.L, st.hint).full) break;
         st.hint++;
         st.hints++;
         render();
@@ -5682,7 +5740,7 @@
         const lose = () => {
           if (st.view !== 'path') return;
           if (loseHeart() && st.hearts > 0) {
-            const cl = pathClues(S[st.i], range(ctx())[st.k], st.L, st.hint);
+            const cl = pathClues(S[st.i], units(ctx())[st.k], st.L, st.hint);
             if (!cl.full) {
               st.hint++;
               st.hints++;
@@ -5719,7 +5777,7 @@
         break;
       case 'pzsay': {
         const it = puzzleItems()[+b.dataset.j];
-        if (it) playList(it.say.map((k) => [s.n, k + 1]));
+        if (it) playList(it.play || it.say.map((k) => [s.n, k + 1]));
         break;
       }
 
@@ -5753,7 +5811,7 @@
   }
   // the words of Word Steps' piece on screen (the whole āyah, or a piece of a long one)
   const wordPiece = () => {
-    const pcs = piecesOf(S[st.i].ayat[st.a].ar);
+    const pcs = piecesOf(S[st.i].ayat[st.a]);
     return pcs[Math.min(st.pc || 0, pcs.length - 1)];
   };
   const wordLen = () => wordPiece()[1] - wordPiece()[0] + 1;
@@ -6313,7 +6371,7 @@
   function hopFrog() {
     if (st.hopping) return;
     const s = S[st.i],
-      idx = range(ctx());
+      idx = units(ctx());
     const cur = $app.querySelector('.stone.cur'),
       next = $app.querySelector(`.stone[data-j="${st.k + 1}"]`),
       sets = document.getElementById('stsets'),
@@ -6646,18 +6704,19 @@
     sfx.tap();
     treeFallen = {};
     const prof = P();
-    let seen = null;
-    try {
-      seen = JSON.parse(localStorage.getItem('lhq_tree_' + prof.id) || 'null');
-    } catch (e) {}
-    const now = treeInfo(prof),
-      drawn = ART.tree(Object.assign({ seed: seedOf(prof.id) }, now));
-    try {
-      localStorage.setItem('lhq_tree_' + prof.id, JSON.stringify({ lobes: drawn.lobes, blossoms: now.blossoms.length, flowers: now.flowers.length }));
-    } catch (e) {}
-    go('tree', { seen: seen || {}, buds: pickBuds(prof), budSeed: Date.now() % 100000 });
+    const seen = treeSeen(prof),
+      now = treeInfo(prof),
+      buds = pickBuds(prof);
+    // (v2.12.2) drawn once: who's hungry is worked out first, so the screen is built once (it was drawn twice and
+    // built three times, a stutter on phones)
+    const was = st.buds;
+    st.buds = buds;
     pickHungry(prof);
-    render();
+    st.buds = was;
+    go('tree', { seen, buds, budSeed: Date.now() % 100000 });
+    try {
+      localStorage.setItem('lhq_tree_' + prof.id, JSON.stringify({ lobes: treeKept ? treeKept.t.lobes : 0, blossoms: now.blossoms.length, flowers: now.flowers.length }));
+    } catch (e) {}
   }
   // where each sits: two rows on the ground, a little in front of each other (the front row a little bigger)
   function budSpot(j, n) {
@@ -6778,6 +6837,27 @@
   }
   // the tree as last drawn, kept while nothing about it changes (redrawing for a hungry buddy costs nothing, v2.10.0)
   let treeKept = null;
+  // (v2.12.2) what My Tree is drawn from: the same object (and key) for the screen and for getting it ready early
+  const treeOpts = (prof, seen, night) => {
+    const info = treeInfo(prof);
+    return { seed: seedOf(prof.id), size: info.size, leaves: info.leaves, blossoms: info.blossoms, flowers: info.flowers, fruits: info.fruits, lanterns: info.lanterns, seen, night };
+  };
+  const treeSeen = (prof) => {
+    try {
+      return JSON.parse(localStorage.getItem('lhq_tree_' + prof.id) || 'null') || {};
+    } catch (e) {
+      return {};
+    }
+  };
+  // drawn in a quiet moment on the map, so opening My Tree only has to show it (it stuttered on phones)
+  let warmT = 0;
+  function warmTree() {
+    clearTimeout(warmT);
+    warmT = setTimeout(() => {
+      const run = () => st.view === 'map' && P() && treeArt(treeOpts(P(), treeSeen(P()), isNight()));
+      window.requestIdleCallback ? requestIdleCallback(run, { timeout: 4000 }) : run();
+    }, 1500);
+  }
   function treeArt(o) {
     const key = JSON.stringify(o);
     if (!treeKept || treeKept.key !== key) treeKept = { key, t: ART.tree(o) };
@@ -6787,7 +6867,7 @@
     const prof = P(),
       info = treeInfo(prof),
       night = isNight(),
-        t = treeArt({ seed: seedOf(prof.id), size: info.size, leaves: info.leaves, blossoms: info.blossoms, flowers: info.flowers, fruits: info.fruits, lanterns: info.lanterns, seen: st.seen, night });
+      t = treeArt(treeOpts(prof, st.seen, night));
     // (a fruit that fell stays off the tree, also when the screen is drawn again, until it grows back)
     const treeG = t.tree.replace(/<g class="tfruit" data-act="tfruit" data-j="(\d+)"/g, (m, j) => (treeFallen[j] ? '<g class="tfruit fall' + (treeFallen[j].gone ? ' gone' : '') + '" data-act="tfruit" data-j="' + j + '"' : m));
     const SV = (cls, inner) => `<svg class="tsvg ${cls}" viewBox="0 -200 400 900" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
@@ -7075,14 +7155,14 @@
   };
   // (v2.10.0) each world's sign, and every sūrah's stop: by its picture, and by what its name means
   WORLDS.forEach((w, wi) => (RIDDLE_EXTRA['w:' + wi] = [`World ${wi + 1} sign`, `Find the sign of World ${wi + 1}.`, `Which sign says “${w.name}”? Find it!`]));
-  J.forEach((x) => (RIDDLE_EXTRA['s:' + x.n] = [x.name, `Find the sūrah with this picture: ${x.icon}`, `Find the sūrah called “${x.meaning}”.`]));
+  J.forEach((x) => (RIDDLE_EXTRA['s:' + x.n] = [x.name, `Find the sūrah with this picture: <span class="rpic">${x.icon}</span>`, `Find the sūrah called “${x.meaning}”.`]));
   // (v2.12.0) the Hidden Garden's extras: its stops, its sign, and its fruit to catch
   const RIDDLE_G = {
     'x:pomegranate': ['Pomegranate', 'Tap a pomegranate tree and catch the fruit that falls!', 'Round and red with a little crown. Tap its tree and catch it!'],
     'x:date': ['Date', 'Tap a date palm and catch what drops, before a bird gets it!', 'Sweet and brown, it falls from a palm. Be quick!'],
     ['w:' + GARDEN_W]: ['World 8 sign', 'Find the sign of World 8.', `Which sign says “${GARDEN_NAME}”? Find it!`],
   };
-  GS.forEach((x) => (RIDDLE_G['s:' + x.n] = [x.name, `Find the stop with this picture: ${x.icon}`, `Find the stop called “${x.meaning.replace(/ \(.*\)$/, '')}”.`]));
+  GS.forEach((x) => (RIDDLE_G['s:' + x.n] = [x.name, `Find the stop with this picture: <span class="rpic">${x.icon}</span>`, `Find the stop called “${x.meaning.replace(/ \(.*\)$/, '')}”.`]));
   const riddleName = (k) => (RIDDLE_EXTRA[k] || RIDDLE_G[k] ? (RIDDLE_EXTRA[k] || RIDDLE_G[k])[0] : PROP_NAME[k]);
   const RIDDLE_DAY = 7, // (at most seven a day, so at most one gift a day)
     RIDDLE_GIFT = 7, // (v2.10.0: a gift for every seven found, however many days that takes)
@@ -7102,7 +7182,7 @@
     riddleSets[rz] ||
     (riddleSets[rz] =
       rz === 'g'
-        ? [[...Object.keys(RIDDLES).filter((k) => JPAGE.get('p:' + k) === GARDEN_W), ...Object.keys(RIDDLE_G)]]
+        ? [[...Object.keys(RIDDLES).filter((k) => JPAGE.get('p:' + k) === GARDEN_W), ...Object.keys(RIDDLE_G).filter((k) => k !== 's:207')], ['s:207']] // (v2.12.2: the 99 Names' in a set of its own on the end, so no one's order changes)
         : [[...Object.keys(RIDDLES).filter((k) => JPAGE.has('p:' + k) && JPAGE.get('p:' + k) !== GARDEN_W), ...Object.keys(RIDDLE_EXTRA)]]);
   const riddleCount = (rz = RZ()) => RIDDLE_SETS(rz).reduce((n, a) => n + a.length * 2, 0);
   let riddleMemo = null; // [explorer, round, set, list]
@@ -7319,7 +7399,9 @@
   [...J].sort((a, b) => b.n - a.n).forEach(jPics); // the journey: An-Nās first
   const JKEYS_JUZ = [...JPAGE.keys()]; // (the list family links knew before the Garden: they still open)
   jProps(GARDEN_W);
-  GS.forEach(jPics); // (pictures new to the Garden: the ones from Juz ʿAmma stay on their pages)
+  GS.filter((s) => !s.asma).forEach(jPics); // (pictures new to the Garden: the ones from Juz ʿAmma stay on their pages)
+  const JKEYS_V4 = [...JPAGE.keys()]; // (the list family links of format 4, v2.12.0–2.12.1, knew: before the 99 Names)
+  GS.filter((s) => s.asma).forEach(jPics);
   const JKEYS = new Set(JPAGE.keys());
   const pageKeys = (wi) => [...JPAGE].filter(([, w]) => w === wi).map(([k]) => k);
   const jName = (k) => (k[0] === 'p' ? PROP_NAME[k.slice(2)] : k.slice(2));
@@ -7515,9 +7597,9 @@
         k = st.a + dir;
       sfx.tap();
       // (v2.12.1) a long āyah: its pieces first, then on to the next āyah
-      if (q >= 0 && q < piecesOf(S[st.i].ayat[st.a].ar).length) Object.assign(st, { pc: q, w: 1, phase: 'build', shown: [] });
+      if (q >= 0 && q < piecesOf(S[st.i].ayat[st.a]).length) Object.assign(st, { pc: q, w: 1, phase: 'build', shown: [] });
       else if (k < c.from || k > c.to) return;
-      else Object.assign(st, { a: k, pc: dir < 0 ? piecesOf(S[st.i].ayat[k].ar).length - 1 : 0, w: 1, phase: 'build', shown: [] });
+      else Object.assign(st, { a: k, pc: dir < 0 ? piecesOf(S[st.i].ayat[k]).length - 1 : 0, w: 1, phase: 'build', shown: [] });
       render(true); // (it slides in: render)
     },
   );
@@ -7989,7 +8071,7 @@
         words = wordsOf(a.ar);
       const shown = q.kind === 'finish' ? words.slice(0, q.cut).join(' ') + ' …' : a.ar;
       const answer = q.kind === 'finish' ? a.ar : s.ayat[q.k + 1].ar;
-      say = st.ack || (q.kind === 'next' ? `Āyah ${q.k + 1} of ${s.name}… <b>what comes after it?</b>` : `<b>Finish this āyah</b> of ${s.name}!`);
+      say = st.ack || (q.kind === 'next' ? `${s.asma ? 'Line' : 'Āyah'} ${q.k + 1} of ${s.name}… <b>what comes after it?</b>` : `<b>Finish this ${AY(s)}</b> of ${s.name}!`);
       panel = `<div class="card eldq">
         <div class="ar-label">📖 Grown-up reads the question</div>
         <div class="ar sm" lang="ar">${shown}</div>
@@ -8466,5 +8548,5 @@
   registerOffline();
   if (linkCode) setTimeout(() => openSync(linkCode, `${appURL()}#sync=${linkCode}`), 400);
   if (justUpdated) loadChangelog().then(() => st.view === 'splash' && render());
-  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder, world: elderWorld, size: testSize, tap: tapElder }, sunDown, journal: JKEYS, countDay, installSteps: showInstallSteps, cleanStore, cleanProfile, syncCtx, openSync, markNow, fabTarget, riddleNow, riddleCount, occasion, treeInfo, hungry: () => treeHungry, treeReset: () => (treeFedAt = 0), critterFor, riddleSet: (k) => riddleOn && (riddleOn.k = k), riddleKey: () => riddleOn && riddleOn.k, bonusSticker: giveBonusSticker, garden: (v) => (v != null && (inGarden = !!v), inGarden), gardenGift: giveGardenGift, riddleKeys: (rz) => RIDDLE_SETS(rz).flat(), pieces: piecesOf }; // for testing in the browser console
+  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder, world: elderWorld, size: testSize, tap: tapElder }, sunDown, journal: JKEYS, countDay, installSteps: showInstallSteps, cleanStore, cleanProfile, syncCtx, openSync, markNow, fabTarget, riddleNow, riddleCount, occasion, treeInfo, hungry: () => treeHungry, treeReset: () => (treeFedAt = 0), critterFor, riddleSet: (k) => riddleOn && (riddleOn.k = k), riddleKey: () => riddleOn && riddleOn.k, bonusSticker: giveBonusSticker, garden: (v) => (v != null && (inGarden = !!v), inGarden), gardenGift: giveGardenGift, riddleKeys: (rz) => RIDDLE_SETS(rz).flat(), riddleSets: (rz) => RIDDLE_SETS(rz), pieces: piecesOf, chainNow, prefs: () => prefs }; // for testing in the browser console
 })();

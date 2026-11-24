@@ -372,7 +372,7 @@
         `<div class="mstart" data-x="${L.startPt.x.toFixed(1)}" data-y="${(L.startPt.y + 10).toFixed(1)}" style="left:${(L.startPt.x - 60).toFixed(1)}px;top:${(L.startPt.y - 40).toFixed(1)}px">${cfg.startLabel || '🚩 Start'}</div>`,
       );
       const sz = szS; // the summit is drawn 200×160 (the Garden's pavilion 100×100)
-      const topH = cfg.topProp ? sz : sz * 0.8;
+      const topH = cfg.topProp ? sz * 1.1 : sz * 0.8; // (v2.12.2: the pavilion in its little garden, 100×110)
       html.push(
         `<div class="msummit${cfg.topProp ? ' mtop-' + cfg.topProp : ''}"${cfg.topProp ? ` data-act="poke" data-k="${cfg.topProp}" role="button" aria-label="Pavilion"` : ''} data-x="${L.summit.x.toFixed(1)}" data-y="${(L.summit.y + 60).toFixed(1)}" style="left:${(L.summit.x - sz / 2).toFixed(1)}px;top:${(L.summit.y + 60 - topH).toFixed(1)}px;width:${sz}px;height:${topH.toFixed(0)}px">${ART.props[cfg.topProp || 'peak-summit'] || ''}</div>`,
       );
@@ -722,7 +722,9 @@
       const r = root.getBoundingClientRect();
       root.style.transformOrigin = `${nd.x}px ${nd.y}px`;
       void r;
-      root.classList.add('zooming');
+      // (v2.12.2) one frame to make it a still layer of its own, then the zoom: smoother on phones
+      root.classList.add('prezoom');
+      requestAnimationFrame(() => root.classList.add('zooming'));
       setTimeout(done, 460);
     }
 

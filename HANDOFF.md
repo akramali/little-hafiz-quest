@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is a short public overview (highlights, install, privacy, credits); this file holds the detail.
 
-**Current version:** v2.12.1 (2026-11-20) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.12.2 (2026-11-24) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -13,7 +13,7 @@ Read this first in a new session. It is kept up to date with every release (see 
 A static PWA (no build step) that helps children aged ~4–7 memorize Juz ‘Amma (sūrahs 78–114). Each child has
 an **explorer** who climbs a map of 7 worlds (Meadow → Forest → Sands → Canyon → Starry Path → Sky → Peak).
 Since v2.12.0 a gate by the Summit opens **World 8, the Hidden Garden**: Al-Fātiḥah, Āyat al-Kursī, the end of
-Al-Baqarah, Al-Kahf 1–10, Al-Mulk and Al-Wāqiʿah, on a map of its own (rules below).
+Al-Baqarah, Al-Kahf 1–10, Al-Mulk and Al-Wāqiʿah, and (v2.12.2) the 99 Names of Allah, on a map of its own (rules below).
 Each sūrah has two **quests** (👀 Look & Repeat, Word Steps) and two **review games** (🐸 Stepping Stones,
 🧩 Picture Puzzle, plus a Big Puzzle for the whole sūrah), 4 stars per checkpoint. Stars win treasures, golden
 editions, star-track prizes, star badges, world rides and surprise gifts to dress the explorer in.
@@ -153,6 +153,37 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
     they hang from the low branches and glow; on a younger tree they stand in the grass by the trunk (no posts).
   - **Progress page:** the Garden's two tabs work on their own (🏮 Lanterns: memorized; ⭐ Stars: `gstars`); before
     both were lit. My Achievements has no Garden box (kept even, the user's call).
+- **The 99 Names of Allah (v2.12.2, stop 207, `asma: true`):** the Garden's seventh stop, ten "lines" of names (nine
+  of ten, the last of nine: the common list, Al-Aḥad at 67), two checkpoints (lines 1–5, 6–10), 9 stars; each line
+  has its own pictures, hook and action, each name is a word (Mālik-ul-Mulk two, Dhul-Jalāli wal-Ikrām three) with its
+  transliteration and meaning in `words.json` (the game's own). Shown as "line"/"lines" (`AY(s)`/`AYS(s)`), "99" as its
+  number, no "sūrah" title, ✦ between lines in Read instead of āyah marks. Treasure: a tasbīḥ bead bracelet (watch
+  slot) and its golden edition; a seventh lantern; its riddle in a second Garden riddle set (so no one's order
+  reshuffled). **Its voice** (`voice: "names-sadiq"`, `VOICE`/`recOf`): one folder played whatever reciter is chosen,
+  saved for offline with every reciter (`audioFiles`). The only clearly licensed recording found: Mohammed Sadiq's 99
+  clips on Wikimedia Commons, CC BY-SA 4.0 (not a sheikh: the user chose it, to be listened to first).
+  `tools/build_names.py audio --ffmpeg …` downloads them (politely: Wikimedia rate-limits anonymous downloads to about one
+  file every few minutes; the user chose to stay anonymous), trims, levels and joins them into `audio/names-sadiq/207.mp3`
+  with word timings (a multi-word name cut by its letters). **Until that is done the stop is `silent: true`** (no Listen,
+  a tap says the recitation is coming). See open items.
+- **Family links format 5 (v2.12.2):** stop 207 in every list by sūrah; format 4 codes still read (without it, and with
+  the journal list as it was, `journalV4`).
+- **Look & Repeat chains (v2.12.2):** no chain one āyah before the end: a chain point with only one more āyah (or a third
+  of the chain setting, from 3 up) left after it is skipped, so that one joins the last chain (7 āyāt every 3: chained at
+  3 and 7, not 3, 6 and 7). `chainNow`.
+- **Stepping Stones and Picture Puzzle by pieces (v2.12.2):** a long āyah is a stone and a puzzle piece for each of its
+  pieces (`units(c)`: `{k, q, w}`), each with its own pictures and caption (`bite(a, q)`: the āyah's `bites` in
+  `js/data.js`, else its share of the āyah's pictures); numbered 1, 2, 3… when the stop is one āyah (Āyat al-Kursī),
+  else "8·2"; Listen and the full-part hint play just that part (`sayr`, `[n, k, from, to]`). Where an even cut would
+  split a phrase the āyah sets its own `cuts` (98:8, 203:2, 205:9). The Big Puzzle is unchanged.
+- **Smoother on phones (v2.12.2, measured with `tests/cases/perf2.js`, `GPU=1 tests/run.sh perf2`):** nothing animates
+  a CSS filter any more (the gate's breathing light is an opacity layer, `.mgate8::before`); going through the Garden's
+  gate grows the gate itself, not the whole map (zooming thousands of drawings stuttered: worst frame 167 → ~35 ms
+  here); zooming into a stop makes the map a still layer first (`.prezoom`, animations inside paused); My Tree is drawn
+  in a quiet moment on the map (`warmTree`, `treeOpts`), built once when opened (it was drawn twice and built three times)
+  and fades in instead of scaling; the Friday stars' glow is still. What's left: drawing the other map when going
+  through the gate (~50–60 ms), done while the glow covers the screen.
+- **Riddles:** "Find the stop with this picture" shows the picture big (`.rpic`, v2.12.2).
 - **Word Steps a piece at a time (v2.12.1):** an āyah over `PIECE_OVER` (16) words is taken a sentence at a time
   (`piecesOf`: cut at its pause marks ۖ ۗ ۚ…, a sentence under 4 words joined to the next, a long one without marks cut
   evenly; about 4–10 words a piece). `st.pc` is the piece; little part buttons sit beside the āyah's number in the
@@ -502,6 +533,13 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
 - **The Hidden Garden (v2.12.0):** the user to read over the 146 simple meanings (and hooks) of its stops; the
   trail idea (scenes where gear helps, a campfire rest) is pinned for later. **Later (the user's plan): a house at the
   pavilion** at the top of the Garden that the explorer can go into (the pavilion lights up when tapped since v2.12.1).
+- **The 99 Names' recitation (next update, the user's plan):** finish `tools/build_names.py audio` (the clips trickle in
+  from Wikimedia; the download cache was in a session scratch folder, so re-run it with `--cache` somewhere lasting),
+  the user listens to the result, then: remove `silent: true` from stop 207 in `js/data.js`, commit `audio/names-sadiq/`
+  (207.mp3, timings.json and a CREDITS.txt naming Mohammed Sadiq / Wikimedia Commons / CC BY-SA 4.0), add the credit to
+  the README's "Credits and licenses" and to the Grown-up Corner's credits (`Recitation` line), and add audio checks to
+  `tests/cases/v2122.js` (timings for all ten lines; Listen plays). A sheikh's recording can replace the voice later
+  (another folder, the same build): none with a licence to share was found.
 - **Gifts for new sūrahs (v2.11.0–v2.11.1).** Still to do: **phrase bites** in Look & Repeat (could reuse Word Steps' `piecesOf`, v2.12.1; an āyah over ~7 words in 2–4 phrases,
   by pause marks or word timings; the leaf only for the whole āyah; where a child stopped kept with the explorer, so a
   new field for backups and links). **On hold, the user is thinking it over:** a gear piece for each checkpoint of a
@@ -533,8 +571,6 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
 - Not done (offered): a random starting face for new explorers, so no skin tone is "the default".
 - The Wise Elder (called the Stranger, drawn as a hooded figure, until v2.6.11) was a test concept in v2.6.0–2.6.3 and is now part of the game; tune `1 / 3`, `ELDER_EVERY` (7 min),
   `WORLD_THROWS`, `EXTRA_BLOCKS` if play-testing says so.
-- `tag` and `excite` (map area) fail on a Friday (seen 2026-11-20, v2.12.0 too: the Friday garland/greeting); they
-  should set `w.__occasion = ''` as `giftrun` now does.
 - Known, accepted test oddities: some buttons covered while a page scrolls, three captions on bright scenery
   (whitelisted in `tests/cases/hit.js` and `contrast.js`).
 

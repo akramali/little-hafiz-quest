@@ -1,6 +1,7 @@
 (async () => {
   fixture();
   const { w, d, L } = await openGame();
+  w.__occasion = ''; // (not a special day: on a Friday the map redraws to give the day's sticker, and the elements held here go stale)
   const errs = []; w.addEventListener('error', (e) => errs.push(e.message));
   L.go('map'); await wait(1200);
   for (const k of ['meadow-windmill', 'meadow-cottage', 'sands-lighthouse', 'peak-flag', 'peak-cabin']) {

@@ -11,9 +11,9 @@
   L.go('map'); await wait(1500);
   ok('the gate by the summit has no label', !!d.querySelector('.mgate8') && !d.querySelector('.mg8-lab') && !/Hidden Garden/.test(d.querySelector('.mgate8').textContent));
   d.querySelector('.mgate8').click(); await wait(800);
-  ok('through the gate: a glow fills the screen and the map zooms in', !!d.querySelector('.gtrip.in') && d.querySelector('#map').classList.contains('gzoom'));
+  ok('through the gate: a glow fills the screen and the gate grows toward you', !!d.querySelector('.gtrip.in') && !!d.querySelector('.mgate8.gzoom'));
   await wait(1500);
-  ok('…and the Garden comes up', L.garden() === true && d.querySelectorAll('#map .node').length === 6);
+  ok('…and the Garden comes up', L.garden() === true && d.querySelectorAll('#map .node').length === 7);
   // 2. the Garden: fuller, one gate, every riddle has something to find
   const kinds = new Set([...d.querySelectorAll('#map .mprop')].map((e) => e.dataset.k));
   log('Garden scenery', d.querySelectorAll('#map .mprop').length, [...kinds].join());

@@ -29,7 +29,9 @@
   // 4 (v2.12.0): the Hidden Garden's six stops after An-Naba' in every list by sūrah, its world (8) in the worlds and
   // journal pages done; extras 7 add where the explorer stands in the Garden and its riddles. Older codes still open
   // (read with Juz ʿAmma's 37 sūrahs, seven worlds and its journal).
-  const FORMAT = 4;
+  // 5 (v2.12.2): the 99 Names (stop 207) after the Garden's six, in every list by sūrah, and its journal finds; format 4
+  // codes still open (read without it).
+  const FORMAT = 5;
   const RECENT = 30; // how many of the newest wins keep their order (older ones follow the game's own order)
 
   /* ---------- bits ---------- */
@@ -275,14 +277,14 @@
     const raw = unb64(String(code).trim());
     const fmt = raw[0];
     // a newer format than this phone knows: from v2.10.0 on its version is up front, so it can say "update first"
-    if (fmt > 4 || !fmt) {
+    if (fmt > 5 || !fmt) {
       const e = new Error('format');
       if (raw.length > 4) e.appV = [raw[2], raw[3], raw[4]].join('.');
       throw e;
     }
     const headV = fmt >= 3 ? [raw[2], raw[3], raw[4]].join('.') : '';
     // (before format 4: Juz ʿAmma's sūrahs only, seven worlds)
-    const SS = fmt >= 4 ? ctx.surahs : ctx.surahs.filter((s) => !s.garden),
+    const SS = fmt >= 5 ? ctx.surahs : fmt >= 4 ? ctx.surahs.filter((s) => !s.asma) : ctx.surahs.filter((s) => !s.garden),
       NW = fmt >= 4 ? 8 : 7;
     let body = raw.slice(fmt >= 3 ? 5 : 2);
     if (raw[1] & 1) {
@@ -405,7 +407,7 @@
       SS.forEach((s) => {
         if (r.bit()) p.fire[s.n] = fmt >= 3 ? [(hr - r.num(10)) * 3.6e6, r.num(3)] : [r.big() * 60000, r.num(3)];
       });
-      const jl = listOf((fmt >= 4 ? ctx.journal : ctx.journalJuz || ctx.journal) || []),
+      const jl = listOf((fmt >= 5 ? ctx.journal : fmt >= 4 ? ctx.journalV4 || ctx.journal : ctx.journalJuz || ctx.journal) || []),
         jsum = r.num(16),
         jn = r.num(12),
         jsame = jsum === jl.sum && jn === jl.list.length;

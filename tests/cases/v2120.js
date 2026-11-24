@@ -10,7 +10,7 @@
   const full = (n) => ({ parts: Array.from({ length: n }, () => ({ learn: 1, words: 1, order: 1, next: 1, path: 3, la: 0, wa: 0 })), all: n > 1 ? 3 : 0, big: n > 1 ? 1 : 0 });
   const hop = async () => { for (let t = 0; t < 40 && L.st().view === 'path'; t++) { d.querySelector('.pathbtns [data-act=hop]').click(); await wait(900); } await wait(1500); };
   // 1. the stops
-  ok('six stops after An-Naba’, with their āyāt', G.map((s) => s.n).join() === '201,202,203,204,205,206' && G.map((s) => s.ayat.length).join() === '7,1,2,10,30,96' && S.indexOf(G[0]) === 37);
+  ok('the Garden’s stops after An-Naba’ (v2.12.2: and the 99 Names), with their āyāt', G.map((s) => s.n).join() === '201,202,203,204,205,206,207' && G.map((s) => s.ayat.length).join() === '7,1,2,10,30,96,10' && S.indexOf(G[0]) === 37);
   ok('the Arabic as in the Juz (open tanween), Āyat al-Kursī: “Allāhu…”, 50 words', G[1].ayat[0].ar.startsWith(String.fromCharCode(0x671, 0x644, 0x644, 0x651, 0x64e, 0x647, 0x64f)) && G[1].ayat[0].ar.split(' ').length === 50 && /[\u08f0-\u08f2]/.test(G[5].ayat.map((a) => a.ar).join('')));
   // 2. Juz ʿAmma's numbers stay its own
   L.go('map'); await wait(1500);
@@ -26,7 +26,7 @@
   const gnodes = [...d.querySelectorAll('#map .node')].map((b) => +b.dataset.i);
   log('Garden nodes', gnodes.join(), '| HUD', d.querySelector('.hud').textContent.replace(/\s+/g, ' '));
   ok('the Garden: its own map, its six stops (the game’s own numbers on them)', gnodes.join() === G.map((s) => S.indexOf(s)).join() && L.garden() === true);
-  ok('…its HUD counts its stops and stars', /\/6/.test(d.querySelector('.hud').textContent) && !/\/505/.test(d.querySelector('.hud').textContent));
+  ok('…its HUD counts its stops and stars', /\/7/.test(d.querySelector('.hud').textContent) && !/\/505/.test(d.querySelector('.hud').textContent));
   ok('…a sign saying World 8, and the gate back at its start', /World 8/.test(d.querySelector('.msign').textContent) && !!d.querySelector('.mgate8.back'));
   ok('…its own scenery', !!d.querySelector('.mprop[data-k^="garden-"]') && !d.querySelector('.mprop[data-k^="meadow-"]'));
   // its journal: one page, its own look
@@ -37,7 +37,7 @@
   log('Garden riddle', JSON.stringify(rk));
   ok('a riddle in the Garden is about the Garden', !!rk && (/^garden-/.test(rk[0]) || /^(x:(pomegranate|date)|w:7|s:20[1-6])$/.test(rk[0])), rk && rk[0]);
   L.go('map'); await wait(1200);
-  ok('back on the map: still the Garden', d.querySelectorAll('#map .node').length === 6);
+  ok('back on the map: still the Garden', d.querySelectorAll('#map .node').length === 7);
   d.querySelector('.mgate8.back').click(); await wait(1600);
   ok('through the gate back: Juz ʿAmma again', d.querySelectorAll('#map .node').length === 37 && L.garden() === false);
   // 4. a stop's page
@@ -55,7 +55,7 @@
   await hop();
   log('after Āyat al-Kursī:', prof.pending.map((g) => g.id).join(','));
   ok('memorized: the Guardian shield, and every star: its golden edition', prof.pending.some((g) => g.id === 'guardian-shield') && prof.pending.some((g) => g.id === 'gold-guardian-shield'));
-  ok('back to the Garden’s map after a game there', (L.go('map'), await wait(1200), d.querySelectorAll('#map .node').length === 6));
+  ok('back to the Garden’s map after a game there', (L.go('map'), await wait(1200), d.querySelectorAll('#map .node').length === 7));
   ok('not one of Juz ʿAmma’s stars', !/\/505/.test(d.querySelector('.hud').textContent));
   // a first finish that brings nothing else: a Garden gift
   prof.prog[201] = { parts: [{ learn: 0, words: 1, order: 0, next: 0, path: 0, la: 0, wa: 0 }], all: 0 };
@@ -71,7 +71,7 @@
   prof.prog[204] = full(2); prof.prog[204].parts[0].order = 0; prof.prog[204].all = 3;
   const lan = L.treeInfo(prof).lanterns;
   log('lanterns', lan.join());
-  ok('My Tree’s lanterns: Āyat al-Kursī golden, Al-Kahf lit (memorized), the rest dark', lan.join() === '0,2,0,1,0,0');
+  ok('My Tree’s lanterns: Āyat al-Kursī golden, Al-Kahf lit (memorized), the rest dark', lan.join() === '0,2,0,1,0,0,0');
   // 7. every stop memorized: the World 8 badge; every star: the Garden bike
   G.forEach((s) => (prof.prog[s.n] = full(s.P.length)));
   prof.prog[201].parts[0].path = 0;

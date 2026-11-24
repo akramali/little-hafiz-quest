@@ -1,7 +1,12 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.12.1",
+ "latest": "2.12.2",
  "versions": [
+  { "v": "2.12.2", "notes": [
+   "The 99 Names of Allah in the Hidden Garden, with a lantern and a treasure",
+   "Stepping Stones and Picture Puzzle take Āyat al-Kursī and Āmanar-Rasūl a part at a time",
+   "Smoother on phones; small visual tweaks"
+  ] },
   { "v": "2.12.1", "notes": [
    "Every star in the Hidden Garden now brings a gift",
    "Word Steps takes long āyāt like Āyat al-Kursī a sentence at a time",

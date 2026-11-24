@@ -16,7 +16,7 @@
       else out.push(String(a + 1));
     }
     log(`sūrah ${n} part 1, chain every ${every}:`, out.join(' '), '| then', L.st().view);
-    ok(`sūrah ${n} chains every ${every}`, out.join(' ') === { '112:1': '1 2⛓ 3⛓ 4⛓', '99:1': '1 2⛓ 3⛓ 4⛓ 5⛓', '99:3': '1 2 3⛓ 4 5⛓', '99:5': '1 2 3 4 5⛓', '78:4': '1 2 3 4⛓ 5⛓' }[n + ':' + every], out.join(' '));
+    ok(`sūrah ${n} chains every ${every}`, out.join(' ') === { '112:1': '1 2⛓ 3⛓ 4⛓', '99:1': '1 2⛓ 3⛓ 4⛓ 5⛓', '99:3': '1 2 3⛓ 4 5⛓', '99:5': '1 2 3 4 5⛓', '78:4': '1 2 3 4 5⛓' }[n + ':' + every], out.join(' '));
   }
   ok('no game errors', !errs.length, errs.slice(0, 3).join('; ')); log('errors', errs);
   done();

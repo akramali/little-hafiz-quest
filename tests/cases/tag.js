@@ -4,6 +4,7 @@
   ['Zayd', 'Maryam', 'Yusuf'].forEach((n, j) => s0.profiles.push(Object.assign(JSON.parse(JSON.stringify(s0.profiles[0])), { id: 'px' + j, name: n, at: 0 })));
   localStorage.setItem('lhq2', JSON.stringify(s0));
   const { w, d, L } = await openGame();
+  w.__occasion = ''; // (not a special day: on a Friday the map redraws to give the day's sticker, and the elements held here go stale)
   const errs = []; w.addEventListener('error', (e) => errs.push(e.message));
   L.go('map'); await wait(1200);
   const pal = d.querySelector('.mpal:not(.melder)'), mex = d.querySelector('.mex');
