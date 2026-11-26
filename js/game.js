@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.12.11';
+  const VERSION = '2.12.12';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -7982,7 +7982,7 @@
   ];
   // (v2.12.10) How to play's pictures: a stopwatch drawn crisp (the ⏱️ emoji blurred at that size), the growing tree
   const CLOCK_SVG = `<svg viewBox="0 0 100 110" aria-hidden="true"><g stroke="#2b2340" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"><rect x="40" y="6" width="20" height="10" rx="4" fill="#ff7a59"/><rect x="45" y="14" width="10" height="10" fill="#c9d2e3"/><path d="M78 24L86 16" fill="none"/><circle cx="50" cy="64" r="40" fill="#ff7a59"/><circle cx="50" cy="64" r="31" fill="#fffaf0"/></g><path d="M50 64L64.5 38.9A29 29 0 0 1 75.1 49.5Z" fill="#5fd27a" opacity=".55"/><g stroke="#2b2340" stroke-width="3" stroke-linecap="round">${[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((a) => { const r = (a * Math.PI) / 180, k = a % 90 ? 26 : 23; return `<path d="M${(50 + k * Math.sin(r)).toFixed(1)} ${(64 - k * Math.cos(r)).toFixed(1)}L${(50 + 29 * Math.sin(r)).toFixed(1)} ${(64 - 29 * Math.cos(r)).toFixed(1)}"/>`; }).join('')}<path class="clk-hand" d="M50 64L50 40" stroke-width="4"/></g><circle cx="50" cy="64" r="4" fill="#2b2340"/><path d="M60 34Q68 38 72 46" fill="none" stroke="#fff" stroke-width="3" opacity=".6"/></svg>`;
-  // (v2.12.11) eight stages at the campfire's pace: the first drawn at once, the rest in quiet moments (each tree is a big
+  // (v2.12.11) eight stages at the campfire's pace, framed to the full tree (no sky above it): the first drawn at once, the rest in quiet moments (each tree is a big
   // drawing), added to the card as they come
   const GROW_AT = [0.03, 0.1, 0.17, 0.26, 0.4, 0.55, 0.75, 1];
   let growKept = null;
@@ -7990,7 +7990,7 @@
     const sz = GROW_AT[j],
       i = treeInfo(prof, sz),
       t = ART.tree({ seed: growKept.seed, size: sz, leaves: i.leaves, blossoms: i.blossoms, flowers: i.flowers.slice(0, 8), fruits: i.fruits, lanterns: [], seen: {}, night: false });
-    return `<svg class="tg-step" style="--j:${j}" viewBox="0 -200 400 830" preserveAspectRatio="xMidYMax meet" aria-hidden="true">${t.tree}${t.front}</svg>`;
+    return `<svg class="tg-step" style="--j:${j}" viewBox="-40 -92 480 702" preserveAspectRatio="xMidYMax meet" aria-hidden="true">${t.tree}${t.front}</svg>`;
   }
   function growingTree() {
     const prof = P();

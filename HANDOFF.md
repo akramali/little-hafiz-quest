@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is a short public overview (highlights, install, privacy, credits); this file holds the detail.
 
-**Current version:** v2.12.11 (2026-11-26) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.12.12 (2026-11-26) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -217,8 +217,13 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
   drawn at once and the rest in quiet moments (`warmGrow`, also started when How to play opens); the stopwatch's hand goes
   0 → 10 minutes over a green 5–10 wedge; Listen is shown tapped (`.ls-tap` ring, a press, its sound waves; it stays
   Listen) and Read breathes the journal riddle button's gold glow (`rbreathe`); the gift card's box rattles, is tapped,
-  opens and three things fly out (`.giftpop`). The map's big old tree (`forest-bigtree`) has short roots under its trunk
-  (two loose strokes stuck out over animals beside it).
+  opens and three things fly out (`.giftpop`). The tree card is framed to the full tree (viewBox `-40 -92 480 702`, no
+  empty sky above it).
+- **Map art (v2.12.11–12):** the forest's big old tree (`forest-bigtree`) is a big apple tree: one leafy crown (light
+  clumps, shaded underside, leaf marks), branches, 13 apples and a fallen one, short roots tucked under the trunk (loose
+  strokes stuck out over animals). The Garden's pavilion has fuller, shorter cypresses, and the map draws it with its lines
+  halved (`thinLines` in js/map.js: it is drawn big, so its outlines were far thicker than the garden's; its icon keeps
+  them). Bananas are plump, about an apple's size.
 - **My Achievements' numbers (v2.12.8, checked):** % memorized without ".0" when whole (`questPct`, My Tree too); "N of 37
   sūrahs learned"; "N of 13 badges" (5 star badges + 8 world badges, `ART.BADGES`); āyāt learned counts Juz ʿAmma only (it
   counted the Garden's too, against a total of 564). Totals: things won 421 for a boy, 464 for a girl (`winnable`: 380 /

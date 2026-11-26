@@ -3228,7 +3228,8 @@
     orange: (x, y) => ball(x, y + 1, 6.2, 6.2, '#ff9a2b') + S('M' + x + ' ' + (y - 5) + 'Q' + (x - 5) + ' ' + (y - 9) + ' ' + (x - 6) + ' ' + (y - 5) + 'Q' + (x - 3) + ' ' + (y - 3) + ' ' + x + ' ' + (y - 5) + 'Z', '#5fbf4a'),
     berry: (x, y) => ball(x, y, 3.6, 3.6, '#5b6fd8', { sh: false }),
     // (v2.12.11) the last to come: a little bunch of bananas (the talḥ of Al-Wāqiʿah 56:29)
-    banana: (x, y) => L('M' + x + ' ' + (y - 9) + 'L' + x + ' ' + (y - 5), '#7a5230', 2.2) + [-34, 0, 34].map((a) => G(S('M-1.6 0Q-3.6 6 0.6 11Q2.4 12.4 3 10.6Q0.4 6 1.8 0Z', '#ffd23f', 'M1.8 0Q0.4 6 3 10.6Q2.4 12.4 1.4 11.6Q0 6 0.8 0Z') + CF(1.9, 11.2, 0.8, '#7a5230'), ' transform="translate(' + x + ' ' + (y - 5) + ') rotate(' + a + ')"')).join(''),
+    // (v2.12.11) a bunch of three plump bananas, about an apple's size (the first ones were mostly outline)
+    banana: (x, y) => L('M' + x + ' ' + (y - 9.6) + 'L' + x + ' ' + (y - 6), '#7a5230', 2.4) + [-30, 0, 30].map((a) => G(S('M-2.4 0Q-5.6 7.4 0.6 13.4Q3.4 15 4.2 12.8Q0.8 7.4 2.6 0Z', '#ffd23f', 'M2.6 0Q0.8 7.4 4.2 12.8Q3.4 15 2.2 14Q0.4 7.4 1.4 0Z') + CF(3.3, 13.7, 1, '#7a5230'), ' transform="translate(' + x + ' ' + (y - 6) + ') rotate(' + a + ')"')).join(''),
   };
   const FRUIT_TYPES = ['date', 'fig', 'olive', 'pomegranate', 'grape', 'apple', 'orange', 'banana']; // the order they come in (v2.12.11: bananas last)
   const fruitIcon = (t) => '<svg class="lhq-art" viewBox="-10 -12 20 22" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' + OUT(FRUIT[t](0, 0), 1.6) + '</svg>';
@@ -4404,9 +4405,18 @@
       S('M30 70Q30 56 50 56Q80 54 82 66Q84 78 66 80L40 80Q30 80 30 70Z', '#c9834a', 'M74 58Q84 64 82 72Q80 80 66 80Q76 70 74 58Z') + [[50, 64], [60, 62], [66, 70], [54, 72]].map((q) => CF(q[0], q[1], 2.2, '#fff3dc', 0.9)).join('') +
       S('M28 70Q20 52 26 40L36 42Q36 56 40 66Z', '#c9834a') + L('M26 28Q22 18 16 16M26 28Q28 18 34 14M30 26Q36 22 40 24M22 24Q16 26 14 22', '#8a5a35', 2.6) + ball(30, 38, 11, 10, '#c9834a') + EF(25, 43, 5, 4, '#fff3dc') + CF(22, 42, 2, INK) + G(eye1(31, 35, 2.4), cls('lhq-blink')) + S('M38 30Q46 26 44 34Z', '#c9834a')),
     'forest-squirrel': prop(100, shad(100, 22) + S('M58 92Q86 90 84 62Q82 42 68 46Q76 56 70 70Q64 80 58 92Z', '#d9813f', 'M80 56Q86 70 80 82Q72 90 60 92Q78 80 80 56Z') + S('M30 94Q26 74 42 68Q60 68 60 94Z', '#d9813f') + EF(42, 84, 8, 9, '#ffe8c8') + ball(40, 58, 13, 12, '#d9813f') + P('M30 50L30 40L38 46Z', '#d9813f') + P('M48 48L50 38L42 44Z', '#d9813f') + cuteEyes(35, 58, 45, 58, 2.4) + CF(40, 63, 1.6, INK) + ball(52, 78, 5, 5, '#8a5a35', { hl: false }) + S('M48 74Q52 70 56 74Z', '#5a3a28')),
-    // (v2.12.11) short roots tucked under the trunk (two loose brown strokes stuck out over animals beside it)
-    'forest-bigtree': prop(150, shad(150, 44) + S('M34 126Q32 142 22 146L44 146Z', '#8a5a35') + S('M66 126Q68 142 78 146L56 146Z', '#7a5232') + S('M30 146Q38 116 34 84L66 84Q62 116 70 146Z', '#8a5a35', 'M56 84L66 84Q62 116 70 146L58 146Q60 112 56 84Z') +
-      P('M42 146L42 124Q42 114 50 114Q58 114 58 124L58 146Z', '#5a3a28') + CF(55, 132, 1.8, GOLD) + P(rr(44, 96, 12, 10, 5), '#ffe27a', sw(2)) + sway(crown(50, 92, 98, 82, '#3a9a52', 8) + crown(28, 74, 40, 30, '#45b45e', 4) + crown(72, 70, 40, 30, '#45b45e', 4) + [[30, 56], [64, 50], [48, 70]].map((q) => ball(q[0], q[1], 4, 4, '#ff5d6c', { sh: false })).join(''))),
+    // (v2.12.11) a big old apple tree: one full leafy crown (light clumps, a shaded underside, leaf marks), branches into
+    // it, red apples all over and one fallen; short roots tucked under the trunk, the door and window kept
+    'forest-bigtree': prop(150, shad(150, 46) + S('M34 126Q32 142 22 146L44 146Z', '#8a5a35') + S('M66 126Q68 142 78 146L56 146Z', '#7a5232') +
+      S('M30 146Q38 116 34 84L66 84Q62 116 70 146Z', '#8a5a35', 'M56 84L66 84Q62 116 70 146L58 146Q60 112 56 84Z') + L('M38 120Q41 112 39 104M61 132Q59 124 61 116', '#6e4527', 1.8) +
+      P('M42 146L42 124Q42 114 50 114Q58 114 58 124L58 146Z', '#5a3a28') + CF(55, 132, 1.8, GOLD) + P(rr(44, 100, 12, 9, 4.5), '#ffe27a', sw(2)) +
+      sway(S('M38 92Q30 82 20 74L25 69Q34 78 43 86Z', '#8a5a35') + S('M62 90Q71 80 80 72L75 67Q67 77 57 84Z', '#8a5a35') +
+        F(cloudD(50, 88, 100, 82, 9), '#3f9a52') + F(cloudD(50, 88, 92, 28, 7), '#2f8445') + F(cloudD(38, 62, 54, 40, 5), '#4fb45e') + F(cloudD(70, 54, 40, 32, 4), '#4fb45e') +
+        F(cloudD(24, 80, 30, 18, 3), '#4fb45e') + F(cloudD(78, 80, 28, 16, 3), '#4fb45e') + F(cloudD(36, 40, 26, 16, 3), '#6cc96f', 0.9) + F(cloudD(66, 34, 20, 12, 3), '#6cc96f', 0.9) +
+        L('M20 58q3-3 6 0M32 74q3-3 6 0M48 50q3-3 6 0M62 66q3-3 6 0M78 46q3-3 6 0M84 70q3-3 6 0M28 36q3-3 6 0M54 26q3-3 6 0M44 82q3-3 6 0', '#2f8445', 1.6) +
+        P(cloudD(50, 88, 100, 82, 9), 'none') +
+        [[22, 66], [32, 46], [46, 30], [62, 40], [80, 58], [44, 62], [60, 74], [76, 80], [26, 84], [54, 50], [88, 74], [70, 24], [14, 52]].map((q) => ball(q[0], q[1], 3.8, 3.6, '#ef3b4b', { x: sw(1.8) }) + L('M' + q[0] + ' ' + (q[1] - 3.4) + 'l0.8 -2', '#5a3a28', 1.4)).join('')) +
+      ball(84, 142, 3.6, 3.4, '#ef3b4b', { x: sw(1.8) })),
     'forest-berries': prop(100, shad(100, 36) + crown(50, 94, 76, 44, '#3f9a52', 6) + [[30, 76], [40, 68], [56, 64], [66, 76], [48, 82], [62, 86], [36, 86]].map((q) => ball(q[0], q[1], 4, 4, '#6b5bd6', { sh: false })).join('')),
     // sands: a lighthouse with a turning beam, a beach umbrella, a turtle
     'sands-lighthouse': prop(150, shad(150, 30) + S('M28 146Q30 136 50 134Q70 136 72 146Z', '#b9c3cf') + S('M34 136L40 56L60 56L66 136Z', '#ffffff', 'M54 56L60 56L66 136L56 136Z') + F('M37.6 104L62.4 104L63.8 120L36.2 120Z', '#ef4b4b') + F('M39.4 72L60.6 72L61.6 86L38.4 86Z', '#ef4b4b') + P('M34 136L40 56L60 56L66 136Z', 'none') +
@@ -4450,9 +4460,10 @@
       [[20, 34], [30, 16], [44, 6], [58, 8], [72, 18], [82, 32], [26, 26], [66, 6], [16, 70], [84, 76]].map(([x, y], j) => ball(x, y, 3.8, 3.8, j % 3 ? '#ff5d7a' : '#ff8fbf', { hl: false })).join('')),
     // (v2.12.2) on the map, the pavilion stands in its own little garden: cypresses behind, stone steps, hedges and roses
     'garden-pavilion': prop(110, EF(50, 104, 50, 7, INK, 0.12) + F('M2 106Q8 92 50 90Q92 92 98 106Z', '#8fd67c') +
-      S('M9 98Q14 56 12 36Q10 28 8 36Q4 56 9 98Z', '#2f8a4c') + S('M91 98Q86 56 88 36Q90 28 92 36Q96 56 91 98Z', '#2f8a4c') +
+      [11, 89].map((x) => S('M' + x + ' 100Q' + (x - 10) + ' 76 ' + (x - 6) + ' 56Q' + (x - 2) + ' 42 ' + x + ' 36Q' + (x + 2) + ' 42 ' + (x + 6) + ' 56Q' + (x + 10) + ' 76 ' + x + ' 100Z', '#4caf50', 'M' + x + ' 36Q' + (x + 2) + ' 42 ' + (x + 6) + ' 56Q' + (x + 10) + ' 76 ' + x + ' 100Q' + (x + 4) + ' 74 ' + x + ' 36Z', null, sw(2.2)) +
+        L('M' + (x - 3) + ' 50q2.4-2 4.8 0M' + (x - 5) + ' 60q2.4-2 4.8 0M' + (x - 4) + ' 76q2.4-2 4.8 0', '#2f8445', 1.3)).join('') +
       G(gArt('g-pavilion')(), tf(14, 16, 0.72)) + S(rr(20, 88, 60, 6, 2), '#e6d6b4', rr(66, 88, 14, 6, 2)) + S(rr(28, 94, 44, 6, 2), '#d9c49b', rr(62, 94, 10, 6, 2)) +
-      S(cloudD(13, 106, 22, 12, 3), '#4caf50') + S(cloudD(87, 106, 22, 12, 3), '#4caf50') +
+      S(cloudD(13, 106, 22, 12, 3), '#4caf50', null, null, sw(2.2)) + S(cloudD(87, 106, 22, 12, 3), '#4caf50', null, null, sw(2.2)) +
       [[7, 99], [14, 96], [19, 101], [81, 101], [86, 96], [93, 99]].map(([x, y]) => ball(x, y, 2.4, 2.4, '#ff5d7a', { hl: false })).join('')),
     'garden-rose': prop(100, shad(100, 34) + crown(50, 94, 74, 44, '#4caf50', 6) + [[32, 70], [52, 60], [68, 74], [42, 84], [60, 86]].map((q) => ball(q[0], q[1], 5.4, 5.4, '#ff5d7a', { hlo: 0.5 })).join('')),
     'garden-jasmine': gProp('g-jasmine', 22),

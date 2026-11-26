@@ -252,6 +252,8 @@
         return { x: left ? Math.max(70, nd.x - 150) : Math.min(width - 90, nd.x + 150), y: nd.y + 74 };
       });
       signs.forEach((q) => boxes.push({ x0: q.x - 70, x1: q.x + 70, y0: q.y - 50, y1: q.y + 6 }));
+      // (v2.12.11) the Garden's pavilion is drawn big: its lines thinned to match the garden's things around it (its icon keeps them)
+      const thinLines = (svg, k) => svg.replace(/stroke-width="([\d.]+)"/g, (m, v) => 'stroke-width="' + +(v * k).toFixed(2) + '"');
       const szS = cfg.topProp ? Math.min(width * 0.6, 260) : Math.min(width * 0.9, 420); // the summit mountain (or the Garden's pavilion)
       boxes.push({ x0: L.summit.x - szS * 0.42, x1: L.summit.x + szS * 0.42, y0: L.summit.y + 60 - szS * 0.8, y1: L.summit.y + 66 });
       // the gate to the Hidden Garden, by the summit (or, in the Garden, the gate back, at its start)
@@ -374,7 +376,7 @@
       const sz = szS; // the summit is drawn 200×160 (the Garden's pavilion 100×100)
       const topH = cfg.topProp ? sz * 1.1 : sz * 0.8; // (v2.12.2: the pavilion in its little garden, 100×110)
       html.push(
-        `<div class="msummit${cfg.topProp ? ' mtop-' + cfg.topProp : ''}"${cfg.topProp ? ` data-act="poke" data-k="${cfg.topProp}" role="button" aria-label="Pavilion"` : ''} data-x="${L.summit.x.toFixed(1)}" data-y="${(L.summit.y + 60).toFixed(1)}" style="left:${(L.summit.x - sz / 2).toFixed(1)}px;top:${(L.summit.y + 60 - topH).toFixed(1)}px;width:${sz}px;height:${topH.toFixed(0)}px">${ART.props[cfg.topProp || 'peak-summit'] || ''}</div>`,
+        `<div class="msummit${cfg.topProp ? ' mtop-' + cfg.topProp : ''}"${cfg.topProp ? ` data-act="poke" data-k="${cfg.topProp}" role="button" aria-label="Pavilion"` : ''} data-x="${L.summit.x.toFixed(1)}" data-y="${(L.summit.y + 60).toFixed(1)}" style="left:${(L.summit.x - sz / 2).toFixed(1)}px;top:${(L.summit.y + 60 - topH).toFixed(1)}px;width:${sz}px;height:${topH.toFixed(0)}px">${cfg.topProp ? thinLines(ART.props[cfg.topProp] || '', 0.5) : ART.props['peak-summit'] || ''}</div>`,
       );
       if (gateAt)
         html.push(
