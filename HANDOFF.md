@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is a short public overview (highlights, install, privacy, credits); this file holds the detail.
 
-**Current version:** v2.12.13 (2026-11-26) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.12.14 (2026-11-26) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -227,6 +227,12 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
   cypresses slim with rounded tops (pointed ones looked like spikes). On My Tree each fruit kind is drawn nearer its real
   size (`FRUIT_K` in js/art.js, on top of each fruit's own size: olives 0.9, dates 0.9, figs 0.85, grapes 1.05, apples
   and oranges 1.18, pomegranates 1.25, bananas 1.35); the fruit icons elsewhere stay as they are.
+  v2.12.14: the pavilion stands right on its steps (it floated over a gap), two glowing lanterns either side (`pr-glow`
+  halos) and rose bushes instead of trees, its hedges' and roses' outlines as thin as the pavilion's. The Garden's
+  scenery hedge (`garden-hedge`, map scenery only: not in the journal, stickers or riddles) is a low leafy hedge, not a
+  flat green box. Bananas: three slim fingers (`BAN_FINGER`) fanned ±22° from a short stalk, green necks and brown
+  tips inside their outlines, thin outlines (overlapping fingers looked heavy). Grapes: an uneven bunch of 13
+  (`GRAPES`, hand-placed, a few darker). Pomegranates a deeper wine red, apart from the apples.
 - **My Achievements' numbers (v2.12.8, checked):** % memorized without ".0" when whole (`questPct`, My Tree too); "N of 37
   sūrahs learned"; "N of 13 badges" (5 star badges + 8 world badges, `ART.BADGES`); āyāt learned counts Juz ʿAmma only (it
   counted the Garden's too, against a total of 564). Totals: things won 421 for a boy, 464 for a girl (`winnable`: 380 /

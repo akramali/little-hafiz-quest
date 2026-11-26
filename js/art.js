@@ -3214,6 +3214,15 @@
      āyah learned), flowers: [{ n, c }] (one a sūrah memorized, its own colour), fruits: [type] (practice), birds,
      decor: [sticker ids hung on it], seen: { leaves, flowers, fruits } (how many there were last time: the rest pop
      in) }. Returns { svg, fruits: [{ x, y, t }] } (the berries on the two bushes come first: food from the start). */
+  // (v2.12.14) a banana finger (a little slimmer than before) and its shading
+  const BAN_FINGER = 'M-0.9 0Q-1.3 2.6 -2.2 4.6Q-5 9.6 0.6 15Q3.4 16.4 4.3 14.2Q1.6 9.6 2 4.6Q1.4 2.6 0.9 0Z',
+    BAN_SHADE = 'M2 4.6Q1.6 9.6 4.3 14.2Q3.4 16.4 2.6 15.6Q0.8 9.6 1.3 4.6Z';
+  // (v2.12.14) a grape bunch of 13, hand-placed and uneven as real bunches hang, leaning a little, one grape lower: [x, y, r]
+  const GRAPES = [[-5, -5, 2.4], [-2, -6.4, 2.6], [1.4, -6.6, 2.6], [4.6, -5.2, 2.5], [6.4, -2.4, 2.2], [-4, -1.8, 2.5], [-0.6, -2.8, 2.7], [2.8, -2, 2.6], [-2.4, 1.4, 2.5], [1, 1.2, 2.6], [3.8, 1.8, 2.3], [-0.2, 4.4, 2.4], [1.2, 7.2, 2.1]];
+  // (v2.12.14) bananas: three fingers fanned from a short stalk, each narrowing to a green neck where they meet (the stalk
+  // drawn over the necks hides their outlines crossing); thinner outlines, as three overlapping fingers looked heavy
+  const BN = '#7a5230',
+    finger = (a, tx, ty) => G(F(BAN_FINGER, '#ffd23f') + F(BAN_SHADE, dk('#ffd23f')) + F('M-0.9 0Q-1.3 2.6 -1.9 4.1Q0 4.9 1.8 4.1Q1.4 2.6 0.9 0Z', '#a9c93a') + CF(3.3, 14.5, 0.9, BN) + P(BAN_FINGER, 'none', sw(0.9)), ' transform="translate(' + n(tx) + ' ' + n(ty) + ') rotate(' + a + ')"');
   const FRUIT = {
     // (v2.10.0) a little bunch of three plump, glossy amber dates hanging from a stalk (it read as a "V" before)
     date: (x, y) => L('M' + x + ' ' + (y - 8) + 'Q' + (x + 0.6) + ' ' + (y - 4) + ' ' + x + ' ' + (y - 2.6), '#6a4a2a', 1.4) + [[-3.4, 1.6, 18], [3.4, 1.6, -18], [0, 3.6, 0]].map((d) => G(ball(0, 0, 3.4, 5.4, '#c8742d', { sh: true }), ' transform="translate(' + n(x + d[0]) + ' ' + n(y + d[1]) + ') rotate(' + d[2] + ')"')).join(''),
@@ -3222,14 +3231,15 @@
     fig: (x, y) => S('M' + x + ' ' + (y - 6.4) + 'Q' + (x + 3) + ' ' + (y - 3) + ' ' + (x + 6.4) + ' ' + (y + 2) + 'Q' + (x + 7) + ' ' + (y + 7.6) + ' ' + x + ' ' + (y + 7.6) + 'Q' + (x - 7) + ' ' + (y + 7.6) + ' ' + (x - 6.4) + ' ' + (y + 2) + 'Q' + (x - 3) + ' ' + (y - 3) + ' ' + x + ' ' + (y - 6.4) + 'Z', '#b25fd0', null, 'M' + (x - 3.6) + ' ' + (y + 2) + 'Q' + (x - 3.4) + ' ' + (y - 1.6) + ' ' + (x - 1) + ' ' + (y - 3.4) + 'Z') +
       F('M' + (x - 1.4) + ' ' + (y + 7) + 'Q' + x + ' ' + (y + 5.4) + ' ' + (x + 1.4) + ' ' + (y + 7) + 'Z', '#ffb3d9') + S('M' + (x - 1.6) + ' ' + (y - 6) + 'L' + x + ' ' + (y - 9) + 'L' + (x + 1.6) + ' ' + (y - 6) + 'Z', '#6cc65a'),
     olive: (x, y) => ball(x, y, 4, 5.4, '#7fa63a', { sh: false }),
-    pomegranate: (x, y) => ball(x, y + 1, 6.4, 6, '#d63a4a') + S('M' + (x - 2.6) + ' ' + (y - 4) + 'L' + (x - 3) + ' ' + (y - 8) + 'L' + (x - 1) + ' ' + (y - 6) + 'L' + x + ' ' + (y - 8.6) + 'L' + (x + 1) + ' ' + (y - 6) + 'L' + (x + 3) + ' ' + (y - 8) + 'L' + (x + 2.6) + ' ' + (y - 4) + 'Z', '#b02a3a'),
-    grape: (x, y) => [[-3, -3], [0, -3.6], [3, -3], [-1.6, 0.4], [1.6, 0.4], [0, 3.8]].map((d) => ball(x + d[0], y + d[1], 2.6, 2.6, '#7b4fc4', { sh: false })).join(''),
+    // (v2.12.14) a deeper wine red, so it doesn't look like the apples
+    pomegranate: (x, y) => ball(x, y + 1, 6.4, 6, '#b3264d') + S('M' + (x - 2.6) + ' ' + (y - 4) + 'L' + (x - 3) + ' ' + (y - 8) + 'L' + (x - 1) + ' ' + (y - 6) + 'L' + x + ' ' + (y - 8.6) + 'L' + (x + 1) + ' ' + (y - 6) + 'L' + (x + 3) + ' ' + (y - 8) + 'L' + (x + 2.6) + ' ' + (y - 4) + 'Z', '#86193a'),
+    // (v2.12.14) a fuller, uneven bunch (13 grapes of the same size, a few darker) on a little curved stem
+    grape: (x, y) => L('M' + x + ' ' + (y - 11) + 'Q' + (x + 0.8) + ' ' + (y - 9) + ' ' + x + ' ' + (y - 7.4), '#6a4a2a', 1.4) + GRAPES.map((d, j) => ball(n(x + d[0]), n(y + d[1]), d[2], d[2], (j * 7) % 5 === 1 ? '#6a40b0' : '#7b4fc4', { sh: false })).join(''),
     apple: (x, y) => ball(x, y + 1, 6.2, 5.8, '#ef4b4b') + S('M' + (x + 1) + ' ' + (y - 5) + 'Q' + (x + 6) + ' ' + (y - 9) + ' ' + (x + 7) + ' ' + (y - 5) + 'Q' + (x + 4) + ' ' + (y - 3) + ' ' + (x + 1) + ' ' + (y - 5) + 'Z', '#5fbf4a'),
     orange: (x, y) => ball(x, y + 1, 6.2, 6.2, '#ff9a2b') + S('M' + x + ' ' + (y - 5) + 'Q' + (x - 5) + ' ' + (y - 9) + ' ' + (x - 6) + ' ' + (y - 5) + 'Q' + (x - 3) + ' ' + (y - 3) + ' ' + x + ' ' + (y - 5) + 'Z', '#5fbf4a'),
     berry: (x, y) => ball(x, y, 3.6, 3.6, '#5b6fd8', { sh: false }),
     // (v2.12.11) the last to come: a little bunch of bananas (the talḥ of Al-Wāqiʿah 56:29)
-    // (v2.12.11) a bunch of three plump bananas, about an apple's size (the first ones were mostly outline)
-    banana: (x, y) => L('M' + x + ' ' + (y - 9.6) + 'L' + x + ' ' + (y - 6), '#7a5230', 2.4) + [-30, 0, 30].map((a) => G(S('M-2.4 0Q-5.6 7.4 0.6 13.4Q3.4 15 4.2 12.8Q0.8 7.4 2.6 0Z', '#ffd23f', 'M2.6 0Q0.8 7.4 4.2 12.8Q3.4 15 2.2 14Q0.4 7.4 1.4 0Z') + CF(3.3, 13.7, 1, '#7a5230'), ' transform="translate(' + x + ' ' + (y - 6) + ') rotate(' + a + ')"')).join(''),
+    banana: (x, y) => [-22, 0, 22].map((a) => finger(a, x, y - 6.6)).join('') + S('M' + (x - 0.9) + ' ' + (y - 5) + 'L' + (x - 0.8) + ' ' + (y - 8.6) + 'Q' + x + ' ' + (y - 9.3) + ' ' + (x + 0.8) + ' ' + (y - 8.6) + 'L' + (x + 0.9) + ' ' + (y - 5) + 'Q' + x + ' ' + (y - 4.3) + ' ' + (x - 0.9) + ' ' + (y - 5) + 'Z', BN, null, null, sw(0.8)),
   };
   const FRUIT_TYPES = ['date', 'fig', 'olive', 'pomegranate', 'grape', 'apple', 'orange', 'banana']; // the order they come in (v2.12.11: bananas last)
   // (v2.12.13) on the tree, each kind a little nearer its real size (not all the way: small ones must still show):
@@ -4449,6 +4459,17 @@
   // (v2.12.0) the Hidden Garden's scenery: its stickers' pictures standing on the ground (they are its journal's finds too)
   const gArt = (id) => (GARDEN_STK.find((x) => x[0] === id) || [])[2];
   const gProp = (id, w, h, k) => prop(h || 100, shad(h || 100, w) + G(gArt(id)(), tf(50 - 50 * (k || 1), (h || 100) - 98 * (k || 1), k || 1)));
+  // (v2.12.14) the Garden's pavilion on its lawn: it stands right on its steps (there was a gap: it floated), two glowing
+  // lanterns either side and rose bushes, every outline about the pavilion's own (the hedges and roses were heavier)
+  const pavilion = () => prop(110, EF(50, 106, 50, 5, INK, 0.12) + S('M1 99Q3 89 50 87Q97 89 99 99Q97 109 50 109Q3 109 1 99Z', '#6fc062', 'M1 99Q3 103 50 104Q97 103 99 99Q97 109 50 109Q3 109 1 99Z', null, sw(2.2)) + F('M10 96Q18 90.6 50 89.6Q82 90.6 90 96Q70 93 50 93Q30 93 10 96Z', '#94dc7f') +
+      [8, 92].map((x) => S(cloudD(x, 92, 16, 22, 4), '#4caf50', null, null, sw(1.8)) + F(cloudD(x - 2, 78, 7, 5, 2), '#6cc96f', 0.9) + [[-3, -12], [3, -8], [-2, -2], [4, -17]].map(([dx, dy]) => CF(x + dx, 92 + dy, 1.8, '#ff5d7a')).join('')).join('') +
+      [16, 84].map((x) => '<g class="pr-glow">' + CF(x, 58.5, 11, '#ffe98a', 0.3) + CF(x, 58.5, 7, '#fff2a8', 0.5) + '</g>' + S(rr(x - 1.4, 63, 2.8, 33, 1), '#4a4a5e', null, null, sw(1.6)) + S(rr(x - 3, 95, 6, 3, 1), '#4a4a5e', null, null, sw(1.6)) +
+        S(rr(x - 4, 54, 8, 9.4, 2), '#ffe27a', null, null, sw(1.6)) + F(rr(x - 2.4, 55.6, 4.8, 6.2, 1.4), '#fffbe0') + CF(x, 58.6, 1.4, '#ffb020') + S('M' + (x - 5) + ' 54.4L' + x + ' 48.6L' + (x + 5) + ' 54.4Z', '#2fb8a8', null, null, sw(1.6)) + CF(x, 47.6, 1.2, GOLD)).join('') +
+      G(gArt('g-pavilion')(), tf(14, 22, 0.72)) + F('M24 103Q26 98.6 50 98Q74 98.6 76 103Q50 106 24 103Z', '#ece0c2') + S(rr(20, 88, 60, 6, 2), '#e6d6b4', rr(66, 88, 14, 6, 2), null, sw(2)) + S(rr(28, 94, 44, 6, 2), '#d9c49b', rr(62, 94, 10, 6, 2), null, sw(2)) +
+      S(cloudD(18, 98, 22, 11, 3), '#4caf50', null, null, sw(1.8)) + S(cloudD(82, 98, 22, 11, 3), '#4caf50', null, null, sw(1.8)) +
+      [[11, 93], [18, 89], [24, 94], [76, 94], [82, 89], [89, 93]].map(([x, y]) => ball(x, y, 2.2, 2.2, '#ff5d7a', { hl: false, x: sw(1.3) })).join('') +
+      L('M5 101l1-3.4l1 3.4M14 104.6l1-3.4l1 3.4M34 106.6l1-3.4l1 3.4M64 106.6l1-3.4l1 3.4M85 104.6l1-3.4l1 3.4M93 101l1-3.4l1 3.4', '#3f9a52', 1.6) +
+      [[9, 99, '#fff'], [22, 103.6, '#ffd23f'], [44, 107, '#ff8fbf'], [56, 107, '#fff'], [78, 103.6, '#ffd23f'], [91, 99, '#ff8fbf']].map(([x, y, c]) => CF(x, y, 1.3, c)).join(''));
   Object.assign(props, {
     'garden-fountain': gProp('g-fountain', 36),
     // (v2.12.1) a rose arbour with a bench under it (it was an arch with a door: it looked like a second gate)
@@ -4464,14 +4485,7 @@
     // (v2.12.2) on the map, the pavilion stands in its own little garden: cypresses behind, stone steps, hedges and roses
     // (v2.12.13) it stands on a lawn of its own (outlined, lit on top, grass and little flowers along it, a paved
     // landing at the steps) so it no longer floats; rounded cypresses (pointed ones looked like spikes)
-    'garden-pavilion': prop(110, EF(50, 106, 50, 5, INK, 0.12) + S('M1 99Q3 89 50 87Q97 89 99 99Q97 109 50 109Q3 109 1 99Z', '#6fc062', 'M1 99Q3 103 50 104Q97 103 99 99Q97 109 50 109Q3 109 1 99Z', null, sw(2.4)) + F('M10 96Q18 90.6 50 89.6Q82 90.6 90 96Q70 93 50 93Q30 93 10 96Z', '#94dc7f') +
-      [13, 87].map((x) => S('M' + (x - 1) + ' 98Q' + (x - 8) + ' 80 ' + (x - 7) + ' 62Q' + (x - 6) + ' 46 ' + x + ' 44Q' + (x + 6) + ' 46 ' + (x + 7) + ' 62Q' + (x + 8) + ' 80 ' + (x + 1) + ' 98Z', '#4caf50', 'M' + x + ' 44Q' + (x + 6) + ' 46 ' + (x + 7) + ' 62Q' + (x + 8) + ' 80 ' + (x + 1) + ' 98Q' + (x + 4) + ' 74 ' + x + ' 44Z', 'M' + (x - 4.4) + ' 54Q' + (x - 3.6) + ' 47.6 ' + x + ' 46.6Q' + (x - 2) + ' 50 ' + (x - 4.4) + ' 54Z', sw(2.2)) +
-        L('M' + (x - 4) + ' 60q2.2-1.8 4.4 0M' + (x - 1) + ' 70q2.2-1.8 4.4 0M' + (x - 4.6) + ' 80q2.2-1.8 4.4 0', '#2f8445', 1.3)).join('') +
-      G(gArt('g-pavilion')(), tf(14, 16, 0.72)) + F('M24 103Q26 98.6 50 98Q74 98.6 76 103Q50 106 24 103Z', '#ece0c2') + S(rr(20, 88, 60, 6, 2), '#e6d6b4', rr(66, 88, 14, 6, 2)) + S(rr(28, 94, 44, 6, 2), '#d9c49b', rr(62, 94, 10, 6, 2)) +
-      S(cloudD(18, 98, 22, 11, 3), '#4caf50', null, null, sw(2.2)) + S(cloudD(82, 98, 22, 11, 3), '#4caf50', null, null, sw(2.2)) +
-      [[11, 93], [18, 89], [24, 94], [76, 94], [82, 89], [89, 93]].map(([x, y]) => ball(x, y, 2.4, 2.4, '#ff5d7a', { hl: false })).join('') +
-      L('M5 101l1-3.4l1 3.4M14 104.6l1-3.4l1 3.4M34 106.6l1-3.4l1 3.4M64 106.6l1-3.4l1 3.4M85 104.6l1-3.4l1 3.4M93 101l1-3.4l1 3.4', '#3f9a52', 1.6) +
-      [[9, 99, '#fff'], [22, 103.6, '#ffd23f'], [44, 107, '#ff8fbf'], [56, 107, '#fff'], [78, 103.6, '#ffd23f'], [91, 99, '#ff8fbf']].map(([x, y, c]) => CF(x, y, 1.3, c)).join('')),
+    'garden-pavilion': pavilion(),
     'garden-rose': prop(100, shad(100, 34) + crown(50, 94, 74, 44, '#4caf50', 6) + [[32, 70], [52, 60], [68, 74], [42, 84], [60, 86]].map((q) => ball(q[0], q[1], 5.4, 5.4, '#ff5d7a', { hlo: 0.5 })).join('')),
     'garden-jasmine': gProp('g-jasmine', 22),
     'garden-lily': prop(100, shad(100, 40) + EF(50, 86, 44, 11, '#5fb2ff') + E(50, 86, 44, 11, 'none') + G(gArt('g-lily')(), tf(20, 40, 0.6))),
@@ -4487,8 +4501,9 @@
   const tulip = (x, y, c) => L('M' + x + ' ' + (y + 12) + 'L' + x + ' ' + y, '#3f9a52', 1.8) + S('M' + (x - 4.4) + ' ' + y + 'Q' + (x - 5) + ' ' + (y - 9) + ' ' + (x - 2) + ' ' + (y - 8) + 'L' + x + ' ' + (y - 5) + 'L' + (x + 2) + ' ' + (y - 8) + 'Q' + (x + 5) + ' ' + (y - 9) + ' ' + (x + 4.4) + ' ' + y + 'Q' + x + ' ' + (y + 4) + ' ' + (x - 4.4) + ' ' + y + 'Z', c);
   Object.assign(props, {
     'garden-cypress': prop(150, shad(150, 18) + S(rr(46, 128, 8, 18, 2), '#8a5a35') + sway(S('M50 10Q66 42 66 84Q66 124 50 132Q34 124 34 84Q34 42 50 10Z', '#2f8a4c', 'M50 10Q66 42 66 84Q66 124 50 132Q60 100 56 60Q54 30 50 10Z', 'M44 50Q42 70 44 96Q40 70 44 50Z') + L('M44 66Q50 70 56 64M42 92Q50 98 58 90M44 116Q50 120 56 114', dk('#2f8a4c', 0.25), 1.4))),
-    'garden-hedge': prop(100, shad(100, 46) + S('M6 94L6 66Q6 56 16 56L84 56Q94 56 94 66L94 94Z', '#4caf50', 'M70 56L84 56Q94 56 94 66L94 94L76 94Q80 74 70 56Z', 'M12 64Q14 60 20 60L40 60Q20 62 14 70Z') +
-      L('M20 70L24 74M36 66L40 70M54 72L58 76M70 66L74 70M28 84L32 88M48 86L52 90M66 84L70 88M82 76L86 80', dk('#4caf50', 0.25), 1.6) + [[22, 60], [46, 58], [68, 60], [86, 64]].map(([x, y]) => CF(x, y, 2.6, '#ffffff')).join('')),
+    // (v2.12.14) a low leafy hedge with a bumpy top and little white flowers (a flat green box looked out of place)
+    'garden-hedge': prop(100, shad(100, 46) + S(cloudD(50, 88, 88, 30, 7), '#4caf50', null, null) + F(cloudD(50, 88, 80, 10, 6), '#3f9a52') + F(cloudD(36, 72, 34, 10, 3), '#6cc96f', 0.9) +
+      L('M22 78q3-2.6 6 0M40 70q3-2.6 6 0M58 78q3-2.6 6 0M74 70q3-2.6 6 0', '#2f8445', 1.6) + [[20, 66], [34, 60], [52, 62], [66, 60], [80, 66], [44, 76], [70, 80]].map(([x, y]) => CF(x, y, 2.4, '#ffffff') + CF(x, y, 0.9, '#ffd23f')).join('')),
     'garden-tulips': prop(100, shad(100, 44) + S('M8 82Q8 64 50 62Q92 64 92 82Q92 96 50 96Q8 96 8 82Z', '#d9c49b') + F('M16 82Q16 70 50 69Q84 70 84 82Q84 90 50 90Q16 90 16 82Z', '#8a5a35') +
       [[24, 74, '#ff5d7a'], [36, 70, '#ffd23f'], [50, 68, '#ff8fbf'], [64, 70, '#ff5d7a'], [76, 74, '#ffd23f'], [30, 82, '#ff8fbf'], [44, 80, '#ff5d7a'], [58, 80, '#ffd23f'], [70, 82, '#ff8fbf']].map(([x, y, c]) => tulip(x, y - 4, c)).join('')),
     'garden-orangetree': prop(150, shad(150, 24) + S('M30 120L70 120L64 146L36 146Z', '#d9733a', 'M58 120L70 120L64 146L56 146Z') + S(rr(26, 114, 48, 9, 3), '#e8894a') + S('M47 114Q48 96 46 82L54 82Q52 96 53 114Z', '#a86b3c') +
