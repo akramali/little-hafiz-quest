@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is a short public overview (highlights, install, privacy, credits); this file holds the detail.
 
-**Current version:** v2.12.10 (2026-11-26) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.12.11 (2026-11-26) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -206,13 +206,19 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
   emoji blurred that big). `fmtTime(0)` says "0 min" (not "not yet").
 - **How My Tree grows (for reference):** size = āyāt learned 30% + sūrahs memorized 30% + golden sūrahs 40%, plus practice
   up to 15% (`prof.grow`: each game finished in a sūrah, once a day per sūrah; 200 points for the full 15%), never past
-  100%. Blossoms from 20% (one per memorized sūrah, 3 to 10 as it grows to 30%); fruit from 30% (2 at first, up to 32 at
+  100%. Blossoms from 15% (one per memorized sūrah, 3 to 10 as it grows to 25%); fruit from 25% (2 at first, up to 32 at
   100%), and the blossoms thin out as fruit comes (from 8 down to 2). Fruit kinds come in order (dates, figs, olives,
-  pomegranates, grapes, apples, oranges): a second kind at ~36%, then one more about every 6% (3 at 43%, 4 at 49%, 5 at
-  55%, 6 at 61%), all seven by ~68%.
-- **How to play's campfire card (v2.12.9):** the fire burns up from out to roaring and back down (`.cfcycle`: ten
-  `.cfstep` fires crossfading, 0.8 s each, and their `FIRE_WORD` under them switching at once, `.cfword`, so two words
-  never overlap; reduced motion: Steady, still).
+  pomegranates, grapes, apples, oranges, bananas; `ART.FRUIT_TYPES`, `ART.TREE_STAGE`): one more about every 7.5% (2 at
+  33%, 3 at 40.5%, 4 at 48%, 5 at 55.5%, 6 at 63%, 7 at 70.5%), all eight by ~78% (v2.12.11; figs brighter for night).
+- **How to play's campfire card (v2.12.11):** roaring, down to low, then roaring again (`.cfcycle`: four `.cfstep` fires,
+  0.8 s each, and their `FIRE_WORD` under them switching at once, `.cfword`, so two words never overlap; reduced motion:
+  Roaring, still).
+- **How to play's other animations (v2.12.11):** the tree card has eight sizes (`GROW_AT`) at the fire's pace, the first
+  drawn at once and the rest in quiet moments (`warmGrow`, also started when How to play opens); the stopwatch's hand goes
+  0 → 10 minutes over a green 5–10 wedge; Listen is shown tapped (`.ls-tap` ring, a press, its sound waves; it stays
+  Listen) and Read breathes the journal riddle button's gold glow (`rbreathe`); the gift card's box rattles, is tapped,
+  opens and three things fly out (`.giftpop`). The map's big old tree (`forest-bigtree`) has short roots under its trunk
+  (two loose strokes stuck out over animals beside it).
 - **My Achievements' numbers (v2.12.8, checked):** % memorized without ".0" when whole (`questPct`, My Tree too); "N of 37
   sūrahs learned"; "N of 13 badges" (5 star badges + 8 world badges, `ART.BADGES`); āyāt learned counts Juz ʿAmma only (it
   counted the Garden's too, against a total of 564). Totals: things won 421 for a boy, 464 for a girl (`winnable`: 380 /

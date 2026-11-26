@@ -10952,8 +10952,8 @@ body.hasbar::before {
   .intro .cfcycle .cfword {
     animation: none;
   }
-  .intro .cfcycle .cfstep:nth-child(7),
-  .intro .cfcycle .cfword:nth-child(8) {
+  .intro .cfcycle .cfstep:nth-child(1),
+  .intro .cfcycle .cfword:nth-child(2) {
     opacity: 1;
   }
 }
@@ -11128,4 +11128,269 @@ body.hasbar::before {
 }
 .intro .treegrow .tg-step {
   height: 170px;
+}
+
+/* ---------- 2026-11-26 · v2.12.11 ---------- */
+/* How to play: the campfire roaring, down to low, roaring again (four steps, 0.8 s each) */
+.intro .cfcycle .cfstep {
+  animation: cfStep4 3.2s linear infinite;
+  animation-delay: calc(var(--j) * 0.8s);
+}
+.intro .cfcycle .cfword {
+  animation: cfWord4 3.2s steps(1, end) infinite;
+  animation-delay: calc(var(--j) * 0.8s);
+}
+@keyframes cfStep4 {
+  0% {
+    opacity: 0;
+  }
+  5%,
+  25% {
+    opacity: 1;
+  }
+  30%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes cfWord4 {
+  0% {
+    opacity: 1;
+  }
+  25%,
+  100% {
+    opacity: 0;
+  }
+}
+/* the tree: eight stages at the campfire's pace */
+.intro .treegrow .tg-step {
+  animation: tgStep8 6.4s linear infinite;
+  animation-delay: calc(var(--j) * 0.8s);
+}
+@keyframes tgStep8 {
+  0% {
+    opacity: 0;
+  }
+  2%,
+  12.5% {
+    opacity: 1;
+  }
+  15%,
+  100% {
+    opacity: 0;
+  }
+}
+/* the stopwatch: from 0 to 10 minutes (5 to 10 is plenty), then back */
+.intro .clockart .clk-hand {
+  animation: clkTen 3.6s ease-in-out infinite;
+}
+@keyframes clkTen {
+  0%,
+  8% {
+    transform: none;
+  }
+  60%,
+  90% {
+    transform: rotate(60deg);
+  }
+  100% {
+    transform: none;
+  }
+}
+/* Listen tapped: a press, a ripple and the sound coming out (it stays Listen) */
+.intro .intart.listenart {
+  position: relative;
+}
+.intro .listenart .listen {
+  animation: lsPress 2.8s ease-out infinite;
+}
+@keyframes lsPress {
+  0%,
+  18% {
+    transform: none;
+  }
+  24% {
+    transform: scale(0.92);
+  }
+  32%,
+  100% {
+    transform: none;
+  }
+}
+.intro .listenart .listen svg path + path {
+  animation: lsWave 2.8s ease-out infinite;
+}
+.intro .listenart .listen svg path + path + path {
+  animation-delay: 0.2s;
+}
+@keyframes lsWave {
+  0%,
+  28% {
+    opacity: 0.3;
+  }
+  40%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.3;
+  }
+}
+.intro .listenart .ls-tap {
+  position: absolute;
+  left: calc(50% - 92px);
+  top: calc(50% - 16px);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 2px var(--gold);
+  opacity: 0;
+  z-index: 2;
+  pointer-events: none;
+  animation: jtTap 2.8s ease-out infinite;
+  animation-delay: 0.3s;
+}
+/* Read: the breathing gold glow of the journal's riddle button */
+.intro .intart .readart {
+  animation: rbreathe 3.2s ease-in-out infinite alternate;
+}
+/* the gift: it rattles, is tapped, opens, and the things inside come out */
+.intro .intart.giftpop {
+  position: relative;
+}
+.intro .giftpop .gp-box {
+  position: absolute;
+  left: calc(50% - 42px);
+  bottom: 0;
+  width: 84px;
+  height: 84px;
+}
+.intro .giftpop .gp-box svg {
+  width: 100%;
+  height: 100%;
+}
+.intro .giftpop .gp-shut {
+  animation: gpShut 4s ease-in-out infinite;
+  transform-origin: 50% 90%;
+}
+.intro .giftpop .gp-open {
+  opacity: 0;
+  animation: gpOpen 4s steps(1, end) infinite;
+}
+@keyframes gpShut {
+  0%,
+  6% {
+    opacity: 1;
+    transform: none;
+  }
+  10%,
+  18% {
+    transform: rotate(-7deg);
+  }
+  14%,
+  22% {
+    transform: rotate(7deg);
+  }
+  26% {
+    opacity: 1;
+    transform: none;
+  }
+  30%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes gpOpen {
+  0% {
+    opacity: 0;
+  }
+  30%,
+  96% {
+    opacity: 1;
+  }
+}
+.intro .giftpop .gp-tap {
+  position: absolute;
+  left: calc(50% - 16px);
+  bottom: 26px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 2px var(--gold);
+  opacity: 0;
+  animation: gpTap 4s ease-out infinite;
+}
+@keyframes gpTap {
+  0%,
+  22% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  26% {
+    opacity: 1;
+  }
+  36%,
+  100% {
+    opacity: 0;
+    transform: scale(1.8);
+  }
+}
+.intro .giftpop .gp-item {
+  position: absolute;
+  left: calc(50% - 23px);
+  bottom: 30px;
+  width: 46px;
+  height: 46px;
+  opacity: 0;
+  animation: gpItem 4s cubic-bezier(0.2, 1.4, 0.4, 1) infinite;
+  animation-delay: calc(var(--j) * 0.18s);
+}
+.intro .giftpop .gp-item svg {
+  width: 100%;
+  height: 100%;
+}
+@keyframes gpItem {
+  0%,
+  31% {
+    opacity: 0;
+    transform: translate(0, 10px) scale(0.2);
+  }
+  46%,
+  92% {
+    opacity: 1;
+    transform: translate(var(--x), var(--y)) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--x), var(--y)) scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .intro .cfcycle .cfstep,
+  .intro .cfcycle .cfword,
+  .intro .treegrow .tg-step,
+  .intro .clockart .clk-hand,
+  .intro .listenart .listen,
+  .intro .listenart .listen svg path,
+  .intro .listenart .ls-tap,
+  .intro .intart .readart,
+  .intro .giftpop .gp-shut,
+  .intro .giftpop .gp-tap,
+  .intro .giftpop .gp-item {
+    animation: none;
+  }
+  .intro .giftpop .gp-item,
+  .intro .giftpop .gp-open {
+    animation: none;
+    opacity: 1;
+    transform: translate(var(--x), var(--y));
+  }
+  .intro .giftpop .gp-shut {
+    opacity: 0;
+  }
+}
+.intro .intart.giftpop {
+  height: 132px;
 }

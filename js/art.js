@@ -3217,15 +3217,20 @@
   const FRUIT = {
     // (v2.10.0) a little bunch of three plump, glossy amber dates hanging from a stalk (it read as a "V" before)
     date: (x, y) => L('M' + x + ' ' + (y - 8) + 'Q' + (x + 0.6) + ' ' + (y - 4) + ' ' + x + ' ' + (y - 2.6), '#6a4a2a', 1.4) + [[-3.4, 1.6, 18], [3.4, 1.6, -18], [0, 3.6, 0]].map((d) => G(ball(0, 0, 3.4, 5.4, '#c8742d', { sh: true }), ' transform="translate(' + n(x + d[0]) + ' ' + n(y + d[1]) + ') rotate(' + d[2] + ')"')).join(''),
-    fig: (x, y) => S('M' + x + ' ' + (y - 6) + 'Q' + (x + 7.5) + ' ' + (y + 2) + ' ' + x + ' ' + (y + 7) + 'Q' + (x - 7.5) + ' ' + (y + 2) + ' ' + x + ' ' + (y - 6) + 'Z', '#7a3f8a', null, 'M' + (x - 3) + ' ' + y + 'Q' + (x - 3) + ' ' + (y - 3) + ' ' + (x - 1) + ' ' + (y - 4) + 'Z'),
+    // (v2.12.11) a brighter fig, plump at the bottom with a pink opening and a little green stem: it was a dark drop
+    // that disappeared in the leaves, at night above all
+    fig: (x, y) => S('M' + x + ' ' + (y - 6.4) + 'Q' + (x + 3) + ' ' + (y - 3) + ' ' + (x + 6.4) + ' ' + (y + 2) + 'Q' + (x + 7) + ' ' + (y + 7.6) + ' ' + x + ' ' + (y + 7.6) + 'Q' + (x - 7) + ' ' + (y + 7.6) + ' ' + (x - 6.4) + ' ' + (y + 2) + 'Q' + (x - 3) + ' ' + (y - 3) + ' ' + x + ' ' + (y - 6.4) + 'Z', '#b25fd0', null, 'M' + (x - 3.6) + ' ' + (y + 2) + 'Q' + (x - 3.4) + ' ' + (y - 1.6) + ' ' + (x - 1) + ' ' + (y - 3.4) + 'Z') +
+      F('M' + (x - 1.4) + ' ' + (y + 7) + 'Q' + x + ' ' + (y + 5.4) + ' ' + (x + 1.4) + ' ' + (y + 7) + 'Z', '#ffb3d9') + S('M' + (x - 1.6) + ' ' + (y - 6) + 'L' + x + ' ' + (y - 9) + 'L' + (x + 1.6) + ' ' + (y - 6) + 'Z', '#6cc65a'),
     olive: (x, y) => ball(x, y, 4, 5.4, '#7fa63a', { sh: false }),
     pomegranate: (x, y) => ball(x, y + 1, 6.4, 6, '#d63a4a') + S('M' + (x - 2.6) + ' ' + (y - 4) + 'L' + (x - 3) + ' ' + (y - 8) + 'L' + (x - 1) + ' ' + (y - 6) + 'L' + x + ' ' + (y - 8.6) + 'L' + (x + 1) + ' ' + (y - 6) + 'L' + (x + 3) + ' ' + (y - 8) + 'L' + (x + 2.6) + ' ' + (y - 4) + 'Z', '#b02a3a'),
     grape: (x, y) => [[-3, -3], [0, -3.6], [3, -3], [-1.6, 0.4], [1.6, 0.4], [0, 3.8]].map((d) => ball(x + d[0], y + d[1], 2.6, 2.6, '#7b4fc4', { sh: false })).join(''),
     apple: (x, y) => ball(x, y + 1, 6.2, 5.8, '#ef4b4b') + S('M' + (x + 1) + ' ' + (y - 5) + 'Q' + (x + 6) + ' ' + (y - 9) + ' ' + (x + 7) + ' ' + (y - 5) + 'Q' + (x + 4) + ' ' + (y - 3) + ' ' + (x + 1) + ' ' + (y - 5) + 'Z', '#5fbf4a'),
     orange: (x, y) => ball(x, y + 1, 6.2, 6.2, '#ff9a2b') + S('M' + x + ' ' + (y - 5) + 'Q' + (x - 5) + ' ' + (y - 9) + ' ' + (x - 6) + ' ' + (y - 5) + 'Q' + (x - 3) + ' ' + (y - 3) + ' ' + x + ' ' + (y - 5) + 'Z', '#5fbf4a'),
     berry: (x, y) => ball(x, y, 3.6, 3.6, '#5b6fd8', { sh: false }),
+    // (v2.12.11) the last to come: a little bunch of bananas (the talḥ of Al-Wāqiʿah 56:29)
+    banana: (x, y) => L('M' + x + ' ' + (y - 9) + 'L' + x + ' ' + (y - 5), '#7a5230', 2.2) + [-34, 0, 34].map((a) => G(S('M-1.6 0Q-3.6 6 0.6 11Q2.4 12.4 3 10.6Q0.4 6 1.8 0Z', '#ffd23f', 'M1.8 0Q0.4 6 3 10.6Q2.4 12.4 1.4 11.6Q0 6 0.8 0Z') + CF(1.9, 11.2, 0.8, '#7a5230'), ' transform="translate(' + x + ' ' + (y - 5) + ') rotate(' + a + ')"')).join(''),
   };
-  const FRUIT_TYPES = ['date', 'fig', 'olive', 'pomegranate', 'grape', 'apple', 'orange']; // the order they come in
+  const FRUIT_TYPES = ['date', 'fig', 'olive', 'pomegranate', 'grape', 'apple', 'orange', 'banana']; // the order they come in (v2.12.11: bananas last)
   const fruitIcon = (t) => '<svg class="lhq-art" viewBox="-10 -12 20 22" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' + OUT(FRUIT[t](0, 0), 1.6) + '</svg>';
   /* My tree grows as one plant, from a seed to a full tree, every part only ever getting bigger: one structure, the
      same at every size (seeded by the explorer), that it grows into. The stem lengthens and thickens into a trunk;
@@ -3234,7 +3239,7 @@
      merge into a crown; blossoms come once the crown forms (one a sūrah memorized), then fruit. size 0-1 (from the
      explorer's progress) is eased into growth g = size^0.6, so the early steps show. TREE_STAGE: the sizes where
      blossoms and fruit begin. */
-  const TREE_STAGE = { flowers: 0.2, fruit: 0.3 };
+  const TREE_STAGE = { flowers: 0.15, fruit: 0.25 }; // (v2.12.11: sooner: blossoms from 15%, fruit from 25%)
   /* the sky behind my tree (well past the sides, so a screen of any shape is filled): by day a sun, a few small birds
      flying (some far off) and pale clouds drifting slowly; at night a moon, tiny stars (some dim, some bright, a few
      twinkling) and darker clouds. Nothing busy. */
@@ -4399,7 +4404,8 @@
       S('M30 70Q30 56 50 56Q80 54 82 66Q84 78 66 80L40 80Q30 80 30 70Z', '#c9834a', 'M74 58Q84 64 82 72Q80 80 66 80Q76 70 74 58Z') + [[50, 64], [60, 62], [66, 70], [54, 72]].map((q) => CF(q[0], q[1], 2.2, '#fff3dc', 0.9)).join('') +
       S('M28 70Q20 52 26 40L36 42Q36 56 40 66Z', '#c9834a') + L('M26 28Q22 18 16 16M26 28Q28 18 34 14M30 26Q36 22 40 24M22 24Q16 26 14 22', '#8a5a35', 2.6) + ball(30, 38, 11, 10, '#c9834a') + EF(25, 43, 5, 4, '#fff3dc') + CF(22, 42, 2, INK) + G(eye1(31, 35, 2.4), cls('lhq-blink')) + S('M38 30Q46 26 44 34Z', '#c9834a')),
     'forest-squirrel': prop(100, shad(100, 22) + S('M58 92Q86 90 84 62Q82 42 68 46Q76 56 70 70Q64 80 58 92Z', '#d9813f', 'M80 56Q86 70 80 82Q72 90 60 92Q78 80 80 56Z') + S('M30 94Q26 74 42 68Q60 68 60 94Z', '#d9813f') + EF(42, 84, 8, 9, '#ffe8c8') + ball(40, 58, 13, 12, '#d9813f') + P('M30 50L30 40L38 46Z', '#d9813f') + P('M48 48L50 38L42 44Z', '#d9813f') + cuteEyes(35, 58, 45, 58, 2.4) + CF(40, 63, 1.6, INK) + ball(52, 78, 5, 5, '#8a5a35', { hl: false }) + S('M48 74Q52 70 56 74Z', '#5a3a28')),
-    'forest-bigtree': prop(150, shad(150, 44) + S('M30 146Q38 116 34 84L66 84Q62 116 70 146Z', '#8a5a35', 'M56 84L66 84Q62 116 70 146L58 146Q60 112 56 84Z') + L('M30 146Q20 140 14 146M70 146Q80 140 88 146', '#8a5a35', 5) +
+    // (v2.12.11) short roots tucked under the trunk (two loose brown strokes stuck out over animals beside it)
+    'forest-bigtree': prop(150, shad(150, 44) + S('M34 126Q32 142 22 146L44 146Z', '#8a5a35') + S('M66 126Q68 142 78 146L56 146Z', '#7a5232') + S('M30 146Q38 116 34 84L66 84Q62 116 70 146Z', '#8a5a35', 'M56 84L66 84Q62 116 70 146L58 146Q60 112 56 84Z') +
       P('M42 146L42 124Q42 114 50 114Q58 114 58 124L58 146Z', '#5a3a28') + CF(55, 132, 1.8, GOLD) + P(rr(44, 96, 12, 10, 5), '#ffe27a', sw(2)) + sway(crown(50, 92, 98, 82, '#3a9a52', 8) + crown(28, 74, 40, 30, '#45b45e', 4) + crown(72, 70, 40, 30, '#45b45e', 4) + [[30, 56], [64, 50], [48, 70]].map((q) => ball(q[0], q[1], 4, 4, '#ff5d6c', { sh: false })).join(''))),
     'forest-berries': prop(100, shad(100, 36) + crown(50, 94, 76, 44, '#3f9a52', 6) + [[30, 76], [40, 68], [56, 64], [66, 76], [48, 82], [62, 86], [36, 86]].map((q) => ball(q[0], q[1], 4, 4, '#6b5bd6', { sh: false })).join('')),
     // sands: a lighthouse with a turning beam, a beach umbrella, a turtle

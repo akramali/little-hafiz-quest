@@ -1,7 +1,12 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.12.10",
+ "latest": "2.12.11",
  "versions": [
+  { "v": "2.12.11", "notes": [
+   "Your tree blossoms and bears fruit sooner, with bananas to find",
+   "How to play: livelier cards",
+   "Small visual tweaks"
+  ] },
   { "v": "2.12.10", "notes": [
    "How to play shows your tree growing and a find flying into the journal",
    "Small visual tweaks"
