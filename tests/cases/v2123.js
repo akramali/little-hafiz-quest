@@ -102,14 +102,14 @@
   d.querySelector('[data-act=howto]').click(); await wait(400);
   for (let q = 0; q < 10 && !/campfires/.test(d.querySelector('#modal').textContent); q++) { [...d.querySelectorAll('#modal [data-act=intro]')].pop().click(); await wait(250); }
   const words = [...d.querySelectorAll('.cfcycle .cfword')].map((x) => x.textContent).join(',');
-  ok('How to play: the campfire roaring, down to low, then roaring again (v2.12.11)', d.querySelectorAll('.cfcycle .cfstep').length === 4 && words === 'Roaring,Strong,Steady,Low', words);
+  ok('How to play: the campfire roaring, down to out, then roaring again (v2.12.15)', d.querySelectorAll('.cfcycle .cfstep').length === 6 && words === 'Roaring,Strong,Steady,Low,Embers,Out', words);
   // (v2.12.10) its journal card taps a sheep into the book; a card of the tree growing; a crisp stopwatch
   for (let q = 0; q < 10 && !/Fill your journal/.test(d.querySelector('#modal').textContent); q++) { [...d.querySelectorAll('#modal [data-act=intro]')].pop().click(); await wait(250); }
   ok('How to play: a sheep tapped flies into the journal', !!d.querySelector('.jtap .jt-fly svg') && !!d.querySelector('.jtap .jt-book svg'));
   [...d.querySelectorAll('#modal [data-act=intro]')].pop().click(); await wait(400);
   ok('…then the tree growing (shown at once)', /Watch your tree grow/.test(d.querySelector('#modal').textContent) && d.querySelectorAll('.treegrow .tg-step').length >= 1);
   await wait(2500);
-  ok('…in eight stages, the rest drawn in quiet moments', d.querySelectorAll('.treegrow .tg-step').length === 8, d.querySelectorAll('.treegrow .tg-step').length);
+  ok('…in six stages, the rest drawn in quiet moments', d.querySelectorAll('.treegrow .tg-step').length === 6, d.querySelectorAll('.treegrow .tg-step').length);
   [...d.querySelectorAll('#modal [data-act=intro]')].pop().click(); await wait(300);
   ok('…and a little every day, with a drawn stopwatch (not the blurry emoji)', /A little every day/.test(d.querySelector('#modal').textContent) && !!d.querySelector('.clockart svg') && !/⏱️/.test(d.querySelector('.intart').textContent));
   d.querySelector('#modal [data-act=cno]') && d.querySelector('#modal [data-act=cno]').click();

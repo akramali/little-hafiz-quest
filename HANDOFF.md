@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is a short public overview (highlights, install, privacy, credits); this file holds the detail.
 
-**Current version:** v2.12.14 (2026-11-26) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.12.15 (2026-11-26) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -210,10 +210,10 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
   100%), and the blossoms thin out as fruit comes (from 8 down to 2). Fruit kinds come in order (dates, figs, olives,
   pomegranates, grapes, apples, oranges, bananas; `ART.FRUIT_TYPES`, `ART.TREE_STAGE`): one more about every 7.5% (2 at
   33%, 3 at 40.5%, 4 at 48%, 5 at 55.5%, 6 at 63%, 7 at 70.5%), all eight by ~78% (v2.12.11; figs brighter for night).
-- **How to play's campfire card (v2.12.11):** roaring, down to low, then roaring again (`.cfcycle`: four `.cfstep` fires,
+- **How to play's campfire card (v2.12.15):** roaring, down to out, then roaring again (`.cfcycle`: six `.cfstep` fires,
   0.8 s each, and their `FIRE_WORD` under them switching at once, `.cfword`, so two words never overlap; reduced motion:
   Roaring, still).
-- **How to play's other animations (v2.12.11):** the tree card has eight sizes (`GROW_AT`) at the fire's pace, the first
+- **How to play's other animations (v2.12.11):** the tree card has six sizes (`GROW_AT`, v2.12.15: eight felt slow) at the fire's pace, the first
   drawn at once and the rest in quiet moments (`warmGrow`, also started when How to play opens); the stopwatch's hand goes
   0 → 10 minutes over a green 5–10 wedge; Listen is shown tapped (`.ls-tap` ring, a press, its sound waves; it stays
   Listen) and Read breathes the journal riddle button's gold glow (`rbreathe`); the gift card's box rattles, is tapped,

@@ -11131,51 +11131,51 @@ body.hasbar::before {
 }
 
 /* ---------- 2026-11-26 · v2.12.11 ---------- */
-/* How to play: the campfire roaring, down to low, roaring again (four steps, 0.8 s each) */
+/* How to play: the campfire roaring, down to out, roaring again (v2.12.15: six steps, 0.8 s each) */
 .intro .cfcycle .cfstep {
-  animation: cfStep4 3.2s linear infinite;
+  animation: cfStep6 4.8s linear infinite;
   animation-delay: calc(var(--j) * 0.8s);
 }
 .intro .cfcycle .cfword {
-  animation: cfWord4 3.2s steps(1, end) infinite;
+  animation: cfWord6 4.8s steps(1, end) infinite;
   animation-delay: calc(var(--j) * 0.8s);
 }
-@keyframes cfStep4 {
+@keyframes cfStep6 {
   0% {
     opacity: 0;
   }
-  5%,
-  25% {
+  3.4%,
+  16.7% {
     opacity: 1;
   }
-  30%,
+  20%,
   100% {
     opacity: 0;
   }
 }
-@keyframes cfWord4 {
+@keyframes cfWord6 {
   0% {
     opacity: 1;
   }
-  25%,
+  16.7%,
   100% {
     opacity: 0;
   }
 }
-/* the tree: eight stages at the campfire's pace */
+/* the tree: six stages at the campfire's pace (v2.12.15: eight felt slow) */
 .intro .treegrow .tg-step {
-  animation: tgStep8 6.4s linear infinite;
+  animation: tgStep6 4.8s linear infinite;
   animation-delay: calc(var(--j) * 0.8s);
 }
-@keyframes tgStep8 {
+@keyframes tgStep6 {
   0% {
     opacity: 0;
   }
-  2%,
-  12.5% {
+  2.6%,
+  16.7% {
     opacity: 1;
   }
-  15%,
+  20%,
   100% {
     opacity: 0;
   }

@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.12.14';
+  const VERSION = '2.12.15';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -7972,7 +7972,7 @@
     // (v2.12.11) the gift box rattles, is tapped, opens, and the things inside come out
     () => [`<div class="intart giftpop"><span class="gp-box gp-shut">${ART.gift({ tier: 3 })}</span><span class="gp-box gp-open">${ART.gift({ tier: 3, open: true })}</span><span class="gp-tap"></span>${['explorer-cap', 'leaf-cape', 'ladybug-buddy'].map((id, j) => (ITEM[id] ? `<span class="gp-item" style="--j:${j};--x:${[-80, 0, 80][j]}px;--y:${[-10, -60, -10][j]}px">${itemPic(id)}</span>` : '')).join('')}</div>`, 'Gifts at every step', 'Win treasures, then dress up your explorer in My Explorer!'],
     // (v2.12.9) the campfire with its word: (v2.12.11) roaring, burning down to low, then roaring again (practised)
-    () => [`<div class="intart cfcycle">${[5, 4, 3, 2].map((l, j) => `<span class="cfstep" style="--j:${j}">${ART.campfire(l)}</span><small class="cfword" style="--j:${j}">${FIRE_WORD[l]}</small>`).join('')}</div>`, 'Keep the campfires burning', 'Every sūrah you learn gets one. Practise it now and then so it never goes out.'],
+    () => [`<div class="intart cfcycle">${[5, 4, 3, 2, 1, 0].map((l, j) => `<span class="cfstep" style="--j:${j}">${ART.campfire(l)}</span><small class="cfword" style="--j:${j}">${FIRE_WORD[l]}</small>`).join('')}</div>`, 'Keep the campfires burning', 'Every sūrah you learn gets one. Practise it now and then so it never goes out.'],
     // (v2.12.10) a finger taps a sheep on the map, and it flies into the journal
     () => [`<div class="intart jtap"><span class="jt-thing">${ART.props['meadow-sheep'] || ''}</span><span class="jt-fly">${ART.props['meadow-sheep'] || ''}</span><span class="jt-tap"></span><span class="jt-book">${BOOK_IC}<b>+1</b></span></div>`, 'Fill your journal', 'Tap animals and things on the map and in the pictures to collect them.'],
     // (v2.12.10) the explorer's own tree, growing from a seedling to full of fruit
@@ -7982,9 +7982,9 @@
   ];
   // (v2.12.10) How to play's pictures: a stopwatch drawn crisp (the ⏱️ emoji blurred at that size), the growing tree
   const CLOCK_SVG = `<svg viewBox="0 0 100 110" aria-hidden="true"><g stroke="#2b2340" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"><rect x="40" y="6" width="20" height="10" rx="4" fill="#ff7a59"/><rect x="45" y="14" width="10" height="10" fill="#c9d2e3"/><path d="M78 24L86 16" fill="none"/><circle cx="50" cy="64" r="40" fill="#ff7a59"/><circle cx="50" cy="64" r="31" fill="#fffaf0"/></g><path d="M50 64L64.5 38.9A29 29 0 0 1 75.1 49.5Z" fill="#5fd27a" opacity=".55"/><g stroke="#2b2340" stroke-width="3" stroke-linecap="round">${[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((a) => { const r = (a * Math.PI) / 180, k = a % 90 ? 26 : 23; return `<path d="M${(50 + k * Math.sin(r)).toFixed(1)} ${(64 - k * Math.cos(r)).toFixed(1)}L${(50 + 29 * Math.sin(r)).toFixed(1)} ${(64 - 29 * Math.cos(r)).toFixed(1)}"/>`; }).join('')}<path class="clk-hand" d="M50 64L50 40" stroke-width="4"/></g><circle cx="50" cy="64" r="4" fill="#2b2340"/><path d="M60 34Q68 38 72 46" fill="none" stroke="#fff" stroke-width="3" opacity=".6"/></svg>`;
-  // (v2.12.11) eight stages at the campfire's pace, framed to the full tree (no sky above it): the first drawn at once, the rest in quiet moments (each tree is a big
+  // (v2.12.11) stages at the campfire's pace, framed to the full tree (no sky above it): the first drawn at once, the rest in quiet moments (each tree is a big
   // drawing), added to the card as they come
-  const GROW_AT = [0.03, 0.1, 0.17, 0.26, 0.4, 0.55, 0.75, 1];
+  const GROW_AT = [0.03, 0.12, 0.26, 0.45, 0.7, 1]; // (v2.12.15: six, eight felt slow)
   let growKept = null;
   function growStep(prof, j) {
     const sz = GROW_AT[j],
