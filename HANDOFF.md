@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is a short public overview (highlights, install, privacy, credits); this file holds the detail.
 
-**Current version:** v2.12.6 (2026-11-26) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.12.7 (2026-11-26) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -200,6 +200,14 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
   cherries, pastel stars, watermelon and lilac lace hijabs, and (cool) moon-and-stars and rainbow glitter ones; a heart
   purse, sparkle sneakers (glowing), a pearl bracelet (watch slot), a flower dress, a bunny buddy (an animal buddy: it
   blinks, sleeps and gets hungry at My Tree), a flower basket (stick slot) and a lace cape.
+- **Fixes (v2.12.7):** the strip behind the status bar is a solid color (`--topbar`, set with theme-color in
+  `setTopColor`), no `backdrop-filter`: on Android (S24, One UI, installed, edge to edge) the blurred strip sometimes went
+  black after a gift pop-up until the app was reopened (not reproducible headless: watch for it). Sticker art is fully still
+  (`stillArt` strips every `lhq-*`/`pr-*`/`cf-*` motion class): a spinning windmill's blades had turned away from the
+  sticker's white edge, a still copy (`flat` drops classes). A long āyah's later parts in Stepping Stones are smaller
+  stones (`.stone.pc`) with no number; the first shows the āyah's number, the card's tag too (no "8·2"). A picture riddle's
+  picture stands on its own at the right of the bar (`.mr-pic`). On the start screen the special day's garland is drawn
+  inside `.splash` (a fixed layer of its own), so the "Updated" note (z-index 12) covers it.
 - **Share the game (v2.12.6):** the Grown-up Corner's 📤 Share, beside How to play, opens the phone's share menu with the
   game's address (the page's own, or `APP_URL` when it runs from a test or local copy), else copies it.
 - **Stickers and badges over a hijab (v2.12.4):** the sticker and badge are drawn after the head (the hijab's drape is

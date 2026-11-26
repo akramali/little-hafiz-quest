@@ -4079,7 +4079,9 @@
     }),
   );
   // stickers stay still (only buddies move): drop the flapping, blinking and swaying from their art
-  const stillArt = (m) => m.replace(/ class="(lhq-(blink|flap|wave|wing-l|bounce|hover|wobble|frog-b)|pr-(bob|flap|sway|ripple))"/g, '');
+  // (v2.12.7) every motion stripped (a spinning windmill's blades turned away from the sticker's white edge, which is a
+  // still copy); the hidden shut eyes stay hidden by their display attribute
+  const stillArt = (m) => m.replace(/ class="(?:lhq-(?!art\b)[a-z-]+|pr-[a-z-]+|cf-[a-z-]+|wglow)"/g, '');
   /* Star badges: one for every 100 stars, each its own color. Earned, never given at random. */
   const BADGE_C = ['#d9905a', '#b9c6d8', '#ffc83d', '#5fd27a', '#5fb2ff']; // 100 … 500 (the Juz has 505 stars)
   const badgeArt = (m, c) =>

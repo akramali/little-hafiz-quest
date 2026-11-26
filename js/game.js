@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.12.6';
+  const VERSION = '2.12.7';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -1617,7 +1617,7 @@
     return out;
   }
   const oneAyah = (us) => us.every((u) => u.k === us[0].k); // (Āyat al-Kursī: its pieces numbered 1, 2, 3…)
-  const unitNum = (u, us) => (u.q == null ? String(u.k + 1) : oneAyah(us) ? String(u.q + 1) : `${u.k + 1}·${u.q + 1}`);
+  const unitNum = (u, us) => (u.q == null ? String(u.k + 1) : oneAyah(us) ? String(u.q + 1) : String(u.k + 1)); // (v2.12.7: no "8·2"; the āyah's number)
   const unitName = (u, us) => (u.q == null ? `${AY(S[st.i])} ${u.k + 1}` : oneAyah(us) ? `part ${u.q + 1}` : `${AY(S[st.i])} ${u.k + 1}, part ${u.q + 1}`);
   function ctx() {
     const s = S[st.i];
@@ -1872,6 +1872,7 @@
   const themeMeta = document.querySelector('meta[name="theme-color"]');
   function setTopColor(c) {
     if (themeMeta && themeMeta.getAttribute('content') !== c) themeMeta.setAttribute('content', c);
+    document.documentElement.style.setProperty('--topbar', c); // (v2.12.7: the strip behind the status bar, a solid color)
   }
   const SPLASH_SKY = ['#7fc8ff', '#0d0f33'], // the start screen's sky (art.js lhq-g-sky / lhq-g-skyn), day / night
     SPLASH_GROUND = ['#967d80', '#584e69']; // and the shaded ledge at its bottom
@@ -1964,7 +1965,10 @@
     if (st.view === 'splash' || st.view === 'map' || st.view === 'summit') setScene(null);
     else if (s && st.i != null && !['settings', 'bag', 'create', 'show'].includes(st.view)) setScene(worldOf(s));
     else setScene(worldOf(S[P().at] || S[0]));
-    const html = V[st.view]() + festiveBar(), // (special days: a garland, v2.9.0)
+    const fest = festiveBar(),
+      out = V[st.view](),
+      // (special days: a garland, v2.9.0; v2.12.7: on the start screen inside it, so the "Updated" note covers it)
+      html = st.view === 'splash' && fest ? out.replace(/(<div class="splash[^>]*>)/, (m) => m + fest) : out + fest,
       key = st.view + ':' + st.i + ':' + st.p + ':' + (st.L || '');
     // the map is always drawn afresh: it adds elements of its own (the horizon) that an in-place update
     // would mistake for the map itself, leaving a blank map after, say, the last gift was opened there
@@ -2763,7 +2767,7 @@
     const stone = (x, j) =>
       j === st.k
         ? `<button class="stone cur" data-j="${j}" data-act="hop" aria-label="Hop to the next stone"><span class="stbg">${ART.stone(wi)}</span><span class="frog">${ART.frog()}</span></button>`
-        : `<span class="stone ${j < st.k ? 'done' : ''}" data-j="${j}"><span class="stbg">${ART.stone(wi)}</span><b>${j < st.k ? '✓' : unitNum(x, idx)}</b></span>`;
+        : `<span class="stone ${j < st.k ? 'done' : ''}${x.q > 0 && !oneAyah(idx) ? ' pc' : ''}" data-j="${j}"><span class="stbg">${ART.stone(wi)}</span><b>${j < st.k ? '✓' : x.q > 0 && !oneAyah(idx) ? '' : unitNum(x, idx)}</b></span>`; // (v2.12.7: a long āyah's later parts, smaller stones with no number)
     const set = (from) => {
       const xs = idx.slice(from, from + STONES_PER);
       return `<div class="stones" style="--cols:${Math.min(5, xs.length)}">${xs.map((x, q) => stone(x, from + q)).join('')}</div>`;
@@ -7281,7 +7285,13 @@
     return `<button class="icon-btn jrbtn ${on ? 'on' : ''}" data-act="riddlego" aria-label="Riddles: ${riddleToGift(prof)} more for a gift${on ? ', one waiting' : ''}"><span class="jrb-ic">🔎</span><b>${n}/${RIDDLE_GIFT}</b></button>`;
   }
   // the riddle opened, on the map: its clue at the bottom
-  const riddleBar = () => (riddleOn ? `<div class="mriddle" role="status"><span class="mr-ic">🔎</span><span class="mr-tx">${riddleOn.clue}<small>Find it on the map!</small></span><button class="mr-x" data-act="riddleoff" aria-label="Stop looking">✕</button></div>` : '');
+  // (v2.12.7) a picture clue's picture stands on its own at the right of the bar, big, clear of the words
+  const riddleBar = () => {
+    if (!riddleOn) return '';
+    const pic = /<span class="rpic">(.*?)<\/span>/.exec(riddleOn.clue),
+      text = pic ? riddleOn.clue.replace(pic[0], '').replace(/:\s*$/, ':') : riddleOn.clue;
+    return `<div class="mriddle" role="status"><span class="mr-ic">🔎</span><span class="mr-tx">${text}<small>Find it on the map!</small></span>${pic ? `<span class="mr-pic" aria-hidden="true">${pic[1]}</span>` : ''}<button class="mr-x" data-act="riddleoff" aria-label="Stop looking">✕</button></div>`;
+  };
   function startRiddle() {
     const prof = P(),
       now = riddleNow(prof);
@@ -8597,5 +8607,5 @@
   registerOffline();
   if (linkCode) setTimeout(() => openSync(linkCode, `${appURL()}#sync=${linkCode}`), 400);
   if (justUpdated) loadChangelog().then(() => st.view === 'splash' && render());
-  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder, world: elderWorld, size: testSize, tap: tapElder }, sunDown, journal: JKEYS, countDay, installSteps: showInstallSteps, cleanStore, cleanProfile, syncCtx, openSync, markNow, fabTarget, riddleNow, riddleCount, occasion, treeInfo, hungry: () => treeHungry, treeReset: () => (treeFedAt = 0), critterFor, riddleSet: (k) => riddleOn && (riddleOn.k = k), riddleKey: () => riddleOn && riddleOn.k, bonusSticker: giveBonusSticker, surprise: giveSurprise, levelGift: giveLevelGift, lastKind, garden: (v) => (v != null && (inGarden = !!v), inGarden), gardenGift: giveGardenGift, riddleKeys: (rz) => RIDDLE_SETS(rz).flat(), riddleSets: (rz) => RIDDLE_SETS(rz), pieces: piecesOf, chainNow, prefs: () => prefs }; // for testing in the browser console
+  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder, world: elderWorld, size: testSize, tap: tapElder }, sunDown, journal: JKEYS, countDay, installSteps: showInstallSteps, cleanStore, cleanProfile, syncCtx, openSync, markNow, fabTarget, riddleNow, riddleCount, occasion, treeInfo, hungry: () => treeHungry, treeReset: () => (treeFedAt = 0), critterFor, riddleSet: (k, clue) => riddleOn && ((riddleOn.k = k), clue && (riddleOn.clue = clue)), riddleKey: () => riddleOn && riddleOn.k, bonusSticker: giveBonusSticker, surprise: giveSurprise, levelGift: giveLevelGift, lastKind, garden: (v) => (v != null && (inGarden = !!v), inGarden), gardenGift: giveGardenGift, riddleKeys: (rz) => RIDDLE_SETS(rz).flat(), riddleSets: (rz) => RIDDLE_SETS(rz), pieces: piecesOf, chainNow, prefs: () => prefs }; // for testing in the browser console
 })();

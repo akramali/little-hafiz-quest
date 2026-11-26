@@ -10864,3 +10864,25 @@ body.riddling #map {
   padding-left: 8px;
   padding-right: 8px;
 }
+/* behind the status bar: a solid color, no blur. On Android (installed, edge to edge) a blurred fixed strip could
+   turn black after a pop-up (a gift) and stay so until the app was reopened */
+body.hasbar::before {
+  background: var(--topbar, var(--barbg));
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+/* a riddle's picture: on its own at the right of the bar */
+.mriddle .mr-pic {
+  flex: none;
+  font-size: 38px;
+  line-height: 1;
+}
+/* Stepping Stones: a long āyah's later parts are smaller stones (no "8·2" numbers) */
+.stone.pc .stbg {
+  transform: scale(0.74);
+  transform-origin: 50% 60%;
+}
+/* the "Updated to …" note over a special day's lights (they hung across it) */
+.splash .updnote {
+  z-index: 12;
+}

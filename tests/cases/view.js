@@ -3,6 +3,7 @@
   fixture(Q.get('dressed') ? { outfit: { hat: 'explorer-cap', watch: 'explorer-watch', stick: 'trekking-pole', shield: 'sturdy-shield', cape: 'leaf-cape', glasses: 'sunrise-glasses', pet: 'ladybug-buddy' } } : undefined);
   if (Q.get('oldver')) localStorage.setItem('lhq_ver', Q.get('oldver'));
   const { w, d, L, idx } = await openGame();
+  if (Q.get('occ') != null) w.__occasion = Q.get('occ'); // occ=jumuah|ramadan|eid|'' : that special day (or none)
   if (Q.get('dressed')) { const p = L.store().profiles[0]; p.items = w.LHQ_ART.ITEMS.map((it) => it.id); p.outfit = {}; ['hat', 'watch', 'stick', 'shield', 'cape', 'glasses', 'pet'].forEach((sl) => (p.outfit[sl] = w.LHQ_ART.ITEMS.find((it) => it.slot === sl && it.from && !it.gold).id)); }
   // worlds=gold:0,done:1 — every star in world 1's sūrahs, every sūrah of world 2 memorized (not every star)
   if (Q.get('worlds')) {

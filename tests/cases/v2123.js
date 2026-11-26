@@ -76,6 +76,17 @@
   Object.defineProperty(w.navigator, 'clipboard', { value: { writeText: (t) => ((copied = t), Promise.resolve()) }, configurable: true });
   d.querySelector('[data-act=shareapp]').click(); await wait(300);
   ok('…without a share menu, the link is copied', copied === 'https://akramali.github.io/little-hafiz-quest/' && /Link copied/.test(d.getElementById('toast').textContent));
+  // (v2.12.7) fixes: stickers fully still (a windmill's blades on its white edge), a long āyah's later stones small and
+  // unnumbered, a riddle's picture on its own, the special day's lights under the "Updated" note, a solid status-bar strip
+  ok('a sticker has no moving parts (the windmill’s blades stay on its white edge)', !/class="(pr-|lhq-(?!art))/.test(A.sticker('p-windmill')) && !/pr-spin/.test(A.sticker('p-lighthouse')));
+  L.go('path', { i: idx(98), p: 1, L: 2, k: 0, hint: 0, hints: 0, hearts: 3, maxH: 3 }); await wait(300);
+  const pcs = [...d.querySelectorAll('.stone.pc')];
+  ok('Stepping Stones: a long āyah’s later parts are small stones with no “8·2” numbers', pcs.length === 3 && pcs.every((x) => !/\d/.test(x.textContent)) && !/·/.test(d.querySelector('.stream').textContent));
+  w.__occasion = 'jumuah'; L.go('splash'); await wait(400);
+  ok('the start screen’s lights are inside it (so the “Updated” note covers them)', !!d.querySelector('.splash .festive'));
+  w.__occasion = '';
+  L.go('bag', { tab: 'hat' }); await wait(300);
+  ok('the strip behind the status bar: a solid color, the same as the bar’s', d.documentElement.style.getPropertyValue('--topbar') === d.querySelector('meta[name="theme-color"]').getAttribute('content') && w.getComputedStyle(d.body, '::before').backdropFilter === 'none');
   ok('no game errors', errs.length === 0, errs.join(' | '));
   done();
 })();

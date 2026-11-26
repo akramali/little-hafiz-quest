@@ -1,7 +1,11 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.12.6",
+ "latest": "2.12.7",
  "versions": [
+  { "v": "2.12.7", "notes": [
+   "Long āyāt in Stepping Stones: their parts are little stones, no more “8·2” numbers",
+   "Small visual tweaks and fixes"
+  ] },
   { "v": "2.12.6", "notes": [
    "7 more hijab styles and more cute things for girls: a bunny buddy, a heart purse, sparkle sneakers",
    "Share the game with other families from the Grown-up Corner"
