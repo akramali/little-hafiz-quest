@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is a short public overview (highlights, install, privacy, credits); this file holds the detail.
 
-**Current version:** v2.12.4 (2026-11-25) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.12.5 (2026-11-25) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -189,6 +189,14 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
   tee, rugby shirt, zip-up hoodie, denim jacket, knit sweater (`TOP`, stripes kept inside by `tband`/`torsoX`), star-knee
   and zip-pocket pants, cozy earmuffs, a canvas tote, canvas sneakers, slip-ons; and cool ones: glowing galaxy and
   lightning capes, glowing neon and compass shields, flame shades, a glowing LED visor, a heart watch, a fishing rod.
+- **For girls (v2.12.5, the user's ask: the surprises leaned to boys):** 27 everyday surprises with `for: 'girl'` (only
+  girls get them; the kind-first picker counts the hijab kind twice, so a girl gets hijabs about twice as often as any
+  other kind): 16 hijab styles added to
+  `HIJABS` (prints clipped to the hijab, trims along the face, their own pins: cherry blossom, lavender daisy, mint leaf,
+  peach hearts, sky clouds, butter gingham, strawberry, pastel rainbow, butterfly, tie-dye, big bow; and cool ones, tier 2:
+  galaxy, sunset ombré, sparkle, flower crown, pearl trim) and 11 flowery, pastel things (a flower crown, ruffle blouse,
+  pastel cardigan, floral pants, flower purse, bow backpack, ballet flats, flower glasses, lace parasol, petal cape, bow
+  watch). Helpers `flower5`, `heartD`, `bow`, `faceArc` next to `HIJABS`.
 - **Stickers and badges over a hijab (v2.12.4):** the sticker and badge are drawn after the head (the hijab's drape is
   part of it), still under the arms.
 - **Family links format 5 (v2.12.2):** stop 207 in every list by sūrah; format 4 codes still read (without it, and with

@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.12.4';
+  const VERSION = '2.12.5';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -733,7 +733,8 @@
       wantItem = things.length && (!stickers.length || last === 's' || share < 0.6 || Math.random() < 0.5);
     if (wantItem) {
       const list = other.length ? other : things,
-        slot = pick([...new Set(list.map((it) => it.slot))]),
+        kinds = [...new Set(list.map((it) => it.slot))],
+        slot = pick(kinds.includes('hijab') ? [...kinds, 'hijab'] : kinds), // (v2.12.5: hijabs twice as likely, so girls can style theirs)
         kind = list.filter((it) => it.slot === slot),
         designs = kind.filter((it) => !it.vof);
       prof.pending.push({ k: 'i', id: pick(designs.length && Math.random() < 0.6 ? designs : kind).id });

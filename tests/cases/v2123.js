@@ -35,6 +35,21 @@
   const NEW4 = ['raglan-tee', 'rugby-shirt', 'zip-hoodie', 'denim-jacket', 'knit-sweater', 'star-pants', 'zip-pants', 'earmuffs', 'tote-bag', 'canvas-sneakers', 'slip-ons', 'galaxy-cape', 'lightning-cape', 'neon-shield', 'compass-shield', 'flame-shades', 'led-visor', 'heart-watch', 'fishing-rod'];
   const bad4 = NEW4.filter((id) => !IT(id) || !IT(id).drop || !/<path/.test(A.item(id)) || A.explorer({}, { [IT(id).slot]: id }, { view: 'front' }) === A.explorer({}, {}, { view: 'front' }) && A.explorer({}, { [IT(id).slot]: id }, { view: 'back' }) === A.explorer({}, {}, { view: 'back' }));
   ok('v2.12.4: 19 more, everyday and cool, each drawn and worn', !bad4.length, bad4.join());
+  // (v2.12.5) for girls: 16 hijab styles and 11 flowery, pastel things, girls only; a boy never gets one, a girl gets hijabs
+  const GIRL5 = ['hijab-blossom', 'hijab-daisy', 'hijab-leaves', 'hijab-hearts', 'hijab-clouds', 'hijab-gingham', 'hijab-strawberry', 'hijab-pastel-rainbow', 'hijab-butterfly', 'hijab-tiedye', 'hijab-bow', 'hijab-galaxy', 'hijab-sunset', 'hijab-sparkle', 'hijab-flowercrown', 'hijab-pearls',
+    'flower-crown', 'ruffle-blouse', 'pastel-cardigan', 'floral-pants', 'flower-purse', 'bow-backpack', 'ballet-flats', 'flower-glasses', 'lace-parasol', 'petal-cape', 'bow-watch'];
+  const girlLook = { skin: 2, hair: 'hijab', hairColor: 0, hijabColor: 2, kid: 'girl' };
+  const bad5 = GIRL5.filter((id) => !IT(id) || !IT(id).drop || IT(id).for !== 'girl' || !/<path/.test(A.item(id)) || (A.explorer(girlLook, { [IT(id).slot]: id }, { view: 'front' }) === A.explorer(girlLook, {}, { view: 'front' }) && A.explorer(girlLook, { [IT(id).slot]: id }, { view: 'back' }) === A.explorer(girlLook, {}, { view: 'back' })));
+  ok('v2.12.5: 27 new things for girls (16 hijab styles), each drawn and worn', !bad5.length, bad5.join());
+  const runFor = (kid) => {
+    prof.look = Object.assign({}, prof.look, kid === 'girl' ? girlLook : { hair: 'short', kid: 'boy' });
+    prof.pending = []; prof.items = []; prof.stickers = []; prof.got = [];
+    for (let t = 0; t < 60; t++) L.surprise(prof, false, true);
+    return prof.pending.filter((g) => g.k === 'i').map((g) => IT(g.id));
+  };
+  const boyGot = runFor('boy'), girlGot = runFor('girl');
+  log('60 surprises: a boy got', boyGot.filter((it) => it.for === 'girl').length, 'girls’ things; a girl got', girlGot.filter((it) => it.slot === 'hijab').length, 'hijabs and', girlGot.filter((it) => it.for === 'girl' && it.slot !== 'hijab').length, 'other girls’ things');
+  ok('a boy never gets the girls’ things; a girl gets hijabs and flowery things among her surprises', !boyGot.some((it) => it.for === 'girl') && girlGot.filter((it) => it.slot === 'hijab').length >= 3 && girlGot.some((it) => it.for === 'girl' && it.slot !== 'hijab'));
   // (v2.12.4) a sticker and a badge are drawn over a hijab's drape, not under it
   const hj = A.explorer({ skin: 3, hair: 'hijab', hairColor: 0, hijabColor: 2, kid: 'girl' }, { sticker: 'moon', medal: 'stars100' }, { view: 'front' });
   ok('a sticker and a badge show over a hijab', hj.indexOf('<svg x="64" y="163"') > hj.indexOf('class="ex-head"') && hj.indexOf('<svg x="95" y="162"') > hj.indexOf('class="ex-head"'));
