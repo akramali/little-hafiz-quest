@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.12.7';
+  const VERSION = '2.12.8';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -3300,7 +3300,7 @@
   /* ---------- MY ACHIEVEMENTS: the explorer in their world, with what they've done ---------- */
   function achievements(prof) {
     let ayat = 0;
-    S.forEach((s) => {
+    J.forEach((s) => { // (v2.12.8: Juz ʿAmma's āyāt only, as the total is; the Garden's were counted too)
       const r = prof.prog[s.n];
       s.P.forEach((P0, p) => {
         const x = r && r.parts[p];
@@ -3337,21 +3337,22 @@
     const a = achievements(prof),
       gold = J.filter((s) => surahStars(s, prof) >= surahMax(s)).length,
       v = 100 * ((0.3 * a.ayat) / a.allAyat + (0.3 * a.memorized) / J.length + (0.4 * gold) / J.length);
-    return (Math.floor(v * 10) / 10).toFixed(1);
+    const r = Math.floor(v * 10) / 10;
+    return Number.isInteger(r) ? String(r) : r.toFixed(1); // (v2.12.8: 22%, not 22.0%)
   }
   // (v2.10.0) ten boxes, by priority: memorizing (how much, sūrahs, āyāt) and the things won, then stars and star
   // badges, then the side activities (journal, riddles), then days in a row and time
   const ACH_ROWS = (a, prof) => [
     ['🧠', `${questPct(prof)}%`, 'memorized'],
-    ['🌸', `${a.memorized}`, 'sūrahs memorized'],
+    ['🌸', `${a.memorized}`, `of ${J.length} sūrahs learned`],
     ['🍃', `${a.ayat}`, `of ${a.allAyat} āyāt learned`],
     ['🎁', `${a.items}`, `of ${a.allItems} things won`],
     ['⭐', `${a.stars}`, `of ${MAX_STARS} stars`],
-    ['🏅', `${a.badges}`, a.badges === 1 ? 'badge' : 'badges'],
+    ['🏅', `${a.badges}`, `of ${ART.BADGES.length} badges`],
     [BOOK_IC, `${a.found}`, `of ${JKEYS.size} journal finds`], // (the map's journal book, v2.10.1)
     ['🔎', `${Math.min(a.riddles, riddleCount('j'))}`, `of ${riddleCount('j')} riddles found`],
     ['🏃', `${a.streak} ${a.streak === 1 ? 'day' : 'days'}`, `in a row · best ${a.best}`],
-    ['⏱️', fmtTime(a.time), 'spent learning'],
+    ['⏱️', a.time >= 30 ? fmtTime(a.time) : '0 min', 'spent learning'], // (v2.12.8: not “not yet spent learning”)
   ];
   V.show = () => {
     const prof = P(),
@@ -8607,5 +8608,5 @@
   registerOffline();
   if (linkCode) setTimeout(() => openSync(linkCode, `${appURL()}#sync=${linkCode}`), 400);
   if (justUpdated) loadChangelog().then(() => st.view === 'splash' && render());
-  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder, world: elderWorld, size: testSize, tap: tapElder }, sunDown, journal: JKEYS, countDay, installSteps: showInstallSteps, cleanStore, cleanProfile, syncCtx, openSync, markNow, fabTarget, riddleNow, riddleCount, occasion, treeInfo, hungry: () => treeHungry, treeReset: () => (treeFedAt = 0), critterFor, riddleSet: (k, clue) => riddleOn && ((riddleOn.k = k), clue && (riddleOn.clue = clue)), riddleKey: () => riddleOn && riddleOn.k, bonusSticker: giveBonusSticker, surprise: giveSurprise, levelGift: giveLevelGift, lastKind, garden: (v) => (v != null && (inGarden = !!v), inGarden), gardenGift: giveGardenGift, riddleKeys: (rz) => RIDDLE_SETS(rz).flat(), riddleSets: (rz) => RIDDLE_SETS(rz), pieces: piecesOf, chainNow, prefs: () => prefs }; // for testing in the browser console
+  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder, world: elderWorld, size: testSize, tap: tapElder }, sunDown, journal: JKEYS, countDay, installSteps: showInstallSteps, cleanStore, cleanProfile, syncCtx, openSync, markNow, fabTarget, riddleNow, riddleCount, occasion, treeInfo, hungry: () => treeHungry, treeReset: () => (treeFedAt = 0), critterFor, riddleSet: (k, clue) => riddleOn && ((riddleOn.k = k), clue && (riddleOn.clue = clue)), riddleKey: () => riddleOn && riddleOn.k, bonusSticker: giveBonusSticker, surprise: giveSurprise, levelGift: giveLevelGift, lastKind, garden: (v) => (v != null && (inGarden = !!v), inGarden), gardenGift: giveGardenGift, riddleKeys: (rz) => RIDDLE_SETS(rz).flat(), riddleSets: (rz) => RIDDLE_SETS(rz), pieces: piecesOf, chainNow, prefs: () => prefs, achievements, winnable }; // for testing in the browser console
 })();

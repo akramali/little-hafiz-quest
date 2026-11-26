@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is a short public overview (highlights, install, privacy, credits); this file holds the detail.
 
-**Current version:** v2.12.7 (2026-11-26) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.12.8 (2026-11-26) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -200,6 +200,12 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
   cherries, pastel stars, watermelon and lilac lace hijabs, and (cool) moon-and-stars and rainbow glitter ones; a heart
   purse, sparkle sneakers (glowing), a pearl bracelet (watch slot), a flower dress, a bunny buddy (an animal buddy: it
   blinks, sleeps and gets hungry at My Tree), a flower basket (stick slot) and a lace cape.
+- **My Achievements' numbers (v2.12.8, checked):** % memorized without ".0" when whole (`questPct`, My Tree too); "N of 37
+  sūrahs learned"; "N of 13 badges" (5 star badges + 8 world badges, `ART.BADGES`); āyāt learned counts Juz ʿAmma only (it
+  counted the Garden's too, against a total of 564). Totals: things won 421 for a boy, 464 for a girl (`winnable`: 380 /
+  423 things + the 40 stickers + Jumuʿah's; the Garden's things, bonus stickers, badges and yearly stickers are extras;
+  owning everything reaches it exactly), journal finds 276 (the Garden's page included), riddles 240 (Juz ʿAmma's), stars
+  505.
 - **Fixes (v2.12.7):** the strip behind the status bar is a solid color (`--topbar`, set with theme-color in
   `setTopColor`), no `backdrop-filter`: on Android (S24, One UI, installed, edge to edge) the blurred strip sometimes went
   black after a gift pop-up until the app was reopened (not reproducible headless: watch for it). Sticker art is fully still

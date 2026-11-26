@@ -87,6 +87,16 @@
   w.__occasion = '';
   L.go('bag', { tab: 'hat' }); await wait(300);
   ok('the strip behind the status bar: a solid color, the same as the bar’s', d.documentElement.style.getPropertyValue('--topbar') === d.querySelector('meta[name="theme-color"]').getAttribute('content') && w.getComputedStyle(d.body, '::before').backdropFilter === 'none');
+  // (v2.12.8) My Achievements: every box with its total; āyāt counted from Juz ʿAmma only; no ".0"
+  prof.look = Object.assign({}, prof.look, { hair: 'short', kid: 'boy' });
+  const a0 = L.achievements(prof);
+  prof.prog[201] = { parts: [{ learn: 1, words: 0, order: 0, next: 0, path: 0, la: 0, wa: 0 }], all: 0 };
+  ok('the Garden’s āyāt don’t count toward the 564 of Juz ʿAmma', L.achievements(prof).ayat === a0.ayat && a0.allAyat === 564);
+  L.go('show'); await wait(300);
+  const grid = d.querySelector('.achgrid').textContent;
+  log('achievements', grid.replace(/\s+/g, ' '));
+  ok('My Achievements: sūrahs “of 37 … learned”, badges “of 13”, things “of 421” for a boy', /of 37 sūrahs learned/.test(grid) && /of 13 badges/.test(grid) && /of 421 things won/.test(grid) && /of 564 āyāt learned/.test(grid));
+  ok('…a whole percentage without “.0”', !/\.0%/.test(grid) && /\d%/.test(grid));
   ok('no game errors', errs.length === 0, errs.join(' | '));
   done();
 })();
