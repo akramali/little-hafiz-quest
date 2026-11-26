@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.12.3';
+  const VERSION = '2.12.4';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -4400,7 +4400,7 @@
       <h4>📚 Sources</h4>
       <ul class="srcs">
         <li><b>Qur'an text</b> (Uthmani): ${ext('https://quranenc.com', 'The Noble Qur\'an Encyclopedia')}, via ${ext('https://github.com/risan/quran-json', 'quran-json')} (CC BY-SA 4.0)</li>
-        <li><b>Recitation</b>: Alafasy, Al-Husary, Al-Minshawi and Abdul Basit, from ${ext('https://everyayah.com', 'EveryAyah.com')}; Alafasy (live, California) from ${ext('https://quranicaudio.com', 'QuranicAudio.com')}; the 99 Names: each name by Mohammed Sadiq, ${ext('https://commons.wikimedia.org/wiki/Category:Arabic_pronunciation_of_names_of_God_in_Islam', 'Wikimedia Commons')} (CC BY-SA 4.0), and a nasheed of the names shared with the game</li>
+        <li><b>Recitation</b>: Alafasy, Al-Husary, Al-Minshawi and Abdul Basit, from ${ext('https://everyayah.com', 'EveryAyah.com')}; Alafasy (live, California) from ${ext('https://quranicaudio.com', 'QuranicAudio.com')}</li>
         <li><b>Word timings</b>: ${ext('https://quran.com', 'Quran.com')}; for the California recording, ${ext('https://github.com/QUD-Technologies/quranic-universal-audio', 'Qur’anic Universal Audio')} (CC BY 4.0, cut to the game’s āyāt)</li>
         <li><b>Word-by-word meanings and transliteration</b>: the ${ext('https://corpus.quran.com', 'Quranic Arabic Corpus')} (GNU GPL v3), via the ${ext('https://api-docs.quran.com', 'Quran.com API')}</li>
         <li><b>Simple meanings, memory cues and āyah transliterations</b>: written for this game</li>

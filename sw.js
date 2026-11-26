@@ -17,7 +17,7 @@
  */
 'use strict';
 
-const VERSION = '2.12.3';
+const VERSION = '2.12.4';
 const SHELL_CACHE = `lhq2-shell-${VERSION}`;
 const AUDIO_CACHE = 'lhq2-audio'; // keep across app updates; change only if the audio files change
 const DATA_CACHE = 'lhq2-data'; // small lists that can change between versions (reciters, versions)
@@ -73,6 +73,10 @@ self.addEventListener('activate', (event) => {
       .then((keys) =>
         Promise.all(keys.filter((k) => (k.startsWith('lhq2-shell-') && k !== SHELL_CACHE) || LEGACY(k)).map((k) => caches.delete(k))),
       )
+      // (v2.12.4) the 99 Names' recordings were taken out: none kept on the phone
+      .then(() => caches.open(AUDIO_CACHE))
+      .then((c) => c.keys().then((reqs) => Promise.all(reqs.filter((r) => /\/audio\/names-[a-z-]+\//.test(r.url)).map((r) => c.delete(r)))))
+      .catch(() => {})
       .then(() => self.clients.claim()),
   );
 });

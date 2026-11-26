@@ -1,7 +1,12 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.12.3",
+ "latest": "2.12.4",
  "versions": [
+  { "v": "2.12.4", "notes": [
+   "19 more things to win: everyday clothes and cool capes, shields and shades",
+   "Stickers and badges show over a hijab",
+   "The 99 Names' recitation is out for now, until a better one is found"
+  ] },
   { "v": "2.12.3", "notes": [
    "Hear the 99 Names: sung all together, or tap one name to hear it clearly",
    "28 new cool things to win, and surprises that change every time",

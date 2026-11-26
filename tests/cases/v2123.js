@@ -1,6 +1,6 @@
 // v2.12.3: fair surprises (never the same kind twice in a row, a thing after a sticker, every kind as likely), 28 new
 // cool things, and the 99 Names' voices: the nasheed for lines (its words lit as sung), a clear voice for a tapped name,
-// and its opening (“He is Allah…”) in Read
+// and its opening (“He is Allah…”) in Read (v2.12.4: its recordings taken out again)
 (async () => {
   fixture();
   const { w, d, L, idx } = await openGame();
@@ -32,29 +32,22 @@
     'trucker-cap', 'glow-cap', 'camo-cap', 'straw-hat', 'propeller-cap', 'safari-helmet', 'lightup-sneakers', 'skate-shoes', 'snow-boots', 'racing-sneakers', 'keychain-pack', 'belt-bag', 'rolltop-pack', 'glow-pack'];
   const bad = NEW.filter((id) => !IT(id) || !IT(id).drop || !/<path/.test(A.item(id)) || A.explorer({}, { [IT(id).slot]: id }, { view: 'front' }) === A.explorer({}, {}, { view: 'front' }) && A.explorer({}, { [IT(id).slot]: id }, { view: 'back' }) === A.explorer({}, {}, { view: 'back' }));
   ok('28 new cool things among the surprises, each drawn and worn', !bad.length, bad.join());
-  // 3. the 99 Names' voices
+  const NEW4 = ['raglan-tee', 'rugby-shirt', 'zip-hoodie', 'denim-jacket', 'knit-sweater', 'star-pants', 'zip-pants', 'earmuffs', 'tote-bag', 'canvas-sneakers', 'slip-ons', 'galaxy-cape', 'lightning-cape', 'neon-shield', 'compass-shield', 'flame-shades', 'led-visor', 'heart-watch', 'fishing-rod'];
+  const bad4 = NEW4.filter((id) => !IT(id) || !IT(id).drop || !/<path/.test(A.item(id)) || A.explorer({}, { [IT(id).slot]: id }, { view: 'front' }) === A.explorer({}, {}, { view: 'front' }) && A.explorer({}, { [IT(id).slot]: id }, { view: 'back' }) === A.explorer({}, {}, { view: 'back' }));
+  ok('v2.12.4: 19 more, everyday and cool, each drawn and worn', !bad4.length, bad4.join());
+  // (v2.12.4) a sticker and a badge are drawn over a hijab's drape, not under it
+  const hj = A.explorer({ skin: 3, hair: 'hijab', hairColor: 0, hijabColor: 2, kid: 'girl' }, { sticker: 'moon', medal: 'stars100' }, { view: 'front' });
+  ok('a sticker and a badge show over a hijab', hj.indexOf('<svg x="64" y="163"') > hj.indexOf('class="ex-head"') && hj.indexOf('<svg x="95" y="162"') > hj.indexOf('class="ex-head"'));
+  // 3. the 99 Names: no recitation (v2.12.4: both recordings taken out): no Listen, a tap says it's coming; its opening still in Read
   const N = S.find((s) => s.n === 207);
-  const nt = await (await w.fetch('audio/names-nasheed/timings.json')).json(), st = await (await w.fetch('audio/names-sadiq/timings.json')).json();
-  ok('the nasheed: ten lines and the opening, a time for every word', nt.surahs['207'].length === 11 && N.ayat.every((a, k) => nt.surahs['207'][k][2].length === a.ar.split(' ').length) && nt.surahs['207'][10][2].length === N.opening.ar.split(' ').length);
-  ok('…in order, each line after the one before', nt.surahs['207'].slice(0, 10).every((l, k, all) => !k || l[0] >= all[k - 1][1] - 0.05));
-  ok('the clear voice: ten lines, a time for every name word', st.surahs['207'].length === 10 && N.ayat.every((a, k) => st.surahs['207'][k][2].length === a.ar.split(' ').length));
+  ok('the 99 Names have no voice for now', N.silent && !N.voice && !N.wordVoice);
   L.go('words', { i: idx(207), p: 0, a: 0, w: 3, phase: 'build', shown: [], doneA: [], savedA: [] }); await wait(300);
-  ok('Listen is on the 99 Names now', !!d.querySelector('.listen.show'));
-  d.querySelector('[data-act=fab]').click(); await wait(1200);
-  const yes = d.querySelector('#modal.show [data-act=dlyes]'); // (a big file asks before it downloads, as long sūrahs do)
-  if (yes) yes.click();
-  await wait(4000);
-  const res = () => w.performance.getEntriesByType('resource').map((e) => e.name);
-  ok('a line plays from the nasheed, its words lighting up as sung', res().some((u) => /names-nasheed\/207\.mp3/.test(u)) && w.__lhq.player.currentTime > 0.5 && !!d.querySelector('.wflow > .wbox.heard'), w.__lhq.player.currentTime);
-  d.querySelector('[data-act=fab]').click(); await wait(300);
-  d.querySelector('[data-act=sayw]').click(); await wait(1200);
-  if (d.querySelector('#modal.show [data-act=dlyes]')) d.querySelector('#modal.show [data-act=dlyes]').click();
-  await wait(2500);
-  ok('a name tapped plays from the clear voice', res().some((u) => /names-sadiq\/207\.mp3/.test(u)));
+  ok('no Listen on the 99 Names', !d.querySelector('.listen.show'));
+  d.querySelector('[data-act=sayw]').click(); await wait(300);
+  ok('…a tap on a name says the recitation is coming', /coming in an update/.test(d.getElementById('toast').textContent));
+  ok('…its recordings are gone from the game', (await w.fetch('audio/names-nasheed/timings.json')).status === 404 && (await w.fetch('audio/names-sadiq/207.mp3')).status === 404);
   L.go('mushaf', { i: idx(207), sel: null }); await wait(300);
-  ok('Read: the opening “He is Allah…” above the names', /هُوَ اللَّهُ/.test(d.querySelector('.mbism').textContent));
-  const ft = L.fabTarget();
-  ok('…and the whole plays it first, then the ten lines', ft.items[0].join() === '207,11' && ft.items.length === 11);
+  ok('Read: the opening “He is Allah…” still above the names', /هُوَ اللَّهُ/.test(d.querySelector('.mbism').textContent));
   ok('no game errors', errs.length === 0, errs.join(' | '));
   done();
 })();

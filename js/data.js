@@ -1366,8 +1366,7 @@ window.LHQ_DATA = {
       asma: true, // the 99 Names of Allah: not a sūrah or āyāt; ten lines of names (tools/build_names.py)
       sura: 0,
       bism: false,
-      voice: "names-nasheed", // (v2.12.3) its own voices, whatever reciter is chosen: the nasheed for lines and the whole,
-      wordVoice: "names-sadiq", // and one clear voice for a single name tapped (Mohammed Sadiq, Wikimedia Commons, CC BY-SA 4.0)
+      silent: true, // (v2.12.4: no recitation of the names yet: the recordings tried weren't right; `voice`/`wordVoice` name a folder when one comes)
       opening: {"ar": "هُوَ اللَّهُ الَّذِي لَا إِلَٰهَ إِلَّا هُوَ", "tr": "Huwa Allāhu alladhī lā ilāha illā huwa", "kid": "He is Allah: there is no god but Him", "words": [["Huwa", "He"], ["Allāhu", "Allah"], ["alladhī", "(is the One) who"], ["lā", "(there is) no"], ["ilāha", "god"], ["illā", "except"], ["huwa", "Him"]]}, // (sung before the names: the voice's line 11)
       ar: "الأسماء الحسنى",
       name: "Al-Asmāʾ al-Ḥusnā",

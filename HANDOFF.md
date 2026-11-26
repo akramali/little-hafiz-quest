@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is a short public overview (highlights, install, privacy, credits); this file holds the detail.
 
-**Current version:** v2.12.3 (2026-11-25) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.12.4 (2026-11-25) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -166,16 +166,15 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
   file every few minutes; the user chose to stay anonymous), trims, levels and joins them into `audio/names-sadiq/207.mp3`
   with word timings (a multi-word name cut by its letters). **Until that is done the stop is `silent: true`** (no Listen,
   a tap says the recitation is coming). See open items.
-- **The 99 Names' voices (v2.12.3):** two, whatever reciter is chosen (`voice`, `wordVoice`; `VOICE`/`WVOICE`, `recOf(id,
-  n, item)`): a line, a part or the whole plays the **nasheed** (`audio/names-nasheed/`, a child singing the names, given
-  by the user), its words lit as sung in Word Steps and Read; a single name tapped (`[n, k, w]`) plays **Mohammed Sadiq's
-  clear voice** (`audio/names-sadiq/`). Both are saved for offline with every reciter. The nasheed's word times: its words
-  heard by Whisper (faster-whisper, medium, run locally), lined up with the game's 102 name words by
-  `tools/build_names.py nasheed` (a best-scoring in-order match on how the words sound; the two it didn't hear, Dhū and
-  Aḍ-Ḍārr, placed between their neighbours), its 12 s of silence cut, levelled, mono 48 kbps. **The opening** ("Huwa
-  Allāhu alladhī lā ilāha illā huwa", `opening` in `js/data.js` with its words) is the voice's line 11
-  (`OPEN_K`): Read shows it where a sūrah has its Bismillah (sel -1, its own words and meanings in the close-up) and the
-  whole plays it first. It is not one of the ten lines (an eleventh would have moved saved progress and family links).
+- **The 99 Names' recitation: none for now (v2.12.4).** v2.12.3 shipped two voices (a child's nasheed for lines, Mohammed
+  Sadiq's Commons clips for a tapped name); the user found the pronunciation wrong and the permission unclear, so v2.12.4
+  took both out (stop 207 is `silent: true` again: no Listen, a tap says the recitation is coming; the service worker
+  deletes any `audio/names-*` saved on a phone). The machinery stays for a proper recording: `voice`/`wordVoice` on the
+  stop name a folder each (`VOICE`/`WVOICE`, `recOf(id, n, item)`: lines and the whole from `voice`, a tapped name from
+  `wordVoice`), the opening ("Huwa Allāhu alladhī lā ilāha illā huwa", `opening`) is the voice's line 11 (`OPEN_K`) and
+  shows in Read where a sūrah has its Bismillah (it shows now too, without sound). `tools/build_names.py` builds a voice
+  from clips (`audio`) or from one recording aligned by Whisper (`nasheed`). The removed files are still in git history
+  (v2.12.3's commit).
 - **Fair surprises (v2.12.3):** `giveSurprise` never gives the same kind twice in a row (`lastKind`: after a sticker, a
   thing to wear; after a thing, a sticker or another kind; a thing whenever fewer than 60% of the last six gifts were
   things, so every explorer gets about the same share) and keeps clear of the last three kinds of thing while others
@@ -186,7 +185,12 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
   glowing aurora, ocean and thunder watches, paw print and planet watches; a light-up hiking pole, rope-wrapped and
   carved staffs, a pro trekking pole; mesh trucker, light-up and camo caps; a straw sun hat, a propeller beanie (it
   spins), a safari helmet; light-up sneakers (glowing soles), checkered skate shoes, snow boots, racing sneakers; keychain,
-  roll-top and light-up backpacks and a belt bag. Glowing ones use `.wglow` and are tier 2.
+  roll-top and light-up backpacks and a belt bag. Glowing ones use `.wglow` and are tier 2. **19 more** (v2.12.4): raglan
+  tee, rugby shirt, zip-up hoodie, denim jacket, knit sweater (`TOP`, stripes kept inside by `tband`/`torsoX`), star-knee
+  and zip-pocket pants, cozy earmuffs, a canvas tote, canvas sneakers, slip-ons; and cool ones: glowing galaxy and
+  lightning capes, glowing neon and compass shields, flame shades, a glowing LED visor, a heart watch, a fishing rod.
+- **Stickers and badges over a hijab (v2.12.4):** the sticker and badge are drawn after the head (the hijab's drape is
+  part of it), still under the arms.
 - **Family links format 5 (v2.12.2):** stop 207 in every list by sūrah; format 4 codes still read (without it, and with
   the journal list as it was, `journalV4`).
 - **Look & Repeat chains (v2.12.2):** no chain one āyah before the end: a chain point with only one more āyah (or a third
@@ -554,9 +558,8 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
 - **The Hidden Garden (v2.12.0):** the user to read over the 146 simple meanings (and hooks) of its stops; the
   trail idea (scenes where gear helps, a campfire rest) is pinned for later. **Later (the user's plan): a house at the
   pavilion** at the top of the Garden that the explorer can go into (the pavilion lights up when tapped since v2.12.1).
-- **The 99 Names' audio (v2.12.3):** done (see the rules above). The Commons clips are in `~/.cache/little-hafiz-quest-audio/names`
-  on the user's machine (Wikimedia let one through every few minutes; re-running `tools/build_names.py audio` reuses
-  them). A sheikh's recording of the names can replace either voice later (another folder, the same build).
+- **The 99 Names' recitation:** wanted, but only with correct pronunciation and clear permission to share (v2.12.4 took
+  out the two tried). Build it with `tools/build_names.py` into a folder and set `voice` (and `wordVoice`) on stop 207.
 - **Gifts for new sūrahs (v2.11.0–v2.11.1).** Still to do: **phrase bites** in Look & Repeat (could reuse Word Steps' `piecesOf`, v2.12.1; an āyah over ~7 words in 2–4 phrases,
   by pause marks or word timings; the leaf only for the whole āyah; where a child stopped kept with the explorer, so a
   new field for backups and links). **On hold, the user is thinking it over:** a gear piece for each checkpoint of a

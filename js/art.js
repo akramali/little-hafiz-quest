@@ -734,6 +734,12 @@
     ['straw-hat', 'hat', 'Straw sun hat'], ['propeller-cap', 'hat', 'Propeller beanie', 2], ['safari-helmet', 'hat', 'Safari helmet'],
     ['lightup-sneakers', 'shoes', 'Light-up sneakers', 2], ['skate-shoes', 'shoes', 'Checkered skate shoes'], ['snow-boots', 'shoes', 'Snow boots'], ['racing-sneakers', 'shoes', 'Racing sneakers', 2],
     ['keychain-pack', 'bag', 'Keychain backpack'], ['belt-bag', 'bag', 'Belt bag'], ['rolltop-pack', 'bag', 'Roll-top backpack'], ['glow-pack', 'bag', 'Light-up backpack', 2],
+    // v2.12.4: everyday things (tops, pants, earmuffs, a tote, shoes) and more cool ones (capes, shields, shades, a watch, a rod)
+    ['raglan-tee', 'top', 'Raglan tee'], ['rugby-shirt', 'top', 'Rugby shirt'], ['zip-hoodie', 'top', 'Zip-up hoodie'], ['denim-jacket', 'top', 'Denim jacket'], ['knit-sweater', 'top', 'Knit sweater'],
+    ['star-pants', 'pants', 'Star-knee pants'], ['zip-pants', 'pants', 'Zip-pocket pants'], ['earmuffs', 'hat', 'Cozy earmuffs'], ['tote-bag', 'bag', 'Canvas tote bag'],
+    ['canvas-sneakers', 'shoes', 'Canvas sneakers'], ['slip-ons', 'shoes', 'Slip-on shoes'],
+    ['galaxy-cape', 'cape', 'Glowing galaxy cape', 2], ['lightning-cape', 'cape', 'Lightning cape', 2], ['neon-shield', 'shield', 'Glowing neon shield', 2], ['compass-shield', 'shield', 'Compass shield'],
+    ['flame-shades', 'glasses', 'Flame shades', 2], ['led-visor', 'glasses', 'Glowing LED visor', 2], ['heart-watch', 'watch', 'Heart watch'], ['fishing-rod', 'stick', 'Fishing rod'],
   ];
   const DROP_COLORS = [
     ['red', 'basic-shirt', 153], ['teal', 'basic-shirt', 330], ['olive', 'basic-pants', 199], ['purple', 'basic-shoes', 252], ['green', 'hoodie', 229],
@@ -1233,6 +1239,48 @@
     },
     bk: () => P('M71 154Q92 165 113 154L114 161Q92 173 70 161Z', '#f4ecdc', sw(2.4)) + L('M62 221Q92 226 122 221', dk('#3fbf7f', 0.25), 1.8),
   };
+  // (v2.12.4) more everyday tops
+  const tband = (y, h, c) => { const a = torsoX(y), b = torsoX(y + h); return F('M' + n(a[0]) + ' ' + y + 'L' + n(a[1]) + ' ' + y + 'L' + n(b[1]) + ' ' + (y + h) + 'L' + n(b[0]) + ' ' + (y + h) + 'Z', c); };
+  TOP['raglan-tee'] = {
+    c: '#f6f6f8',
+    sl: '#3d7be0',
+    fr: () => L('M70 156L82 172M114 156L102 172', '#3d7be0', 4) + C(92, 190, 9, '#3d7be0', sw(2)) + P(star5(92, 190.6, 5.6, 2.6), '#ffd23f', sw(1.4)),
+    bk: () => L('M70 156L82 172M114 156L102 172', '#3d7be0', 4),
+  };
+  TOP['rugby-shirt'] = {
+    c: '#2f5fb8',
+    fr() {
+      const half = P('M80 152L92 160L85 168L73 156Z', '#f6f6f8', sw(2.4));
+      return tband(176, 8, '#ffd23f') + tband(204, 8, '#ffd23f') + P(rr(88.6, 158, 6.8, 16, 2.4), '#f6f6f8', sw(1.8)) + CF(92, 166, 1.6, '#2f5fb8') + half + G(half, MIR);
+    },
+    bk: () => tband(176, 8, '#ffd23f') + tband(204, 8, '#ffd23f') + P('M71 154Q92 165 113 154L114 161Q92 173 70 161Z', '#f6f6f8', sw(2.4)),
+  };
+  TOP['zip-hoodie'] = {
+    c: '#ff8a3d',
+    fr: () => L('M92 158L92 229', '#e8e2d6', 3) + L('M92 160L92 227', dk('#ff8a3d', 0.35), 0.9, ' stroke-dasharray="1.6 1.6"') + P(rr(89.6, 186, 4.8, 7, 1.6), '#c9d2e3', sw(1.4)) +
+      P('M70 204L86 204L86 222L72 222Z', dk('#ff8a3d', 0.12), sw(1.8)) + P('M98 204L114 204L112 222L98 222Z', dk('#ff8a3d', 0.12), sw(1.8)) + L('M84 158L82 176M100 158L102 176', '#ffffff', 1.8),
+    bk: () => S('M68 156Q92 144 116 156Q118 176 92 182Q66 176 68 156Z', dk('#ff8a3d', 0.08)) + L('M62 221Q92 226 122 221', dk('#ff8a3d', 0.25), 1.8),
+  };
+  TOP['denim-jacket'] = {
+    c: '#5b86c9',
+    sl: '#5b86c9',
+    cf: '#4a72b0',
+    fr() {
+      const pk = (x) => P(rr(x - 8, 170, 16, 14, 2.4), dk('#5b86c9', 0.08), sw(1.8)) + P('M' + (x - 8) + ' 170L' + (x + 8) + ' 170L' + (x + 8) + ' 175L' + x + ' 178L' + (x - 8) + ' 175Z', dk('#5b86c9', 0.15), sw(1.6)) + CF(x, 176, 1.4, '#e0a21f');
+      return L('M92 156L92 230', dk('#5b86c9', 0.3), 1.8) + [166, 184, 202, 218].map((y) => CF(95.6, y, 1.7, '#e0a21f')).join('') + pk(78) + pk(106) +
+        P('M78 152L92 162L84 168L70 156Z', '#4a72b0', sw(2.2)) + P('M106 152L92 162L100 168L114 156Z', '#4a72b0', sw(2.2)) + L('M62 214L122 214', '#e8c77a', 1.2, ' stroke-dasharray="2 2"');
+    },
+    bk: () => L('M66 172Q92 178 118 172', dk('#5b86c9', 0.3), 1.8) + L('M66 172Q92 178 118 172', '#e8c77a', 1, ' stroke-dasharray="2 2"') + L('M62 214L122 214', '#e8c77a', 1.2, ' stroke-dasharray="2 2"'),
+  };
+  TOP['knit-sweater'] = {
+    c: '#3fae6a',
+    fr() {
+      let z = 'M' + n(torsoX(180)[0] + 2) + ' 186';
+      for (let x = torsoX(180)[0] + 2, k = 0; x < torsoX(180)[1] - 2; x += 5, k++) z += 'L' + n(x + 5) + ' ' + (k % 2 ? 186 : 180);
+      return tband(176, 16, '#f6f6f8') + L(z, '#e8434a', 2.2) + [70, 80, 90, 100, 110].map((x) => L('M' + x + ' 222L' + x + ' 230', dk('#3fae6a', 0.25), 1.4)).join('');
+    },
+    bk: () => tband(176, 16, '#f6f6f8') + [70, 80, 90, 100, 110].map((x) => L('M' + x + ' 222L' + x + ' 230', dk('#3fae6a', 0.25), 1.4)).join(''),
+  };
   Object.keys(TOP).forEach((id) => {
     const t = TOP[id];
     t.sl = t.sl || t.c;
@@ -1248,6 +1296,9 @@
   ART['cargo-pants'] = { pants: '#8d8a4f', box: [44, 202, 140, 286], leg: () => S(rr(69.6, 236, 9.4, 12, 2.2), '#76733f') + L('M70 240.4L79 240.4', '#5f5c31', 1.6) };
   ART['track-pants'] = { pants: '#3a4a8f', box: [44, 202, 140, 286], leg: () => L('M72.4 223L71.8 264', '#ffffff', 2.8) };
   ART['patch-jeans'] = { pants: '#5b86c9', box: [44, 202, 140, 286], leg: () => S(rr(75.5, 239, 11, 10, 2.6), '#f2b866') + P(rr(77.4, 240.9, 7.2, 6.2, 1.6), 'none', ' stroke="#ffffff" stroke-width="1" stroke-dasharray="2 1.6"') + L('M84 222L83.4 234', '#4670ad', 1.4) };
+  // (v2.12.4) a star on the knee; a zip pocket on the thigh
+  ART['star-pants'] = { pants: '#2f3a92', box: [44, 202, 140, 286], leg: () => P(star5(79, 246, 5.4, 2.4), '#ffd23f', sw(1.4)) };
+  ART['zip-pants'] = { pants: '#55566a', box: [44, 202, 140, 286], leg: () => L('M71 228L84 226', '#c9d2e3', 2.2) + P(rr(82.6, 225, 3.2, 6, 1.2), '#c9d2e3', sw(1.2)) + L('M71 252L86 252', dk('#55566a', 0.3), 1.4) };
   ART['joggers'] = { pants: '#8a9ad6', box: [44, 202, 140, 286], leg: () => S(rr(70, 257, 21.4, 7.4, 3.4), '#6f7fbd') + L('M75 258.6L75 263M80.6 258.6L80.6 263M86.2 258.6L86.2 263', '#5a69a3', 1.2) };
   /* Starter colors: the comfy shirt and pants come in a few soft everyday colors (look.tee, look.legs), so no
      two explorers start out the same. None of them is a prize color: the prizes are bright hue turns. */
@@ -1374,6 +1425,12 @@
   SHOE['racing-sneakers'] = () =>
     S(LOW, '#ffd23f', 'M86 269C91 271 94.6 275 94.6 281L94.6 284L88 284C89 278 88 273 86 269Z') + S(LOW_SOLE, '#ffffff') + L('M62.6 287.4L95.6 287.4', '#3d7be0', 1.6) +
     S('M70 281L76 271L76 276L84 270L78 281L78 277Z', '#3d7be0') + L('M80 272.5L88 272', '#2b2340', 1.8);
+  // (v2.12.4) everyday shoes: canvas sneakers (a white toe cap and laces), slip-ons (elastic sides)
+  SHOE['canvas-sneakers'] = () =>
+    S(LOW, '#e8434a', 'M86 269C91 271 94.6 275 94.6 281L94.6 284L88 284C89 278 88 273 86 269Z') + S('M64 284C63 278 66 274 71 273Q72 280 72 284Z', '#f6f6f8') + S(LOW_SOLE, '#f6f6f8') + L('M62.6 287.4L95.6 287.4', '#e8434a', 1.4) +
+    L('M76 271.6L86 270.6M77 275.6L87 274.6', '#f6f6f8', 1.8);
+  SHOE['slip-ons'] = () =>
+    S(LOW, '#2f3a6b', 'M86 269C91 271 94.6 275 94.6 281L94.6 284L88 284C89 278 88 273 86 269Z') + S(rr(76, 269, 8, 8, 2.6), '#4a5592') + L('M77 271L83 271M77 274L83 274', '#22284d', 1) + S(LOW_SOLE, '#f6f6f8');
   /* (v2.12.1) Seen from behind: the shoe's own outline and colour, a darker heel, a seam up the back and the sole; no
      toe caps, laces or faces (they were drawn on the back too). Sandals: the heel of the foot and a strap round it. */
   function shoeBack(m, sandal) {
@@ -2022,6 +2079,77 @@
     },
   };
 
+  /* ---------- v2.12.4: more things (capes, earmuffs, a tote, shades, a watch, a fishing rod) ---------- */
+  ART['galaxy-cape'] = {
+    box: [36, 146, 148, 280],
+    fx: [[70, 200], [114, 236]],
+    ex(v) {
+      const c = '#1d1650',
+        stars = (pts) => pts.map((p) => F(p[2] ? star5(p[0], p[1], p[2]) : star4(p[0], p[1], 3), p[2] ? '#ffe27a' : '#fff')).join('');
+      if (v === 'back')
+        return glowAt(92, 214, 44, 52, '#b48cff') + S(CAPE_B, c, CAPE_B_SH) + F('M62 230Q80 200 104 214Q118 222 120 200Q122 236 96 236Q74 238 62 230Z', '#5b3fd0', 0.6) + F('M70 190Q90 176 108 192Q94 186 80 196Z', '#ff8ad8', 0.45) +
+          stars([[72, 182], [110, 180, 4], [84, 244, 3.6], [106, 250], [118, 214], [66, 214], [94, 204, 3]]) + CAPE_FOLDS(dk(c, 0.3));
+      return S(CAPE_F, dk(c, 0.15)) + stars([[44, 248], [140, 246, 3.4], [52, 222]]);
+    },
+  };
+  ART['lightning-cape'] = {
+    box: [36, 146, 148, 280],
+    ex(v) {
+      const c = '#ffc23d';
+      if (v === 'back') return S(CAPE_B, c, CAPE_B_SH) + S('M98 172L76 214L90 214L82 252L110 202L96 202L106 172Z', '#3d7be0') + CAPE_FOLDS(dk(c, 0.3));
+      return S(CAPE_F, dk(c, 0.15)) + S('M50 230L44 248L52 246Z', '#3d7be0');
+    },
+  };
+  ART['earmuffs'] = {
+    box: [36, 48, 148, 126],
+    ex() {
+      const c = '#ff8fbf';
+      return DL('M54 106Q50 54 92 52Q134 54 130 106', '#c9d2e3', 4) + S(cloudD(51, 122, 22, 24, 5), c) + S(cloudD(133, 122, 22, 24, 5), c) + CF(51, 111, 4, lt(c, 0.4)) + CF(133, 111, 4, lt(c, 0.4));
+    },
+  };
+  const tote = () => {
+    const c = '#e8dcc0';
+    return L('M106 202Q108 190 116 190Q124 190 126 202', '#b8834a', 2.6) + S('M100 200L132 200L134 234L98 234Z', c, 'M122 200L132 200L134 234L124 234Z') + S('M112 212Q118 204 122 212Q118 222 112 212Z', '#3fae6a') + L('M117 210L117 224', '#2f8a4c', 1.4);
+  };
+  ART['tote-bag'] = {
+    box: [64, 150, 140, 238],
+    ic: () => DL('M70 156Q84 186 106 200', '#b8834a', 3) + tote(),
+    ex(v) {
+      if (v === 'back') return DL('M114 156L70 204', '#b8834a', 3) + G(tote(), MIR);
+      return DL('M70 156L108 200', '#b8834a', 3) + tote();
+    },
+  };
+  ART['flame-shades'] = {
+    box: [42, 96, 142, 134],
+    ex(v) {
+      if (v === 'back') return '';
+      const flame = (x) => 'M' + (x - 12) + ' 124Q' + (x - 15) + ' 112 ' + (x - 8) + ' 104Q' + (x - 6) + ' 110 ' + (x - 2) + ' 110Q' + (x - 2) + ' 102 ' + (x + 4) + ' 98Q' + (x + 3) + ' 106 ' + (x + 9) + ' 108Q' + (x + 15) + ' 114 ' + (x + 12) + ' 124Q' + x + ' 130 ' + (x - 12) + ' 124Z';
+      return temples('#e0a21f') + DL('M88 116Q92 112 96 116', '#e0a21f', 3) + P(flame(75), '#ff5d2b', ' fill-opacity=".85" stroke="#e0a21f" stroke-width="2.6"') + P(flame(109), '#ff5d2b', ' fill-opacity=".85" stroke="#e0a21f" stroke-width="2.6"') +
+        F('M69 124Q66 116 71 112Q72 118 75 118Q75 112 79 110Q79 116 82 120Q82 126 69 124Z', '#ffd23f', 0.9) + F('M103 124Q100 116 105 112Q106 118 109 118Q109 112 113 110Q113 116 116 120Q116 126 103 124Z', '#ffd23f', 0.9);
+    },
+  };
+  ART['led-visor'] = {
+    box: [44, 100, 140, 134],
+    ex(v) {
+      if (v === 'back') return DL('M46 113Q92 121 138 113', '#22202e', 4);
+      const px = [[66, 114], [70, 114], [68, 118], [64, 118], [72, 118], [68, 122], [100, 114], [104, 114], [102, 118], [98, 118], [106, 118], [102, 122], [116, 116], [84, 116]];
+      return DL('M46 113L58 112M126 112L138 113', '#22202e', 4) + glowAt(92, 117, 38, 10, '#ff5d9e') + S('M56 108Q92 102 128 108L127 125Q92 130 57 125Z', '#14162b') +
+        px.map(([x, y], j) => F(rr(x - 1.6, y - 1.6, 3.2, 3.2, 0.6), j < 12 ? '#ff5d9e' : '#3fffb0')).join('');
+    },
+  };
+  ART['heart-watch'] = {
+    box: [-27, -46, 27, 46],
+    w: (big) => watch('#ff6b8a', { rim: '#ffd6e0', c: '#ffffff', mini: F('M0 2C-3 0 -2.4 -2.6 0 -1.2C2.4 -2.6 3 0 0 2Z', '#e8414f') }, S('M0 12C-16 2 -12 -14 0 -5C12 -14 16 2 0 12Z', '#ff5d7a') + F('M-6 -6Q-3 -8 -1 -5', '#fff', 0.6), big),
+  };
+  ART['fishing-rod'] = {
+    box: [16, 120, 64, 292],
+    rot: 42,
+    fs: 108,
+    ex: () =>
+      S(limb(46, 132, 46, 287, 1.6, 3.2), '#3d7be0', limb(47, 134, 47, 285, 0.6, 1)) + S(rr(42, 232, 8, 26, 3), '#2b2340') + C(52, 222, 5, '#c9d2e3', sw(1.6)) + L('M52 222L56 222', INK, 1.6) +
+      L('M46 132Q30 150 28 186', '#ffffff', 1) + ball(28, 190, 3.6, 4, '#e8434a', { hl: false }) + F('M24.6 190L31.4 190Q31.4 194 28 194Q24.6 194 24.6 190Z', '#ffffff') + EF(46, 288, 2.6, 1.6, INK),
+  };
+
   /* ---------- shields: local coordinates around (0,0), worn on the other arm ---------- */
   const KITE = 'M0 -26Q16 -26 23 -20Q23 6 0 27Q-23 6 -23 -20Q-16 -26 0 -26Z';
   const KITE_IN = 'M0 -19.5Q12 -19.5 17.5 -15Q17.5 4.5 0 20.5Q-17.5 4.5 -17.5 -15Q-12 -19.5 0 -19.5Z';
@@ -2094,6 +2222,18 @@
       return S(R, w, 'M7 -17.6A19 19 0 0 1 0.01 19Q12 4 7 -17.6Z') + S(I, '#3f7fe0', 'M5 -12.6A13.6 13.6 0 0 1 0.01 13.6Q9 3 5 -12.6Z') + P(star5(0, 0.6, 9, 4.2), '#ffd23f', sw(1.8)) +
         [45, 135, 225, 315].map((a) => CF(n(16.3 * Math.cos((a * Math.PI) / 180)), n(16.3 * Math.sin((a * Math.PI) / 180)), 1.5, dk(w, 0.4))).join('') + F('M-11 -7Q-9 -11 -5 -12Q-9 -7 -10 -2Z', '#fff', 0.5);
     },
+  };
+  // (v2.12.4) a glowing neon shield (its rim lit) and a round compass shield
+  ART['neon-shield'] = {
+    box: [-27, -30, 27, 30],
+    bk: () => shieldBack(KITE, '#22202e'),
+    sh: () => G(F(KITE, '#3fffb0', 0.3), cls('wglow') + ' transform="scale(1.18)"') + S(KITE, '#22202e') + P(KITE_IN, 'none', ' stroke="#3fffb0" stroke-width="2.6"') + S('M3 -15L-8 3L-1 3L-4 16L8 -2L1 -2Z', '#3fffb0'),
+  };
+  ART['compass-shield'] = {
+    box: [-21, -21, 21, 21],
+    bk: () => shieldBack('M0 -19A19 19 0 1 0 0.01 -19Z', '#a86b3c', 0.74),
+    sh: () => S('M0 -19A19 19 0 1 0 0.01 -19Z', '#a86b3c', 'M7 -17.6A19 19 0 0 1 0.01 19Q12 4 7 -17.6Z') + S('M0 -14A14 14 0 1 0 0.01 -14Z', '#f4ecdc') +
+      F('M0 -12L3 0L-3 0Z', '#e8434a') + F('M0 12L3 0L-3 0Z', '#3a3f52') + F('M-12 0L0 -2.4L0 2.4Z', '#c9b28a') + F('M12 0L0 -2.4L0 2.4Z', '#c9b28a') + CF(0, 0, 1.8, GOLD),
   };
   // (v2.12.0) Āyat al-Kursī's treasure: a gold-rimmed crest with an eight-pointed star and a pearl
   const GUARD = 'M0 -28L23 -19Q25 9 0 29Q-25 9 -23 -19Z',
@@ -2741,7 +2881,7 @@
     // (v2.10.0) the sleeves go behind the body, so each arm comes out from its side, not from the chest
     const body = back
       ? armsEarly + torso + cape + bag + G(head, cls('ex-head')) + armsLate
-      : armsEarly + torso + (o.cape && ART[o.cape].over ? ART[o.cape].over() : '') + bag + stk + G(head, cls('ex-head')) + armsLate;
+      : armsEarly + torso + (o.cape && ART[o.cape].over ? ART[o.cape].over() : '') + bag + G(head, cls('ex-head')) + stk + armsLate; // (v2.12.4: the sticker and badge over a hijab's drape, not under it)
     // shining again: a warm glow and twinkles all around
     const shine = mood === 'shine' ? tw(34, 70, 9, 0) + tw(156, 96, 8, 0.6) + tw(26, 200, 7, 1.2) + tw(166, 186, 9, 0.3) + tw(98, 40, 7, 0.9) + tw(150, 250, 6, 1.6) : '';
     if (mood === 'shine') auras = aura(92, 170, 90, 120) + auras;

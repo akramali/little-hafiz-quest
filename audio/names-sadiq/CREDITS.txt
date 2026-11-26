@@ -1,9 +1,0 @@
-The 99 Names of Allah (Little Hafiz Quest, Hidden Garden stop 207)
-
-Recordings of each name by Mohammed Sadiq (Wikimedia Commons user Sadiqmmm), from
-https://commons.wikimedia.org/wiki/Category:Arabic_pronunciation_of_names_of_God_in_Islam
-licensed CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/).
-
-Changed: each clip trimmed of silence, brought to the same level and joined into 207.mp3 (ten lines of names);
-timings.json gives where each line and name is. Built by tools/build_names.py. 207.mp3 and timings.json are
-shared under CC BY-SA 4.0 as well.
