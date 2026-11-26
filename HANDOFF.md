@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is a short public overview (highlights, install, privacy, credits); this file holds the detail.
 
-**Current version:** v2.12.16 (2026-11-26) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.12.17 (2026-11-26) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -210,6 +210,14 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
   100%), and the blossoms thin out as fruit comes (from 8 down to 2). Fruit kinds come in order (dates, figs, olives,
   pomegranates, grapes, apples, oranges, bananas; `ART.FRUIT_TYPES`, `ART.TREE_STAGE`): one more about every 7.5% (2 at
   33%, 3 at 40.5%, 4 at 48%, 5 at 55.5%, 6 at 63%, 7 at 70.5%), all eight by ~78% (v2.12.11; figs brighter for night).
+- **The installed app runs standalone (v2.12.17):** `display_override: ["fullscreen", …]` (since v2.4.5) is gone. In
+  fullscreen display mode Chrome's WebAPK runs immersive with the default cutout mode: the strip under the camera/status
+  bar is painted black and the page laid out below it, until the system bars are swiped in and out (`viewport-fit=cover`
+  only applies in HTML fullscreen). Very likely also v2.12.7's "black strip after a gift pop-up". Standalone: Chrome
+  paints the status bar from `theme-color`, which `setTopColor` keeps matched to each screen. Installed copies switch
+  when Chrome updates the WebAPK (checked on launch, about daily; reinstalling is immediate). The Grown-up Corner's
+  Fullscreen (browser only, HTML fullscreen) is unchanged. iPhone/iPad keep `apple-mobile-web-app-status-bar-style:
+  default` (black-translucent would put white status text over the light top bars).
 - **My Explorer's "new" dots (v2.12.16):** a thing or sticker stops being new the moment it's tapped, and everything in
   a tab once you switch to another tab (`unfresh`, `freshTab`); leaving My Explorer still clears the rest. Gold things
   keep the tile's own colours with a thin gold ring (the gold gradient glared in dark mode); the block icons (`.iblk`)
