@@ -726,6 +726,14 @@
     ['rainbow-watch', 'watch', 'Rainbow watch'], ['rocket-watch', 'watch', 'Rocket watch'], ['crystal-watch', 'watch', 'Glowing crystal watch', 2], ['ball-watch', 'watch', 'Football watch'],
     // v2.12.1: toy vehicles to ride along
     ['fire-truck', 'pet', 'Fire truck', 2], ['ambulance', 'pet', 'Ambulance', 2], ['police-car', 'pet', 'Police car', 2], ['crane-truck', 'pet', 'Crane truck', 2], ['digger', 'pet', 'Digger', 2], ['school-bus', 'pet', 'School bus', 2],
+    // v2.12.3: more cool things, so every explorer's surprises vary (glowing ones tier 2, shiny)
+    ['mirror-shades', 'glasses', 'Mirror shades', 2], ['catseye-shades', 'glasses', 'Cat-eye shades'], ['wrap-shades', 'glasses', 'Sport wraparound shades', 2], ['neon-shades', 'glasses', 'Glowing neon shades', 2], ['hex-shades', 'glasses', 'Hexagon shades'],
+    ['aurora-watch', 'watch', 'Glowing aurora watch', 2], ['ocean-watch', 'watch', 'Glowing ocean watch', 2], ['thunder-watch', 'watch', 'Glowing thunder watch', 2], ['paw-watch', 'watch', 'Paw print watch'], ['planet-watch', 'watch', 'Planet watch'],
+    ['light-pole', 'stick', 'Light-up hiking pole', 2], ['rope-staff', 'stick', 'Rope-wrapped staff'], ['carved-staff', 'stick', 'Carved walking staff'], ['pro-pole', 'stick', 'Pro trekking pole', 2],
+    ['trucker-cap', 'hat', 'Mesh trucker cap'], ['glow-cap', 'hat', 'Light-up cap', 2], ['camo-cap', 'hat', 'Camo cap'],
+    ['straw-hat', 'hat', 'Straw sun hat'], ['propeller-cap', 'hat', 'Propeller beanie', 2], ['safari-helmet', 'hat', 'Safari helmet'],
+    ['lightup-sneakers', 'shoes', 'Light-up sneakers', 2], ['skate-shoes', 'shoes', 'Checkered skate shoes'], ['snow-boots', 'shoes', 'Snow boots'], ['racing-sneakers', 'shoes', 'Racing sneakers', 2],
+    ['keychain-pack', 'bag', 'Keychain backpack'], ['belt-bag', 'bag', 'Belt bag'], ['rolltop-pack', 'bag', 'Roll-top backpack'], ['glow-pack', 'bag', 'Light-up backpack', 2],
   ];
   const DROP_COLORS = [
     ['red', 'basic-shirt', 153], ['teal', 'basic-shirt', 330], ['olive', 'basic-pants', 199], ['purple', 'basic-shoes', 252], ['green', 'hoodie', 229],
@@ -1346,6 +1354,26 @@
         F('M68 263L68 261Q68 256 73 256L87.5 256Q92.6 256 92.6 261L92.6 263Z', b) + L('M72 266L86 266M72 270L86 270M73 274L85 274', '#fff', 2) + L('M70 280Q80 270 92 276', b === '#f6f6f8' ? INK : '#fff', 2) + P(d, 'none') + L('M68 263L92.6 263', INK, 1.8);
     };
   });
+  // (v2.12.3) more shoes: light-up sneakers (their soles glow), checkered skate shoes, snow boots, racing sneakers
+  const LOW = 'M63.6 284C62 274 69 268 78 268C88 268 94.6 273 94.6 281L94.6 284Z',
+    LOW_SOLE = 'M62.6 282.6L95.6 282.6L95.6 287C95.6 290 93.6 292 90.6 292L67 292C64 292 62.6 290 62.6 287Z';
+  SHOE['lightup-sneakers'] = () =>
+    G(EF(79, 289, 21, 6, '#3fffb0', 0.35), cls('wglow')) + S(LOW, '#2b2340', 'M86 269C91 271 94.6 275 94.6 281L94.6 284L88 284C89 278 88 273 86 269Z') + S(LOW_SOLE, '#ffffff') +
+    ['#ff5d9e', '#ffd23f', '#3fffb0', '#5fb2ff'].map((c, j) => F(rr(65 + j * 7.4, 285.4, 6, 3.4, 1.4), c)).join('') + L('M72 272.5L82 271.5M73.5 276.5L83.5 275.5', '#3fffb0', 2);
+  SHOE['skate-shoes'] = () => {
+    let ch = '';
+    for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) if ((r + c) % 2) ch += F(rr(70 + c * 5, 271 + r * 4, 5, 4, 0.6), '#2b2340');
+    return S(LOW, '#ffffff', 'M86 269C91 271 94.6 275 94.6 281L94.6 284L88 284C89 278 88 273 86 269Z') + ch + S(LOW_SOLE, '#e8434a') + L('M62.6 287.4L95.6 287.4', '#fff', 1.4, ' opacity=".8"');
+  };
+  SHOE['snow-boots'] = () => {
+    const c = '#8a5a35',
+      d = BOOT(250);
+    return F(d, c) + F('M84 250L87.5 250Q92.6 250 92.6 255L92.4 271C95 273.5 95.6 278 95.6 284L88 284C88 276 86 262 84 250Z', dk(c, 0.2)) + F(SOLE.replace(/94\.4/g, '95.6'), '#3a2f45') + P(d, 'none') +
+      L('M74 262L86 266M86 262L74 266M74 270L86 274', '#ffd23f', 1.8) + S(cloudD(80.3, 256, 30, 10, 4), '#f4f0ea');
+  };
+  SHOE['racing-sneakers'] = () =>
+    S(LOW, '#ffd23f', 'M86 269C91 271 94.6 275 94.6 281L94.6 284L88 284C89 278 88 273 86 269Z') + S(LOW_SOLE, '#ffffff') + L('M62.6 287.4L95.6 287.4', '#3d7be0', 1.6) +
+    S('M70 281L76 271L76 276L84 270L78 281L78 277Z', '#3d7be0') + L('M80 272.5L88 272', '#2b2340', 1.8);
   /* (v2.12.1) Seen from behind: the shoe's own outline and colour, a darker heel, a seam up the back and the sole; no
      toe caps, laces or faces (they were drawn on the back too). Sandals: the heel of the foot and a strap round it. */
   function shoeBack(m, sandal) {
@@ -1809,6 +1837,190 @@
     },
   };
 
+
+  /* ---------- v2.12.3: more cool things (glasses, watches, sticks, caps, hats, bags) ---------- */
+  const glowAt = (x, y, rx, ry, c) => G(EF(x, y, rx, ry, c, 0.3), cls('wglow'));
+  ART['mirror-shades'] = {
+    box: [44, 102, 140, 134],
+    ex: (v) =>
+      v === 'back' ? '' : temples('#2b2340') + DL('M88 114Q92 111 96 114', '#2b2340', 3) +
+        [75, 109].map((x) => P(rr(x - 13, 108, 26, 19, 7), '#3d7be0', sw(3)) + F(rr(x - 11.5, 109.6, 23, 5, 2.4), '#ff8ad8', 0.75) + F(rr(x - 11.5, 115.4, 23, 5, 2.4), '#ffd23f', 0.6) + shine(x)).join(''),
+  };
+  ART['catseye-shades'] = {
+    box: [42, 98, 142, 134],
+    fx: [[56, 104], [128, 104]],
+    ex(v) {
+      if (v === 'back') return '';
+      const lens = (x, d) => 'M' + (x - d * 12) + ' 110L' + (x + d * 10) + ' 107Q' + (x + d * 17) + ' 104 ' + (x + d * 15) + ' 112Q' + (x + d * 11) + ' 126 ' + x + ' 126Q' + (x - d * 12) + ' 126 ' + (x - d * 12) + ' 114Z';
+      return temples('#ff5d9e') + DL('M87 113Q92 110 97 113', '#ff5d9e', 3) + P(lens(75, -1), '#2b2340', ' fill-opacity=".85" stroke="#ff5d9e" stroke-width="3"') + P(lens(109, 1), '#2b2340', ' fill-opacity=".85" stroke="#ff5d9e" stroke-width="3"') +
+        CF(60, 106, 2, GOLD) + CF(124, 106, 2, GOLD) + shine(76) + shine(108);
+    },
+  };
+  ART['wrap-shades'] = {
+    box: [44, 100, 140, 134],
+    ex(v) {
+      if (v === 'back') return DL('M46 113Q92 121 138 113', '#22202e', 4);
+      return DL('M46 113L58 112M126 112L138 113', '#22202e', 4) + S('M54 110Q92 100 130 110L128 122Q110 130 92 122Q74 130 56 122Z', '#ff7a2b') +
+        F('M58 112Q92 104 126 112L125 116Q92 109 59 116Z', '#ffd23f', 0.8) + F('M62 121Q74 125 86 120L86 122Q74 128 61 123Z', '#ff3d6e', 0.6) + S('M88 118Q92 113 96 118L96 122Q92 120 88 122Z', '#22202e');
+    },
+  };
+  ART['neon-shades'] = {
+    box: [44, 102, 140, 134],
+    ex: (v) => (v === 'back' ? '' : glowAt(75, 118, 17, 15, '#3fffb0') + glowAt(109, 118, 17, 15, '#3fffb0') + glassesBase('#3fffb0', '#14162b', 0.85) + CF(70, 114, 1.6, '#3fffb0') + CF(104, 114, 1.6, '#3fffb0')),
+  };
+  ART['hex-shades'] = {
+    box: [44, 102, 140, 134],
+    ex(v) {
+      if (v === 'back') return '';
+      const hex = (x) => [0, 1, 2, 3, 4, 5].map((i) => { const a = (Math.PI / 3) * i; return (i ? 'L' : 'M') + n(x + 13.5 * Math.cos(a)) + ' ' + n(118 + 12 * Math.sin(a)); }).join('') + 'Z';
+      return temples('#e0a21f') + DL('M88.5 116Q92 113 95.5 116', '#e0a21f', 3) + P(hex(75), '#7a4fd0', ' fill-opacity=".65" stroke="#e0a21f" stroke-width="3"') + P(hex(109), '#7a4fd0', ' fill-opacity=".65" stroke="#e0a21f" stroke-width="3"') + shine(75) + shine(109);
+    },
+  };
+  ART['aurora-watch'] = {
+    box: [-37, -46, 37, 46],
+    w: (big) => watch('#24324a', { rim: '#7fffd4', c: '#0d1b2a', glow: '#7fffd4', mini: L('M-3 1Q0 -2 3 1', '#7fffd4', 1) }, L('M-13 4Q-6 -6 0 2Q6 10 13 -2', '#7fffd4', 3) + L('M-13 -3Q-6 -11 0 -5Q6 3 13 -9', '#ff8ad8', 2.4) + F(star4(-6, 9, 2.2), '#fff') + F(star4(8, 8, 1.6), '#fff'), big),
+  };
+  ART['ocean-watch'] = {
+    box: [-37, -46, 37, 46],
+    w: (big) => watch('#1f6fb0', { rim: '#5fd6ff', c: '#0b2a4a', glow: '#5fd6ff', mini: L('M-3 0Q-1.5 -1.5 0 0T3 0', '#5fd6ff', 1) }, F('M-15 1Q-7 -5 0 1T15 1Q14 12 0 15Q-14 12 -15 1Z', '#2f9bd8') + L('M-14 1Q-7 -5 0 1T14 1', '#bff4ff', 1.6) + C(-5, -8, 2.2, 'none', ' stroke="#bff4ff" stroke-width="1.2"') + C(4, -11, 1.4, 'none', ' stroke="#bff4ff" stroke-width="1.2"'), big),
+  };
+  ART['thunder-watch'] = {
+    box: [-37, -46, 37, 46],
+    w: (big) => watch('#3a3f52', { rim: '#ffd23f', c: '#1a1d33', glow: '#ffd23f', mini: F('M0.6 -3L-1.6 0.6L0 0.6L-0.6 3L1.6 -0.6L0 -0.6Z', '#ffd23f') }, S('M3 -15L-9 2L-1 2L-5 15L9 -3L1 -3Z', '#ffd23f'), big),
+  };
+  ART['paw-watch'] = {
+    box: [-27, -46, 27, 46],
+    w: (big) => watch('#ff8fbf', { rim: '#ffffff', c: '#ffe9f3', mini: CF(0, 0.6, 1.8, '#c9487a') }, EF(0, 5, 7, 6, '#c9487a') + [[-8, -4], [-3, -9], [3, -9], [8, -4]].map(([x, y]) => EF(x, y, 2.8, 3.4, '#c9487a')).join(''), big),
+  };
+  ART['planet-watch'] = {
+    box: [-27, -46, 27, 46],
+    w: (big) => watch('#6b46c8', { rim: '#c9b8ff', c: '#120e33', mini: CF(0, 0, 1.8, '#ff9f1c') }, ball(0, 0, 7, 7, '#ff9f1c', { hl: false }) + E(0, 0, 14, 4, 'none', ' stroke="#ffd23f" stroke-width="2" transform="rotate(-20)"') + F(star4(-10, -9, 2), '#fff') + CF(9, 10, 1.2, '#fff'), big),
+  };
+  const STICK = { rot: 42, fs: 108 };
+  ART['light-pole'] = Object.assign({}, STICK, {
+    box: [30, 128, 62, 292],
+    ex: () => S(limb(46, 158, 46, 284, 3, 2.6), '#3a3f52') + glowAt(46, 214, 8, 54, '#3fffb0') + L('M46 168L46 262', '#3fffb0', 2.4) + S(rr(40.6, 136, 10.8, 26, 4.4), '#22202e') + L('M42 144L50 144M42 150L50 150', '#3fffb0', 1.4) +
+      DL('M44 140Q34 150 40 162', '#ff5d9e', 2) + E(46, 268, 8, 2.6, 'none', sw(2)) + P(rr(43, 280, 6, 8, 2.4), '#4a4458', sw(1.6)) + EF(46, 289, 2.6, 1.4, INK),
+  });
+  ART['rope-staff'] = Object.assign({}, STICK, {
+    box: [30, 128, 62, 292],
+    ex: () => {
+      const w = '#b8834a';
+      let rope = '';
+      for (let y = 168; y < 204; y += 4) rope += L('M42 ' + y + 'L50 ' + (y + 3), '#efe6d6', 2.4);
+      return S(limb(46, 140, 46, 287, 3.6, 3), w, limb(47.8, 142, 47.8, 285, 1.3, 1.1)) + rope + L('M42 168L50 168M42 206L50 206', dk('#efe6d6', 0.3), 1.4) + ball(46, 138, 5.6, 5.6, dk(w, 0.15)) + EF(46, 288, 2.6, 1.6, INK);
+    },
+  });
+  ART['carved-staff'] = Object.assign({}, STICK, {
+    box: [30, 124, 62, 292],
+    ex: () => {
+      const w = '#c98a4b';
+      let sp = '';
+      for (let y = 150; y < 270; y += 12) sp += L('M43 ' + y + 'Q46 ' + (y + 4) + ' 49 ' + (y + 6), dk(w, 0.35), 1.4);
+      return S(limb(46, 146, 46, 287, 3.4, 2.8), w, limb(47.6, 148, 47.6, 285, 1.2, 1)) + sp + S('M40 146Q38 132 46 128Q54 132 52 146Z', dk(w, 0.12)) + ball(46, 138, 3.4, 3.4, '#2fb8a8', { hl: false }) + EF(46, 288, 2.6, 1.6, INK);
+    },
+  });
+  ART['pro-pole'] = Object.assign({}, STICK, {
+    box: [28, 128, 62, 292],
+    ex: () =>
+      S(limb(46, 160, 46, 214, 2.8, 2.6), '#ff5d5d') + S(limb(46, 214, 46, 282, 2.2, 2), '#c9d2e3') + P(rr(42, 210, 8, 7, 2), '#3a3f52', sw(1.6)) + S(rr(40.8, 136, 10.4, 28, 4.6), '#22202e') +
+      L('M42 146L50 146M42 154L50 154', '#ff5d5d', 1.6) + DL('M43 138Q32 148 40 164', '#3d7be0', 2) + E(46, 270, 9, 2.8, 'none', ' stroke="#3a3f52" stroke-width="2"') + P('M44 282L48 282L46 291Z', '#3a3f52', sw(1.4)),
+  });
+  // caps on the explorer-cap's shape (and its back), in their own colours and details
+  const CAP = 'M47 92C45 66 66 52 92 52C118 52 139 66 137 92Q92 85 47 92Z',
+    CAP_SH = 'M108 54C126 60 139 72 137 92Q126 89 116 88C118 72 116 62 108 54Z',
+    CAP_BRIM = 'M44 92Q92 80 140 92Q146 101 135 104Q92 113 49 104Q38 101 44 92Z',
+    CAP_BACK = 'M47 94C45 66 66 52 92 52C118 52 139 66 137 94Q92 101 47 94Z';
+  const capBack = (c, strap) => S(CAP_BACK, c, 'M108 54C126 60 139 72 137 94Q126 97 116 97C118 78 116 62 108 54Z') + P('M80 97Q80 86 92 86Q104 86 104 97Z', dk(c, 0.45), sw(2.4)) + L('M84 92L100 92', strap || '#fff', 2.4) + C(92, 53, 3.6, dk(c, 0.15));
+  ART['trucker-cap'] = {
+    box: [40, 46, 144, 112],
+    ex(v) {
+      const c = '#3d7be0';
+      let mesh = '';
+      for (let x = 52; x < 134; x += 6) for (let y = 66; y < 90; y += 6) if (x < 72 || x > 112) mesh += CF(x, y, 1.1, '#ffffff', 0.7);
+      if (v === 'back') return capBack(c) + mesh.replace(/ opacity=".7"/g, ' opacity=".5"');
+      return S(CAP_BRIM, c) + S(CAP, c, CAP_SH) + mesh + S('M70 88Q68 64 80 56Q92 52 104 56Q116 64 114 88Q92 84 70 88Z', '#ffffff') + S('M80 80L88 68L92 74L96 68L104 80Z', '#3fae6a') + F('M86 71L88 68L90 71Z', '#fff') + C(92, 53, 3.6, dk(c, 0.15), sw(2.2));
+    },
+  };
+  ART['glow-cap'] = {
+    box: [40, 46, 144, 114],
+    ex(v) {
+      const c = '#22202e';
+      if (v === 'back') return capBack(c, '#3fffb0');
+      return glowAt(92, 103, 50, 8, '#3fffb0') + S(CAP_BRIM, '#2b2b38') + L('M47 102Q92 111 137 102', '#3fffb0', 2.6) + S(CAP, c, CAP_SH) + glowAt(92, 72, 13, 13, '#3fffb0') + C(92, 72, 9, '#14162b', ' stroke="#3fffb0" stroke-width="2.4"') + F('M90 66L86 74L91 74L88 80L96 70L91 70Z', '#3fffb0') + C(92, 53, 3.6, '#3fffb0', sw(2));
+    },
+  };
+  ART['camo-cap'] = {
+    box: [40, 46, 144, 112],
+    ex(v) {
+      const c = '#6b8f4a',
+        spots = [[62, 70, '#4a6b32'], [84, 62, '#8aa866'], [104, 76, '#4a6b32'], [122, 66, '#3a4a2a'], [74, 82, '#3a4a2a'], [112, 86, '#8aa866']].map(([x, y, k]) => F(cloudD(x, y + 5, 14, 9, 3), k)).join('');
+      if (v === 'back') return capBack(c) + spots;
+      return S(CAP_BRIM, c) + F('M60 100Q72 96 84 100Q72 104 60 100Z', '#4a6b32') + S(CAP, c, CAP_SH) + spots + C(92, 53, 3.6, dk(c, 0.15), sw(2.2));
+    },
+  };
+  ART['straw-hat'] = {
+    box: [28, 50, 156, 108],
+    ex() {
+      const c = '#f2d27a';
+      return S('M30 94Q30 82 60 82Q92 88 124 82Q154 82 154 94Q154 104 124 102Q92 106 60 102Q30 104 30 94Z', c, 'M32 97Q44 101 60 100Q92 104 124 100Q142 100 152 97Q152 104 124 103Q92 107 60 103Q32 104 32 97Z') +
+        L('M40 93Q60 96 80 95M104 95Q124 96 144 93', dk(c, 0.2), 1.2) + S('M62 90C60 64 74 56 92 56C110 56 124 64 122 90Z', c, 'M110 59C120 64 124 74 122 90L114 90Q116 70 110 59Z') +
+        L('M70 66Q92 60 114 66M66 74Q92 68 118 74', dk(c, 0.2), 1.2) + S('M61 80Q92 74 123 80L123 88Q92 82 61 88Z', '#e8434a') + S('M120 82L130 90L124 92Z', '#e8434a');
+    },
+  };
+  ART['propeller-cap'] = {
+    box: [44, 26, 140, 104],
+    ex() {
+      const cs = ['#ef4b4b', '#ffd23f', '#3d7be0', '#3fae6a'];
+      return S('M48 96C46 64 66 50 92 50C118 50 138 64 136 96Z', cs[0]) + F('M70 52Q62 70 64 96L80 96Q78 72 82 51Z', cs[1]) + F('M92 50L92 96L108 96Q108 70 102 51Z', cs[2]) + F('M112 54Q122 72 120 96L136 96Q138 70 118 57Z', cs[3]) +
+        P('M48 96C46 64 66 50 92 50C118 50 138 64 136 96Z', 'none') + S('M45 90Q92 82 139 90L139 100Q92 92 45 100Z', '#2b2340') + L('M92 50L92 40', INK, 2.4) +
+        G(S('M70 38Q81 33 92 38Q81 43 70 38Z', '#ef4b4b') + S('M92 38Q103 33 114 38Q103 43 92 38Z', '#3d7be0'), ' class="pr-spin" style="animation-duration:1.4s"') + ball(92, 38, 3, 3, GOLD, { hl: false });
+    },
+  };
+  ART['safari-helmet'] = {
+    box: [36, 46, 148, 106],
+    ex() {
+      const c = '#e8dcc0';
+      return S('M40 92Q92 82 144 92Q146 100 138 102Q92 94 46 102Q38 100 40 92Z', '#d9c9a4', 'M120 89Q138 90 144 92Q146 100 138 102Q128 99 120 97Z') + S('M50 92C48 62 68 50 92 50C116 50 136 62 134 92Z', c, 'M112 54C128 62 136 74 134 92L124 92Q126 70 112 54Z', 'M60 78C62 66 70 60 78 58C70 66 66 74 64 84Z') +
+        S('M49 82Q92 76 135 82L135 90Q92 84 49 90Z', '#5a4a3a') + ball(92, 48, 4.4, 3.4, dk(c, 0.15), { hl: false }) + L('M70 58L72 80M114 58L112 80', dk(c, 0.15), 1.2);
+    },
+  };
+  const twoStrapsB = (st) => DL('M73 155L75 212', st, 4.6) + DL('M111 155L109 212', st, 4.6);
+  ART['keychain-pack'] = {
+    box: [58, 150, 126, 246],
+    ex(v) {
+      const c = '#5fb2ff';
+      if (v !== 'back') return twoStrapsB(dk(c, 0.3));
+      return S(rr(66, 166, 52, 62, 16), c, 'M104 166Q118 166 118 180L118 214Q118 228 104 228L98 228Q110 200 104 166Z', 'M71 182Q71 172 78 170Q74 180 74 194Z') + S(rr(74, 196, 36, 24, 9), lt(c, 0.2)) + L('M78 204L106 204', dk(c, 0.35), 1.6) +
+        L('M88 204L84 222M96 204L100 224', INK, 1.4) + P(star5(84, 226, 4.4), '#ffd23f', sw(1.2)) + ball(100, 228, 3.6, 3.6, '#ff5d9e') + L('M70 176L114 176', dk(c, 0.3), 1.4, ' stroke-dasharray="3 3"');
+    },
+  };
+  ART['belt-bag'] = {
+    box: [64, 150, 128, 214],
+    ic: () => DL('M70 156Q90 180 112 188', '#2b2340', 4) + S(rr(84, 178, 40, 22, 10), '#ff9f1c') + L('M88 186L120 186', '#2b2340', 1.6) + CF(118, 186, 1.8, '#fff'),
+    ex(v) {
+      if (v === 'back') return DL('M112 156L72 206', '#2b2340', 4);
+      return DL('M70 156L114 206', '#2b2340', 4) + S(rr(80, 176, 40, 22, 10), '#ff9f1c', rr(108, 176, 12, 22, 6)) + L('M84 184L116 184', '#2b2340', 1.6) + CF(114, 184, 1.8, '#fff') + S(rr(88, 188, 16, 6, 3), lt('#ff9f1c', 0.3));
+    },
+  };
+  ART['rolltop-pack'] = {
+    box: [58, 140, 126, 236],
+    ex(v) {
+      const c = '#e0a21f';
+      if (v !== 'back') return twoStrapsB(dk(c, 0.35));
+      return S(rr(66, 162, 52, 68, 10), c, 'M106 162Q118 162 118 172L118 220Q118 230 108 230L102 230Q110 200 106 162Z') + S(rr(64, 148, 56, 18, 8), dk(c, 0.12)) + L('M68 154L116 154M68 160L116 160', dk(c, 0.3), 1.2) +
+        S(rr(86, 150, 12, 54, 3), '#2b2340') + P(rr(84, 196, 16, 10, 2), '#c9d2e3', sw(1.6)) + S(rr(72, 210, 40, 14, 5), dk(c, 0.1));
+    },
+  };
+  ART['glow-pack'] = {
+    box: [58, 150, 126, 236],
+    ex(v) {
+      const c = '#2b2b38';
+      if (v !== 'back') return twoStrapsB('#3a3f52') + CF(75, 200, 2.4, '#3fffb0') + CF(109, 200, 2.4, '#3fffb0');
+      return S(rr(66, 166, 52, 62, 14), c, 'M104 166Q118 166 118 180L118 214Q118 228 104 228L98 228Q110 200 104 166Z') + glowAt(92, 198, 22, 20, '#3fffb0') +
+        S(rr(76, 182, 32, 32, 8), '#14162b') + [[84, 190], [92, 190], [100, 190], [84, 198], [100, 198], [84, 206], [92, 206], [100, 206]].map(([x, y], j) => CF(x, y, 2.2, ['#3fffb0', '#ff5d9e', '#5fd6ff', '#ffd23f'][j % 4])).join('') + P(star5(92, 198, 4), '#3fffb0', sw(1));
+    },
+  };
 
   /* ---------- shields: local coordinates around (0,0), worn on the other arm ---------- */
   const KITE = 'M0 -26Q16 -26 23 -20Q23 6 0 27Q-23 6 -23 -20Q-16 -26 0 -26Z';

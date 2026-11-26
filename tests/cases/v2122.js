@@ -34,13 +34,7 @@
   ok('a seventh lantern on My Tree', L.treeInfo(prof).lanterns.length === 7 || L.treeInfo(prof).lanterns.length === 0);
   const sets = L.riddleSets('g');
   ok('its riddle in a set of its own on the end (no one’s order changes)', sets.length === 2 && sets[1].join() === 's:207' && !sets[0].includes('s:207'));
-  // (its recitation comes in an update: no Listen there yet, and a tap says so)
-  L.go('learn', { i: idx(207), p: 0, a: 0, phase: 'repeat', popped: [false, false, false], peek: false, chain: 0, saidA: [], savedA: [] }); await wait(300);
-  ok('no Listen on the 99 Names yet (its recitation is on its way)', !d.querySelector('.listen.show'));
-  L.go('words', { i: idx(207), p: 0, a: 0, w: 2, phase: 'build', shown: [], doneA: [], savedA: [] }); await wait(300);
-  d.querySelector('[data-act=sayw]').click(); await wait(300);
-  ok('…a tap on a name says the recitation is coming', /coming in an update/.test(d.getElementById('toast').textContent));
-  ok('…while the other stops still have Listen', (L.go('learn', { i: idx(202), p: 0, a: 0, phase: 'repeat', popped: [false, false, false], peek: false, chain: 0, saidA: [], savedA: [] }), await wait(300), !!d.querySelector('.listen.show')));
+  // (v2.12.3: its recitation came: see v2123)
   // a family link carries it (format 5)
   prof.prog[207] = { parts: [{ learn: 1, words: 1, order: 1, next: 1, path: 3, la: 0, wa: 0 }, { learn: 1, words: 0, order: 0, next: 0, path: 0, la: 0, wa: 0 }], all: 0 };
   const code = await w.LHQ_SYNC.encode(prof, L.syncCtx());

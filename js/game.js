@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.12.2';
+  const VERSION = '2.12.3';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -721,9 +721,42 @@
     const things = DROPS.filter((it) => forKid(it, prof) && !hasOrWaits(it, prof));
     if (!stickers.length && !things.length) return false;
     const pick = (list) => list[(Math.random() * list.length) | 0];
-    if (things.length && (!stickers.length || Math.random() < 0.6)) prof.pending.push({ k: 'i', id: pick(things).id });
-    else prof.pending.push(small ? { k: 's', id: pick(stickers).id, m: 1 } : { k: 's', id: pick(stickers).id });
+    // (v2.12.3) fair to every explorer: never the same kind twice in a row (after a sticker, a thing to wear; after a
+    // thing, a sticker or a thing of another kind), and a kind first, then one of that kind, so a watch is as likely as
+    // a shirt (there are many more shirt and pants colours), the designs more often than their colour versions
+    const last = lastKind(prof),
+      recent = recentKinds(prof, 3), // (and not a kind of the last three things, while others are left: a wide mix)
+      fresh = things.filter((it) => !recent.includes(it.slot)),
+      other = fresh.length ? fresh : things.filter((it) => it.slot !== last),
+      lately = [...prof.got, ...prof.pending.map((g) => g.k + ':' + g.id)].slice(-6), // (and about the same share of things for everyone)
+      share = lately.length ? lately.filter((k) => k.startsWith('i:')).length / lately.length : 1,
+      wantItem = things.length && (!stickers.length || last === 's' || share < 0.6 || Math.random() < 0.5);
+    if (wantItem) {
+      const list = other.length ? other : things,
+        slot = pick([...new Set(list.map((it) => it.slot))]),
+        kind = list.filter((it) => it.slot === slot),
+        designs = kind.filter((it) => !it.vof);
+      prof.pending.push({ k: 'i', id: pick(designs.length && Math.random() < 0.6 ? designs : kind).id });
+    } else prof.pending.push(small ? { k: 's', id: pick(stickers).id, m: 1 } : { k: 's', id: pick(stickers).id });
     return true;
+  }
+  // (v2.12.3) the kinds of the newest things given (waiting, then opened), newest first
+  function recentKinds(prof, n) {
+    const keys = [...prof.got.map((k) => k), ...prof.pending.map((g) => g.k + ':' + g.id)].reverse(),
+      out = [];
+    for (const k of keys) {
+      if (out.length >= n) break;
+      const it = k.startsWith('i:') && ITEM[k.slice(2)];
+      if (it) out.push(it.slot);
+    }
+    return out;
+  }
+  // (v2.12.3) the kind of the newest gift (waiting, else the last opened): 's' for a sticker, else the thing's slot
+  function lastKind(prof) {
+    const g = prof.pending[prof.pending.length - 1];
+    if (g) return g.k === 's' ? 's' : (ITEM[g.id] && ITEM[g.id].slot) || 'i';
+    const k = prof.got[prof.got.length - 1] || '';
+    return k.startsWith('s:') ? 's' : k.startsWith('i:') ? (ITEM[k.slice(2)] && ITEM[k.slice(2)].slot) || 'i' : '';
   }
   const isLost = (id, prof) => (prof || P()).lost.some((x) => x.id === id);
   const lostAt = (n) => P().lost.filter((x) => x.n === n);
@@ -867,10 +900,13 @@
   const FALLBACK_RECITERS = [{ id: 'alafasy', name: 'Mishary Rashid Alafasy', note: 'Clear and melodic', mb: 0 }];
   let RECITERS = FALLBACK_RECITERS;
   const TIM = Object.create(null); // reciter -> { "<sūrah>": [[start, end, [[ws, we], ...]], ...] }
-  // (v2.12.2) a stop with a voice of its own (the 99 Names): that voice whatever reciter is chosen
-  const VOICE = Object.create(null);
-  S.forEach((s) => s.voice && !s.silent && (VOICE[s.n] = s.voice));
-  const recOf = (id, n) => VOICE[n] || id;
+  // (v2.12.2) a stop with a voice of its own (the 99 Names): that voice whatever reciter is chosen; (v2.12.3) and a
+  // second one for a single word tapped (`wordVoice`: the nasheed sings, a clear voice says one name)
+  const VOICE = Object.create(null),
+    WVOICE = Object.create(null);
+  S.forEach((s) => s.voice && !s.silent && ((VOICE[s.n] = s.voice), (WVOICE[s.n] = s.wordVoice || s.voice)));
+  const recOf = (id, n, it) => (it && it.length === 3 ? WVOICE[n] : VOICE[n]) || id;
+  const OPEN_K = (s) => (s && s.opening ? s.ayat.length : -9); // (the opening is its voice's line after the last: [n, OPEN_K + 1])
   const timLoad = Object.create(null);
   function reciter() {
     return RECITERS.find((r) => r.id === prefs.reciter) || RECITERS[0];
@@ -939,11 +975,11 @@
     keepAwake(true);
     const tok = ++playTok;
     updateFab();
-    Promise.all([...new Set([id, ...items.map((it) => recOf(id, it[0]))])].map(loadTimings))
+    Promise.all([...new Set([id, ...items.map((it) => recOf(id, it[0], it))])].map(loadTimings))
       .catch(() => {
         throw new Error(navigator.onLine === false ? 'This reciter is not saved for offline use yet.' : 'The recitation could not load. Try again in a moment.');
       })
-      .then(() => prepFile(recOf(id, items[0][0]), items[0][0], tok))
+      .then(() => prepFile(recOf(id, items[0][0], items[0]), items[0][0], tok))
       .then(() => {
         if (!playing || tok !== playTok) return;
         playNext();
@@ -1057,7 +1093,7 @@
       mb = (size / 1048576).toFixed(1);
     const m = document.getElementById('modal');
     m.innerHTML = `<div class="card dlcard"><div class="dlico">⬇️</div><h3>${s ? s.name : 'This sūrah'} needs downloading first</h3>
-      <p class="saveinfo">It's a long sūrah (${mb} MB). It downloads once and is then saved on this device, so it plays even without internet.</p>
+      <p class="saveinfo">It's ${s && s.asma ? 'a long recording' : 'a long sūrah'} (${mb} MB). It downloads once and is then saved on this device, so it plays even without internet.</p>
       <div class="dlprog"><i id="dlbar"></i></div>
       <div class="row"><button class="btn wide" data-act="dlno">Not now</button><button class="btn go wide" data-act="dlyes">Download</button></div></div>`;
     m.classList.add('show');
@@ -1092,9 +1128,9 @@
       return;
     }
     // each item plays from its own sūrah's file: get it ready first if it isn't (the Basmalah, then the sūrah)
-    if (FETCH_OK && !fileUrls.has(fileKey(recOf(playRec, it[0]), it[0]))) {
+    if (FETCH_OK && !fileUrls.has(fileKey(recOf(playRec, it[0], it), it[0]))) {
       const tok = playTok;
-      prepFile(recOf(playRec, it[0]), it[0], tok)
+      prepFile(recOf(playRec, it[0], it), it[0], tok)
         .then(() => {
           if (!playing || tok !== playTok) return;
           queue.unshift(it);
@@ -1108,7 +1144,7 @@
       return;
     }
     try {
-      const id = recOf(playRec, it[0]),
+      const id = recOf(playRec, it[0], it),
         T = TIM[id] && TIM[id][it[0]];
       const ay = T && T[it[1] - 1];
       if (!ay) {
@@ -1140,7 +1176,7 @@
         // Basmalah is -1), whether it was chosen before or while it plays
         if (st.view === 'mushaf' && ay[2] && (it[0] === 1 || S[st.i].n === it[0])) {
           seg.ws = ay[2];
-          seg.k = it[0] === 1 ? -1 : it[1] - 1;
+          seg.k = it[0] === 1 || it[1] - 1 === OPEN_K(S[st.i]) ? -1 : it[1] - 1; // (the Bismillah, or a stop's opening)
         }
       }
       curSeg = seg;
@@ -1281,7 +1317,7 @@
     markNow(null);
   }
   function markNow(it) {
-    const k = it && it.length === 2 ? (it[0] === 1 ? -1 : it[1] - 1) : null; // [1, 1] is the Basmalah
+    const k = it && it.length === 2 ? (it[0] === 1 || it[1] - 1 === OPEN_K(BYN[it[0]]) ? -1 : it[1] - 1) : null; // [1, 1] is the Basmalah (and a stop's opening, v2.12.3)
     let cur = null;
     document.querySelectorAll('.mayah').forEach((el) => {
       const on = k != null && +el.dataset.k === k;
@@ -1358,10 +1394,10 @@
     }
     if (v === 'mushaf') {
       // the whole sūrah starts with the Basmalah ([1, 1]); it can also be chosen on its own (sel -1)
-      if (st.sel === -1) return { key: `${s.n}:bism`, label: 'Bismillah', items: [[1, 1]], loop: true };
+      if (st.sel === -1) return s.opening ? { key: `${s.n}:open`, label: 'Opening', items: [[s.n, OPEN_K(s) + 1]], loop: true } : { key: `${s.n}:bism`, label: 'Bismillah', items: [[1, 1]], loop: true };
       if (st.sel != null) return Object.assign(one(st.sel), { loop: true });
       const all = many(range({ from: 0, to: s.ayat.length - 1 }), 'Whole sūrah');
-      return Object.assign(all, { items: s.bism === false ? all.items : [[1, 1], ...all.items], loop: true }); // (no Basmalah before Al-Fātiḥah, whose first āyah it is, or before āyāt from inside a sūrah)
+      return Object.assign(all, { items: s.opening ? [[s.n, OPEN_K(s) + 1], ...all.items] : s.bism === false ? all.items : [[1, 1], ...all.items], loop: true }); // (v2.12.3: the 99 Names open with “He is Allah…”) // (no Basmalah before Al-Fātiḥah, whose first āyah it is, or before āyāt from inside a sūrah)
     }
     return null;
   }
@@ -2548,11 +2584,11 @@
       .join(' ');
     const focus = st.sel != null && st.focus ? focusCard(s, st.sel) : '';
     return `<div class="screen mushafscr" style="${cv(s.color)}" data-act="mclear">
-    ${bar(`📖 ${s.name}`, `${s.ayat.length} ${AYS(s)} · ${st.sel === -1 ? 'Bismillah chosen' : st.sel != null ? `${AY(s)} ${ayNo(s, st.sel)} chosen` : 'the whole ' + (whole(s) === 'whole sūrah' ? 'sūrah' : 'passage')}`, 'surah')}
+    ${bar(`📖 ${s.name}`, `${s.ayat.length} ${AYS(s)} · ${st.sel === -1 ? (s.opening ? 'the opening chosen' : 'Bismillah chosen') : st.sel != null ? `${AY(s)} ${ayNo(s, st.sel)} chosen` : 'the whole ' + (whole(s) === 'whole sūrah' ? 'sūrah' : 'passage')}`, 'surah')}
     <div class="mtools"><span>${st.sel != null ? (st.focus ? 'Listen plays this āyah. Tap anywhere to close.' : '<b>Tap the āyah again</b> to look closer. Tap anywhere else to clear the colors.') : '<b>Hold an āyah</b> to color its words, like Word Steps.'}</span></div>
     <div class="card mushaf ${focus ? 'focusing' : ''}">
       <div class="mtitle" lang="ar">${sTitle(s)}</div>
-      ${s.bism === false ? '' : `<div class="mbism" lang="ar" dir="rtl"><span class="mayah ${st.sel === -1 ? 'sel' : ''}" data-k="-1">${wordsOf(BISM)
+      ${s.bism === false && !s.opening ? '' : `<div class="mbism" lang="ar" dir="rtl"><span class="mayah ${st.sel === -1 ? 'sel' : ''}" data-k="-1">${wordsOf(s.opening ? s.opening.ar : BISM)
         .map((w, j) => (st.sel === -1 ? `<span class="mw" style="${wv(WCOL[j % WCOL.length])}">${w}</span>` : w))
         .join(' ')}</span></div>`}
       <div class="mtext" lang="ar" dir="rtl">${ayat}</div>
@@ -2564,7 +2600,7 @@
   /* one āyah up close: its colored words, with the transliteration over each and the meaning under each
      (as the settings say), and the simple meaning of the whole āyah */
   function focusCard(s, k) {
-    const a = k === -1 ? { ar: BISM, kid: 'In the name of Allah, the Most Kind, the Most Merciful' } : s.ayat[k];
+    const a = k === -1 ? (s.opening ? s.opening : { ar: BISM, kid: 'In the name of Allah, the Most Kind, the Most Merciful' }) : s.ayat[k];
     const words = wordsOf(a.ar)
       .map((w, j) => {
         const ln = wordLines(s.n, k, j);
@@ -2572,7 +2608,7 @@
       })
       .join('');
     return `<div class="mfocus" role="dialog" aria-label="${k === -1 ? 'Bismillah' : 'Āyah ' + (k + 1)}"><div class="mfcard">
-      <div class="mfhead"><span class="ayah-tag">${k === -1 ? '<span class="num">🌙</span>Bismillah' : `<span class="num">${ayNo(s, k)}</span>Āyah ${ayNo(s, k)}`}</span><span class="mfbtns">${prefs.translit || prefs.wordmean ? '<button class="mfx" data-act="wordset" aria-label="Word meaning and transliteration settings">⚙️</button>' : ''}<button class="mfx" data-act="mclear" aria-label="Close">✕</button></span></div>
+      <div class="mfhead"><span class="ayah-tag">${k === -1 ? (s.opening ? '<span class="num">✦</span>Opening' : '<span class="num">🌙</span>Bismillah') : `<span class="num">${ayNo(s, k)}</span>${s.asma ? 'Line' : 'Āyah'} ${ayNo(s, k)}`}</span><span class="mfbtns">${prefs.translit || prefs.wordmean ? '<button class="mfx" data-act="wordset" aria-label="Word meaning and transliteration settings">⚙️</button>' : ''}<button class="mfx" data-act="mclear" aria-label="Close">✕</button></span></div>
       <div class="mfwords" dir="rtl">${words}</div>
       ${prefs.meaning ? `<div class="mean">💬 ${a.kid}</div>` : ''}
       ${!prefs.translit && !prefs.wordmean ? '<div class="mfhint"><span>See how each word sounds and what it means: switch on transliteration and word meanings.</span><button class="icon-btn sm" data-act="wordset" aria-label="Open the word settings">⚙️</button></div>' : ''}
@@ -2635,7 +2671,7 @@
       .then(() => (wordsLoading = null));
   }
   const BISM_WORDS = [["bis'mi", 'In (the) name'], ['l-lahi', '(of) Allah'], ['l-raḥmāni', 'the Most Gracious'], ['l-raḥīmi', 'the Most Merciful']]; // Quranic Arabic Corpus 1:1
-  const wordInfo = (n, k, j) => (k === -1 ? BISM_WORDS[j] : WORDS && WORDS[n] && WORDS[n][k] && WORDS[n][k][j]) || ['', ''];
+  const wordInfo = (n, k, j) => (k === -1 ? (BYN[n] && BYN[n].opening ? BYN[n].opening.words : BISM_WORDS)[j] : WORDS && WORDS[n] && WORDS[n][k] && WORDS[n][k][j]) || ['', ''];
   // the lines over and under a word: transliteration above, meaning below (as the settings say)
   function wordLines(n, k, j) {
     const [tr, en] = wordInfo(n, k, j);
@@ -3980,7 +4016,7 @@
     const T = TIM[id];
     const nums = T ? Object.keys(T) : ['1', ...S.filter((s) => !s.voice && !s.silent).map((s) => String(s.n))];
     // (v2.12.2) and the stops with a voice of their own, saved with every reciter
-    const own = Object.keys(VOICE).flatMap((n) => [`audio/${VOICE[n]}/timings.json`, `audio/${VOICE[n]}/${pad(+n)}.mp3`]);
+    const own = [...new Set(Object.keys(VOICE).flatMap((n) => [VOICE[n], WVOICE[n]].flatMap((v) => [`audio/${v}/timings.json`, `audio/${v}/${pad(+n)}.mp3`])))];
     return [`audio/${id}/timings.json`, ...nums.filter((n) => !VOICE[n]).map((n) => `audio/${id}/${pad(+n)}.mp3`), ...own];
   };
   let offline = { saved: null, busy: false, done: 0, id: '' };
@@ -4315,6 +4351,7 @@
   /* A bonus sticker (v2.11.0), never held back: a new picture from the map first, then a gold edition of one already
      collected, then a shimmer edition of a gold one; a foil edition of one not collected yet last of all. */
   function giveBonusSticker(prof) {
+    if (lastKind(prof) === 's' && giveSurprise(prof, true, true)) return true; // (v2.12.3: not two stickers in a row: a thing instead)
     const have = new Set([...prof.stickers, ...prof.pending.filter((g) => g.k === 's').map((g) => g.id), ...(prof.lostSt || []).map((x) => x.id)]),
       left = ART.STICKERS.filter((x) => x.fill && !x.garden && !have.has(x.id));
     const tier = (x) => (!x.foil ? 0 : x.foil === 'gold' ? (have.has(x.of) ? 1 : 3) : have.has('gold-' + x.of) ? 2 : 4),
@@ -4363,7 +4400,7 @@
       <h4>📚 Sources</h4>
       <ul class="srcs">
         <li><b>Qur'an text</b> (Uthmani): ${ext('https://quranenc.com', 'The Noble Qur\'an Encyclopedia')}, via ${ext('https://github.com/risan/quran-json', 'quran-json')} (CC BY-SA 4.0)</li>
-        <li><b>Recitation</b>: Alafasy, Al-Husary, Al-Minshawi and Abdul Basit, from ${ext('https://everyayah.com', 'EveryAyah.com')}; Alafasy (live, California) from ${ext('https://quranicaudio.com', 'QuranicAudio.com')}</li>
+        <li><b>Recitation</b>: Alafasy, Al-Husary, Al-Minshawi and Abdul Basit, from ${ext('https://everyayah.com', 'EveryAyah.com')}; Alafasy (live, California) from ${ext('https://quranicaudio.com', 'QuranicAudio.com')}; the 99 Names: each name by Mohammed Sadiq, ${ext('https://commons.wikimedia.org/wiki/Category:Arabic_pronunciation_of_names_of_God_in_Islam', 'Wikimedia Commons')} (CC BY-SA 4.0), and a nasheed of the names shared with the game</li>
         <li><b>Word timings</b>: ${ext('https://quran.com', 'Quran.com')}; for the California recording, ${ext('https://github.com/QUD-Technologies/quranic-universal-audio', 'Qur’anic Universal Audio')} (CC BY 4.0, cut to the game’s āyāt)</li>
         <li><b>Word-by-word meanings and transliteration</b>: the ${ext('https://corpus.quran.com', 'Quranic Arabic Corpus')} (GNU GPL v3), via the ${ext('https://api-docs.quran.com', 'Quran.com API')}</li>
         <li><b>Simple meanings, memory cues and āyah transliterations</b>: written for this game</li>
@@ -8548,5 +8585,5 @@
   registerOffline();
   if (linkCode) setTimeout(() => openSync(linkCode, `${appURL()}#sync=${linkCode}`), 400);
   if (justUpdated) loadChangelog().then(() => st.view === 'splash' && render());
-  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder, world: elderWorld, size: testSize, tap: tapElder }, sunDown, journal: JKEYS, countDay, installSteps: showInstallSteps, cleanStore, cleanProfile, syncCtx, openSync, markNow, fabTarget, riddleNow, riddleCount, occasion, treeInfo, hungry: () => treeHungry, treeReset: () => (treeFedAt = 0), critterFor, riddleSet: (k) => riddleOn && (riddleOn.k = k), riddleKey: () => riddleOn && riddleOn.k, bonusSticker: giveBonusSticker, garden: (v) => (v != null && (inGarden = !!v), inGarden), gardenGift: giveGardenGift, riddleKeys: (rz) => RIDDLE_SETS(rz).flat(), riddleSets: (rz) => RIDDLE_SETS(rz), pieces: piecesOf, chainNow, prefs: () => prefs }; // for testing in the browser console
+  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder, world: elderWorld, size: testSize, tap: tapElder }, sunDown, journal: JKEYS, countDay, installSteps: showInstallSteps, cleanStore, cleanProfile, syncCtx, openSync, markNow, fabTarget, riddleNow, riddleCount, occasion, treeInfo, hungry: () => treeHungry, treeReset: () => (treeFedAt = 0), critterFor, riddleSet: (k) => riddleOn && (riddleOn.k = k), riddleKey: () => riddleOn && riddleOn.k, bonusSticker: giveBonusSticker, surprise: giveSurprise, levelGift: giveLevelGift, lastKind, garden: (v) => (v != null && (inGarden = !!v), inGarden), gardenGift: giveGardenGift, riddleKeys: (rz) => RIDDLE_SETS(rz).flat(), riddleSets: (rz) => RIDDLE_SETS(rz), pieces: piecesOf, chainNow, prefs: () => prefs }; // for testing in the browser console
 })();

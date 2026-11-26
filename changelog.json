@@ -1,7 +1,12 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.12.2",
+ "latest": "2.12.3",
  "versions": [
+  { "v": "2.12.3", "notes": [
+   "Hear the 99 Names: sung all together, or tap one name to hear it clearly",
+   "28 new cool things to win, and surprises that change every time",
+   "Small visual tweaks"
+  ] },
   { "v": "2.12.2", "notes": [
    "The 99 Names of Allah in the Hidden Garden, with a lantern and a treasure",
    "Stepping Stones and Picture Puzzle take Āyat al-Kursī and Āmanar-Rasūl a part at a time",

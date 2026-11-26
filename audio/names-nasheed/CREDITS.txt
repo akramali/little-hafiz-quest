@@ -1,0 +1,5 @@
+The nasheed of the 99 Names of Allah (Little Hafiz Quest, Hidden Garden stop 207)
+
+A child's nasheed of the names, provided by the project and shared with permission. Cut of its silence at the start,
+levelled and made mono (207.mp3); timings.json gives where each line, each name and the opening ("Huwa Allahu alladhi la
+ilaha illa huwa", line 11) are, found with Whisper (faster-whisper) and lined up by tools/build_names.py.

@@ -1,2 +1,6 @@
 tests/out/
 __pycache__/
+
+# (v2.12.3) the nasheed as downloaded (the game uses audio/names-nasheed/, built from it) and Windows download marks
+audio/names-sadiq/99 Names of Allah*
+*:Zone.Identifier

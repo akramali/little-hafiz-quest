@@ -5,6 +5,8 @@ Usage (from the project folder):
     python3 tools/build_names.py audio --ffmpeg PATH   # download the clips, build audio/names-sadiq/207.mp3 + timings.json
     python3 tools/build_names.py words                 # write the names' transliteration and meaning into words.json
     python3 tools/build_names.py data                  # print the ten lines for js/data.js (stop 207's "ayat")
+    python3 tools/build_names.py nasheed --src FILE.mp3 --ffmpeg PATH [--words whisper.json]
+                                                       # the nasheed (v2.12.3): audio/names-nasheed/207.mp3 + timings.json
 
 The voice: 99 recordings, one per name, by Mohammed Sadiq on Wikimedia Commons
 (https://commons.wikimedia.org/wiki/Category:Arabic_pronunciation_of_names_of_God_in_Islam), each under CC BY-SA 4.0
@@ -143,7 +145,9 @@ def build_audio(ffmpeg, cache):
             except urllib.error.HTTPError as e:
                 if e.code != 429:
                     raise
-                time.sleep(int(e.headers.get('Retry-After') or 0) or min(300, 15 * (attempt + 1)))
+                time.sleep(max(int(e.headers.get('Retry-After') or 0), min(300, 15 * (attempt + 1))))
+            except (urllib.error.URLError, OSError):  # (the network away for a moment: wait and try again)
+                time.sleep(60)
         if not os.path.isfile(dst):
             sys.exit(f'{fname}: Wikimedia would not send it; run this again later (what came down is kept)')
         clips.append(trimmed(pcm_of(ffmpeg, dst)))
@@ -204,15 +208,100 @@ def build_words():
     print('words.json: 207 written')
 
 
+OPENING = 'هُوَ اللَّهُ الَّذِي لَا إِلَٰهَ إِلَّا هُوَ'  # (He is Allah, there is no god but Him: sung before the names)
+NASHEED = 'names-nasheed'
+HARAKAT = re.compile(r'[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED\u0640]')
+SOUND = str.maketrans({'أ': 'ا', 'إ': 'ا', 'آ': 'ا', 'ٱ': 'ا', 'ى': 'ي', 'ة': 'ه', 'ق': 'ك', 'ح': 'ه', 'خ': 'ه', 'ذ': 'ز', 'ظ': 'ز', 'ض': 'د',
+                       'ص': 'س', 'ث': 'س', 'ط': 'ت', 'ع': 'ا', 'ء': 'ا', 'ئ': 'ي', 'ؤ': 'و', 'غ': 'ك'})
+
+
+def bare(w):
+    """a word as it sounds, loosely: no marks, similar letters made one, no 'al-' or 'wa-' in front"""
+    w = HARAKAT.sub('', w).translate(SOUND)
+    for pre in ('وال', 'لل', 'ال', 'و'):
+        if w.startswith(pre) and len(w) > len(pre) + 1:
+            return w[len(pre):]
+    return w
+
+
+def align(ours, heard):
+    """the heard words (in order, with times) matched to ours by a best-scoring alignment that keeps both in order;
+    a word of ours with no match gets its time between its neighbours'"""
+    from difflib import SequenceMatcher
+    sim = lambda a, b: SequenceMatcher(None, bare(a), bare(b)).ratio()
+    n, m = len(ours), len(heard)
+    D = [[0.0] * (m + 1) for _ in range(n + 1)]
+    for i in range(1, n + 1):
+        for j in range(1, m + 1):
+            D[i][j] = max(D[i - 1][j], D[i][j - 1], D[i - 1][j - 1] + (sim(ours[i - 1], heard[j - 1][2]) - 0.35))
+    i, j, at = n, m, [None] * n
+    while i and j:
+        if D[i][j] == D[i - 1][j - 1] + (sim(ours[i - 1], heard[j - 1][2]) - 0.35):
+            at[i - 1] = j - 1; i -= 1; j -= 1
+        elif D[i][j] == D[i - 1][j]:
+            i -= 1
+        else:
+            j -= 1
+    return at
+
+
+def build_nasheed(ffmpeg, src, words_json):
+    # what Whisper heard, with times (faster-whisper, run here if no file is given)
+    if words_json and os.path.isfile(words_json):
+        heard = json.load(open(words_json, encoding='utf-8'))
+    else:
+        import numpy as np
+        from faster_whisper import WhisperModel
+        raw = subprocess.run([ffmpeg, '-v', 'error', '-i', src, '-ac', '1', '-ar', '16000', '-f', 's16le', '-'], check=True, capture_output=True).stdout
+        segs, _ = WhisperModel('medium', device='cpu', compute_type='int8').transcribe(np.frombuffer(raw, np.int16).astype(np.float32) / 32768, language='ar', word_timestamps=True, beam_size=5,
+                                                                                   initial_prompt=OPENING + ' ' + ' '.join(x[0] for x in NAMES[:10]))
+        heard = [[w.start, w.end, w.word.strip(), w.probability] for s in segs for w in (s.words or [])]
+    ours = OPENING.split() + [w for x in NAMES for w in x[0].split()]
+    at = align(ours, heard)
+    starts = [heard[j][0] if j is not None else None for j in at]
+    for k in range(len(ours)):  # (unmatched: between the neighbours)
+        if starts[k] is None:
+            a = max([q for q in range(k) if starts[q] is not None], default=None)
+            b = min([q for q in range(k + 1, len(ours)) if starts[q] is not None], default=None)
+            sa, sb = starts[a] if a is not None else 0, starts[b] if b is not None else heard[-1][1]
+            span = (b if b is not None else len(ours)) - (a if a is not None else -1)
+            starts[k] = sa + (sb - sa) * (k - (a if a is not None else -1)) / span
+    last_end = heard[at[-1]][1] if at[-1] is not None else starts[-1] + 1.5
+    ends = [starts[k + 1] - 0.03 for k in range(len(ours) - 1)] + [last_end + 0.25]
+    lead = max(0.0, starts[0] - 0.4)  # (the silence before it is cut off)
+    t = lambda x: round(x - lead + 0.25, 3)
+    no = len(OPENING.split())
+    lines, k = [], no
+    for idx in LINES:
+        cnt = sum(len(NAMES[i][0].split()) for i in idx)
+        ws = [[t(starts[q]), t(ends[q])] for q in range(k, k + cnt)]
+        lines.append([ws[0][0], ws[-1][1], ws])
+        k += cnt
+    opening = [[t(starts[q]), t(ends[q])] for q in range(no)]
+    lines.append([opening[0][0], opening[-1][1], opening])  # (the opening, after the ten lines: the game plays it as line 11)
+    folder = os.path.join(ROOT, 'audio', NASHEED)
+    os.makedirs(folder, exist_ok=True)
+    subprocess.run([ffmpeg, '-v', 'error', '-y', '-ss', f'{lead:.3f}', '-i', src, '-af', 'adelay=250|250,loudnorm=I=-18:TP=-2', '-ac', '1', '-ar', '44100', '-c:a', 'libmp3lame', '-b:a', '48k',
+                    os.path.join(folder, f'{N:03d}.mp3')], check=True)
+    with open(os.path.join(folder, 'timings.json'), 'w', encoding='utf-8') as f:
+        json.dump({'reciter': NASHEED, 'name': 'Nasheed of the 99 Names', 'kbps': 48, 'surahs': {str(N): lines}}, f, ensure_ascii=False)
+    miss = [ours[q] for q in range(len(ours)) if at[q] is None]
+    print(f'audio/{NASHEED}/{N:03d}.mp3: lines at ' + ', '.join(f'{l[0]:.1f}' for l in lines) + f'; not heard (placed between): {" ".join(miss) or "none"}')
+
+
 if __name__ == '__main__':
     import urllib.parse
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    ap.add_argument('what', choices=['audio', 'words', 'data'])
+    ap.add_argument('what', choices=['audio', 'words', 'data', 'nasheed'])
+    ap.add_argument('--src', help='the nasheed recording (nasheed)')
+    ap.add_argument('--words', help='its words with times from faster-whisper, as JSON (nasheed; made here if missing)')
     ap.add_argument('--ffmpeg', default=os.environ.get('FFMPEG', 'ffmpeg'))
     ap.add_argument('--cache', default=os.environ.get('LHQ_AUDIO_CACHE', os.path.expanduser('~/.cache/little-hafiz-quest-audio/names')))
     a = ap.parse_args()
     if a.what == 'audio':
         build_audio(a.ffmpeg, a.cache)
+    elif a.what == 'nasheed':
+        build_nasheed(a.ffmpeg, a.src, a.words)
     elif a.what == 'words':
         build_words()
     else:

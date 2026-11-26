@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is a short public overview (highlights, install, privacy, credits); this file holds the detail.
 
-**Current version:** v2.12.2 (2026-11-24) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.12.3 (2026-11-25) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -166,6 +166,27 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
   file every few minutes; the user chose to stay anonymous), trims, levels and joins them into `audio/names-sadiq/207.mp3`
   with word timings (a multi-word name cut by its letters). **Until that is done the stop is `silent: true`** (no Listen,
   a tap says the recitation is coming). See open items.
+- **The 99 Names' voices (v2.12.3):** two, whatever reciter is chosen (`voice`, `wordVoice`; `VOICE`/`WVOICE`, `recOf(id,
+  n, item)`): a line, a part or the whole plays the **nasheed** (`audio/names-nasheed/`, a child singing the names, given
+  by the user), its words lit as sung in Word Steps and Read; a single name tapped (`[n, k, w]`) plays **Mohammed Sadiq's
+  clear voice** (`audio/names-sadiq/`). Both are saved for offline with every reciter. The nasheed's word times: its words
+  heard by Whisper (faster-whisper, medium, run locally), lined up with the game's 102 name words by
+  `tools/build_names.py nasheed` (a best-scoring in-order match on how the words sound; the two it didn't hear, Dhū and
+  Aḍ-Ḍārr, placed between their neighbours), its 12 s of silence cut, levelled, mono 48 kbps. **The opening** ("Huwa
+  Allāhu alladhī lā ilāha illā huwa", `opening` in `js/data.js` with its words) is the voice's line 11
+  (`OPEN_K`): Read shows it where a sūrah has its Bismillah (sel -1, its own words and meanings in the close-up) and the
+  whole plays it first. It is not one of the ten lines (an eleventh would have moved saved progress and family links).
+- **Fair surprises (v2.12.3):** `giveSurprise` never gives the same kind twice in a row (`lastKind`: after a sticker, a
+  thing to wear; after a thing, a sticker or another kind; a thing whenever fewer than 60% of the last six gifts were
+  things, so every explorer gets about the same share) and keeps clear of the last three kinds of thing while others
+  are left (`recentKinds`); it picks a kind first, then a thing of it (a design 60% of the time over its colour
+  versions), so a watch is as likely as a shirt. `giveBonusSticker` after a sticker gives a thing instead (past the
+  pacing). Simulated in `v2123`: 12 explorers × 30 surprises, no repeats, 60–73% things, 5+ kinds in the first ten.
+  **28 new everyday things** (`DROP_NEW`, v2.12.3): mirror, cat-eye, sport wraparound, glowing neon and hexagon shades;
+  glowing aurora, ocean and thunder watches, paw print and planet watches; a light-up hiking pole, rope-wrapped and
+  carved staffs, a pro trekking pole; mesh trucker, light-up and camo caps; a straw sun hat, a propeller beanie (it
+  spins), a safari helmet; light-up sneakers (glowing soles), checkered skate shoes, snow boots, racing sneakers; keychain,
+  roll-top and light-up backpacks and a belt bag. Glowing ones use `.wglow` and are tier 2.
 - **Family links format 5 (v2.12.2):** stop 207 in every list by sūrah; format 4 codes still read (without it, and with
   the journal list as it was, `journalV4`).
 - **Look & Repeat chains (v2.12.2):** no chain one āyah before the end: a chain point with only one more āyah (or a third
@@ -533,13 +554,9 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
 - **The Hidden Garden (v2.12.0):** the user to read over the 146 simple meanings (and hooks) of its stops; the
   trail idea (scenes where gear helps, a campfire rest) is pinned for later. **Later (the user's plan): a house at the
   pavilion** at the top of the Garden that the explorer can go into (the pavilion lights up when tapped since v2.12.1).
-- **The 99 Names' recitation (next update, the user's plan):** finish `tools/build_names.py audio` (the clips trickle in
-  from Wikimedia; the download cache was in a session scratch folder, so re-run it with `--cache` somewhere lasting),
-  the user listens to the result, then: remove `silent: true` from stop 207 in `js/data.js`, commit `audio/names-sadiq/`
-  (207.mp3, timings.json and a CREDITS.txt naming Mohammed Sadiq / Wikimedia Commons / CC BY-SA 4.0), add the credit to
-  the README's "Credits and licenses" and to the Grown-up Corner's credits (`Recitation` line), and add audio checks to
-  `tests/cases/v2122.js` (timings for all ten lines; Listen plays). A sheikh's recording can replace the voice later
-  (another folder, the same build): none with a licence to share was found.
+- **The 99 Names' audio (v2.12.3):** done (see the rules above). The Commons clips are in `~/.cache/little-hafiz-quest-audio/names`
+  on the user's machine (Wikimedia let one through every few minutes; re-running `tools/build_names.py audio` reuses
+  them). A sheikh's recording of the names can replace either voice later (another folder, the same build).
 - **Gifts for new sūrahs (v2.11.0–v2.11.1).** Still to do: **phrase bites** in Look & Repeat (could reuse Word Steps' `piecesOf`, v2.12.1; an āyah over ~7 words in 2–4 phrases,
   by pause marks or word timings; the leaf only for the whole āyah; where a child stopped kept with the explorer, so a
   new field for backups and links). **On hold, the user is thinking it over:** a gear piece for each checkpoint of a

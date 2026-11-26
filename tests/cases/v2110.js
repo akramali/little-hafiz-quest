@@ -32,11 +32,13 @@
   ok('a gold sticker has a foil edge', gold.includes('url(#lhq-foil-gold)'));
   // the order: a new map picture first; with every one of those, a gold edition of one collected (not of one missing)
   prof.pending = [];
+  prof.got.push('i:explorer-cap'); // (v2.12.3: the last gift a thing, so a bonus sticker may come: never two stickers in a row)
   X.bonusSticker(prof);
   const first = prof.pending.pop();
   ok('the first bonus sticker is a new picture (from the map, or a new drawing)', first && /^[pd]-/.test(first.id) && !w.LHQ_ART.STICKERS.find((x) => x.id === first.id).foil, first && first.id);
   const keep = prof.stickers.slice();
   prof.stickers.push(...A.STICKERS.filter((x) => x.fill && !x.foil).map((x) => x.id));
+  prof.got.push('i:explorer-cap');
   X.bonusSticker(prof);
   const second = prof.pending.pop();
   ok('…then a gold edition of a sticker already collected', second && /^gold-/.test(second.id) && prof.stickers.includes(second.id.slice(5)), second && second.id);
@@ -45,6 +47,7 @@
   prof.stickers = [...new Set([...prof.stickers, ...A.STICKERS.filter((x) => !x.fill).slice(0, 30).map((x) => x.id)])];
   A.ITEMS.filter((it) => it.track && it.track <= 14).forEach((it) => prof.items.includes(it.id) || prof.items.push(it.id)); // (star-track prizes already won: none due)
   prof.pending = []; prof.daily = (() => { const x = new Date(); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0'); })();
+  prof.got.push('i:explorer-cap'); // (v2.12.3: after a thing, so a sticker may come)
   const s0 = JSON.stringify(prof.prog[78]);
   L.go('path', { i: idx(78), p: 0, L: 1, k: 0, hint: 0, hints: 0, hearts: 3, maxH: 3 });
   for (let t = 0; t < 14 && L.st().view === 'path'; t++) { d.querySelector('.pathbtns [data-act=hop]').click(); await wait(950); }
