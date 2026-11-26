@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.12.8';
+  const VERSION = '2.12.9';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -7969,7 +7969,8 @@
       'Tap Listen to hear the reciter, as slow and as many times as you like. 📖 Read shows the whole sūrah.',
     ],
     () => [`<div class="intart gifts">${ART.gift({ tier: 3 })}${['explorer-cap', 'leaf-cape', 'ladybug-buddy'].map((id) => (ITEM[id] ? `<span>${itemPic(id)}</span>` : '')).join('')}</div>`, 'Gifts at every step', 'Win treasures, then dress up your explorer in My Explorer!'],
-    () => [`<div class="intart">${ART.campfire(3)}</div>`, 'Keep the campfires burning', 'Every sūrah you learn gets one. Practise it now and then so it never goes out.'],
+    // (v2.12.9) the campfire burning up from out to roaring and back down, each step with its word
+    () => [`<div class="intart cfcycle">${[0, 1, 2, 3, 4, 5, 4, 3, 2, 1].map((l, j) => `<span class="cfstep" style="--j:${j}">${ART.campfire(l)}</span><small class="cfword" style="--j:${j}">${FIRE_WORD[l]}</small>`).join('')}</div>`, 'Keep the campfires burning', 'Every sūrah you learn gets one. Practise it now and then so it never goes out.'],
     () => [`<div class="intart">${BOOK_IC}</div>`, 'Fill your journal', 'Tap animals and things on the map and in the pictures to collect them.'],
     () => [`<div class="intart big">⏱️</div>`, 'A little every day', '5 to 10 minutes a day is plenty. Stop while it’s still fun!'],
     () => [`<div class="intart">${itemPic('twig')}</div>`, 'Your walking stick', 'Every explorer needs one. Here is yours. Bismillāh!'],

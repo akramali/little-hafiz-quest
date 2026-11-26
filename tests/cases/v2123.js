@@ -97,6 +97,13 @@
   log('achievements', grid.replace(/\s+/g, ' '));
   ok('My Achievements: sūrahs “of 37 … learned”, badges “of 13”, things “of 421” for a boy', /of 37 sūrahs learned/.test(grid) && /of 13 badges/.test(grid) && /of 421 things won/.test(grid) && /of 564 āyāt learned/.test(grid));
   ok('…a whole percentage without “.0”', !/\.0%/.test(grid) && /\d%/.test(grid));
+  // (v2.12.9) How to play: the campfire burns up from out to roaring and back down, its word under it
+  L.go('settings'); await wait(300);
+  d.querySelector('[data-act=howto]').click(); await wait(400);
+  for (let q = 0; q < 10 && !/campfires/.test(d.querySelector('#modal').textContent); q++) { [...d.querySelectorAll('#modal [data-act=intro]')].pop().click(); await wait(250); }
+  const words = [...d.querySelectorAll('.cfcycle .cfword')].map((x) => x.textContent).join(',');
+  ok('How to play: the campfire from out to roaring and back down', d.querySelectorAll('.cfcycle .cfstep').length === 10 && words === 'Out,Embers,Low,Steady,Strong,Roaring,Strong,Steady,Low,Embers', words);
+  d.querySelector('#modal [data-act=cno]') && d.querySelector('#modal [data-act=cno]').click();
   ok('no game errors', errs.length === 0, errs.join(' | '));
   done();
 })();

@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is a short public overview (highlights, install, privacy, credits); this file holds the detail.
 
-**Current version:** v2.12.8 (2026-11-26) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.12.9 (2026-11-26) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -200,6 +200,9 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
   cherries, pastel stars, watermelon and lilac lace hijabs, and (cool) moon-and-stars and rainbow glitter ones; a heart
   purse, sparkle sneakers (glowing), a pearl bracelet (watch slot), a flower dress, a bunny buddy (an animal buddy: it
   blinks, sleeps and gets hungry at My Tree), a flower basket (stick slot) and a lace cape.
+- **How to play's campfire card (v2.12.9):** the fire burns up from out to roaring and back down (`.cfcycle`: ten
+  `.cfstep` fires crossfading, 0.8 s each, and their `FIRE_WORD` under them switching at once, `.cfword`, so two words
+  never overlap; reduced motion: Steady, still).
 - **My Achievements' numbers (v2.12.8, checked):** % memorized without ".0" when whole (`questPct`, My Tree too); "N of 37
   sūrahs learned"; "N of 13 badges" (5 star badges + 8 world badges, `ART.BADGES`); āyāt learned counts Juz ʿAmma only (it
   counted the Garden's too, against a total of 564). Totals: things won 421 for a boy, 464 for a girl (`winnable`: 380 /

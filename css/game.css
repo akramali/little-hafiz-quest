@@ -10886,3 +10886,74 @@ body.hasbar::before {
 .splash .updnote {
   z-index: 12;
 }
+
+/* ---------- 2026-11-26 · v2.12.9 ---------- */
+/* How to play: the campfire burns up from out to roaring and back down (ten steps, 0.8 s each) */
+.intro .intart.cfcycle {
+  position: relative;
+}
+.intro .cfcycle .cfstep {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  opacity: 0;
+  animation: cfStep 8s linear infinite;
+  animation-delay: calc(var(--j) * 0.8s);
+}
+.intro .cfcycle .cfstep svg {
+  width: 104px;
+  height: 104px;
+}
+.intro .cfcycle .cfstep {
+  padding-bottom: 18px;
+}
+/* its word switches at once (no crossfade, so two words never overlap) */
+.intro .cfcycle .cfword {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  text-align: center;
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--soft);
+  opacity: 0;
+  animation: cfWord 8s steps(1, end) infinite;
+  animation-delay: calc(var(--j) * 0.8s);
+}
+@keyframes cfWord {
+  0% {
+    opacity: 1;
+  }
+  10%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes cfStep {
+  0% {
+    opacity: 0;
+  }
+  2%,
+  10% {
+    opacity: 1;
+  }
+  12%,
+  100% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .intro .cfcycle .cfstep {
+    animation: none;
+  }
+  .intro .cfcycle .cfword {
+    animation: none;
+  }
+  .intro .cfcycle .cfstep:nth-child(7),
+  .intro .cfcycle .cfword:nth-child(8) {
+    opacity: 1;
+  }
+}
