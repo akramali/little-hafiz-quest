@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is a short public overview (highlights, install, privacy, credits); this file holds the detail.
 
-**Current version:** v2.12.17 (2026-11-26) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.12.18 (2026-11-26) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -218,6 +218,13 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
   when Chrome updates the WebAPK (checked on launch, about daily; reinstalling is immediate). The Grown-up Corner's
   Fullscreen (browser only, HTML fullscreen) is unchanged. iPhone/iPad keep `apple-mobile-web-app-status-bar-style:
   default` (black-translucent would put white status text over the light top bars).
+- **Fullscreen in the installed game on Android (v2.12.18):** the game's own HTML fullscreen (`navigationUI: 'hide'`:
+  both bars hidden, the page drawn behind the camera), on by default (`APP_FS_OK`: standalone + Android + the
+  Fullscreen API), kept per phone in `localStorage.lhq_appfs` ('0' = off; not in prefs, so family links don't carry
+  it). It needs a tap: the first tap after opening, or after the phone takes it away (switching apps, a back swipe),
+  brings it back (`wantFs` in the pointerup hook); leaving it never switches it off there (only the Grown-up Corner's
+  Turn off). In a browser, the old Fullscreen button and `prefs.fullscreen` are unchanged. Not testable headless
+  (needs an installed WebAPK): check on a phone.
 - **My Explorer's "new" dots (v2.12.16):** a thing or sticker stops being new the moment it's tapped, and everything in
   a tab once you switch to another tab (`unfresh`, `freshTab`); leaving My Explorer still clears the rest. Gold things
   keep the tile's own colours with a thin gold ring (the gold gradient glared in dark mode); the block icons (`.iblk`)

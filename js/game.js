@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.12.17';
+  const VERSION = '2.12.18';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -4143,6 +4143,21 @@
     return '';
   }
   const PHONE = IOS || /Android|Mobile/.test(UA);
+  /* (v2.12.18) The installed game on Android: fullscreen (both of the phone's bars hidden) is the game's own, HTML
+     fullscreen, on unless switched off in the Grown-up Corner (kept on this phone only). The app itself runs standalone
+     since v2.12.17: Chrome's fullscreen display mode left a black strip under the camera after switching apps; in HTML
+     fullscreen the page draws behind the camera (viewport-fit=cover). Fullscreen needs a tap: the first tap after
+     opening (or after the phone took it away: switching apps, a back swipe) brings it back. */
+  const APP_FS = 'lhq_appfs';
+  const APP_FS_OK = STANDALONE && FS_OK && /Android/.test(UA);
+  const appFsOn = () => {
+    try {
+      return localStorage.getItem(APP_FS) !== '0';
+    } catch (e) {
+      return true;
+    }
+  };
+  const wantFs = () => (APP_FS_OK ? appFsOn() : !STANDALONE && prefs.fullscreen);
   // (under the version and settings buttons; not while the "Updated to …" note is there)
   const installBar = () => {
     const k = justUpdated ? '' : installKind(),
@@ -4181,7 +4196,7 @@
     } catch (e) {}
   }
   function onFsChange() {
-    if (!fsNow() && !fsLeaving && prefs.fullscreen) {
+    if (!fsNow() && !fsLeaving && prefs.fullscreen && !STANDALONE) {
       prefs.fullscreen = false; // left with the phone's own controls
       save();
     }
@@ -4192,9 +4207,13 @@
   document.addEventListener('webkitfullscreenchange', onFsChange);
   // fullscreen needs a tap: when it was chosen before, the first tap brings it back
   document.addEventListener('pointerup', () => {
-    if (prefs.fullscreen && !fsNow()) enterFs();
+    if (wantFs() && !fsNow()) enterFs();
   });
   function fsSheet() {
+    if (APP_FS_OK) {
+      const on = appFsOn();
+      return `<div class="setrow"><span>Fullscreen<small>Hides the phone's bars. ${on ? 'If they come back, the next tap hides them again' : 'Off: the bars stay'}</small></span><button class="btn small" data-act="fs">${on ? ICON.fsOut + ' Turn off' : ICON.fsIn + ' Turn on'}</button></div>`;
+    }
     if (STANDALONE) return '<div class="setrow"><span>Fullscreen<small>Playing from the Home Screen: there is no address bar to hide</small></span></div>';
     if (!FS_OK)
       return '<div class="setrow"><span>Fullscreen<small>This browser can\'t hide its address bar for websites. On iPhone: in Safari, tap <b>⋯</b> (or Share), then <b>Add to Home Screen</b>, and play from that icon.</small></span></div>';
@@ -5250,6 +5269,16 @@
         break;
       case 'fs':
         sfx.tap();
+        if (APP_FS_OK) {
+          // (v2.12.18) the installed game on Android: a switch kept on this phone
+          const on = !appFsOn();
+          try {
+            localStorage.setItem(APP_FS, on ? '1' : '0');
+          } catch (e) {}
+          on ? enterFs() : exitFs();
+          render();
+          break;
+        }
         if (fsNow()) {
           prefs.fullscreen = false;
           save();
