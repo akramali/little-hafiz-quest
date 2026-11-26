@@ -1,7 +1,11 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.12.9",
+ "latest": "2.12.10",
  "versions": [
+  { "v": "2.12.10", "notes": [
+   "How to play shows your tree growing and a find flying into the journal",
+   "Small visual tweaks"
+  ] },
   { "v": "2.12.9", "notes": [
    "How to play shows a campfire burning up to roaring and back down"
   ] },

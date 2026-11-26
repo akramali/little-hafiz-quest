@@ -103,7 +103,16 @@
   for (let q = 0; q < 10 && !/campfires/.test(d.querySelector('#modal').textContent); q++) { [...d.querySelectorAll('#modal [data-act=intro]')].pop().click(); await wait(250); }
   const words = [...d.querySelectorAll('.cfcycle .cfword')].map((x) => x.textContent).join(',');
   ok('How to play: the campfire from out to roaring and back down', d.querySelectorAll('.cfcycle .cfstep').length === 10 && words === 'Out,Embers,Low,Steady,Strong,Roaring,Strong,Steady,Low,Embers', words);
+  // (v2.12.10) its journal card taps a sheep into the book; a card of the tree growing; a crisp stopwatch
+  for (let q = 0; q < 10 && !/Fill your journal/.test(d.querySelector('#modal').textContent); q++) { [...d.querySelectorAll('#modal [data-act=intro]')].pop().click(); await wait(250); }
+  ok('How to play: a sheep tapped flies into the journal', !!d.querySelector('.jtap .jt-fly svg') && !!d.querySelector('.jtap .jt-book svg'));
+  [...d.querySelectorAll('#modal [data-act=intro]')].pop().click(); await wait(400);
+  ok('…then the tree growing, from a seedling to full of fruit (four stages)', /Watch your tree grow/.test(d.querySelector('#modal').textContent) && d.querySelectorAll('.treegrow .tg-step').length === 4);
+  [...d.querySelectorAll('#modal [data-act=intro]')].pop().click(); await wait(300);
+  ok('…and a little every day, with a drawn stopwatch (not the blurry emoji)', /A little every day/.test(d.querySelector('#modal').textContent) && !!d.querySelector('.clockart svg') && !/⏱️/.test(d.querySelector('.intart').textContent));
   d.querySelector('#modal [data-act=cno]') && d.querySelector('#modal [data-act=cno]').click();
+  prof.time = 0; L.go('show'); await wait(300);
+  ok('no time yet: “0 min spent learning”', /0 minspent learning/.test(d.querySelector('.achgrid').textContent.replace(/\s+/g, '')) || /0 min/.test(d.querySelector('.achgrid').textContent));
   ok('no game errors', errs.length === 0, errs.join(' | '));
   done();
 })();

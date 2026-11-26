@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.12.9';
+  const VERSION = '2.12.10';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -3327,7 +3327,7 @@
   }
   function fmtTime(sec) {
     const m = Math.round(sec / 60);
-    if (m < 1) return sec > 0 ? 'under a minute' : 'not yet';
+    if (m < 1) return sec > 0 ? 'under a minute' : '0 min'; // (v2.12.10: not “not yet”)
     if (m < 60) return `${m} min`;
     return `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')} min`;
   }
@@ -3352,7 +3352,7 @@
     [BOOK_IC, `${a.found}`, `of ${JKEYS.size} journal finds`], // (the map's journal book, v2.10.1)
     ['🔎', `${Math.min(a.riddles, riddleCount('j'))}`, `of ${riddleCount('j')} riddles found`],
     ['🏃', `${a.streak} ${a.streak === 1 ? 'day' : 'days'}`, `in a row · best ${a.best}`],
-    ['⏱️', a.time >= 30 ? fmtTime(a.time) : '0 min', 'spent learning'], // (v2.12.8: not “not yet spent learning”)
+    ['⏱️', fmtTime(a.time), 'spent learning'],
   ];
   V.show = () => {
     const prof = P(),
@@ -6629,7 +6629,7 @@
   }
   // how grown my tree is (0-1), and what's on it: a sapling, a plant, blossoms (one a sūrah memorized), then fruit,
   // more and more kinds as it grows (ART.TREE_STAGE)
-  function treeInfo(prof) {
+  function treeInfo(prof, at) {
     let mem = J.filter((s) => surahDone(s, prof));
     const a = achievements(prof),
       gold = J.filter((s) => surahStars(s, prof) >= surahMax(s)).length,
@@ -6638,7 +6638,8 @@
     // āyāt learned 30%, green sūrahs 30%, golden sūrahs 40% (every one golden: 100%), and practice on top (up to 15%,
     // so it grows sooner, never past 100%)
     let size = Math.min(1, (0.3 * a.ayat) / a.allAyat + (0.3 * mem.length) / J.length + (0.4 * gold) / J.length + 0.15 * Math.min(1, G / 200));
-    if (window.__treeSize != null) (size = window.__treeSize), (mem = J.slice(0, Math.round(size * J.length))), (a.ayat = Math.round(size * a.allAyat)); // (tests only: any size)
+    const forced = at != null ? at : window.__treeSize; // (any size: How to play's growing tree, v2.12.10; and tests)
+    if (forced != null) (size = forced), (mem = J.slice(0, Math.round(size * J.length))), (a.ayat = Math.round(size * a.allAyat));
     const ripe = size < T.fruit ? 0 : (size - T.fruit) / (1 - T.fruit),
       nf = size < T.fruit ? 0 : Math.round(2 + ripe * 30),
       kinds = ART.FRUIT_TYPES.slice(0, 1 + Math.floor(Math.min(1, ripe * 1.6) * (ART.FRUIT_TYPES.length - 0.01))), // (v2.10.0: a second kind soon after the first, all of them by about 75%)
@@ -7971,10 +7972,31 @@
     () => [`<div class="intart gifts">${ART.gift({ tier: 3 })}${['explorer-cap', 'leaf-cape', 'ladybug-buddy'].map((id) => (ITEM[id] ? `<span>${itemPic(id)}</span>` : '')).join('')}</div>`, 'Gifts at every step', 'Win treasures, then dress up your explorer in My Explorer!'],
     // (v2.12.9) the campfire burning up from out to roaring and back down, each step with its word
     () => [`<div class="intart cfcycle">${[0, 1, 2, 3, 4, 5, 4, 3, 2, 1].map((l, j) => `<span class="cfstep" style="--j:${j}">${ART.campfire(l)}</span><small class="cfword" style="--j:${j}">${FIRE_WORD[l]}</small>`).join('')}</div>`, 'Keep the campfires burning', 'Every sūrah you learn gets one. Practise it now and then so it never goes out.'],
-    () => [`<div class="intart">${BOOK_IC}</div>`, 'Fill your journal', 'Tap animals and things on the map and in the pictures to collect them.'],
-    () => [`<div class="intart big">⏱️</div>`, 'A little every day', '5 to 10 minutes a day is plenty. Stop while it’s still fun!'],
+    // (v2.12.10) a finger taps a sheep on the map, and it flies into the journal
+    () => [`<div class="intart jtap"><span class="jt-thing">${ART.props['meadow-sheep'] || ''}</span><span class="jt-fly">${ART.props['meadow-sheep'] || ''}</span><span class="jt-tap"></span><span class="jt-book">${BOOK_IC}<b>+1</b></span></div>`, 'Fill your journal', 'Tap animals and things on the map and in the pictures to collect them.'],
+    // (v2.12.10) the explorer's own tree, growing from a seedling to full of fruit
+    () => [`<div class="intart treegrow">${growingTree()}</div>`, 'Watch your tree grow', 'It grows with every āyah you learn, blossoms, then bears fruit as you practise.'],
+    () => [`<div class="intart clockart">${CLOCK_SVG}</div>`, 'A little every day', '5 to 10 minutes a day is plenty. Stop while it’s still fun!'],
     () => [`<div class="intart">${itemPic('twig')}</div>`, 'Your walking stick', 'Every explorer needs one. Here is yours. Bismillāh!'],
   ];
+  // (v2.12.10) How to play's pictures: a stopwatch drawn crisp (the ⏱️ emoji blurred at that size), the growing tree
+  const CLOCK_SVG = `<svg viewBox="0 0 100 110" aria-hidden="true"><g stroke="#2b2340" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"><rect x="40" y="6" width="20" height="10" rx="4" fill="#ff7a59"/><rect x="45" y="14" width="10" height="10" fill="#c9d2e3"/><path d="M78 24L86 16" fill="none"/><circle cx="50" cy="64" r="40" fill="#ff7a59"/><circle cx="50" cy="64" r="31" fill="#fffaf0"/></g><g stroke="#2b2340" stroke-width="3" stroke-linecap="round">${[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((a) => { const r = (a * Math.PI) / 180, k = a % 90 ? 26 : 23; return `<path d="M${(50 + k * Math.sin(r)).toFixed(1)} ${(64 - k * Math.cos(r)).toFixed(1)}L${(50 + 29 * Math.sin(r)).toFixed(1)} ${(64 - 29 * Math.cos(r)).toFixed(1)}"/>`; }).join('')}<path class="clk-hand" d="M50 64L50 40" stroke-width="4"/></g><circle cx="50" cy="64" r="4" fill="#2b2340"/><path d="M60 34Q68 38 72 46" fill="none" stroke="#fff" stroke-width="3" opacity=".6"/></svg>`;
+  let growKept = null;
+  function growingTree() {
+    const prof = P();
+    if (!prof) return ART.props['meadow-tree'] || '';
+    const seed = seedOf(prof.id);
+    if (!growKept || growKept.seed !== seed)
+      growKept = {
+        seed,
+        html: [0.06, 0.25, 0.55, 1].map((sz, j) => {
+          const i = treeInfo(prof, sz),
+            t = ART.tree({ seed, size: sz, leaves: i.leaves, blossoms: i.blossoms, flowers: i.flowers.slice(0, 8), fruits: i.fruits, lanterns: [], seen: {}, night: false });
+          return `<svg class="tg-step" style="--j:${j}" viewBox="0 -200 400 830" preserveAspectRatio="xMidYMax meet" aria-hidden="true">${t.tree}${t.front}</svg>`;
+        }).join(''),
+      };
+    return growKept.html;
+  }
   function maybeIntro() {
     const prof = P();
     if (st.view !== 'map' || noExplorers() || !prof.made || begun(prof) || document.getElementById('modal').classList.contains('show')) return;

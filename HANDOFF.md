@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is a short public overview (highlights, install, privacy, credits); this file holds the detail.
 
-**Current version:** v2.12.9 (2026-11-26) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.12.10 (2026-11-26) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -200,6 +200,16 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
   cherries, pastel stars, watermelon and lilac lace hijabs, and (cool) moon-and-stars and rainbow glitter ones; a heart
   purse, sparkle sneakers (glowing), a pearl bracelet (watch slot), a flower dress, a bunny buddy (an animal buddy: it
   blinks, sleeps and gets hungry at My Tree), a flower basket (stick slot) and a lace cape.
+- **How to play (v2.12.10):** ten cards now. The journal card taps a sheep that flies into the book (+1, `.jtap`); a new
+  card, "Watch your tree grow", crossfades the explorer's own tree at four sizes (`growingTree`, drawn once, with
+  `treeInfo(prof, size)`: the size can now be asked for); "A little every day" has a drawn stopwatch (`CLOCK_SVG`; the ⏱️
+  emoji blurred that big). `fmtTime(0)` says "0 min" (not "not yet").
+- **How My Tree grows (for reference):** size = āyāt learned 30% + sūrahs memorized 30% + golden sūrahs 40%, plus practice
+  up to 15% (`prof.grow`: each game finished in a sūrah, once a day per sūrah; 200 points for the full 15%), never past
+  100%. Blossoms from 20% (one per memorized sūrah, 3 to 10 as it grows to 30%); fruit from 30% (2 at first, up to 32 at
+  100%), and the blossoms thin out as fruit comes (from 8 down to 2). Fruit kinds come in order (dates, figs, olives,
+  pomegranates, grapes, apples, oranges): a second kind at ~36%, then one more about every 6% (3 at 43%, 4 at 49%, 5 at
+  55%, 6 at 61%), all seven by ~68%.
 - **How to play's campfire card (v2.12.9):** the fire burns up from out to roaring and back down (`.cfcycle`: ten
   `.cfstep` fires crossfading, 0.8 s each, and their `FIRE_WORD` under them switching at once, `.cfword`, so two words
   never overlap; reduced motion: Steady, still).
