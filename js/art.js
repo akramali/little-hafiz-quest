@@ -3232,6 +3232,9 @@
     banana: (x, y) => L('M' + x + ' ' + (y - 9.6) + 'L' + x + ' ' + (y - 6), '#7a5230', 2.4) + [-30, 0, 30].map((a) => G(S('M-2.4 0Q-5.6 7.4 0.6 13.4Q3.4 15 4.2 12.8Q0.8 7.4 2.6 0Z', '#ffd23f', 'M2.6 0Q0.8 7.4 4.2 12.8Q3.4 15 2.2 14Q0.4 7.4 1.4 0Z') + CF(3.3, 13.7, 1, '#7a5230'), ' transform="translate(' + x + ' ' + (y - 6) + ') rotate(' + a + ')"')).join(''),
   };
   const FRUIT_TYPES = ['date', 'fig', 'olive', 'pomegranate', 'grape', 'apple', 'orange', 'banana']; // the order they come in (v2.12.11: bananas last)
+  // (v2.12.13) on the tree, each kind a little nearer its real size (not all the way: small ones must still show):
+  // olives and dates smallest, then figs, grapes, apples and oranges, pomegranates, and a bunch of bananas the biggest
+  const FRUIT_K = { olive: 0.9, date: 0.9, fig: 0.85, grape: 1.05, apple: 1.18, orange: 1.18, pomegranate: 1.25, banana: 1.35 };
   const fruitIcon = (t) => '<svg class="lhq-art" viewBox="-10 -12 20 22" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' + OUT(FRUIT[t](0, 0), 1.6) + '</svg>';
   /* My tree grows as one plant, from a seed to a full tree, every part only ever getting bigger: one structure, the
      same at every size (seeded by the explorer), that it grows into. The stem lengthens and thickens into a trunk;
@@ -3711,7 +3714,7 @@
       if (p) fruits.push({ x: p[0], y: p[1], t: tp, k: n((0.7 + 0.45 * smooth((size - 0.3) / 0.7)) * (0.88 + rnd() * 0.24) * (rnd() < 0.15 ? 1.2 : 1)) }); // (growing with the tree, each a little its own size, a few bigger)
     });
     g += fruits
-      .map((q, j) => '<g class="tfruit" data-act="tfruit" data-j="' + j + '" data-t="' + q.t + '" style="--dy:' + n(612 - q.y) + 'px"><circle cx="' + q.x + '" cy="' + q.y + '" r="13" fill="transparent" stroke="none"/>' + G(L('M' + q.x + ' ' + (q.y - 9) + 'L' + q.x + ' ' + (q.y - 4), '#6a4a2a', 1.4) + OUT(FRUIT[q.t](q.x, q.y), 1.4), ' transform="translate(' + q.x + ' ' + q.y + ') scale(' + q.k + ') translate(' + -q.x + ' ' + -q.y + ')"') + '</g>')
+      .map((q, j) => '<g class="tfruit" data-act="tfruit" data-j="' + j + '" data-t="' + q.t + '" style="--dy:' + n(612 - q.y) + 'px"><circle cx="' + q.x + '" cy="' + q.y + '" r="13" fill="transparent" stroke="none"/>' + G(L('M' + q.x + ' ' + (q.y - 9) + 'L' + q.x + ' ' + (q.y - 4), '#6a4a2a', 1.4) + OUT(FRUIT[q.t](q.x, q.y), 1.4), ' transform="translate(' + q.x + ' ' + q.y + ') scale(' + n(q.k * (FRUIT_K[q.t] || 1)) + ') translate(' + -q.x + ' ' + -q.y + ')"') + '</g>')
       .join('');
     // (v2.12.0) the Hidden Garden's lanterns: one for each of its stops memorized (golden with every star; v2.12.1: only
     // the lit ones, none waiting dark). They hang from the lowest leafy branches, spread out; while the tree is too young
@@ -4459,12 +4462,16 @@
       [[18, 40], [22, 24], [34, 12], [50, 8], [66, 12], [78, 24], [82, 40]].map(([x, y]) => S(cloudD(x, y + 8, 22, 16, 3), '#4caf50')).join('') +
       [[20, 34], [30, 16], [44, 6], [58, 8], [72, 18], [82, 32], [26, 26], [66, 6], [16, 70], [84, 76]].map(([x, y], j) => ball(x, y, 3.8, 3.8, j % 3 ? '#ff5d7a' : '#ff8fbf', { hl: false })).join('')),
     // (v2.12.2) on the map, the pavilion stands in its own little garden: cypresses behind, stone steps, hedges and roses
-    'garden-pavilion': prop(110, EF(50, 104, 50, 7, INK, 0.12) + F('M2 106Q8 92 50 90Q92 92 98 106Z', '#8fd67c') +
-      [11, 89].map((x) => S('M' + x + ' 100Q' + (x - 10) + ' 76 ' + (x - 6) + ' 56Q' + (x - 2) + ' 42 ' + x + ' 36Q' + (x + 2) + ' 42 ' + (x + 6) + ' 56Q' + (x + 10) + ' 76 ' + x + ' 100Z', '#4caf50', 'M' + x + ' 36Q' + (x + 2) + ' 42 ' + (x + 6) + ' 56Q' + (x + 10) + ' 76 ' + x + ' 100Q' + (x + 4) + ' 74 ' + x + ' 36Z', null, sw(2.2)) +
-        L('M' + (x - 3) + ' 50q2.4-2 4.8 0M' + (x - 5) + ' 60q2.4-2 4.8 0M' + (x - 4) + ' 76q2.4-2 4.8 0', '#2f8445', 1.3)).join('') +
-      G(gArt('g-pavilion')(), tf(14, 16, 0.72)) + S(rr(20, 88, 60, 6, 2), '#e6d6b4', rr(66, 88, 14, 6, 2)) + S(rr(28, 94, 44, 6, 2), '#d9c49b', rr(62, 94, 10, 6, 2)) +
-      S(cloudD(13, 106, 22, 12, 3), '#4caf50', null, null, sw(2.2)) + S(cloudD(87, 106, 22, 12, 3), '#4caf50', null, null, sw(2.2)) +
-      [[7, 99], [14, 96], [19, 101], [81, 101], [86, 96], [93, 99]].map(([x, y]) => ball(x, y, 2.4, 2.4, '#ff5d7a', { hl: false })).join('')),
+    // (v2.12.13) it stands on a lawn of its own (outlined, lit on top, grass and little flowers along it, a paved
+    // landing at the steps) so it no longer floats; rounded cypresses (pointed ones looked like spikes)
+    'garden-pavilion': prop(110, EF(50, 106, 50, 5, INK, 0.12) + S('M1 99Q3 89 50 87Q97 89 99 99Q97 109 50 109Q3 109 1 99Z', '#6fc062', 'M1 99Q3 103 50 104Q97 103 99 99Q97 109 50 109Q3 109 1 99Z', null, sw(2.4)) + F('M10 96Q18 90.6 50 89.6Q82 90.6 90 96Q70 93 50 93Q30 93 10 96Z', '#94dc7f') +
+      [13, 87].map((x) => S('M' + (x - 1) + ' 98Q' + (x - 8) + ' 80 ' + (x - 7) + ' 62Q' + (x - 6) + ' 46 ' + x + ' 44Q' + (x + 6) + ' 46 ' + (x + 7) + ' 62Q' + (x + 8) + ' 80 ' + (x + 1) + ' 98Z', '#4caf50', 'M' + x + ' 44Q' + (x + 6) + ' 46 ' + (x + 7) + ' 62Q' + (x + 8) + ' 80 ' + (x + 1) + ' 98Q' + (x + 4) + ' 74 ' + x + ' 44Z', 'M' + (x - 4.4) + ' 54Q' + (x - 3.6) + ' 47.6 ' + x + ' 46.6Q' + (x - 2) + ' 50 ' + (x - 4.4) + ' 54Z', sw(2.2)) +
+        L('M' + (x - 4) + ' 60q2.2-1.8 4.4 0M' + (x - 1) + ' 70q2.2-1.8 4.4 0M' + (x - 4.6) + ' 80q2.2-1.8 4.4 0', '#2f8445', 1.3)).join('') +
+      G(gArt('g-pavilion')(), tf(14, 16, 0.72)) + F('M24 103Q26 98.6 50 98Q74 98.6 76 103Q50 106 24 103Z', '#ece0c2') + S(rr(20, 88, 60, 6, 2), '#e6d6b4', rr(66, 88, 14, 6, 2)) + S(rr(28, 94, 44, 6, 2), '#d9c49b', rr(62, 94, 10, 6, 2)) +
+      S(cloudD(18, 98, 22, 11, 3), '#4caf50', null, null, sw(2.2)) + S(cloudD(82, 98, 22, 11, 3), '#4caf50', null, null, sw(2.2)) +
+      [[11, 93], [18, 89], [24, 94], [76, 94], [82, 89], [89, 93]].map(([x, y]) => ball(x, y, 2.4, 2.4, '#ff5d7a', { hl: false })).join('') +
+      L('M5 101l1-3.4l1 3.4M14 104.6l1-3.4l1 3.4M34 106.6l1-3.4l1 3.4M64 106.6l1-3.4l1 3.4M85 104.6l1-3.4l1 3.4M93 101l1-3.4l1 3.4', '#3f9a52', 1.6) +
+      [[9, 99, '#fff'], [22, 103.6, '#ffd23f'], [44, 107, '#ff8fbf'], [56, 107, '#fff'], [78, 103.6, '#ffd23f'], [91, 99, '#ff8fbf']].map(([x, y, c]) => CF(x, y, 1.3, c)).join('')),
     'garden-rose': prop(100, shad(100, 34) + crown(50, 94, 74, 44, '#4caf50', 6) + [[32, 70], [52, 60], [68, 74], [42, 84], [60, 86]].map((q) => ball(q[0], q[1], 5.4, 5.4, '#ff5d7a', { hlo: 0.5 })).join('')),
     'garden-jasmine': gProp('g-jasmine', 22),
     'garden-lily': prop(100, shad(100, 40) + EF(50, 86, 44, 11, '#5fb2ff') + E(50, 86, 44, 11, 'none') + G(gArt('g-lily')(), tf(20, 40, 0.6))),

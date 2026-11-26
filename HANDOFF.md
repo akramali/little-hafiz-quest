@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is a short public overview (highlights, install, privacy, credits); this file holds the detail.
 
-**Current version:** v2.12.12 (2026-11-26) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.12.13 (2026-11-26) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -223,7 +223,10 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
   clumps, shaded underside, leaf marks), branches, 13 apples and a fallen one, short roots tucked under the trunk (loose
   strokes stuck out over animals). The Garden's pavilion has fuller, shorter cypresses, and the map draws it with its lines
   halved (`thinLines` in js/map.js: it is drawn big, so its outlines were far thicker than the garden's; its icon keeps
-  them). Bananas are plump, about an apple's size.
+  them). v2.12.13: it stands on a round lawn of its own (grass and little flowers along the edge, a paved landing), its
+  cypresses slim with rounded tops (pointed ones looked like spikes). On My Tree each fruit kind is drawn nearer its real
+  size (`FRUIT_K` in js/art.js, on top of each fruit's own size: olives 0.9, dates 0.9, figs 0.85, grapes 1.05, apples
+  and oranges 1.18, pomegranates 1.25, bananas 1.35); the fruit icons elsewhere stay as they are.
 - **My Achievements' numbers (v2.12.8, checked):** % memorized without ".0" when whole (`questPct`, My Tree too); "N of 37
   sūrahs learned"; "N of 13 badges" (5 star badges + 8 world badges, `ART.BADGES`); āyāt learned counts Juz ʿAmma only (it
   counted the Garden's too, against a total of 564). Totals: things won 421 for a boy, 464 for a girl (`winnable`: 380 /
