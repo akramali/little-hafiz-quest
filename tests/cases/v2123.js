@@ -37,10 +37,12 @@
   ok('v2.12.4: 19 more, everyday and cool, each drawn and worn', !bad4.length, bad4.join());
   // (v2.12.5) for girls: 16 hijab styles and 11 flowery, pastel things, girls only; a boy never gets one, a girl gets hijabs
   const GIRL5 = ['hijab-blossom', 'hijab-daisy', 'hijab-leaves', 'hijab-hearts', 'hijab-clouds', 'hijab-gingham', 'hijab-strawberry', 'hijab-pastel-rainbow', 'hijab-butterfly', 'hijab-tiedye', 'hijab-bow', 'hijab-galaxy', 'hijab-sunset', 'hijab-sparkle', 'hijab-flowercrown', 'hijab-pearls',
-    'flower-crown', 'ruffle-blouse', 'pastel-cardigan', 'floral-pants', 'flower-purse', 'bow-backpack', 'ballet-flats', 'flower-glasses', 'lace-parasol', 'petal-cape', 'bow-watch'];
+    'flower-crown', 'ruffle-blouse', 'pastel-cardigan', 'floral-pants', 'flower-purse', 'bow-backpack', 'ballet-flats', 'flower-glasses', 'lace-parasol', 'petal-cape', 'bow-watch',
+    // v2.12.6
+    'hijab-lemonade', 'hijab-cherries', 'hijab-pastel-stars', 'hijab-watermelon', 'hijab-lilac-lace', 'hijab-moons', 'hijab-rainbow-glitter', 'heart-purse', 'sparkle-sneakers', 'pearl-bracelet', 'flower-dress', 'bunny-buddy', 'flower-basket', 'lace-cape'];
   const girlLook = { skin: 2, hair: 'hijab', hairColor: 0, hijabColor: 2, kid: 'girl' };
   const bad5 = GIRL5.filter((id) => !IT(id) || !IT(id).drop || IT(id).for !== 'girl' || !/<path/.test(A.item(id)) || (A.explorer(girlLook, { [IT(id).slot]: id }, { view: 'front' }) === A.explorer(girlLook, {}, { view: 'front' }) && A.explorer(girlLook, { [IT(id).slot]: id }, { view: 'back' }) === A.explorer(girlLook, {}, { view: 'back' })));
-  ok('v2.12.5: 27 new things for girls (16 hijab styles), each drawn and worn', !bad5.length, bad5.join());
+  ok('v2.12.5–6: 41 new things for girls (23 hijab styles), each drawn and worn', !bad5.length, bad5.join());
   const runFor = (kid) => {
     prof.look = Object.assign({}, prof.look, kid === 'girl' ? girlLook : { hair: 'short', kid: 'boy' });
     prof.pending = []; prof.items = []; prof.stickers = []; prof.got = [];
@@ -63,6 +65,17 @@
   ok('…its recordings are gone from the game', (await w.fetch('audio/names-nasheed/timings.json')).status === 404 && (await w.fetch('audio/names-sadiq/207.mp3')).status === 404);
   L.go('mushaf', { i: idx(207), sel: null }); await wait(300);
   ok('Read: the opening “He is Allah…” still above the names', /هُوَ اللَّهُ/.test(d.querySelector('.mbism').textContent));
+  // (v2.12.6) the Grown-up Corner shares the game itself
+  let shared = null;
+  Object.defineProperty(w.navigator, 'share', { value: (o) => ((shared = o), Promise.resolve()), configurable: true });
+  L.go('settings'); await wait(300);
+  d.querySelector('[data-act=shareapp]').click(); await wait(300);
+  ok('Share the game: the phone’s share menu with the game’s own address', !!shared && /^https:\/\/akramali\.github\.io\/little-hafiz-quest\/$/.test(shared.url) && /Little Hafiz Quest/.test(shared.title), shared && shared.url);
+  Object.defineProperty(w.navigator, 'share', { value: undefined, configurable: true });
+  let copied = null;
+  Object.defineProperty(w.navigator, 'clipboard', { value: { writeText: (t) => ((copied = t), Promise.resolve()) }, configurable: true });
+  d.querySelector('[data-act=shareapp]').click(); await wait(300);
+  ok('…without a share menu, the link is copied', copied === 'https://akramali.github.io/little-hafiz-quest/' && /Link copied/.test(d.getElementById('toast').textContent));
   ok('no game errors', errs.length === 0, errs.join(' | '));
   done();
 })();

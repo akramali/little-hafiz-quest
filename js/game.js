@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.12.5';
+  const VERSION = '2.12.6';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -3968,7 +3968,7 @@
     ).join('');
     return `<div class="screen">
     ${bar('Grown-up Corner', `Settings · v${VERSION}`, st.ret ? 'ret' : 'splash', `<button class="icon-btn helpbtn" data-act="help" aria-label="About Little Hafiz Quest: sources and disclaimer">${INFO_ICON}</button>`)}
-    <button class="btn wide howbtn" data-act="howto">📘 How to play</button>
+    <div class="row howrow"><button class="btn wide howbtn" data-act="howto">📘 How to play</button><button class="btn wide howbtn" data-act="shareapp" aria-label="Share the game">📤 Share</button></div>
     <div class="sheet">
       <h3>🎨 Look</h3>
       ${fsSheet()}
@@ -4384,6 +4384,7 @@
   }
   /* About: the disclaimer, and where to report a problem (How to play is the welcome cards: INTRO) */
   const REPO = 'https://github.com/akramali/little-hafiz-quest';
+  const APP_URL = 'https://akramali.github.io/little-hafiz-quest/'; // (v2.12.6: shared when the game runs from a test or local copy)
   const INFO_ICON =
     '<svg class="infoic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.6" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="12" cy="7.6" r="1.5" fill="currentColor"/><path d="M12 11.2v6.2" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>';
   const ext = (href, text) => `<a href="${href}" target="_blank" rel="noopener">${text}</a>`;
@@ -5328,6 +5329,16 @@
         sfx.tap();
         showHelp();
         break;
+      case 'shareapp': {
+        // (v2.12.6) share the game itself: the phone's share menu, else the link copied
+        sfx.tap();
+        const url = /^https?:$/.test(location.protocol) && !/^(localhost|127\.|0\.0\.0\.0)/.test(location.hostname) ? new URL('./', location.href).href : APP_URL,
+          text = 'Little Hafiz Quest: a free game that helps children memorize Juz ʿAmma. No ads, no accounts.';
+        if (navigator.share) navigator.share({ title: 'Little Hafiz Quest', text, url }).catch(() => {});
+        else if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(() => toast('🔗 Link copied: ' + url), () => toast(url));
+        else toast(url);
+        break;
+      }
       case 'howto':
         sfx.tap();
         showIntro(0, true);

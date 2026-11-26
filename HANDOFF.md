@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is a short public overview (highlights, install, privacy, credits); this file holds the detail.
 
-**Current version:** v2.12.5 (2026-11-25) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.12.6 (2026-11-26) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -196,7 +196,12 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
   peach hearts, sky clouds, butter gingham, strawberry, pastel rainbow, butterfly, tie-dye, big bow; and cool ones, tier 2:
   galaxy, sunset ombré, sparkle, flower crown, pearl trim) and 11 flowery, pastel things (a flower crown, ruffle blouse,
   pastel cardigan, floral pants, flower purse, bow backpack, ballet flats, flower glasses, lace parasol, petal cape, bow
-  watch). Helpers `flower5`, `heartD`, `bow`, `faceArc` next to `HIJABS`.
+  watch). Helpers `flower5`, `heartD`, `bow`, `faceArc` next to `HIJABS`. **v2.12.6: 14 more**, also girls only: lemonade,
+  cherries, pastel stars, watermelon and lilac lace hijabs, and (cool) moon-and-stars and rainbow glitter ones; a heart
+  purse, sparkle sneakers (glowing), a pearl bracelet (watch slot), a flower dress, a bunny buddy (an animal buddy: it
+  blinks, sleeps and gets hungry at My Tree), a flower basket (stick slot) and a lace cape.
+- **Share the game (v2.12.6):** the Grown-up Corner's 📤 Share, beside How to play, opens the phone's share menu with the
+  game's address (the page's own, or `APP_URL` when it runs from a test or local copy), else copies it.
 - **Stickers and badges over a hijab (v2.12.4):** the sticker and badge are drawn after the head (the hijab's drape is
   part of it), still under the arms.
 - **Family links format 5 (v2.12.2):** stop 207 in every list by sūrah; format 4 codes still read (without it, and with

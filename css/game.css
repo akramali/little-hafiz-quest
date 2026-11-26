@@ -10847,3 +10847,20 @@ body.riddling #map {
     opacity: 0;
   }
 }
+
+/* ---------- 2026-11-26 · v2.12.6 ---------- */
+/* the Grown-up Corner: How to play and Share the game side by side */
+.howrow {
+  gap: 10px;
+}
+.howrow .howbtn {
+  flex: 1;
+  margin-left: 0;
+  margin-right: 0;
+}
+.howrow .howbtn {
+  white-space: nowrap;
+  font-size: 17px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
