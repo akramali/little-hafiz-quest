@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.12.15';
+  const VERSION = '2.12.16';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -3217,6 +3217,15 @@
     const on = prof.badge === id || prof.medal === id;
     return `<button class="scell ${on ? 'on' : ''}" data-act="stick" data-id="${id}" aria-pressed="${on}">${ART.sticker(id)}<small>${STICKER[id].name}</small>${prof.fresh.includes('s:' + id) ? NEWDOT : ''}</button>`;
   }
+  // which My Explorer tab a "new" key belongs to (v2.12.16: seen there, it stops being new right away)
+  const freshTab = (k) => (k[0] === 's' ? (STICKER[k.slice(2)] && STICKER[k.slice(2)].badge ? 'badges' : 'stickers') : ITEM[k.slice(2)] ? ITEM[k.slice(2)].slot : '');
+  const unfresh = (test) => {
+    const prof = P(),
+      left = prof.fresh.filter((k) => !test(k));
+    if (left.length === prof.fresh.length) return;
+    prof.fresh = left;
+    save();
+  };
   /* My Explorer: the explorer always stays in view. Only the bottom part changes: a row of categories
      (a dot marks the ones with something new) and that category's things, newest first, in a row that
      scrolls sideways. */
@@ -3224,12 +3233,11 @@
     const prof = P(),
       tab = st.tab || 'hat',
       worn = wornOutfit(prof);
-    const isBadgeKey = (k) => k[0] === 's' && STICKER[k.slice(2)] && !!STICKER[k.slice(2)].badge;
     const tabs = [...SLOTS.filter((t) => t !== 'hijab' || kidOf(prof) === 'girl'), 'stickers', 'badges']
       .map((t) => {
         const ic = t === 'stickers' ? '⭐' : t === 'badges' ? '🏅' : t === 'stick' ? STICK_IC : SLOT_INFO[t][0];
         const nm = t === 'stickers' ? 'Stickers' : t === 'badges' ? 'Badges' : SLOT_INFO[t][1];
-        const isNew = prof.fresh.some((k) => (t === 'stickers' ? k[0] === 's' && !isBadgeKey(k) : t === 'badges' ? isBadgeKey(k) : k[0] === 'i' && ITEM[k.slice(2)].slot === t));
+        const isNew = prof.fresh.some((k) => freshTab(k) === t);
         return `<button class="wtab ${tab === t ? 'on' : ''} ${isNew ? 'hasnew' : ''}" data-act="tab" data-t="${t}"><span>${ic}</span><small>${nm}</small>${isNew ? NEWDOT : ''}</button>`;
       })
       .join('');
@@ -5054,6 +5062,8 @@
         break;
       case 'tab': {
         sfx.tap();
+        // (v2.12.16) the things in the tab being left have been seen: no more "new" dots on them or on its tab
+        if (st.view === 'bag') unfresh((k) => freshTab(k) === (st.tab || 'hat'));
         st.tab = b.dataset.t;
         render();
         const row = $app.querySelector('.wrow, .wscroll-v');
@@ -5080,6 +5090,7 @@
         if (!it) break;
         sfx.pop();
         P().stash = null;
+        unfresh((k) => k === 'i:' + id); // (v2.12.16) tapped: no longer new
         const o = P().outfit;
         if (wornByDefault(it) || o[it.slot] === id) delete o[it.slot];
         else o[it.slot] = id;
@@ -5097,6 +5108,7 @@
         if (!STICKER[id] || !prof.stickers.includes(id)) break;
         sfx.pop();
         prof.stash = null;
+        unfresh((k) => k === 's:' + id); // (v2.12.16) tapped: no longer new
         const side = STICKER[id].badge ? 'medal' : 'badge'; // (v2.11.0: a badge on the other side)
         prof[side] = prof[side] === id && b.dataset.from !== 'gift' ? '' : id;
         save();

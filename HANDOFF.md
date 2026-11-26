@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is a short public overview (highlights, install, privacy, credits); this file holds the detail.
 
-**Current version:** v2.12.15 (2026-11-26) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.12.16 (2026-11-26) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -210,6 +210,10 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
   100%), and the blossoms thin out as fruit comes (from 8 down to 2). Fruit kinds come in order (dates, figs, olives,
   pomegranates, grapes, apples, oranges, bananas; `ART.FRUIT_TYPES`, `ART.TREE_STAGE`): one more about every 7.5% (2 at
   33%, 3 at 40.5%, 4 at 48%, 5 at 55.5%, 6 at 63%, 7 at 70.5%), all eight by ~78% (v2.12.11; figs brighter for night).
+- **My Explorer's "new" dots (v2.12.16):** a thing or sticker stops being new the moment it's tapped, and everything in
+  a tab once you switch to another tab (`unfresh`, `freshTab`); leaving My Explorer still clears the rest. Gold things
+  keep the tile's own colours with a thin gold ring (the gold gradient glared in dark mode); the block icons (`.iblk`)
+  are a size smaller. Test: `tests/cases/bagnew.js`.
 - **How to play's campfire card (v2.12.15):** roaring, down to out, then roaring again (`.cfcycle`: six `.cfstep` fires,
   0.8 s each, and their `FIRE_WORD` under them switching at once, `.cfword`, so two words never overlap; reduced motion:
   Roaring, still).

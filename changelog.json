@@ -1,7 +1,11 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.12.15",
+ "latest": "2.12.16",
  "versions": [
+  { "v": "2.12.16", "notes": [
+   "My Explorer: the “new” dot goes as soon as you tap the thing",
+   "Small visual tweaks"
+  ] },
   { "v": "2.12.15", "notes": [
    "How to play: the campfire burns down to out, the tree grows quicker"
   ] },
