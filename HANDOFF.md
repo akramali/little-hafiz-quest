@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is a short public overview (highlights, install, privacy, credits); this file holds the detail.
 
-**Current version:** v2.12.19 (2026-11-26) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.12.20 (2026-11-27) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -210,6 +210,26 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
   100%), and the blossoms thin out as fruit comes (from 8 down to 2). Fruit kinds come in order (dates, figs, olives,
   pomegranates, grapes, apples, oranges, bananas; `ART.FRUIT_TYPES`, `ART.TREE_STAGE`): one more about every 7.5% (2 at
   33%, 3 at 40.5%, 4 at 48%, 5 at 55.5%, 6 at 63%, 7 at 70.5%), all eight by ~78% (v2.12.11; figs brighter for night).
+- **Buddies and worn things move (v2.12.20):** parts that move on their own are groups of class `pr-mv-<name>` made
+  with `mv(m, k, x, y, R, a)` in js/art.js: an unseen square (fill/stroke none) of half-side R centred on (x, y) makes the
+  group's box, so CSS `transform-box: fill-box; transform-origin: 50% 50%` turns it about that point (R must reach past
+  the part, spinning children included: `tests/cases/moves.js` checks every one). They move only inside `.ex` (the
+  explorer anywhere) and `.tbud` (My Tree's buddies); gift tiles, stickers (`stillArt` strips `pr-` classes) and
+  pictures stay still; parts hidden until they move carry `opacity="0"` (HID); a pattern over a thing strips its
+  `pr-mv-` classes (`patterned`: the pattern would slide off). Three kinds (css/art.css "v2.12.20"): every so often
+  (long cycles, the move at the start, `data-o` = OCC: vehicle lights `pr-siren`, puffs, steam, monster truck bounce,
+  bus STOP sign + hazards, crane boom (its hook always swings), digger scoop, fire-truck ladder + spray, boat rock,
+  plane loop, rocket lift + boost flame, helicopter hover, bike bell sparkle, ladybug wing cases + wings, elephant
+  trunk + spray, butterfly flutter, camel chew, eagle/hoopoe/falcon flap, hoopoe crest, kitten ear + yawn, bird hop +
+  note, turtle head tuck, bee loop, bunny ears + nose, shield / glowing shades / crystal & neon watch shine
+  (`shineOn`, a masked band), staff-tip sparkle (`TIPS`)); always (crane hook, kitten tail, bee wings, boat wake,
+  simple watch hands: a turn a minute, compass needle); while walking (`.ex.walk`; at My Tree `.tbud.eat/.leave/
+  .enter`: wheels (a cross on every hub), puffs/steam, monster truck jolt, rocket boost, camel nod, bunny hop, lights
+  flash in turn (`data-l` second lamp), light-up soles per step, bobble, earflap tassels, ranger leaf, keychain,
+  hip pouches/purses, hijab sway (its band/trim/pin a second group with the same square), propeller faster). Tapping
+  the buddy (My Explorer, the map, the start screen, My Tree) restarts its `data-o` moves at once (`petGo`, delays
+  kept relative so lamps alternate). Sleeping tree buddies and reduced motion: still. The turtle's head is now drawn
+  under its shell (the same look).
 - **Android fullscreen: v2.12.17–18 tried and reverted in v2.12.19 (don't repeat):** the installed app keeps
   `display_override: ["fullscreen", "standalone"]` (immersive, as since v2.4.5). Sometimes, after switching apps, the
   strip under the camera/status bar shows black (page laid out below it) until the bars are swiped in and out: Chrome's

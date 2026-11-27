@@ -5,7 +5,7 @@
   const errs = []; w.addEventListener('error', (e) => errs.push(e.message));
   w.HTMLMediaElement.prototype.play = function () { return Promise.resolve(); };
   w.HTMLInputElement.prototype.click = function () { this._clicked = true; };
-  w.prompt = () => null; w.location.reload = () => log('reload asked'); w.navigator.share = () => Promise.resolve(); w.confirm = () => true;
+  w.prompt = () => null; w.location.reload = () => log('reload asked'); w.navigator.share = () => ((w.__shared = (w.__shared || 0) + 1), Promise.resolve()); // (a share counts as the button working) w.confirm = () => true;
   const i112 = idx(112), i78 = idx(78);
   const screens = {
     splash: () => L.go('splash'),
@@ -26,7 +26,7 @@
     mushafsel: () => L.go('mushaf', { i: i112, p: 0, sel: 1, focus: true }),
   };
   const hash = (t) => { let h = 0; for (let i = 0; i < t.length; i++) h = (Math.imul(h, 31) + t.charCodeAt(i)) | 0; return h; };
-  const sig = () => [hash(d.documentElement.outerHTML), JSON.stringify(w.__lhq.store().prefs), L.st().view, JSON.stringify(L.st()).length, d.getElementById('app').innerHTML.length, d.getElementById('modal').classList.contains('show') ? d.getElementById('modal').innerHTML.length : 0, d.getElementById('toast').classList.contains('show') ? d.getElementById('toast').textContent : '', d.body.className, (d.querySelector('.listen') || {}).className].join('|');
+  const sig = () => [w.__shared || 0, hash(d.documentElement.outerHTML), JSON.stringify(w.__lhq.store().prefs), L.st().view, JSON.stringify(L.st()).length, d.getElementById('app').innerHTML.length, d.getElementById('modal').classList.contains('show') ? d.getElementById('modal').innerHTML.length : 0, d.getElementById('toast').classList.contains('show') ? d.getElementById('toast').textContent : '', d.body.className, (d.querySelector('.listen') || {}).className].join('|');
   const dead = [], bad = [];
   let total = 0;
   for (const [name, open] of Object.entries(screens)) {

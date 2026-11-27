@@ -1,7 +1,11 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.12.19",
+ "latest": "2.12.20",
  "versions": [
+  { "v": "2.12.20", "notes": [
+   "Buddies come alive: lights flash, wheels turn, the elephant trumpets… tap yours!",
+   "Worn things move as you walk: bobbles bounce, light-up soles flash, shields shine"
+  ] },
   { "v": "2.12.19", "notes": [
    "Android: fullscreen back as it was (no pop-ups, zoom works again)"
   ] },

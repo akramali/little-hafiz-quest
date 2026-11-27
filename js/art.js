@@ -198,6 +198,15 @@
   }
   // tier effects
   const tw = (x, y, r, delay, c) => '<path class="lhq-tw" d="' + star4(x, y, r) + '" fill="' + (c || '#fff') + '" stroke="#f2b12a" stroke-width="1.2" style="animation-delay:' + delay + 's"/>';
+  /* (v2.12.20) a part that moves on its own: only worn on the explorer or as a buddy at My Tree (css/art.css,
+     "v2.12.20"); everywhere else (gift tiles, stickers, pictures) it stays as drawn. mv(m, k, x, y, R, a): m in a
+     group of class pr-mv-k; with x, y: an unseen square of half-side R centred there makes the group's box, so the
+     CSS origin (50% 50%) is that point (R must reach past the part). a: more attributes (HID: hidden until it moves,
+     OCC: an "every so often" move that tapping the buddy sets off at once). */
+  const mv = (m, k, x, y, R, a) => '<g class="pr-mv-' + k + '"' + (a || '') + '>' + (x == null ? '' : '<rect x="' + n(x - R) + '" y="' + n(y - R) + '" width="' + n(2 * R) + '" height="' + n(2 * R) + '" fill="none" stroke="none"/>') + m + '</g>';
+  const star8oct = (cx, cy, r) => 'M' + [...Array(8).keys()].map((i) => { const a = ((i * 45 + 22.5) * Math.PI) / 180; return n(cx + r * Math.cos(a)) + ' ' + n(cy + r * Math.sin(a)); }).join('L') + 'Z';
+  const HID = ' opacity="0"',
+    OCC = ' data-o="1"';
   const glint = (x, y, r, delay) => '<path class="lhq-glint" d="' + star4(x, y, r) + '" fill="#fff" stroke="#9fd8ff" stroke-width="1.2" style="animation-delay:' + (delay || 0) + 's"/>';
   const aura = (x, y, rx, ry) => '<ellipse class="lhq-aura" cx="' + x + '" cy="' + y + '" rx="' + rx + '" ry="' + ry + '" fill="url(#lhq-g-aura)" stroke="none"/>';
 
@@ -534,11 +543,11 @@
     if (look.hair === 'hijab') {
       const hj = hs ? hs.c : HIJABC[look.hijabColor];
       return (
-        S(HAIR.hijabF, hj, 'M50 150Q34 162 36 178Q54 192 92 192Q130 192 148 178Q150 162 134 150Q122 168 92 168Q62 168 50 150Z') + hijabPrint(HAIR.hijabF, hs, 'front') +
-        L('M53 98Q60 74 84 65', lt(hj, 0.55), 5, ' opacity=".7"') + L('M62 170Q70 180 68 189', dk(hj, 0.35), 2.2) + L('M122 170Q114 180 116 189', dk(hj, 0.35), 2.2) +
+        mv(S(HAIR.hijabF, hj, 'M50 150Q34 162 36 178Q54 192 92 192Q130 192 148 178Q150 162 134 150Q122 168 92 168Q62 168 50 150Z') + hijabPrint(HAIR.hijabF, hs, 'front') +
+        L('M53 98Q60 74 84 65', lt(hj, 0.55), 5, ' opacity=".7"') + L('M62 170Q70 180 68 189', dk(hj, 0.35), 2.2) + L('M122 170Q114 180 116 189', dk(hj, 0.35), 2.2), 'hijab', 92, 58, 150) +
         faceShape(sk, true) + face(sk, mood, girl) +
-        P('M52 117C52 92 70 77 92 77C114 77 132 92 132 117C128 98 112 84 92 84C72 84 56 98 52 117Z', hs && hs.band ? hs.band : lt(hj, 0.55)) +
-        (hs && hs.trim ? hs.trim() : '') + (hs && hs.pin ? hs.pin() : C(132, 152, 4.2, '#fff6dc', sw(2.2)) + CF(130.8, 150.8, 1.4, '#fff'))
+        mv(P('M52 117C52 92 70 77 92 77C114 77 132 92 132 117C128 98 112 84 92 84C72 84 56 98 52 117Z', hs && hs.band ? hs.band : lt(hj, 0.55)) +
+        (hs && hs.trim ? hs.trim() : '') + (hs && hs.pin ? hs.pin() : C(132, 152, 4.2, '#fff6dc', sw(2.2)) + CF(130.8, 150.8, 1.4, '#fff')), 'hijab', 92, 58, 150)
       );
     }
     return hairFrontBack(look, hat) + ears(sk) + faceShape(sk, false) + face(sk, mood, girl) + hairFront(look, hat);
@@ -548,8 +557,8 @@
       hc = HAIRC[look.hairColor];
     if (look.hair === 'hijab') {
       const hj = hs ? hs.c : HIJABC[look.hijabColor];
-      return S(HAIR.hijabB, hj, 'M48 154Q32 168 38 194Q64 206 92 206Q120 206 146 194Q152 168 136 154Q124 172 92 172Q60 172 48 154Z') + hijabPrint(HAIR.hijabB, hs, 'back') +
-        L('M56 92Q64 72 86 64', lt(hj, 0.55), 5, ' opacity=".7"') + L('M92 156Q90 180 92 204', dk(hj, 0.35), 2.2) + L('M66 164Q60 182 62 199', dk(hj, 0.35), 2.2) + L('M118 164Q124 182 122 199', dk(hj, 0.35), 2.2);
+      return mv(S(HAIR.hijabB, hj, 'M48 154Q32 168 38 194Q64 206 92 206Q120 206 146 194Q152 168 136 154Q124 172 92 172Q60 172 48 154Z') + hijabPrint(HAIR.hijabB, hs, 'back') +
+        L('M56 92Q64 72 86 64', lt(hj, 0.55), 5, ' opacity=".7"') + L('M92 156Q90 180 92 204', dk(hj, 0.35), 2.2) + L('M66 164Q60 182 62 199', dk(hj, 0.35), 2.2) + L('M118 164Q124 182 122 199', dk(hj, 0.35), 2.2), 'hijab', 92, 58, 150);
     }
     const h = HAIRS[look.hair] || HAIRS.short;
     return ears(sk) + E(92, 112, 46, 43, sk) + h.back(hc, sk) + (h.bun && bunShows(hat) ? h.bun.back(hc) : '');
@@ -864,7 +873,7 @@
         S('M58 89C57 70 62 55 76 51Q92 58 108 51C122 55 127 70 126 89Q92 95 58 89Z', c, 'M108 51C122 55 127 70 126 89Q118 90 112 91C116 76 114 62 108 51Z', 'M66 74C66 64 70 58 75 55C72 62 70 70 70 78Z') +
         L('M80 55Q92 63 104 55', dk(c, 0.3), 2) +
         S('M58 80Q92 86 126 80L126.5 89Q92 95 57.5 89Z', b) +
-        S('M112 84Q114 70 128 66Q128 82 112 84Z', '#6ccf5a') + L('M113 83Q120 76 126 69', '#3f8f3a', 1.6)
+        mv(S('M112 84Q114 70 128 66Q128 82 112 84Z', '#6ccf5a') + L('M113 83Q120 76 126 69', '#3f8f3a', 1.6), 'leaf', 113, 84, 20)
       );
     },
   };
@@ -1030,7 +1039,7 @@
     ex() {
       const c = '#e85d75';
       return S('M48 96C46 64 66 50 92 50C118 50 138 64 136 96Z', c, 'M114 54C130 62 138 76 136 96L124 96Q126 70 114 54Z') + L('M70 60L66 92M92 52L92 90M114 60L118 92', dk(c, 0.2), 1.6) +
-        S('M45 88Q92 80 139 88L139 100Q92 92 45 100Z', dk(c, 0.15)) + L('M58 86L58 97M72 84L72 95M86 83L86 94M100 83L100 94M114 84L114 95M128 86L128 97', dk(c, 0.35), 1.4) + ball(92, 44, 9, 9, '#ffffff', { shc: '#e3e6f0' });
+        S('M45 88Q92 80 139 88L139 100Q92 92 45 100Z', dk(c, 0.15)) + L('M58 86L58 97M72 84L72 95M86 83L86 94M100 83L100 94M114 84L114 95M128 86L128 97', dk(c, 0.35), 1.4) + mv(ball(92, 44, 9, 9, '#ffffff', { shc: '#e3e6f0' }), 'pom', 92, 53, 20);
     },
   };
   /* everyday hats (surprise gifts) */
@@ -1057,7 +1066,7 @@
       const c = '#e8524a',
         w = '#f4ecdc';
       const flap = S('M40 92L39 120Q40 132 49 132Q58 132 59 120L60 94Z', c, 'M52 94L60 94L59 120Q58 132 49 132Q55 124 52 94Z') + L('M42 118Q49 124 57 118', w, 1.8) +
-        L('M49 132L50 145', INK, 2) + ball(50, 147.5, 4, 4, w, { shc: '#d9d0c0' });
+        mv(L('M49 132L50 145', INK, 2) + ball(50, 147.5, 4, 4, w, { shc: '#d9d0c0' }), 'tassel', 49, 132, 20);
       let zig = '';
       for (let x = 50; x < 134; x += 8) zig += (zig ? 'L' : 'M') + x + ' ' + (x % 16 === 2 ? 95 : 89);
       return (
@@ -1481,7 +1490,8 @@
     LOW_SOLE = 'M62.6 282.6L95.6 282.6L95.6 287C95.6 290 93.6 292 90.6 292L67 292C64 292 62.6 290 62.6 287Z';
   SHOE['lightup-sneakers'] = () =>
     G(EF(79, 289, 21, 6, '#3fffb0', 0.35), cls('wglow')) + S(LOW, '#2b2340', 'M86 269C91 271 94.6 275 94.6 281L94.6 284L88 284C89 278 88 273 86 269Z') + S(LOW_SOLE, '#ffffff') +
-    ['#ff5d9e', '#ffd23f', '#3fffb0', '#5fb2ff'].map((c, j) => F(rr(65 + j * 7.4, 285.4, 6, 3.4, 1.4), c)).join('') + L('M72 272.5L82 271.5M73.5 276.5L83.5 275.5', '#3fffb0', 2);
+    ['#ff5d9e', '#ffd23f', '#3fffb0', '#5fb2ff'].map((c, j) => F(rr(65 + j * 7.4, 285.4, 6, 3.4, 1.4), c)).join('') + L('M72 272.5L82 271.5M73.5 276.5L83.5 275.5', '#3fffb0', 2) +
+    mv(EF(79, 288, 24, 8, '#fff6a8', 0.5) + ['#ff9cc4', '#fff099', '#a8ffe0', '#a8d8ff'].map((c, j) => F(rr(65 + j * 7.4, 285.4, 6, 3.4, 1.4), c)).join(''), 'lightup', null, 0, 0, HID);
   SHOE['skate-shoes'] = () => {
     let ch = '';
     for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) if ((r + c) % 2) ch += F(rr(70 + c * 5, 271 + r * 4, 5, 4, 0.6), '#2b2340');
@@ -1741,8 +1751,8 @@
     box: [66, 150, 132, 244],
     ic: () => DL('M72 156Q80 196 110 200', '#ffd23f', 2.4) + tasselPouch(116, 210),
     ex(v) {
-      if (v === 'back') return DL('M112 156L70 202', '#ffd23f', 2.4) + G(tasselPouch(116, 212), MIR);
-      return DL('M72 156L112 202', '#ffd23f', 2.4) + tasselPouch(116, 212);
+      if (v === 'back') return DL('M112 156L70 202', '#ffd23f', 2.4) + G(mv(tasselPouch(116, 212), 'pouch', 113, 201, 42), MIR);
+      return DL('M72 156L112 202', '#ffd23f', 2.4) + mv(tasselPouch(116, 212), 'pouch', 113, 201, 42);
     },
   };
   ART['basket-pack'] = {
@@ -2128,7 +2138,7 @@
       const c = '#5fb2ff';
       if (v !== 'back') return twoStrapsB(dk(c, 0.3));
       return S(rr(66, 166, 52, 62, 16), c, 'M104 166Q118 166 118 180L118 214Q118 228 104 228L98 228Q110 200 104 166Z', 'M71 182Q71 172 78 170Q74 180 74 194Z') + S(rr(74, 196, 36, 24, 9), lt(c, 0.2)) + L('M78 204L106 204', dk(c, 0.35), 1.6) +
-        L('M88 204L84 222M96 204L100 224', INK, 1.4) + P(star5(84, 226, 4.4), '#ffd23f', sw(1.2)) + ball(100, 228, 3.6, 3.6, '#ff5d9e') + L('M70 176L114 176', dk(c, 0.3), 1.4, ' stroke-dasharray="3 3"');
+        mv(L('M88 204L84 222M96 204L100 224', INK, 1.4) + P(star5(84, 226, 4.4), '#ffd23f', sw(1.2)) + ball(100, 228, 3.6, 3.6, '#ff5d9e'), 'dangle', 92, 204, 30) + L('M70 176L114 176', dk(c, 0.3), 1.4, ' stroke-dasharray="3 3"');
     },
   };
   ART['belt-bag'] = {
@@ -2242,8 +2252,8 @@
     box: [64, 150, 134, 232],
     ic: () => DL('M72 156Q80 194 112 200', '#ff9fcf', 2.4) + purse(116, 204),
     ex(v) {
-      if (v === 'back') return DL('M112 156L70 200', '#ff9fcf', 2.4) + G(purse(116, 204), MIR);
-      return DL('M72 156L112 200', '#ff9fcf', 2.4) + purse(116, 204);
+      if (v === 'back') return DL('M112 156L70 200', '#ff9fcf', 2.4) + G(mv(purse(116, 204), 'pouch', 114, 200, 26), MIR);
+      return DL('M72 156L112 200', '#ff9fcf', 2.4) + mv(purse(116, 204), 'pouch', 114, 200, 26);
     },
   };
   ART['bow-backpack'] = {
@@ -2287,8 +2297,8 @@
     box: [64, 150, 136, 236],
     ic: () => DL('M72 156Q80 194 112 204', '#ff9fcf', 2.4) + heartPurse(116, 208),
     ex(v) {
-      if (v === 'back') return DL('M112 156L70 204', '#ff9fcf', 2.4) + G(heartPurse(116, 210), MIR);
-      return DL('M72 156L112 204', '#ff9fcf', 2.4) + heartPurse(116, 210);
+      if (v === 'back') return DL('M112 156L70 204', '#ff9fcf', 2.4) + G(mv(heartPurse(116, 210), 'pouch', 113, 203, 30), MIR);
+      return DL('M72 156L112 204', '#ff9fcf', 2.4) + mv(heartPurse(116, 210), 'pouch', 113, 203, 30);
     },
   };
   ART['pearl-bracelet'] = {
@@ -2451,7 +2461,7 @@
   const WATCH_AT = ' transform="translate(48.6 202) rotate(25) scale(1.15)"';
   ART['explorer-watch'] = {
     box: [-27, -46, 27, 46],
-    w: (big) => watch('#3fae6a', { rim: GOLD, c: '#fff', mini: F('M0 -3.2L1.2 0L-1.2 0Z', '#ef4b4b') }, F('M0 -14L4 0L-4 0Z', '#ef4b4b') + F('M0 14L4 0L-4 0Z', '#4a6cff') + CF(0, 0, 2.4, INK) + L('M0 -17L0 -15M17 0L15 0M0 17L0 15M-17 0L-15 0', INK, 2), big),
+    w: (big) => watch('#3fae6a', { rim: GOLD, c: '#fff', mini: F('M0 -3.2L1.2 0L-1.2 0Z', '#ef4b4b') }, mv(F('M0 -14L4 0L-4 0Z', '#ef4b4b') + F('M0 14L4 0L-4 0Z', '#4a6cff'), 'needle', 0, 0, 16) + CF(0, 0, 2.4, INK) + L('M0 -17L0 -15M17 0L15 0M0 17L0 15M-17 0L-15 0', INK, 2), big),
   };
   // (v2.12.2) the 99 Names' treasure: a tasbīḥ of wooden beads round the wrist, with a little tassel; big: the whole
   // string of beads in a loop
@@ -2483,7 +2493,7 @@
   ART['band-watch'] = {
     box: [-27, -46, 27, 46],
     w: (big) => watch('#4a8cff', { rim: '#e4e1ec', c: '#fff', mini: L('M0 0L0 -2.6M0 0L2 0.6', INK, 1) }, [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((a) => CF(n(14.6 * Math.cos((a * Math.PI) / 180)), n(14.6 * Math.sin((a * Math.PI) / 180)), a % 90 ? 1.1 : 1.8, INK)).join('') +
-      L('M0 0L0 -10.5', INK, 2.6) + L('M0 0L6.6 3.4', INK, 2.6) + CF(0, 0, 2.2, '#ff5d5d'), big),
+      mv(L('M0 0L0 -10.5', INK, 2.6), 'wmin', 0, 0, 12) + mv(L('M0 0L6.6 3.4', INK, 2.6), 'whour', 0, 0, 12) + CF(0, 0, 2.2, '#ff5d5d'), big),
   };
   // v2.8.4: four more faces
   ART['flower-watch'] = {
@@ -2551,8 +2561,9 @@
     d() {
       const h = '#3d3352';
       return L('M-12 -5L-15 0M2 -3L1 1M15 -5L19 -1', INK, 3.2) +
-        ball(6, -20, 26, 19, '#f04848', { dx: 0.18, dy: 0.24 }) + L('M-10 -36Q8 -24 26 -6', INK, 2.4) +
-        [[-2, -27, 4.6], [14, -31, 4], [20, -15, 4.6], [4, -12, 3.6], [-8, -16, 3]].map((p) => CF(p[0], p[1], p[2], h)).join('') +
+        mv(E(14, -42, 16, 5.6, '#e6f4ff', ' stroke-width="1.6" opacity=".9" transform="rotate(-28 14 -42)"') + E(24, -34, 15, 5, '#e6f4ff', ' stroke-width="1.6" opacity=".9" transform="rotate(-8 24 -34)"'), 'lbwing', 6, -32, 34, HID + OCC) +
+        mv(ball(6, -20, 26, 19, '#f04848', { dx: 0.18, dy: 0.24 }) + L('M-10 -36Q8 -24 26 -6', INK, 2.4) +
+        [[-2, -27, 4.6], [14, -31, 4], [20, -15, 4.6], [4, -12, 3.6], [-8, -16, 3]].map((p) => CF(p[0], p[1], p[2], h)).join(''), 'lbshell', -14, -6, 52, OCC) +
         L('M-22 -27Q-27 -39 -34 -41', INK, 2.4) + ball(-34, -41, 3.2, 3.2, h, { sh: false, hl: false }) + L('M-13 -28Q-11 -41 -4 -45', INK, 2.4) + ball(-4, -45, 3.2, 3.2, h, { sh: false, hl: false }) +
         ball(-18, -16, 14.5, 13, h, { dx: 0.15, dy: 0.2 }) + G(E(-24, -18.5, 5.4, 6.2, '#fff', sw(1.6)) + E(-12, -19.5, 5.4, 6.2, '#fff', sw(1.6)) + CF(-23, -17.4, 3, INK) + CF(-11, -18.4, 3, INK) + CF(-22, -18.8, 1.1, '#fff') + CF(-10, -19.8, 1.1, '#fff'), cls('lhq-blink')) +
         shut([[-24, -18.5], [-12, -19.5]], 3.4, '#fff') +
@@ -2567,7 +2578,8 @@
       return ball(0, -20, 22, 18, c, { hl: false }) + ball(-11, -5, 8.5, 6.5, c, { sh: false, hl: false }) + ball(11, -5, 8.5, 6.5, c, { sh: false, hl: false }) +
         [-14, -11, -8, 8, 11, 14].map((x) => CF(x, -2.6, 1.4, '#fff4e0')).join('') + ear + G(ear, ' transform="scale(-1 1)"') +
         ball(0, -44, 21, 19, c) + L('M-3 -63Q0 -69 3 -64M0 -63Q3 -68 6 -63', INK, 2) +
-        G(cuteEyes(-8.5, -47, 8.5, -47, 3.8), cls('lhq-blink')) + shut([[-8.5, -47], [8.5, -47]], 3.8) + cheeks(-14, -38, 14, -38, 4.4) + DL('M0 -39Q-1.6 -27 3 -22.5Q7 -19.5 9.4 -24.5', c, 6.6) + L('M-9 -30Q-6 -28 -4 -30', INK, 2);
+        G(cuteEyes(-8.5, -47, 8.5, -47, 3.8), cls('lhq-blink')) + shut([[-8.5, -47], [8.5, -47]], 3.8) + cheeks(-14, -38, 14, -38, 4.4) + L('M-9 -30Q-6 -28 -4 -30', INK, 2) +
+        mv(DL('M0 -39Q-1.6 -27 3 -22.5Q7 -19.5 9.4 -24.5', c, 6.6) + mv([[13, -27, 2], [16, -22, 1.6], [11, -20, 1.4], [17, -28, 1.3]].map(([x, y, r]) => EF(x, y, r, r * 1.2, '#7fd6ff')).join(''), 'espray', 14, -24, 7, HID + OCC), 'trunk', 0, -39, 28, OCC);
     },
   };
   PET['butterfly-buddy'] = {
@@ -2576,9 +2588,9 @@
       const wl = S('M-3 -66C-16 -94 -46 -90 -42 -68C-40 -56 -18 -56 -3 -60Z', '#ff8fcf', 'M-3 -60C-14 -58 -30 -58 -38 -62C-40 -56 -18 -56 -3 -60Z') + CF(-28, -76, 5.4, '#ffe066') + CF(-17, -69, 3, '#fff', 0.8) +
         S('M-3 -58C-16 -56 -34 -46 -26 -36C-18 -30 -6 -42 -3 -54Z', '#b99cff') + CF(-18, -45, 3.6, '#7fd6ff');
       return EF(0, -1, 14, 3.4, INK, 0.13) +
-        G(G(wl, cls('lhq-flap')) + G(G(wl, cls('lhq-flap')), ' transform="scale(-1 1)"') + S(limb(0, -70, 0, -42, 4.6, 3.4), '#5b4a8a') +
+        mv(G(G(wl, cls('lhq-flap')) + G(G(wl, cls('lhq-flap')), ' transform="scale(-1 1)"') + S(limb(0, -70, 0, -42, 4.6, 3.4), '#5b4a8a') +
           L('M-3 -86Q-8 -97 -13 -95', INK, 2.2) + ball(-13, -95, 2.6, 2.6, '#6c5aa0', { sh: false, hl: false }) + L('M3 -86Q8 -97 13 -95', INK, 2.2) + ball(13, -95, 2.6, 2.6, '#6c5aa0', { sh: false, hl: false }) +
-          ball(0, -78, 11, 10, '#7b68b4') + G(cuteEyes(-4, -79, 4, -79, 2.4), cls('lhq-blink')) + shut([[-4, -79], [4, -79]], 2.4) + smile(0, -74.4, 2.4, 1.6) + cheeks(-7, -74, 7, -74, 2.4), cls('lhq-hover'));
+          ball(0, -78, 11, 10, '#7b68b4') + G(cuteEyes(-4, -79, 4, -79, 2.4), cls('lhq-blink')) + shut([[-4, -79], [4, -79]], 2.4) + smile(0, -74.4, 2.4, 1.6) + cheeks(-7, -74, 7, -74, 2.4), cls('lhq-hover')), 'bfly', 0, -70, 50, OCC);
     },
   };
   PET['camel-buddy'] = {
@@ -2593,9 +2605,9 @@
         S('M-20 -30C-20 -42 -10 -46 -2 -46C0 -62 24 -64 26 -46C34 -46 38 -38 36 -30C34 -20 22 -18 8 -18C-8 -18 -20 -20 -20 -30Z', c, 'M24 -46C32 -46 38 -38 36 -30C34 -20 22 -18 8 -18C20 -24 26 -34 24 -46Z', 'M4 -52Q8 -58 14 -58Q8 -54 7 -49Z') +
         S('M-6 -44Q9 -38 25 -45L28 -28Q9 -22 -9 -28Z', b) + L('M-8.4 -31Q9 -25 27 -31', '#2fc4b2', 2.6) + [-6, 3, 12, 21].map((x) => C(x, -24 - (x > 10 ? 1.4 : 0), 2.2, GOLD, sw(1.4))).join('') +
         S(limb(-16, -24, -16, -3, 5, 4.6), c) + S(limb(13, -24, 14, -3, 5, 4.6), c) + hoof(-16) + hoof(14) +
-        S(limb(-13, -34, -24, -55, 7.6, 6.4), c) + P('M-19 -68Q-15 -75 -13 -66Z', c) +
-        ball(-28, -61, 12.5, 10.4, c) + ball(-37.5, -56.5, 7.6, 6.4, lt(c, 0.28), { sh: false, hl: false }) + CF(-41, -58, 1.3, INK) + G(eye1(-27, -64, 2.8), cls('lhq-blink')) + shut([[-27, -64]], 2.8) +
-        L('M-41.5 -52.5Q-38 -50 -34.5 -52.5', INK, 1.8) + EF(-22, -56, 3, 1.8, '#ff8fa3', 0.6);
+        mv(S(limb(-13, -34, -24, -55, 7.6, 6.4), c) + P('M-19 -68Q-15 -75 -13 -66Z', c) +
+        ball(-28, -61, 12.5, 10.4, c) + G(eye1(-27, -64, 2.8), cls('lhq-blink')) + shut([[-27, -64]], 2.8) + EF(-22, -56, 3, 1.8, '#ff8fa3', 0.6) +
+        mv(ball(-37.5, -56.5, 7.6, 6.4, lt(c, 0.28), { sh: false, hl: false }) + CF(-41, -58, 1.3, INK) + L('M-41.5 -52.5Q-38 -50 -34.5 -52.5', INK, 1.8), 'chew', -37.5, -55, 10, OCC), 'nod', -13, -34, 42);
     },
   };
   PET['eagle-buddy'] = {
@@ -2606,7 +2618,7 @@
         g = GOLD,
         wg = S('M-14 -42C-32 -46 -44 -30 -40 -10C-36 -14 -32 -12 -30 -16C-28 -10 -22 -12 -22 -16C-18 -12 -14 -16 -14 -20Z', br, null, 'M-30 -40Q-38 -36 -38 -26Q-34 -34 -28 -38Z') +
           F('M-40 -10C-36 -14 -32 -12 -30 -16C-28 -10 -22 -12 -22 -16C-18 -12 -14 -16 -14 -20L-15 -24C-24 -22 -34 -20 -40 -14Z', g) + P('M-14 -42C-32 -46 -44 -30 -40 -10C-36 -14 -32 -12 -30 -16C-28 -10 -22 -12 -22 -16C-18 -12 -14 -16 -14 -20Z', 'none');
-      return G(G(wg, cls('lhq-wing-l')) + G(G(wg, cls('lhq-wing-l')), ' transform="scale(-1 1)"')) +
+      return G(mv(G(wg, cls('lhq-wing-l')), 'flap', -14, -30, 34, OCC) + G(mv(G(wg, cls('lhq-wing-l')), 'flap', -14, -30, 34, OCC), ' transform="scale(-1 1)"')) +
         P('M-12 -3Q-8 -9 -4 -3Q-6 0 -8 0Q-10 0 -12 -3Z', '#ffb23d', sw(2)) + P('M12 -3Q8 -9 4 -3Q6 0 8 0Q10 0 12 -3Z', '#ffb23d', sw(2)) +
         ball(0, -25, 18, 22, br) + EF(0, -19, 11, 13, '#e8c99a') + L('M-6 -24Q-3 -21 0 -24Q3 -21 6 -24M-5 -16Q-2.5 -13 0 -16Q2.5 -13 5 -16', dk('#e8c99a', 0.3), 1.6) +
         S('M-4 -62Q-7 -73 -1 -76Q2 -69 0 -62Z', g) + S('M3 -62Q4 -72 10 -73Q10 -66 5 -61Z', g) +
@@ -2623,8 +2635,8 @@
         g = GOLD,
         wing = S('M-12 -40C-28 -44 -40 -30 -38 -12C-30 -14 -22 -16 -12 -22Z', '#3a2f45', null, null) + L('M-34 -18L-16 -28M-36 -26L-16 -34M-30 -36L-14 -40', '#ffffff', 2.6),
         crest = [-24, -12, 0, 12, 24].map((a) => G(S('M-3 0Q-5 -16 0 -22Q5 -16 3 0Z', a % 24 ? g : '#ff8a3d') + CF(0, -19, 2.2, INK), ' transform="translate(0 -60) rotate(' + a + ')"')).join('');
-      return G(G(wing, cls('lhq-wing-l')) + G(G(wing, cls('lhq-wing-l')), ' transform="scale(-1 1)"')) +
-        L('M-6 -2L-8 -12M6 -2L8 -12', '#5a4a7a', 2.6) + crest + ball(0, -26, 16, 19, b) + EF(0, -21, 10, 11, '#ffe2b0') +
+      return G(mv(G(wing, cls('lhq-wing-l')), 'flap', -12, -30, 32, OCC) + G(mv(G(wing, cls('lhq-wing-l')), 'flap', -12, -30, 32, OCC), ' transform="scale(-1 1)"')) +
+        L('M-6 -2L-8 -12M6 -2L8 -12', '#5a4a7a', 2.6) + mv(crest, 'crest', 0, -60, 30, OCC) + ball(0, -26, 16, 19, b) + EF(0, -21, 10, 11, '#ffe2b0') +
         ball(0, -48, 14, 13, b) + G(cuteEyes(-5.6, -50, 5.6, -50, 3.2), cls('lhq-blink')) + shut([[-5.6, -50], [5.6, -50]], 3.2) + cheeks(-10, -43, 10, -43, 3) +
         P('M-2 -43Q0 -46 2 -43L1 -30Q0 -28 -1 -30Z', '#5a4a7a', sw(1.6)) + tw(-30, -70, 6, 0) + tw(30, -64, 5, 0.9);
     },
@@ -2634,24 +2646,30 @@
   [['kitten-buddy', 'cat'], ['bird-buddy', 'bird'], ['turtle-buddy', 'turtle'], ['bee-buddy', 'bee']].forEach(([id, st]) => {
     PET[id] = { box: [-46, -84, 46, 2], d: () => G(STKBY[st](), tf(-45, -82.8, 0.9)) };
   });
+  // (v2.12.20) a music note for the bird (a filled head, a stem and a flag)
+  const note = (x, y) => EF(x, y, 3.2, 2.4, INK, null) + L('M' + n(x + 2.8) + ' ' + y + 'L' + n(x + 2.8) + ' ' + (y - 11), INK, 1.6) + L('M' + n(x + 2.8) + ' ' + (y - 11) + 'Q' + n(x + 7) + ' ' + (y - 9) + ' ' + n(x + 6.4) + ' ' + (y - 5), INK, 1.6);
+  PET['bird-buddy'].d = () => mv(G(STKBY.bird(), tf(-45, -82.8, 0.9)), 'bhop', 0, -40, 60, OCC) + mv(note(40, -58), 'note', 42, -63, 9, HID + OCC);
+  PET['bee-buddy'].d = () => mv(G(STKBY.bee(), tf(-45, -82.8, 0.9)), 'bloop', 0, -42, 62, OCC);
   PET['toy-rocket'] = {
     box: [-24, -88, 24, 4],
     d() {
       const r = '#ef4b4b';
-      return EF(0, 0, 14, 3.4, INK, 0.14) + '<g class="pr-bob">' + '<g class="pr-flame">' + F('M-6 -22Q0 2 6 -22Z', '#ffb347') + F('M-3 -22Q0 -8 3 -22Z', '#fff3b0') + '</g>' +
+      return EF(0, 0, 14, 3.4, INK, 0.14) + mv('<g class="pr-bob">' + mv(F('M-8 -22Q0 14 8 -22Z', '#ff9f1c') + F('M-4 -22Q0 0 4 -22Z', '#fff3b0'), 'boost', null, 0, 0, HID + OCC) + '<g class="pr-flame">' + F('M-6 -22Q0 2 6 -22Z', '#ffb347') + F('M-3 -22Q0 -8 3 -22Z', '#fff3b0') + '</g>' +
         S('M-10 -26L-20 -14L-10 -34Z', r) + S('M10 -26L20 -14L10 -34Z', r) + S('M-10 -24Q-12 -60 0 -84Q12 -60 10 -24Z', '#ffffff', 'M4 -78Q12 -60 10 -24L4 -24Q8 -56 4 -78Z') +
-        S('M-6.6 -70Q0 -86 6.6 -70Z', r) + C(0, -50, 6, '#7fd6ff', sw(2.2)) + CF(-2, -52, 1.8, '#fff', 0.8) + S(rr(-9, -28, 18, 5, 2), '#c9d2e3') + '</g>';
+        S('M-6.6 -70Q0 -86 6.6 -70Z', r) + C(0, -50, 6, '#7fd6ff', sw(2.2)) + CF(-2, -52, 1.8, '#fff', 0.8) + S(rr(-9, -28, 18, 5, 2), '#c9d2e3') + '</g>', 'lift', null, 0, 0, OCC);
     },
   };
   /* ---------- the world rides (ground at y 0, about 80 wide) ---------- */
-  const wheel = (x, r) => ball(x, -r, r, r, '#3a2f45', { hl: false }) + C(x, -r, r * 0.42, '#c9d2e3', sw(2));
+  // (v2.12.20) the hub has a cross on it, so it can be seen turning while the explorer walks
+  const wheel = (x, r) => ball(x, -r, r, r, '#3a2f45', { hl: false }) + mv(C(x, -r, n(r * 0.42), '#c9d2e3', sw(2)) + L('M' + n(x - r * 0.3) + ' ' + -r + 'L' + n(x + r * 0.3) + ' ' + -r + 'M' + x + ' ' + n(-r * 1.3) + 'L' + x + ' ' + n(-r * 0.7), '#6f7891', 1.4), 'wheel', x, -r, n(r * 0.5));
   const shadow = (w) => EF(0, 0, w, 3.6, INK, 0.14);
   PET['toy-car'] = {
     box: [-42, -54, 42, 2],
     d: () =>
       shadow(36) + S('M-20 -30Q-15 -48 -2 -48L12 -48Q22 -48 27 -30Z', '#ef4b4b', 'M14 -48Q22 -48 27 -30L18 -30Q18 -42 14 -48Z') +
       F('M-14 -32Q-11 -44 -3 -44L3 -44L3 -32Z', '#bfe8ff') + F('M7 -44L12 -44Q18 -44 21 -32L7 -32Z', '#bfe8ff') +
-      S(rr(-38, -32, 76, 20, 8), '#ef4b4b', rr(14, -32, 24, 20, 8)) + F(rr(-34, -28, 10, 5, 2.5), '#fff', 0.55) + C(33, -24, 3, '#ffe066', sw(1.6)) + wheel(-22, 10) + wheel(22, 10),
+      S(rr(-38, -32, 76, 20, 8), '#ef4b4b', rr(14, -32, 24, 20, 8)) + F(rr(-34, -28, 10, 5, 2.5), '#fff', 0.55) + C(33, -24, 3, '#ffe066', sw(1.6)) + wheel(-22, 10) + wheel(22, 10) +
+      mv(ball(-44, -17, 4.4, 4, '#eef0f6', { hl: false, sh: false }) + ball(-50, -21, 3.2, 3, '#eef0f6', { hl: false, sh: false }), 'puff', -46, -19, 10, HID + OCC),
   };
   PET['toy-train'] = {
     box: [-44, -78, 44, 2],
@@ -2659,50 +2677,50 @@
       shadow(40) + G(ball(-27, -66, 7, 6, '#ffffff', { hl: false }) + ball(-20, -74, 9, 7, '#ffffff', { hl: false }), cls('pr-bob')) +
       S(rr(-31, -56, 10, 20, 2), '#3a2f45') + S(rr(-38, -40, 46, 24, 11), '#3d7be0', rr(-38, -28, 46, 12, 6)) + S(rr(6, -58, 30, 44, 4), '#ef4b4b', rr(26, -58, 10, 44, 3)) +
       S(rr(2, -62, 38, 6, 3), '#3a2f45') + F(rr(12, -52, 16, 12, 3), '#bfe8ff') + S('M-38 -16L-44 -6L-30 -16Z', '#3a2f45') + C(-10, -28, 3, GOLD, sw(1.6)) +
-      wheel(-28, 9) + wheel(-6, 9) + wheel(22, 11),
+      wheel(-28, 9) + wheel(-6, 9) + wheel(22, 11) + mv(ball(-26, -61, 4.4, 4, '#ffffff', { hl: false }) + ball(-22, -66, 3, 2.8, '#ffffff', { hl: false }), 'steam', -25, -63, 9, HID + OCC),
   };
   PET['speed-boat'] = {
     box: [-44, -64, 44, 4],
     d: () =>
-      F('M-44 -2Q-30 -8 -16 -2T12 -2T44 -2V4H-44Z', '#5fc9e8', 0.85) + L('M-36 -4Q-28 -9 -20 -4M10 -4Q18 -9 26 -4', '#fff', 2) +
-      S('M-40 -20L38 -20Q32 0 -28 0Z', '#ffffff', 'M8 -20L38 -20Q32 0 6 0Z') + S('M-40 -20L38 -20L34 -13L-38 -13Z', '#ff8a3d') +
-      S('M-12 -20L-4 -36L14 -36L18 -20Z', '#bfe8ff') + L('M-16 -20L-16 -60', INK, 3) + S('M-16 -60L4 -54L-16 -48Z', '#ef4b4b') + C(24, -10, 3, '#3d7be0', sw(1.6)),
+      F('M-44 -2Q-30 -8 -16 -2T12 -2T44 -2V4H-44Z', '#5fc9e8', 0.85) + L('M-36 -4Q-28 -9 -20 -4M10 -4Q18 -9 26 -4', '#fff', 2) + mv(L('M-42 -9Q-46 -13 -50 -9M-46 -3Q-51 -7 -56 -3', '#ffffff', 1.8), 'wake', null) +
+      mv(S('M-40 -20L38 -20Q32 0 -28 0Z', '#ffffff', 'M8 -20L38 -20Q32 0 6 0Z') + S('M-40 -20L38 -20L34 -13L-38 -13Z', '#ff8a3d') +
+      S('M-12 -20L-4 -36L14 -36L18 -20Z', '#bfe8ff') + L('M-16 -20L-16 -60', INK, 3) + S('M-16 -60L4 -54L-16 -48Z', '#ef4b4b') + C(24, -10, 3, '#3d7be0', sw(1.6)), 'rock', 0, -6, 64, OCC),
   };
   PET['monster-truck'] = {
     box: [-46, -70, 46, 2],
     d: () =>
-      shadow(42) + S(rr(-30, -54, 50, 16, 5), '#4fb36b', rr(4, -54, 16, 16, 4)) + F(rr(-26, -51, 18, 10, 3), '#bfe8ff') + F(rr(-4, -51, 16, 10, 3), '#bfe8ff') +
+      shadow(42) + mv(S(rr(-30, -54, 50, 16, 5), '#4fb36b', rr(4, -54, 16, 16, 4)) + F(rr(-26, -51, 18, 10, 3), '#bfe8ff') + F(rr(-4, -51, 16, 10, 3), '#bfe8ff') +
       S(rr(-40, -40, 80, 16, 6), '#4fb36b', rr(18, -40, 22, 16, 6)) + L('M-28 -54L-20 -66L10 -66L18 -54', '#3a2f45', 3.4) + C(36, -32, 3, '#ffe066', sw(1.6)) +
-      F(rr(-36, -36, 14, 4, 2), '#ffe066') + wheel(-24, 15) + wheel(24, 15),
+      F(rr(-36, -36, 14, 4, 2), '#ffe066'), 'mbody', 0, -24, 50, OCC) + wheel(-24, 15) + wheel(24, 15),
   };
   PET['toy-helicopter'] = {
     box: [-46, -78, 46, 2],
     aura: [0, -40, 52, 44],
     d: () =>
-      shadow(30) + L('M-22 -4L22 -4M-14 -4L-12 -14M14 -4L12 -14', '#3a2f45', 3.4) +
+      shadow(30) + mv(L('M-22 -4L22 -4M-14 -4L-12 -14M14 -4L12 -14', '#3a2f45', 3.4) +
       S('M14 -40L42 -46L44 -38L16 -30Z', '#ffcf3f') + S('M38 -54L46 -54L44 -36L38 -38Z', '#ff8a3d') +
       ball(-4, -34, 26, 19, '#ffcf3f') + S('M-28 -38Q-24 -52 -8 -52L-6 -32L-26 -30Z', '#bfe8ff') + L('M-4 -53L-4 -62', INK, 3.4) +
-      G(L('M-40 -63L32 -63', '#3a2f45', 3.6), ' class="pr-spin" style="animation-duration:.6s"') + CF(-4, -63, 3.4, INK),
+      G(L('M-40 -63L32 -63', '#3a2f45', 3.6), ' class="pr-spin" style="animation-duration:.6s"') + CF(-4, -63, 3.4, INK), 'heli', 0, -34, 70, OCC),
   };
   PET['toy-plane'] = {
     box: [-46, -66, 46, 2],
     aura: [0, -36, 52, 40],
     d: () =>
-      shadow(34) + L('M-8 -10L-10 -2M12 -10L14 -2', '#3a2f45', 3) + C(-10, -3, 3.4, '#3a2f45') + C(14, -3, 3.4, '#3a2f45') +
+      shadow(34) + mv(L('M-8 -10L-10 -2M12 -10L14 -2', '#3a2f45', 3) + C(-10, -3, 3.4, '#3a2f45') + C(14, -3, 3.4, '#3a2f45') +
       S('M14 -36L40 -46L42 -40L18 -30Z', '#3d7be0') + S('M30 -44L38 -60L44 -58L40 -42Z', '#3d7be0') +
       S('M-36 -30Q-36 -44 -18 -44L22 -40Q30 -36 22 -30Q0 -22 -24 -22Q-36 -22 -36 -30Z', '#ffffff', 'M22 -40Q30 -36 22 -30Q8 -25 -6 -23Q14 -30 22 -40Z') +
       S('M-14 -32L8 -32L26 -14L18 -12Z', '#ef4b4b') + [-22, -14, -6].map((x) => C(x, -36, 2.4, '#7fd6ff', sw(1.4))).join('') +
-      CF(-38, -33, 3, INK) + G(L('M-39 -48L-39 -18', '#3a2f45', 3), ' class="pr-spin" style="animation-duration:.5s"'),
+      CF(-38, -33, 3, INK) + G(L('M-39 -48L-39 -18', '#3a2f45', 3), ' class="pr-spin" style="animation-duration:.5s"'), 'loop', 0, -32, 58, OCC),
   };
   PET['space-rocket'] = {
     box: [-34, -104, 34, 4],
     aura: [0, -52, 44, 60],
     d: () =>
-      EF(0, 0, 20, 3.6, INK, 0.14) + '<g class="pr-bob">' + '<g class="pr-flame">' + F('M-9 -24Q0 6 9 -24Z', '#ffb347') + F('M-5 -24Q0 -6 5 -24Z', '#fff3b0') + '</g>' +
+      EF(0, 0, 20, 3.6, INK, 0.14) + '<g class="pr-mv-lift" data-o="1"><g class="pr-bob">' + mv(F('M-12 -24Q0 18 12 -24Z', '#ff9f1c') + F('M-6 -24Q0 2 6 -24Z', '#fff3b0'), 'boost', null, 0, 0, HID + OCC) + '<g class="pr-flame">' + F('M-9 -24Q0 6 9 -24Z', '#ffb347') + F('M-5 -24Q0 -6 5 -24Z', '#fff3b0') + '</g>' +
       S('M-13 -30L-28 -14L-13 -44Z', '#7a5cff') + S('M13 -30L28 -14L13 -44Z', '#7a5cff') +
       S('M-14 -26Q-17 -74 0 -102Q17 -74 14 -26Z', '#f4f6fb', 'M6 -96Q17 -74 14 -26L6 -26Q11 -66 6 -96Z') + S('M-9 -84Q0 -104 9 -84Z', GOLD) +
       C(0, -62, 7.5, '#7fd6ff', ' stroke="' + GOLD + '" stroke-width="3"') + CF(-2.6, -64.6, 2.2, '#fff', 0.8) + S(rr(-14, -32, 28, 6, 3), GOLD) +
-      P(star5(0, -44, 4.6), GOLD, sw(1.6)) + tw(-24, -78, 6, 0) + tw(24, -60, 5, 1) + '</g>',
+      P(star5(0, -44, 4.6), GOLD, sw(1.6)) + tw(-24, -78, 6, 0) + tw(24, -60, 5, 1) + '</g></g>',
   };
   /* ---------- the Hidden Garden's treasures (v2.12.0) ---------- */
   // Al-Fātiḥah: a star medallion cape, deep teal with a gold mosaic hem and an eight-pointed star on the back
@@ -2767,7 +2785,7 @@
       box: [58, 150, 132, 236],
       ex(v) {
         const pouch = (x) => S(rr(x - 15, 210, 30, 20, 8), a) + S(rr(x - 15, 210, 30, 8, 4), b) + L('M' + (x - 9) + ' 222L' + (x + 9) + ' 222', b, 2) + P(rr(x - 3, 216, 6, 4, 1.5), GOLD, sw(1.2));
-        return v === 'back' ? DL('M114 158L72 214', b, 5) + pouch(70) : DL('M72 158L112 214', b, 5) + pouch(114);
+        return v === 'back' ? DL('M114 158L72 214', b, 5) + mv(pouch(70), 'pouch', 71, 210, 26) : DL('M72 158L112 214', b, 5) + mv(pouch(114), 'pouch', 113, 210, 26);
       },
       // (its icon: the strap as a loop over the pouch, so it reads as a bag)
       ic: () => DL('M78 216Q70 160 92 156Q114 160 106 216', b, 5) + S(rr(70, 206, 44, 30, 11), a) + S(rr(70, 206, 44, 12, 6), b) + L('M80 224L104 224', b, 2.4) + P(rr(88, 214, 8, 6, 2), GOLD, sw(1.4)),
@@ -2808,7 +2826,7 @@
         g = GOLD,
         wg = S('M-12 -44C-30 -48 -44 -32 -40 -10C-34 -14 -28 -12 -24 -16C-22 -10 -16 -12 -14 -16Z', '#2a3a90', null, 'M-30 -42Q-38 -36 -38 -26Q-34 -34 -28 -40Z') +
           [[-30, -30, 2.8], [-24, -40, 2.2], [-35, -20, 2.4], [-20, -24, 1.8]].map(([x, y, r]) => F(star4(x, y, r), '#fff3b0')).join('');
-      return G(G(wg, cls('lhq-wing-l')) + G(G(wg, cls('lhq-wing-l')), ' transform="scale(-1 1)"')) +
+      return G(mv(G(wg, cls('lhq-wing-l')), 'flap', -12, -32, 36, OCC) + G(mv(G(wg, cls('lhq-wing-l')), 'flap', -12, -32, 36, OCC), ' transform="scale(-1 1)"')) +
         P('M-12 -3Q-8 -9 -4 -3Q-6 0 -8 0Q-10 0 -12 -3Z', g, sw(2)) + P('M12 -3Q8 -9 4 -3Q6 0 8 0Q10 0 12 -3Z', g, sw(2)) +
         ball(0, -25, 17, 21, b) + EF(0, -19, 10, 12.5, '#cfd8ff') + L('M-6 -24Q-3 -21 0 -24Q3 -21 6 -24M-5 -16Q-2.5 -13 0 -16Q2.5 -13 5 -16', '#8fa0e8', 1.6) +
         S('M-3 -63Q-6 -74 0 -78Q3 -71 1 -63Z', g) + S('M4 -62Q6 -72 12 -73Q11 -66 6 -61Z', g) + S('M-6 -61Q-12 -70 -10 -75Q-5 -69 -3 -62Z', g) +
@@ -2822,56 +2840,62 @@
     aura: [0, -26, 54, 36],
     d() {
       const f = '#1fa5a0',
-        wheel = (x) => C(x, -14, 13, 'none', sw(4.6)) + C(x, -14, 13, 'none', ' stroke="#3a3f52" stroke-width="2.4"') + L('M' + (x - 9) + ' -14L' + (x + 9) + ' -14M' + x + ' -23L' + x + ' -5M' + (x - 6.4) + ' -20.4L' + (x + 6.4) + ' -7.6M' + (x - 6.4) + ' -7.6L' + (x + 6.4) + ' -20.4', '#cfd2dc', 1.2) + CF(x, -14, 2.2, '#3a3f52');
+        wheel = (x) => C(x, -14, 13, 'none', sw(4.6)) + C(x, -14, 13, 'none', ' stroke="#3a3f52" stroke-width="2.4"') + mv(L('M' + (x - 9) + ' -14L' + (x + 9) + ' -14M' + x + ' -23L' + x + ' -5M' + (x - 6.4) + ' -20.4L' + (x + 6.4) + ' -7.6M' + (x - 6.4) + ' -7.6L' + (x + 6.4) + ' -20.4', '#cfd2dc', 1.2) + CF(x, -14, 2.2, '#3a3f52'), 'wheel', x, -14, 10);
       return shadow(34) + wheel(-25) + wheel(25) + DL('M-25 -14L-6 -16L10 -36L-16 -36L-25 -14M-6 -16L-16 -36M10 -36L25 -14', f, 3.6) + DL('M-16 -36L-18 -42M10 -36L12 -46L18 -48', f, 3.2) +
         S('M-26 -45Q-18 -48 -10 -45L-12 -42Q-18 -43 -24 -42Z', '#3a2f45') + L('M15 -49L22 -50', '#3a2f45', 3.6) + CF(-6, -16, 3, GOLD) +
-        S('M18 -44L38 -44L35 -30L21 -30Z', '#c98d4e', null, null) + L('M20 -40L36 -40M21 -35L35 -35', '#9a6a3a', 1.4) + [[23, -46], [30, -48], [36, -46]].map(([x, y]) => ball(x, y, 4, 4, '#d8344a', { hl: false })).join('') + S('M28 -52Q32 -58 37 -56Q33 -51 29 -51Z', '#5fae3a');
+        S('M18 -44L38 -44L35 -30L21 -30Z', '#c98d4e', null, null) + L('M20 -40L36 -40M21 -35L35 -35', '#9a6a3a', 1.4) + [[23, -46], [30, -48], [36, -46]].map(([x, y]) => ball(x, y, 4, 4, '#d8344a', { hl: false })).join('') + S('M28 -52Q32 -58 37 -56Q33 -51 29 -51Z', '#5fae3a') +
+        mv(P(star4(13, -58, 6), '#ffffff', ' stroke="#f2b12a" stroke-width="1.2"'), 'ding', 13, -58, 7, HID + OCC);
     },
   };
   /* (v2.12.1) more toy vehicles to win (everyday surprises): a fire truck, an ambulance, a police car, a crane truck,
-     a digger and a school bus. Their lights flash softly. */
-  const flash = (x, y, c, d) => G(EF(x, y, 7, 6, c, 0.35), cls('lhq-pulse') + (d ? ' style="animation-delay:' + d + 's"' : '')) + S(rr(x - 4, y - 3, 8, 6, 2.4), c);
+     a digger and a school bus. (v2.12.20) Their lights are off most of the time and now and then flash in turn, with a
+     glow (`pr-siren`, css/art.css); all the time while the explorer walks. d: this lamp's delay (a pair alternates). */
+  const flash = (x, y, c, d, second) => S(rr(x - 4, y - 3, 8, 6, 2.4), mix(c, '#5a5370', 0.45)) + G(EF(x, y, 13, 10, c, 0.45) + S(rr(x - 4, y - 3, 8, 6, 2.4), c) + F(rr(x - 2.6, y - 2, 3, 1.8, 0.9), '#fff', 0.85), cls('pr-siren') + OCC + (second ? ' data-l="2"' : '') + (d ? ' style="animation-delay:' + d + 's"' : ''));
   PET['fire-truck'] = {
     box: [-46, -66, 46, 2],
     d: () =>
       shadow(42) + S(rr(-42, -36, 60, 24, 4), '#e8433a', rr(8, -36, 10, 24, 3)) + S('M16 -36L16 -54Q16 -58 20 -58L32 -58Q38 -58 41 -48L44 -36Z', '#e8433a', 'M32 -58Q38 -58 41 -48L44 -36L36 -36Q36 -50 32 -58Z') + F('M22 -54L32 -54Q35 -54 37 -46L22 -46Z', '#bfe8ff') +
-      S(rr(16, -36, 28, 24, 5), '#e8433a', rr(34, -36, 10, 24, 4)) + L('M-40 -22L42 -22', '#ffffff', 2.6) + S(rr(-38, -48, 50, 6, 2), '#c9d2e3') + L('M-32 -48L-32 -42M-22 -48L-22 -42M-12 -48L-12 -42M-2 -48L-2 -42M8 -48L8 -42', '#8d97b0', 1.6) +
-      S(rr(-30, -32, 16, 12, 3), '#b8302a') + C(-22, -26, 3.4, '#ffd23f', sw(1.4)) + flash(26, -61, '#ff4f4f') + C(41, -26, 2.6, '#ffe066', sw(1.4)) + wheel(-26, 10) + wheel(28, 10),
+      S(rr(16, -36, 28, 24, 5), '#e8433a', rr(34, -36, 10, 24, 4)) + L('M-40 -22L42 -22', '#ffffff', 2.6) +
+      mv(S(rr(-38, -48, 50, 6, 2), '#c9d2e3') + L('M-32 -48L-32 -42M-22 -48L-22 -42M-12 -48L-12 -42M-2 -48L-2 -42M8 -48L8 -42', '#8d97b0', 1.6) +
+        mv([[-44, -49, 2.2], [-49, -45, 1.8], [-46, -41, 1.6], [-52, -50, 1.4]].map(([x, y, r]) => EF(x, y, r, r * 1.2, '#7fd6ff')).join(''), 'spray', -47, -46, 8, HID + OCC), 'ladder', 12, -45, 72, OCC) +
+      S(rr(-30, -32, 16, 12, 3), '#b8302a') + C(-22, -26, 3.4, '#ffd23f', sw(1.4)) + flash(26, -61, '#ff4f4f', 0) + C(41, -26, 2.6, '#ffe066', sw(1.4)) + wheel(-26, 10) + wheel(28, 10),
   };
   PET['ambulance'] = {
     box: [-46, -66, 46, 2],
     d: () =>
       shadow(40) + S(rr(-40, -54, 58, 42, 6), '#ffffff', rr(6, -54, 12, 42, 5)) + S('M18 -42L32 -42Q38 -42 41 -34L42 -24Q42 -12 36 -12L18 -12Z', '#ffffff', 'M32 -42Q38 -42 41 -34L42 -24Q42 -12 36 -12L32 -12Q36 -28 32 -42Z') + F('M22 -38L31 -38Q35 -38 37 -30L22 -30Z', '#bfe8ff') +
       L('M-40 -24L42 -24', '#ef4b4b', 3.4) + S('M-16 -46L-10 -46L-10 -40L-4 -40L-4 -34L-10 -34L-10 -28L-16 -28L-16 -34L-22 -34L-22 -40L-16 -40Z', '#ef4b4b') + F(rr(-36, -50, 12, 8, 3), '#bfe8ff') +
-      flash(-28, -58, '#4a8cff') + flash(4, -58, '#ff4f4f', 0.5) + C(38, -18, 2.6, '#ffe066', sw(1.4)) + wheel(-24, 10) + wheel(26, 10),
+      flash(-28, -58, '#4a8cff', 2.4) + flash(4, -58, '#ff4f4f', 2.85, true) + C(38, -18, 2.6, '#ffe066', sw(1.4)) + wheel(-24, 10) + wheel(26, 10),
   };
   PET['police-car'] = {
     box: [-44, -64, 44, 2],
     d: () =>
       shadow(36) + S('M-20 -30Q-15 -48 -2 -48L12 -48Q22 -48 27 -30Z', '#2b3a6b', 'M14 -48Q22 -48 27 -30L18 -30Q18 -42 14 -48Z') + F('M-14 -32Q-11 -44 -3 -44L3 -44L3 -32Z', '#bfe8ff') + F('M7 -44L12 -44Q18 -44 21 -32L7 -32Z', '#bfe8ff') +
       S(rr(-38, -32, 76, 20, 8), '#ffffff', rr(14, -32, 24, 20, 8)) + F('M-38 -24L38 -24L38 -18Q38 -12 30 -12L-30 -12Q-38 -12 -38 -18Z', '#2b3a6b') + P(star5(0, -25, 5), GOLD, sw(1.4)) +
-      S(rr(-8, -54, 16, 6, 2), '#3a2f45') + flash(-4, -57, '#4a8cff') + flash(5, -57, '#ff4f4f', 0.5) + C(33, -26, 3, '#ffe066', sw(1.6)) + wheel(-22, 10) + wheel(22, 10),
+      S(rr(-8, -54, 16, 6, 2), '#3a2f45') + flash(-4, -57, '#4a8cff', 4.8) + flash(5, -57, '#ff4f4f', 5.25, true) + C(33, -26, 3, '#ffe066', sw(1.6)) + wheel(-22, 10) + wheel(22, 10),
   };
   PET['crane-truck'] = {
     box: [-46, -88, 46, 2],
     d: () =>
-      shadow(42) + L('M-26 -34L18 -78', '#e0a21f', 6.4) + L('M-26 -34L18 -78', INK, 1.2, ' stroke-dasharray="4 5"') + L('M18 -78L18 -52', '#3a2f45', 1.8) + P('M15 -52Q15 -46 18 -46Q22 -46 22 -50', 'none', sw(2.4)) +
+      shadow(42) + mv(L('M-26 -34L18 -78', '#e0a21f', 6.4) + L('M-26 -34L18 -78', INK, 1.2, ' stroke-dasharray="4 5"') + mv(L('M18 -78L18 -52', '#3a2f45', 1.8) + P('M15 -52Q15 -46 18 -46Q22 -46 22 -50', 'none', sw(2.4)), 'hook', 18, -78, 36), 'boom', -26, -34, 106, OCC) +
       S(rr(-42, -36, 56, 22, 4), '#ffc23d', rr(4, -36, 10, 22, 3)) + S('M14 -36L14 -50Q14 -54 18 -54L30 -54Q36 -54 39 -44L42 -36Z', '#ffc23d', 'M30 -54Q36 -54 39 -44L42 -36L34 -36Q34 -48 30 -54Z') + F('M19 -50L30 -50Q33 -50 35 -42L19 -42Z', '#bfe8ff') +
-      S(rr(14, -36, 28, 22, 5), '#ffc23d', rr(32, -36, 10, 22, 4)) + S(rr(-32, -42, 14, 10, 3), '#3a2f45') + CF(-26, -34, 3.4, '#c9d2e3') + L('M-40 -22L12 -22', '#3a2f45', 2, ' stroke-dasharray="6 4"') + flash(24, -57, '#ff9f1c') + wheel(-28, 10) + wheel(-6, 10) + wheel(28, 10),
+      S(rr(14, -36, 28, 22, 5), '#ffc23d', rr(32, -36, 10, 22, 4)) + S(rr(-32, -42, 14, 10, 3), '#3a2f45') + CF(-26, -34, 3.4, '#c9d2e3') + L('M-40 -22L12 -22', '#3a2f45', 2, ' stroke-dasharray="6 4"') + flash(24, -57, '#ff9f1c', 1.2) + wheel(-28, 10) + wheel(-6, 10) + wheel(28, 10),
   };
   PET['digger'] = {
     box: [-46, -70, 46, 2],
     d: () =>
-      shadow(42) + S(rr(-40, -16, 56, 16, 8), '#3a2f45') + [-30, -18, -6, 6].map((x) => C(x, -8, 4, '#8d97b0', sw(1.6))).join('') +
+      shadow(42) + S(rr(-40, -16, 56, 16, 8), '#3a2f45') + [-30, -18, -6, 6].map((x) => mv(C(x, -8, 4, '#8d97b0', sw(1.6)) + L('M' + (x - 2.4) + ' -8L' + (x + 2.4) + ' -8', '#5a6278', 1.2), 'wheel', x, -8, 4.5)).join('') +
       S(rr(-36, -40, 46, 24, 4), '#ffc23d', rr(-4, -40, 14, 24, 3)) + S('M-34 -40L-34 -62Q-34 -66 -30 -66L-12 -66Q-8 -66 -8 -62L-8 -40Z', '#ffc23d') + F(rr(-30, -62, 18, 16, 3), '#bfe8ff') +
-      L('M6 -34L26 -56L40 -36', '#ffc23d', 7) + L('M6 -34L26 -56L40 -36', INK, 1.2, ' opacity=".4"') + CF(26, -56, 3, '#3a2f45') + S('M34 -38L46 -36L44 -24Q38 -22 32 -28Z', '#8d97b0') + L('M36 -24L36 -20M40 -24L40 -20', INK, 1.6) + flash(-21, -69, '#ff9f1c'),
+      mv(L('M6 -34L26 -56L40 -36', '#ffc23d', 7) + L('M6 -34L26 -56L40 -36', INK, 1.2, ' opacity=".4"') + CF(26, -56, 3, '#3a2f45') + S('M34 -38L46 -36L44 -24Q38 -22 32 -28Z', '#8d97b0') + L('M36 -24L36 -20M40 -24L40 -20', INK, 1.6), 'scoop', 6, -34, 46, OCC) + flash(-21, -69, '#ff9f1c', 3.6),
   };
   PET['school-bus'] = {
     box: [-48, -66, 48, 2],
     d: () =>
       shadow(44) + S('M-44 -54Q-44 -58 -40 -58L30 -58Q38 -58 40 -50L44 -30L44 -16Q44 -12 40 -12L-40 -12Q-44 -12 -44 -16Z', '#ffc23d', 'M30 -58Q38 -58 40 -50L44 -30L44 -16Q44 -12 40 -12L32 -12Q38 -34 30 -58Z') +
       [-38, -24, -10, 4].map((x) => F(rr(x, -52, 11, 12, 2.4), '#bfe8ff')).join('') + F('M20 -52L30 -52Q35 -52 37 -46L39 -38L20 -38Z', '#bfe8ff') + L('M-44 -32L44 -32', '#3a2f45', 2.4) + L('M-44 -26L44 -26', '#3a2f45', 1.4) +
-      C(40, -20, 2.6, '#ffe066', sw(1.4)) + CF(-44, -40, 2.4, '#ef4b4b') + wheel(-26, 10) + wheel(28, 10),
+      C(40, -20, 2.6, '#ffe066', sw(1.4)) + CF(-44, -40, 2.4, '#ef4b4b') + wheel(-26, 10) + wheel(28, 10) +
+      [[-41, -54], [38, -54]].map(([x, y]) => S(rr(x - 3, y - 2.4, 6, 4.8, 2), '#c98a1e', null, null, sw(1.4)) + mv(EF(x, y, 7, 6, '#ffb020', 0.45) + S(rr(x - 3, y - 2.4, 6, 4.8, 2), '#ffc23d', null, null, sw(1.4)), 'haz', null, 0, 0, HID + OCC)).join('') +
+      L('M-4 -39L-4 -33', INK, 2) + mv(P(star8oct(4, -36, 6.4), '#ef4b4b', sw(1.6)) + P(star8oct(4, -36, 4.6), 'none', ' stroke="#ffffff" stroke-width="1"') + L('M1 -36L7 -36', '#ffffff', 1.8), 'stop', -4, -36, 14, OCC),
   };
   // (v2.12.6) a pastel bunny with a little bow (girls only)
   PET['bunny-buddy'] = {
@@ -2879,10 +2903,10 @@
     d: () => {
       const c = '#fff6fb',
         p = '#ffc8dd';
-      return shadow(28) + S('M-12 -52Q-16 -76 -8 -78Q0 -74 -4 -52Z', c) + F('M-9 -54Q-11 -70 -8 -72Q-5 -68 -6 -54Z', p) + S('M4 -52Q2 -76 10 -78Q16 -72 10 -50Z', c) + F('M6 -52Q6 -70 9 -72Q12 -68 8 -52Z', p) +
+      return shadow(28) + mv(mv(S('M-12 -52Q-16 -76 -8 -78Q0 -74 -4 -52Z', c) + F('M-9 -54Q-11 -70 -8 -72Q-5 -68 -6 -54Z', p), 'earl', -8, -52, 28, OCC) + mv(S('M4 -52Q2 -76 10 -78Q16 -72 10 -50Z', c) + F('M6 -52Q6 -70 9 -72Q12 -68 8 -52Z', p), 'earr', 7, -51, 28, OCC) +
         ball(0, -18, 18, 17, c, { shc: '#eadfee' }) + ball(18, -8, 6, 6, c, { shc: '#eadfee', hl: false }) + ball(0, -44, 14, 13, c, { shc: '#eadfee' }) +
-        cuteEyes(-5, -46, 6, -46, 2.4, true) + shut([[-5, -46], [6, -46]], 2.4) + F('M-1 -40L3 -40L1 -37.6Z', '#ff8fa3') + EF(-9, -40, 3, 1.8, '#ffb0c4', 0.7) + EF(10, -40, 3, 1.8, '#ffb0c4', 0.7) +
-        bow(9, -56, '#b48cff', 0.6) + EF(-8, -1, 6, 3, c) + EF(8, -1, 6, 3, c);
+        cuteEyes(-5, -46, 6, -46, 2.4, true) + shut([[-5, -46], [6, -46]], 2.4) + mv(F('M-1 -40L3 -40L1 -37.6Z', '#ff8fa3'), 'nose', 1, -39, 4, OCC) + EF(-9, -40, 3, 1.8, '#ffb0c4', 0.7) + EF(10, -40, 3, 1.8, '#ffb0c4', 0.7) +
+        bow(9, -56, '#b48cff', 0.6) + EF(-8, -1, 6, 3, c) + EF(8, -1, 6, 3, c), 'bunhop', null);
     },
   };
   Object.keys(PET).forEach((id) => (ART[id] = { pet: PET[id], box: PET[id].box, aura: PET[id].aura }));
@@ -2972,6 +2996,7 @@
   };
   function patterned(out, pat) {
     if (typeof out !== 'string' || !/<(path|ellipse|circle|rect|polygon)\b/.test(out)) return out;
+    out = out.replace(/ class="pr-mv-[a-z]+"/g, ''); // (v2.12.20)
     const id = uid('pt'),
       m = uid('pm'),
       shape = flat(out, '#ffffff').replace(/ stroke="#ffffff"/g, ' stroke="#000000"');
@@ -3011,6 +3036,26 @@
     if (look) ['top', 'pants', 'shoes'].forEach((s) => (out[s] = out[s] && starterOf(out[s], look)));
     return out;
   }
+  /* (v2.12.20) worn things that catch the light now and then: a shine sweeps across a shield, glowing shades or a
+     crystal watch (a mask of the thing's own shape, its outlines left out), and a sparkle pops at a staff's tip */
+  const rootOf = (id) => {
+    let it = BYID[id];
+    while (it && (it.vof || it.base)) it = BYID[it.vof || it.base];
+    return it ? it.id : id;
+  };
+  const SHINY = new Set(['mirror-shades', 'neon-shades', 'led-visor', 'starlight-aviators', 'wrap-shades', 'crystal-watch', 'neon-watch']);
+  const TIPS = { 'crystal-staff': [46, 158], 'star-staff': [46, 146], 'sun-staff': [46, 136], 'elder-staff': [46, 126], 'hero-sword': [46.5, 106] };
+  function shineOn(art, x0, y0, x1, y1) {
+    const m = uid('sh'),
+      w = x1 - x0,
+      h = y1 - y0;
+    return '<mask id="' + m + '" maskUnits="userSpaceOnUse" x="' + n(x0 - 30) + '" y="' + n(y0 - 30) + '" width="' + n(w + 60) + '" height="' + n(h + 60) + '">' + flat(art, '#ffffff').replace(/ stroke="#ffffff"/g, ' stroke="#000000"') + '</mask>' +
+      G(G('<rect class="pr-mv-shine" data-o="1" x="' + n(x0 - 16) + '" y="' + n(y0 - 14) + '" width="8" height="' + n(h + 28) + '" fill="#ffffff" opacity=".85" stroke="none" style="--d:' + n(w + 32) + 'px"/>', ' transform="rotate(16 ' + n(x0 + w / 2) + ' ' + n(y0 + h / 2) + ')"'), ' mask="url(#' + m + ')" pointer-events="none"');
+  }
+  const tipSpark = (id) => {
+    const t = TIPS[rootOf(id)];
+    return t ? '<path class="pr-mv-spark" data-o="1" d="' + star4(t[0], t[1], 7) + '" fill="#ffffff" stroke="#f2b12a" stroke-width="1.2" opacity="0"/>' : '';
+  };
   function explorerInner(look, outfit, back, mood) {
     look = normLook(look);
     const hjId = outfit && outfit.hijab && ART[outfit.hijab] && ART[outfit.hijab].hj ? outfit.hijab : null,
@@ -3040,10 +3085,11 @@
     const legs = back ? G(leg, cls('ex-leg-l')) + G(G(leg, MIR), cls('ex-leg-r')) : G(leg, cls('ex-leg-r')) + G(G(leg, MIR), cls('ex-leg-l'));
     const sleeve = S(SLEEVE, top.sl, SLEEVE_SH) + S(CUFF, top.cf);
     const hand = ball(HAND[0], HAND[1], HAND[2], HAND[2], sk, { hl: false, dx: 0.2, dy: 0.25 });
-    const stickArt = o.stick ? G(G(ART[o.stick].ex() + fxOf('stick'), STICK_TILT), cls('ex-stick')) : '',
-      watchArt = o.watch ? (back && ART[o.watch].exb ? ART[o.watch].exb() : ART[o.watch].ex()) : '';
+    const stickArt = o.stick ? G(G(ART[o.stick].ex() + fxOf('stick') + tipSpark(o.stick), STICK_TILT), cls('ex-stick')) : '',
+      watchArt = o.watch ? (back && ART[o.watch].exb ? ART[o.watch].exb() : ART[o.watch].ex() + (SHINY.has(rootOf(o.watch)) ? shineOn(ART[o.watch].ex(), 40, 193, 57, 211) : '')) : '';
     const stickHand = stickArt + hand + L('M41.6 207.6Q46 205.4 50.6 207', dk(sk, 0.35), 1.6) + watchArt;
-    const otherHand = G(hand, MIR) + (o.shield ? ART[o.shield].ex() : ''); // the free hand, on the other side from the staff
+    const shb = o.shield && ART[o.shield].box,
+      otherHand = G(hand, MIR) + (o.shield ? ART[o.shield].ex() + shineOn(ART[o.shield].ex(), SHIELD_AT[0] + shb[0] * 0.85, SHIELD_AT[1] + shb[1] * 0.85, SHIELD_AT[0] + shb[2] * 0.85, SHIELD_AT[1] + shb[3] * 0.85) : ''); // the free hand, on the other side from the staff
     // (v2.10.0) seen from the back, what the hands hold is on the far side of the explorer: the staff and the shield
     // (its back: straps, no picture) behind the sleeves and the body, only the hands (the back of the fist, no curl
     // of the fingers) in front. The free arm is on the viewer's left, so its hand is too (not mirrored, unlike the
@@ -3058,7 +3104,7 @@
     const hat = o.hat ? G(G(ART[o.hat].ex(v, look) + fxOf('hat'), hatFit(look.hair)), cls('ex-hat')) : '';
     let head;
     if (back) head = (mess ? mess.hair : '') + headBack(look, hs, o.hat) + hat;
-    else head = (mess ? mess.hair : '') + headFront(look, mood, hs, o.hat) + (o.glasses ? G(ART[o.glasses].ex('front') + fxOf('glasses'), cls('ex-glasses')) : '') + hat;
+    else head = (mess ? mess.hair : '') + headFront(look, mood, hs, o.hat) + (o.glasses ? G(ART[o.glasses].ex('front') + fxOf('glasses') + (SHINY.has(rootOf(o.glasses)) && ART[o.glasses].box ? shineOn(ART[o.glasses].ex('front'), ...ART[o.glasses].box) : ''), cls('ex-glasses')) : '') + hat;
     if (sad) head = G(head, ' transform="translate(0 3) rotate(-3 92 150)"'); // a droopy head
     const pet = o.pet ? G(G(OUT(ART[o.pet].pet.d() + fxm(T('pet'), PETFX[o.pet] || [[-30, -50], [30, -36]], 1.4), SW / PET_S), tf(PET_AT[0], PET_AT[1], PET_S)), cls('ex-pet')) : '';
     const wingsF = '';
@@ -3953,7 +3999,7 @@
     ['mosque', 'Mosque dome', () => P('M50 6A6 6 0 1 0 55 16A4.6 4.6 0 1 1 50 6Z', GOLD, sw(2)) + L('M50 18L50 26', INK, 3) + S('M24 54Q22 30 50 24Q78 30 76 54Z', '#5fc9b6', 'M50 24Q78 30 76 54L64 54Q66 34 50 24Z', 'M32 46Q32 34 44 28Q36 36 36 48Z') + S(rr(20, 54, 60, 34, 4), '#fff1d6', 'M66 54L80 54L80 84Q80 88 76 88L66 88Z') + P('M42 88L42 72Q42 64 50 64Q58 64 58 72L58 88Z', '#3d8de8') + P('M26 66Q26 60 30 60Q34 60 34 66L34 74L26 74Z', '#3d8de8', sw(2)) + P('M66 66Q66 60 70 60Q74 60 74 66L74 74L66 74Z', '#3d8de8', sw(2)) + S(rr(16, 86, 68, 6, 3), '#e8c48f')],
     ['palm', 'Palm tree', () => S('M14 86Q50 70 86 86Q86 92 80 92L20 92Q14 92 14 86Z', '#ffe08a') + S('M48 84Q46 56 54 32L60 33Q54 58 56 84Z', '#b8834a') + L('M48 74L56 74M49 62L56 63M50 50L57 51', dk('#b8834a', 0.3), 2) + ['M56 32Q40 18 18 28Q36 26 56 34Z', 'M56 32Q66 14 88 20Q70 24 58 34Z', 'M56 32Q30 36 22 54Q38 40 57 35Z', 'M57 33Q82 34 86 52Q74 40 56 36Z', 'M56 32Q52 14 64 6Q60 20 58 33Z'].map((d) => S(d, '#45b45e')).join('') + ball(52, 38, 4.6, 4.6, '#8a5a35', { hl: false }) + ball(61, 38, 4.6, 4.6, '#8a5a35', { hl: false })],
     ['camel', 'Camel', () => G(OUT(PET['camel-buddy'].d(), 3 / 1.05), tf(52, 88, 1.05))],
-    ['cat', 'Cat', () => { const c = '#ffad5a'; return L('M66 80Q90 80 84 58Q82 50 76 52', INK, 9) + L('M66 80Q90 80 84 58Q82 50 76 52', c, 5.4) + S('M30 88Q26 62 50 58Q74 62 70 88Z', c, 'M60 60Q74 66 70 88L62 88Q66 70 60 60Z') + EF(50, 80, 9, 7, '#fff1d6') + P('M28 32L30 12L44 24Z', c) + P('M72 32L70 12L56 24Z', c) + F('M31 26L32 17L39 23Z', '#ff9fb5') + F('M69 26L68 17L61 23Z', '#ff9fb5') + ball(50, 40, 25, 21, c) + L('M44 22L46 28M50 21L50 27M56 22L54 28', dk(c, 0.3), 2.2) + cuteEyes(41, 40, 59, 40, 3.6, true) + shut([[41, 40], [59, 40]], 3.6) + P('M47.6 46L52.4 46L50 49Z', '#ff8fa3', sw(1.6)) + L('M45 52Q47.5 54 50 51Q52.5 54 55 52', INK, 2) + cheeks(35, 48, 65, 48, 4) + L('M24 46L34 47M24 52L34 50M76 46L66 47M76 52L66 50', INK, 1.6); }],
+    ['cat', 'Cat', () => { const c = '#ffad5a'; return mv(L('M66 80Q90 80 84 58Q82 50 76 52', INK, 9) + L('M66 80Q90 80 84 58Q82 50 76 52', c, 5.4), 'tail', 66, 80, 34) + S('M30 88Q26 62 50 58Q74 62 70 88Z', c, 'M60 60Q74 66 70 88L62 88Q66 70 60 60Z') + EF(50, 80, 9, 7, '#fff1d6') + P('M28 32L30 12L44 24Z', c) + mv(P('M72 32L70 12L56 24Z', c) + F('M69 26L68 17L61 23Z', '#ff9fb5'), 'ear', 64, 28, 20, OCC) + F('M31 26L32 17L39 23Z', '#ff9fb5') + ball(50, 40, 25, 21, c) + L('M44 22L46 28M50 21L50 27M56 22L54 28', dk(c, 0.3), 2.2) + cuteEyes(41, 40, 59, 40, 3.6, true) + shut([[41, 40], [59, 40]], 3.6) + P('M47.6 46L52.4 46L50 49Z', '#ff8fa3', sw(1.6)) + L('M45 52Q47.5 54 50 51Q52.5 54 55 52', INK, 2) + mv(E(50, 53, 3.6, 4.4, '#c2455c', sw(1.8)) + EF(50, 55, 2, 1.4, '#ff8fa3'), 'yawn', 50, 53, 6, HID + OCC) + cheeks(35, 48, 65, 48, 4) + L('M24 46L34 47M24 52L34 50M76 46L66 47M76 52L66 50', INK, 1.6); }],
     ['bird', 'Bird', () => { const c = '#5fb2ff'; return L('M38 84L36 92M50 84L50 92', '#ff9f1c', 3) + S('M18 62Q14 34 44 28Q72 26 80 50Q86 74 56 84Q24 88 18 62Z', c, 'M76 46Q86 74 56 84Q40 86 30 80Q62 82 76 46Z', 'M26 50Q28 38 38 34Q30 42 30 52Z') + EF(46, 66, 16, 11, '#e8f4ff') + S('M30 56Q46 52 56 64Q44 74 30 66Z', dk(c, 0.15)) + P('M80 44L94 48L80 54Z', '#ffb23d') + G(eye1(66, 42, 3.6), cls('lhq-blink')) + shut([[66, 42]], 3.6) + EF(72, 52, 3.6, 2.2, '#ff8fa3', 0.6) + S('M40 30Q40 18 50 18Q46 24 48 29Z', c);
     }],
     ['butterfly', 'Butterfly', () => G(OUT(PET['butterfly-buddy'].d().replace(/<ellipse cx="0" cy="-1"[^>]*>/, ''), 3 / 0.95), tf(50, 102, 0.95))],
@@ -3965,11 +4011,11 @@
     ['tent', 'Tent', () => L('M50 14L50 4', INK, 2.4) + P('M50 4L62 8L50 12Z', '#ffd23f', sw(2)) + S('M10 86L50 14L90 86Z', '#ff7a59', 'M50 14L90 86L64 86Q62 50 50 14Z') + S('M36 86L50 46L64 86Z', '#7a3f2a') + P('M50 46L64 86L56 86Q54 66 50 46Z', '#ffad8a', sw(2)) + L('M30 52L50 14L70 52', lt('#ff7a59', 0.4), 2.2) + S(rr(4, 84, 92, 7, 3), '#5fd27a')],
     ['boat', 'Little boat', () => L('M48 14L48 66', INK, 3) + S('M50 16L80 58L50 58Z', '#ffffff', 'M64 36L80 58L60 58Z') + S('M46 22L46 58L22 58Z', '#ffd23f') + S('M14 62L86 62Q80 80 64 80L36 80Q20 80 14 62Z', '#ff6b6b', 'M86 62Q80 80 64 80L54 80Q72 76 86 62Z') + C(36, 70, 3, '#fff', sw(1.8)) + C(50, 70, 3, '#fff', sw(1.8)) + C(64, 70, 3, '#fff', sw(1.8)) + P('M8 86Q18 80 28 86Q38 92 50 86Q62 80 72 86Q82 92 92 86L92 92L8 92Z', '#5fc9e8')],
     ['fish', 'Fish', () => { const c = '#ff9f3d'; return S('M70 50L92 32Q96 50 92 68Z', dk(c, 0.1)) + S('M10 50Q24 20 54 22Q76 26 78 50Q76 74 54 78Q24 80 10 50Z', c, 'M74 40Q78 50 76 60Q70 76 50 78Q66 66 74 40Z', 'M22 40Q30 28 44 26Q32 32 26 44Z') + S('M40 26Q50 10 62 24Z', dk(c, 0.1)) + L('M50 34Q56 50 50 66M60 36Q66 50 60 64', '#ffd08a', 2.4) + G(eye1(28, 46, 4), cls('lhq-blink')) + EF(26, 58, 4, 2.4, '#ff8fa3', 0.7) + L('M14 54Q18 58 22 56', INK, 2.2) + C(86, 18, 4, '#cfeeff', sw(1.8)) + C(78, 8, 2.6, '#cfeeff', sw(1.6)); }],
-    ['turtle', 'Turtle', () => { const c = '#8ad16b', sh = '#3f9a52'; return S(limb(28, 72, 24, 86, 6, 5), c) + S(limb(68, 72, 74, 86, 6, 5), c) + S('M82 62Q96 58 94 46Q90 38 82 44Z', c) + S('M14 72Q14 34 50 32Q86 34 86 72Z', sh, 'M64 36Q86 44 86 72L72 72Q74 50 64 36Z', 'M24 56Q26 42 38 38Q30 46 28 58Z') + L('M38 36L32 72M62 36L68 72M22 54L78 54', dk(sh, 0.25), 2.2) + S(rr(10, 68, 80, 8, 4), '#c9a25a') + G(eye1(88, 50, 2.6), cls('lhq-blink')) + shut([[88, 50]], 2.6) + L('M86 56Q89 58 92 56', INK, 1.8); }],
+    ['turtle', 'Turtle', () => { const c = '#8ad16b', sh = '#3f9a52'; return S(limb(28, 72, 24, 86, 6, 5), c) + S(limb(68, 72, 74, 86, 6, 5), c) + mv(S('M82 62Q96 58 94 46Q90 38 82 44Z', c) + G(eye1(88, 50, 2.6), cls('lhq-blink')) + shut([[88, 50]], 2.6) + L('M86 56Q89 58 92 56', INK, 1.8), 'thead', 88, 50, 20, OCC) + S('M14 72Q14 34 50 32Q86 34 86 72Z', sh, 'M64 36Q86 44 86 72L72 72Q74 50 64 36Z', 'M24 56Q26 42 38 38Q30 46 28 58Z') + L('M38 36L32 72M62 36L68 72M22 54L78 54', dk(sh, 0.25), 2.2) + S(rr(10, 68, 80, 8, 4), '#c9a25a'); }],
     ['bee', 'Bee', () => {
       const y = '#ffd23f',
         body = 'M34 62Q34 38 62 38Q90 40 90 62Q90 84 62 86Q34 86 34 62Z';
-      return S('M52 40Q42 12 60 12Q70 16 62 40Z', '#e8f6ff', null, 'M54 34Q50 20 58 16Z') + S('M66 42Q70 12 86 18Q92 30 72 44Z', '#e8f6ff') +
+      return mv(S('M52 40Q42 12 60 12Q70 16 62 40Z', '#e8f6ff', null, 'M54 34Q50 20 58 16Z') + S('M66 42Q70 12 86 18Q92 30 72 44Z', '#e8f6ff'), 'buzz', 64, 41, 32) +
         S(body, y, 'M80 44Q90 52 90 62Q90 84 62 86Q82 74 80 44Z') + F('M54 39.6L64 38.2L64 85.8L54 85.2Z', INK, 0.85) + F('M74 40.4L82 44L82 80.6L74 83.6Z', INK, 0.85) + P(body, 'none') + L('M90 62L97 62', INK, 3) +
         L('M20 42Q16 30 10 28M30 40Q32 28 40 24', INK, 2.4) + CF(10, 28, 3, INK) + CF(40, 24, 3, INK) +
         ball(26, 58, 18, 18, y) + cuteEyes(20, 56, 32, 56, 2.6, true) + shut([[20, 56], [32, 56]], 2.6) + smile(26, 64, 3, 1.8) + cheeks(15, 63, 37, 63, 3);

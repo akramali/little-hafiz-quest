@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.12.19';
+  const VERSION = '2.12.20';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -5166,6 +5166,11 @@
         jumpTo(+b.dataset.i);
         break;
       case 'poke':
+        // (v2.12.20) the explorer's buddy tapped (on the map or the start screen): its own move
+        if (b.dataset.k === 'explorer' && e.target.closest && e.target.closest('.ex-pet') && petGo(e.target.closest('.ex-pet'))) {
+          sfx.pop();
+          break;
+        }
         poke(b);
         break;
       case 'pal': {
@@ -5220,6 +5225,11 @@
       }
       case 'exmove':
         if (Date.now() - swiped < 400) break; // that was a swipe, not a tap
+        // (v2.12.20) the buddy tapped: its own move
+        if (e.target.closest && e.target.closest('.ex-pet') && petGo(e.target.closest('.ex-pet'))) {
+          sfx.pop();
+          break;
+        }
         explorerMove(b.querySelector('svg.ex'));
         break;
       case 'summitok': {
@@ -5911,6 +5921,24 @@
     glasses: { run: () => sfx.tap(), needs: 'glasses', front: true },
   };
   let lastMove = '';
+  /* (v2.12.20) Tap a buddy (beside the explorer on the map, on the start screen, in My Explorer; or at My Tree): its
+     "every so often" moves happen now (lights flash, the ladder rises, the trunk lifts, the bird sings…). Each part's
+     own delay is kept relative to the earliest, so a pair of lamps still takes turns. */
+  function petGo(el) {
+    if (!el || reduceMotion) return false;
+    const parts = [...el.querySelectorAll('[data-o]')].filter((p) => getComputedStyle(p).animationName !== 'none');
+    if (!parts.length) return false;
+    const dl = parts.map((p) => parseFloat(getComputedStyle(p).animationDelay) || 0),
+      m = Math.min(...dl);
+    parts.forEach((p) => (p.style.animation = 'none'));
+    void el.getBoundingClientRect();
+    parts.forEach((p, j) => {
+      p.style.animation = '';
+      p.style.animationDelay = n1(dl[j] - m) + 's';
+    });
+    return true;
+  }
+  const n1 = (v) => Math.round(v * 100) / 100;
   function explorerMove(svg, prof, quiet) {
     if (!svg || reduceMotion) return;
     const back = svg.classList.contains('ex-back'),
@@ -7036,6 +7064,7 @@
     b.dataset.mv = mv;
     b.classList.add('bm-' + mv);
     (mv === 'jump' || mv === 'spin' ? sfx.pop : sfx.tap)();
+    petGo(b); // (v2.12.20) and its own move: lights, a trunk, a song…
     clearTimeout(b._mv);
     b._mv = setTimeout(() => b.classList.remove('bm-' + mv), 1500);
   }

@@ -557,3 +557,821 @@ svg.lhq-art {
   }
 }
 
+/* ---------- 2026-11-27 · v2.12.20: buddies and worn things that move on their own ----------
+   Only on the explorer (.ex, wherever it is: the map, My Explorer, the start screen…) and on the buddies at My Tree
+   (.tbud); gift tiles, stickers and pictures keep them still. Three kinds:
+   - every so often (a long cycle, the move at its start): lights, the ladder, a trunk, a loop, a shine…
+     tapping the buddy starts these at once (their data-o, js/game.js petGo);
+   - always, gently: a crane's hook, a kitten's tail, a bee's wings, watch hands;
+   - while walking (the map's .ex.walk; at My Tree a buddy going somewhere: .tbud.eat/.leave/.enter): wheels turn,
+     puffs and steam, a monster truck bounces, a camel nods, a bunny hops, light-up soles flash, a bobble bounces,
+     tassels, leaves, keychains and pouches swing, a hijab sways.
+   Each part turns about its own point: an unseen square centred there makes its box (js/art.js mv). */
+:is(.ex, .tbud) [class^='pr-mv-'] {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+}
+
+/* lights: off, then three quick flashes now and then (a pair alternates through their delays) */
+.pr-siren {
+  opacity: 0;
+}
+:is(.ex, .tbud) .pr-siren {
+  animation: lhq-siren 9s linear infinite;
+}
+@keyframes lhq-siren {
+  0%,
+  1% {
+    opacity: 0;
+  }
+  1.5%,
+  5% {
+    opacity: 1;
+  }
+  5.5%,
+  10% {
+    opacity: 0;
+  }
+  10.5%,
+  14% {
+    opacity: 1;
+  }
+  14.5%,
+  19% {
+    opacity: 0;
+  }
+  19.5%,
+  23% {
+    opacity: 1;
+  }
+  23.5%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ---- every so often ---- */
+:is(.ex, .tbud) .pr-mv-puff {
+  animation: mv-puff 7.3s ease-out 2.2s infinite;
+}
+:is(.ex, .tbud) .pr-mv-steam {
+  animation: mv-puff 6.1s ease-out 1.6s infinite;
+}
+@keyframes mv-puff {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.5);
+  }
+  3% {
+    opacity: 0.95;
+  }
+  16%,
+  100% {
+    opacity: 0;
+    transform: translate(-6px, -10px) scale(1.5);
+  }
+}
+:is(.ex, .tbud) .pr-mv-mbody {
+  animation: mv-bounce 8.9s ease-in-out 2.6s infinite;
+}
+@keyframes mv-bounce {
+  0%,
+  12%,
+  100% {
+    transform: none;
+  }
+  3% {
+    transform: translateY(-6px);
+  }
+  6% {
+    transform: translateY(0) scaleY(0.94);
+  }
+  9% {
+    transform: translateY(-3px);
+  }
+}
+:is(.ex, .tbud) .pr-mv-stop {
+  animation: mv-stop 10.7s ease-in-out 2.4s infinite;
+}
+@keyframes mv-stop {
+  0%,
+  25%,
+  100% {
+    transform: scaleX(0.15);
+  }
+  3%,
+  22% {
+    transform: scaleX(1);
+  }
+}
+:is(.ex, .tbud) .pr-mv-haz {
+  animation: mv-haz 10.7s linear 2.4s infinite;
+}
+@keyframes mv-haz {
+  0%,
+  2% {
+    opacity: 0;
+  }
+  3%,
+  6% {
+    opacity: 1;
+  }
+  7%,
+  10% {
+    opacity: 0;
+  }
+  11%,
+  14% {
+    opacity: 1;
+  }
+  15%,
+  18% {
+    opacity: 0;
+  }
+  19%,
+  22% {
+    opacity: 1;
+  }
+  23%,
+  100% {
+    opacity: 0;
+  }
+}
+:is(.ex, .tbud) .pr-mv-boom {
+  animation: mv-boom 12.1s ease-in-out 3s infinite;
+}
+@keyframes mv-boom {
+  0%,
+  18%,
+  100% {
+    transform: none;
+  }
+  5%,
+  13% {
+    transform: rotate(-9deg);
+  }
+}
+:is(.ex, .tbud) .pr-mv-scoop {
+  animation: mv-scoop 9.4s ease-in-out 2s infinite;
+}
+@keyframes mv-scoop {
+  0%,
+  20%,
+  100% {
+    transform: none;
+  }
+  5%,
+  10% {
+    transform: rotate(14deg);
+  }
+  15% {
+    transform: rotate(-6deg);
+  }
+}
+:is(.ex, .tbud) .pr-mv-ladder {
+  animation: mv-ladder 11.6s ease-in-out 3.4s infinite;
+}
+@keyframes mv-ladder {
+  0%,
+  22%,
+  100% {
+    transform: none;
+  }
+  5%,
+  17% {
+    transform: rotate(10deg);
+  }
+}
+:is(.ex, .tbud) .pr-mv-spray,
+:is(.ex, .tbud) .pr-mv-espray {
+  animation: mv-spray 11.6s linear 3.4s infinite;
+}
+:is(.ex, .tbud) .pr-mv-espray {
+  animation-duration: 11.1s;
+  animation-delay: 2.8s;
+}
+@keyframes mv-spray {
+  0%,
+  6% {
+    opacity: 0;
+    transform: none;
+  }
+  7% {
+    opacity: 1;
+  }
+  9%,
+  13% {
+    transform: translate(-2px, 1px);
+  }
+  11%,
+  15% {
+    transform: translate(1px, -1px);
+  }
+  16% {
+    opacity: 1;
+  }
+  18%,
+  100% {
+    opacity: 0;
+    transform: none;
+  }
+}
+:is(.ex, .tbud) .pr-mv-rock {
+  animation: mv-rock 8.3s ease-in-out 2s infinite;
+}
+@keyframes mv-rock {
+  0%,
+  16%,
+  100% {
+    transform: none;
+  }
+  4% {
+    transform: rotate(-5deg);
+  }
+  8% {
+    transform: rotate(4deg);
+  }
+  12% {
+    transform: rotate(-2deg);
+  }
+}
+:is(.ex, .tbud) .pr-mv-loop,
+:is(.ex, .tbud) .pr-mv-bloop {
+  animation: mv-loop 12.7s ease-in-out 3s infinite;
+}
+:is(.ex, .tbud) .pr-mv-bloop {
+  animation-duration: 10.1s;
+  animation-delay: 2.2s;
+}
+@keyframes mv-loop {
+  0% {
+    transform: none;
+  }
+  3% {
+    transform: translateY(-10px) rotate(-90deg);
+  }
+  6% {
+    transform: translateY(-16px) rotate(-180deg);
+  }
+  9% {
+    transform: translateY(-10px) rotate(-270deg);
+  }
+  12% {
+    transform: translateY(0) rotate(-360deg);
+  }
+  12.01%,
+  100% {
+    transform: none;
+  }
+}
+:is(.ex, .tbud) .pr-mv-lift,
+:is(.ex, .tbud) .pr-mv-heli {
+  animation: mv-lift 10.9s ease-in-out 2.4s infinite;
+}
+:is(.ex, .tbud) .pr-mv-heli {
+  animation-duration: 11.9s;
+}
+@keyframes mv-lift {
+  0%,
+  20%,
+  100% {
+    transform: none;
+  }
+  6%,
+  13% {
+    transform: translateY(-14px);
+  }
+}
+:is(.ex, .tbud) .pr-mv-boost {
+  animation: mv-boost 10.9s linear 2.4s infinite;
+}
+@keyframes mv-boost {
+  0%,
+  3% {
+    opacity: 0;
+  }
+  5%,
+  14% {
+    opacity: 1;
+  }
+  17%,
+  100% {
+    opacity: 0;
+  }
+}
+:is(.ex, .tbud) .pr-mv-ding,
+:is(.ex, .tbud) .pr-mv-spark {
+  animation: mv-spark 8.3s ease-in-out 2s infinite;
+}
+:is(.ex, .tbud) .pr-mv-spark {
+  animation-duration: 7.7s;
+  animation-delay: 1.4s;
+}
+@keyframes mv-spark {
+  0% {
+    opacity: 0;
+    transform: scale(0.2) rotate(0deg);
+  }
+  4% {
+    opacity: 1;
+    transform: scale(1) rotate(45deg);
+  }
+  9%,
+  100% {
+    opacity: 0;
+    transform: scale(0.2) rotate(90deg);
+  }
+}
+/* the ladybug lifts its wing cases and flutters its wings */
+:is(.ex, .tbud) .pr-mv-lbshell {
+  animation: mv-lbshell 10.3s ease-in-out 2.2s infinite;
+}
+@keyframes mv-lbshell {
+  0%,
+  18%,
+  100% {
+    transform: none;
+  }
+  3%,
+  14% {
+    transform: rotate(-14deg);
+  }
+}
+:is(.ex, .tbud) .pr-mv-lbwing {
+  animation: mv-lbwing 10.3s linear 2.2s infinite;
+}
+@keyframes mv-lbwing {
+  0%,
+  2% {
+    opacity: 0;
+    transform: scaleY(1);
+  }
+  3%,
+  5%,
+  7%,
+  9%,
+  11%,
+  13% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+  4%,
+  6%,
+  8%,
+  10%,
+  12% {
+    opacity: 1;
+    transform: scaleY(0.35);
+  }
+  15%,
+  100% {
+    opacity: 0;
+    transform: scaleY(1);
+  }
+}
+:is(.ex, .tbud) .pr-mv-trunk {
+  animation: mv-trunk 11.1s ease-in-out 2.8s infinite;
+}
+@keyframes mv-trunk {
+  0%,
+  17%,
+  100% {
+    transform: none;
+  }
+  4%,
+  13% {
+    transform: rotate(-55deg);
+  }
+}
+:is(.ex, .tbud) .pr-mv-bfly {
+  animation: mv-bfly 9.9s ease-in-out 2s infinite;
+}
+@keyframes mv-bfly {
+  0%,
+  16%,
+  100% {
+    transform: none;
+  }
+  5% {
+    transform: translate(-5px, -10px);
+  }
+  10% {
+    transform: translate(5px, -14px);
+  }
+}
+:is(.ex, .tbud) .pr-mv-chew {
+  animation: mv-chew 8.7s linear 1.8s infinite;
+}
+@keyframes mv-chew {
+  0%,
+  4%,
+  8%,
+  12%,
+  14%,
+  100% {
+    transform: none;
+  }
+  2%,
+  6%,
+  10% {
+    transform: translateY(0.9px) scaleX(0.92);
+  }
+}
+:is(.ex, .tbud) .pr-mv-flap {
+  animation: mv-flap 9.1s ease-in-out 2.4s infinite;
+}
+@keyframes mv-flap {
+  0%,
+  14%,
+  100% {
+    transform: none;
+  }
+  3%,
+  9% {
+    transform: rotate(32deg);
+  }
+  6%,
+  12% {
+    transform: rotate(-4deg);
+  }
+}
+:is(.ex, .tbud) .pr-mv-crest {
+  animation: mv-crest 13.3s ease-in-out 4s infinite;
+}
+@keyframes mv-crest {
+  0%,
+  16%,
+  100% {
+    transform: none;
+  }
+  4%,
+  12% {
+    transform: scale(1.25);
+  }
+}
+:is(.ex, .tbud) .pr-mv-ear {
+  animation: mv-ear 9.7s ease-in-out 2.6s infinite;
+}
+@keyframes mv-ear {
+  0%,
+  4%,
+  8%,
+  10%,
+  100% {
+    transform: none;
+  }
+  2%,
+  6% {
+    transform: rotate(14deg);
+  }
+}
+:is(.ex, .tbud) .pr-mv-yawn {
+  animation: mv-yawn 17.3s ease-in-out 5s infinite;
+}
+@keyframes mv-yawn {
+  0%,
+  2% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  5%,
+  11% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  14%,
+  100% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+}
+:is(.ex, .tbud) .pr-mv-bhop {
+  animation: mv-bhop 8.9s ease-in-out 2.2s infinite;
+}
+@keyframes mv-bhop {
+  0%,
+  6%,
+  12%,
+  100% {
+    transform: none;
+  }
+  3% {
+    transform: translateY(-6px);
+  }
+  9% {
+    transform: translateY(-5px);
+  }
+}
+:is(.ex, .tbud) .pr-mv-note {
+  animation: mv-note 8.9s ease-out 2.2s infinite;
+}
+@keyframes mv-note {
+  0%,
+  2% {
+    opacity: 0;
+    transform: none;
+  }
+  5% {
+    opacity: 1;
+  }
+  16%,
+  100% {
+    opacity: 0;
+    transform: translate(5px, -14px);
+  }
+}
+:is(.ex, .tbud) .pr-mv-thead {
+  animation: mv-thead 12.9s ease-in-out 3s infinite;
+}
+@keyframes mv-thead {
+  0%,
+  20%,
+  100% {
+    transform: none;
+  }
+  4%,
+  15% {
+    transform: translate(-10px, 2px);
+  }
+}
+:is(.ex, .tbud) .pr-mv-earl,
+:is(.ex, .tbud) .pr-mv-earr {
+  animation: mv-earl 9.3s ease-in-out 2s infinite;
+}
+:is(.ex, .tbud) .pr-mv-earr {
+  animation-name: mv-earr;
+}
+@keyframes mv-earl {
+  0%,
+  12%,
+  100% {
+    transform: none;
+  }
+  3%,
+  9% {
+    transform: rotate(-12deg);
+  }
+  6% {
+    transform: rotate(4deg);
+  }
+}
+@keyframes mv-earr {
+  0%,
+  12%,
+  100% {
+    transform: none;
+  }
+  3%,
+  9% {
+    transform: rotate(12deg);
+  }
+  6% {
+    transform: rotate(-4deg);
+  }
+}
+:is(.ex, .tbud) .pr-mv-nose {
+  animation: mv-nose 6.7s ease-in-out 1.2s infinite;
+}
+@keyframes mv-nose {
+  0%,
+  8%,
+  100% {
+    transform: none;
+  }
+  2%,
+  6% {
+    transform: scale(1.45);
+  }
+  4% {
+    transform: scale(0.9);
+  }
+}
+/* a shine sweeps across a shield, glowing shades or a crystal watch */
+.ex .pr-mv-shine {
+  animation: mv-shine 8.3s ease-in-out 2.6s infinite;
+}
+.ex .ex-glasses .pr-mv-shine {
+  animation-duration: 9.4s;
+  animation-delay: 4.2s;
+}
+@keyframes mv-shine {
+  0% {
+    transform: translateX(0);
+  }
+  10%,
+  100% {
+    transform: translateX(var(--d, 60px));
+  }
+}
+
+/* ---- always, gently ---- */
+:is(.ex, .tbud) .pr-mv-hook {
+  animation: mv-swing6 2.8s ease-in-out infinite alternate;
+}
+@keyframes mv-swing6 {
+  from {
+    transform: rotate(-6deg);
+  }
+  to {
+    transform: rotate(6deg);
+  }
+}
+:is(.ex, .tbud) .pr-mv-tail {
+  animation: mv-tail 3.4s ease-in-out infinite alternate;
+}
+@keyframes mv-tail {
+  from {
+    transform: rotate(-7deg);
+  }
+  to {
+    transform: rotate(8deg);
+  }
+}
+:is(.ex, .tbud) .pr-mv-buzz {
+  animation: mv-buzz 0.14s linear infinite alternate;
+}
+@keyframes mv-buzz {
+  to {
+    transform: scaleY(0.72);
+  }
+}
+:is(.ex, .tbud) .pr-mv-wake {
+  animation: mv-wake 1.8s ease-out infinite;
+}
+@keyframes mv-wake {
+  from {
+    opacity: 0.95;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+}
+.ex .pr-mv-wmin {
+  animation: lhq-spin 60s steps(60, end) infinite;
+}
+.ex .pr-mv-whour {
+  animation: lhq-spin 720s linear infinite;
+}
+.ex .pr-mv-needle {
+  animation: mv-needle 4.2s ease-in-out infinite alternate;
+}
+@keyframes mv-needle {
+  from {
+    transform: rotate(-14deg);
+  }
+  to {
+    transform: rotate(14deg);
+  }
+}
+
+/* ---- while walking ---- */
+:is(.ex.walk, .tbud.eat, .tbud.leave, .tbud.enter) .pr-mv-wheel {
+  animation: lhq-spin 0.55s linear infinite;
+}
+:is(.ex.walk, .tbud.eat, .tbud.leave, .tbud.enter) :is(.pr-mv-puff, .pr-mv-steam) {
+  animation: mv-puff-run 0.9s ease-out infinite;
+}
+@keyframes mv-puff-run {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.5);
+  }
+  15% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-6px, -10px) scale(1.5);
+  }
+}
+:is(.ex.walk, .tbud.eat, .tbud.leave, .tbud.enter) .pr-mv-mbody {
+  animation: mv-jolt 0.34s ease-in-out infinite alternate;
+}
+@keyframes mv-jolt {
+  to {
+    transform: translateY(-2.6px);
+  }
+}
+:is(.ex.walk, .tbud.eat, .tbud.leave, .tbud.enter) .pr-mv-boost {
+  animation: mv-boost-run 0.22s linear infinite alternate;
+}
+@keyframes mv-boost-run {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 1;
+  }
+}
+:is(.ex.walk, .tbud.eat, .tbud.leave, .tbud.enter) .pr-mv-nod {
+  animation: mv-nod 0.68s ease-in-out infinite alternate;
+}
+@keyframes mv-nod {
+  to {
+    transform: rotate(-6deg);
+  }
+}
+:is(.ex.walk, .tbud.eat, .tbud.leave, .tbud.enter) .pr-mv-bunhop {
+  animation: mv-bunhop 0.68s ease-in-out infinite;
+}
+@keyframes mv-bunhop {
+  0%,
+  100% {
+    transform: none;
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+.ex.walk .pr-siren {
+  animation: lhq-siren-run 0.9s steps(1, end) infinite;
+  animation-delay: 0s !important; /* (each lamp's own delay is for the flashes now and then) */
+}
+.ex.walk .pr-siren[data-l] {
+  animation-delay: -0.45s !important; /* the second of a pair: in turn */
+}
+@keyframes lhq-siren-run {
+  0% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+.ex.walk .pr-mv-lightup {
+  animation: mv-lightup 0.68s linear infinite;
+}
+.ex.walk .ex-leg-l .pr-mv-lightup {
+  animation-delay: -0.34s;
+}
+@keyframes mv-lightup {
+  0%,
+  45%,
+  100% {
+    opacity: 0;
+  }
+  8%,
+  32% {
+    opacity: 1;
+  }
+}
+.ex.walk .pr-mv-pom {
+  animation: mv-pom 0.34s ease-in-out infinite alternate;
+}
+@keyframes mv-pom {
+  to {
+    transform: translateY(-2.6px) scale(0.95, 1.07);
+  }
+}
+.ex.walk :is(.pr-mv-tassel, .pr-mv-dangle) {
+  animation: mv-swing12 0.68s ease-in-out infinite alternate;
+}
+@keyframes mv-swing12 {
+  from {
+    transform: rotate(-12deg);
+  }
+  to {
+    transform: rotate(12deg);
+  }
+}
+.ex.walk .pr-mv-leaf {
+  animation: mv-swing9 0.68s ease-in-out infinite alternate;
+}
+@keyframes mv-swing9 {
+  from {
+    transform: rotate(-9deg);
+  }
+  to {
+    transform: rotate(9deg);
+  }
+}
+.ex.walk .pr-mv-pouch {
+  animation: mv-swing6 0.68s ease-in-out infinite alternate;
+}
+.ex.walk .pr-mv-hijab {
+  animation: mv-hijab 1.36s ease-in-out infinite alternate;
+}
+@keyframes mv-hijab {
+  from {
+    transform: skewX(-1.1deg);
+  }
+  to {
+    transform: skewX(1.1deg);
+  }
+}
+.ex.walk .ex-hat .pr-spin {
+  animation-duration: 0.4s !important;
+}
+
+/* a sleeping buddy at My Tree keeps still; and nothing moves for those who prefer less motion */
+.tbud.m-asleep :is([class^='pr-mv-'], .pr-siren) {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.ex, .tbud) :is([class^='pr-mv-'], .pr-siren) {
+    animation: none !important;
+  }
+}
