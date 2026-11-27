@@ -1,7 +1,10 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.12.18",
+ "latest": "2.12.19",
  "versions": [
+  { "v": "2.12.19", "notes": [
+   "Android: fullscreen back as it was (no pop-ups, zoom works again)"
+  ] },
   { "v": "2.12.18", "notes": [
    "Android: fullscreen again, with no black strip at the top (switch it off in the Grown-up Corner)"
   ] },
