@@ -26,11 +26,15 @@
   f = d.querySelector('.mbedfire');
   ok('…lit after sunset', f && f.classList.contains('lit'));
   f.click();
-  await wait(500);
+  await wait(400);
+  ok('tapping it: night falls first (a dusk, stars, a sleepy moon; v2.13.3)', !!d.querySelector('.ntrip.in .nt-dusk') && L.st().view === 'map');
+  await wait(1400);
   ok('tapping it opens bedtime: the explorer and the Teacher sitting by the fire', L.st().view === 'bedtime' && !!d.querySelector('.btscene svg.ex.ex-sit') && !!d.querySelector('.btscene svg.elder-sit') && !!d.querySelector('.btscene svg.campfire'));
   ok('…the explorer\'s buddy beside them (moving), no staff or shield', !!d.querySelector('.btscene .ex-pet') && !d.querySelector('.btscene .ex-stick'));
   const say = () => d.querySelector('.btsay').textContent;
-  ok('the Teacher names Al-Ikhlāṣ first (three Quls, v2.13.1), three beads to fill, tabs for each', /Al-Ikhlāṣ/.test(say()) && d.querySelectorAll('.btbeads i').length === 3 && [...d.querySelectorAll('[data-act=btgo]')].map((x) => x.textContent).join(',') === 'Ikhlāṣ,Falaq,Nās,Duʿā');
+  ok('the Teacher names Al-Ikhlāṣ first (three Quls), three beads to fill, four little dots (no tabs; v2.13.3)', /Al-Ikhlāṣ/.test(say()) && d.querySelectorAll('.btbeads i').length === 3 && d.querySelectorAll('.btdots [data-act=btgo]').length === 4 && !d.querySelector('.bttabs'));
+  const scene0 = d.querySelector('.btscene'),
+    btn0 = d.querySelector('.btbtn').getBoundingClientRect().top;
   ok('…Listen plays it (Basmalah first)', JSON.stringify(w.__lhq.fabTarget().items.slice(0, 2)) === '[[1,1],[112,1]]', JSON.stringify(w.__lhq.fabTarget() && w.__lhq.fabTarget().items.slice(0, 2)));
   const said = async () => {
     d.querySelector('[data-act=btsaid]').click();
@@ -41,19 +45,21 @@
   ok('two said: two beads lit', d.querySelectorAll('.btbeads i.on').length === 2 && L.st().step === 0);
   ok('…only “✓ Said it” under them (the bar has Back; v2.13.2)', !d.querySelector('[data-act=btback]') && d.querySelectorAll('.btpanel button.btn').length === 1);
   await said();
-  ok('the third: the Teacher smiles, “MāshāAllāh!”', /MāshāAllāh/.test(say()) && !!d.querySelector('.btscene svg.elder.happy'));
+  ok('the third: the Teacher smiles, “MāshāAllāh!”', /MāshāAllāh/.test(say()) && !!d.querySelector('.btscr.happy') && !!d.querySelector('.btscene .bt-eld-h svg.elder.happy'));
+  ok('…the scene not drawn again (the night carries on: only the words and the panel change)', d.querySelector('.btscene') === scene0);
   await wait(1800);
-  ok('…then Al-Falaq, Al-Ikhlāṣ ticked', L.st().step === 1 && /Al-Falaq/.test(say()) && d.querySelector('[data-act=btgo][data-j="0"]').classList.contains('done') && !d.querySelector('.btscene svg.elder.happy'));
+  ok('…then Al-Falaq, Al-Ikhlāṣ ticked', L.st().step === 1 && /Al-Falaq/.test(say()) && d.querySelector('[data-act=btgo][data-j="0"]').classList.contains('done') && !d.querySelector('.btscr.happy'));
   // any one, at any time: the duʿā's tab
   d.querySelector('[data-act=btgo][data-j="3"]').click();
   await wait(200);
-  ok('the tabs choose any of them: the duʿā (said once, no Listen)', L.st().step === 3 && !!d.querySelector('.btdua') && d.querySelectorAll('.btbeads i').length === 1 && !w.__lhq.fabTarget());
+  ok('a dot chooses any of them: the duʿā (said once, no Listen)', L.st().step === 3 && /Bismika/.test(d.querySelector('.btbody').textContent) && d.querySelectorAll('.btbeads i').length === 1 && !w.__lhq.fabTarget());
+  ok('…the panel the same height: the button where it was', Math.abs(d.querySelector('.btbtn').getBoundingClientRect().top - btn0) < 1);
   await said();
   await wait(1800);
   ok('…said: on to the next not said yet (Al-Falaq)', L.st().step === 1, L.st().step);
   d.querySelector('[data-act=btgo][data-j="0"]').click();
   await wait(200);
-  ok('a finished one, chosen again: full beads; the tabs never take a bead off', d.querySelectorAll('.btbeads i.on').length === 3 && L.st().cnt[0] === 3);
+  ok('a finished one, chosen again: full beads; the dots never take a bead off', d.querySelectorAll('.btbeads i.on').length === 3 && L.st().cnt[0] === 3);
   d.querySelector('[data-act=btsaid]').click();
   await wait(200);
   ok('…“✓ Said it” there moves on to the next not said yet', L.st().step === 1);
@@ -62,11 +68,11 @@
     for (let j = 0; j < 3; j++) await said();
     await wait(1800);
   }
-  ok('all said: goodnight, by name, the Teacher smiling', /Goodnight/.test(say()) && !!d.querySelector('[data-act=btbye]') && !!d.querySelector('.btscene svg.elder.happy'));
+  ok('all said: goodnight, by name, the Teacher smiling', /Goodnight/.test(say()) && !!d.querySelector('[data-act=btbye]') && !!d.querySelector('.btscr.happy'));
   ok('…the screen never scrolls', d.scrollingElement.scrollHeight <= w.innerHeight + 1, d.scrollingElement.scrollHeight + ' / ' + w.innerHeight);
   ok('…no gifts given at bedtime', prof.pending.length === pend0, prof.pending.length + ' / ' + pend0);
   d.querySelector('[data-act=btbye]').click();
-  await wait(400);
+  await wait(1700);
   ok('Goodnight goes back to the Garden (where it began)', L.st().view === 'map' && L.garden());
   // the map's 🌙 Bedtime button: only after sunset; back out to the world it began in
   L.garden(false);
@@ -74,10 +80,10 @@
   await wait(1200);
   ok('after sunset: a sleepy moon on the map (tap it for bedtime; no button, v2.13.2)', !!d.querySelector('.mmoon') && d.querySelectorAll('.mmoon .mz').length === 3 && !d.querySelector('.bedbtn'));
   d.querySelector('.mmoon').click();
-  await wait(400);
+  await wait(1700);
   ok('…it opens bedtime', L.st().view === 'bedtime');
   d.querySelector('.bar [data-act=back]').click();
-  await wait(600);
+  await wait(1700);
   ok('…and Back comes out in the same world (not the Garden)', L.st().view === 'map' && !L.garden());
   w.__bedtime = false;
   L.go('map');

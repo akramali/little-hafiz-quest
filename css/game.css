@@ -11950,3 +11950,240 @@ body:has(.wrail.open) .mmoon {
     opacity: 1;
   }
 }
+
+/* ---------- 2026-11-28 · v2.13.3 ---------- */
+/* bedtime: the bar placed like My Tree's (it clears the status bar itself: no sticky offset on top of a padding) */
+.btscr {
+  padding-top: 0;
+}
+.btscr > .bar {
+  position: relative;
+  top: 0;
+  margin: 0 calc(-1 * var(--gutr)) 0 calc(-1 * var(--gutl));
+  padding: calc(10px + env(safe-area-inset-top, 0px)) var(--gutr) 10px var(--gutl);
+  background: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+/* the panel is the same height whatever it holds (a sūrah, the duʿā, goodnight): nothing above it moves */
+.btscr .btbody {
+  height: 132px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  touch-action: pan-y;
+}
+.btbody .btin p {
+  margin: 0;
+}
+.btbody .btin .tr {
+  font-weight: 700;
+  color: #ffe2a8;
+}
+.btbody .btin .en {
+  font-size: 13px;
+  opacity: 0.75;
+}
+.btbody.slide-next .btin,
+.btbody.slide-next .btbeads {
+  animation: btslnext 0.42s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+.btbody.slide-back .btin,
+.btbody.slide-back .btbeads {
+  animation: btslback 0.42s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+@keyframes btslnext {
+  from {
+    opacity: 0;
+    transform: translateX(46px);
+  }
+}
+@keyframes btslback {
+  from {
+    opacity: 0;
+    transform: translateX(-46px);
+  }
+}
+.btgn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 34px;
+}
+.btgn span {
+  font-size: 18px;
+  font-weight: 800;
+  color: #ffe2a8;
+}
+/* small dots for the four (tap one, or swipe the panel) */
+.btscr .btdots {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+.btscr .btdots button {
+  width: 24px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: none;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.btscr .btdots button::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(243, 238, 224, 0.25);
+  transition:
+    background 0.3s,
+    transform 0.3s;
+}
+.btscr .btdots button.done::before {
+  background: rgba(255, 216, 138, 0.6);
+}
+.btscr .btdots button.on::before {
+  background: #ffd88a;
+  transform: scale(1.3);
+}
+/* the Teacher's words fade in when they change; his smile fades in over his face */
+.btsay {
+  animation: none;
+}
+.btsay.fresh,
+.btscr .btsay:not(.fresh) {
+  animation: btsay 0.5s ease-out;
+}
+.btscene .bt-eld-h {
+  opacity: 0;
+  transition: opacity 0.6s;
+}
+.btscene .bt-eld-n {
+  transition: opacity 0.6s;
+}
+.btscr.happy .btscene .bt-eld-h {
+  opacity: 1;
+}
+.btscr.happy .btscene .bt-eld-n {
+  opacity: 0;
+}
+.btscr .btbtn .btn {
+  width: 100%;
+}
+/* in and out of bedtime: night falls from what was tapped, stars twinkle in, a sleepy moon rises, then it lifts */
+.ntrip {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  overflow: hidden;
+  transition: opacity 1.1s ease-out;
+}
+.ntrip.done {
+  opacity: 0;
+}
+.ntrip .nt-dusk {
+  position: absolute;
+  left: var(--gx);
+  top: var(--gy);
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #0d1033 0%, #141a4a 45%, #1d2160 62%, rgba(29, 33, 96, 0) 72%);
+  animation: ntDusk 1.1s cubic-bezier(0.45, 0, 0.55, 1) forwards;
+  will-change: transform;
+}
+@keyframes ntDusk {
+  0% {
+    transform: scale(0.3);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(80);
+    opacity: 1;
+  }
+}
+.ntrip b {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  color: #fff3c4;
+  font-size: 14px;
+  opacity: 0;
+  animation: ntStar 1.1s ease-out forwards;
+  animation-delay: calc(0.35s + var(--j) * 0.03s);
+}
+@keyframes ntStar {
+  0% {
+    opacity: 0;
+    transform: scale(0.2) rotate(0deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.1) rotate(30deg);
+  }
+  100% {
+    opacity: 0.85;
+    transform: scale(0.9) rotate(45deg);
+  }
+}
+.ntrip .nt-moon {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  width: 64px;
+  height: 64px;
+  margin-left: -32px;
+  opacity: 0;
+  animation: ntMoon 1.15s ease-out 0.25s forwards;
+}
+.ntrip.out .nt-moon {
+  display: none;
+}
+.ntrip .nt-moon svg {
+  width: 100%;
+  height: 100%;
+}
+@keyframes ntMoon {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btbody.slide-next .btin,
+  .btbody.slide-next .btbeads,
+  .btbody.slide-back .btin,
+  .btbody.slide-back .btbeads,
+  .btsay.fresh {
+    animation: none;
+  }
+}
+/* (the extra sky above the scene the same colour as its top: no line between them; the scene's height fixed) */
+.btscr {
+  background: #0b0e2e;
+}
+.btscr .btstage {
+  flex: 1 1 0;
+}
+.btscr .btstage::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 70px;
+  z-index: 1;
+  background: linear-gradient(#0b0e2e, rgba(11, 14, 46, 0));
+  pointer-events: none;
+}

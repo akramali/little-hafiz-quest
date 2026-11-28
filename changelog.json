@@ -1,7 +1,10 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.13.2",
+ "latest": "2.13.3",
  "versions": [
+  { "v": "2.13.3", "notes": [
+   "Bedtime: night falls as you go in, a fuller scene, gentler steps"
+  ] },
   { "v": "2.13.2", "notes": [
    "After sunset, tap the sleepy moon on the map for bedtime",
    "Small visual tweaks"

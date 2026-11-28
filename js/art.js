@@ -3930,15 +3930,31 @@
     const sky = uid('bts'),
       fire = uid('btf'),
       moon = uid('btm');
-    const stars = [[30, 40, 1.6], [76, 22, 1.2], [118, 58, 1.8], [160, 30, 1.1], [204, 64, 1.5], [246, 24, 1.3], [270, 104, 1.1], [362, 40, 1.4], [384, 112, 1.2], [20, 118, 1.2], [92, 100, 1], [146, 132, 1.3], [226, 140, 1], [352, 160, 1.1], [58, 168, 1]];
-    const tree = (x, by, w, h, c) => S(rr(x - 4, by - 26, 8, 28, 3), '#2a2433', null, null, sw(1.6)) + S(cloudD(x, by - 20, w, h, 5), c, null, null, sw(1.6)) + F(crescent(x, by - 20 - h * 0.45, w * 0.46, h * 0.52, w * 0.1, h * 0.14), dk(c, 0.2));
-    const bush = (x, by, w, c) => S(cloudD(x, by, w, w * 0.5, 4), c, null, null, sw(1.6));
+    // (v2.13.3) a fuller night: the sky's glow, far mountains, a row of little trees standing on the hills, a meadow in
+    // three bands; trees and bushes rooted (shadows, bushes at their feet), lit by the moon above and the fire within
+    const stars = [[30, 40, 1.6], [76, 22, 1.2], [118, 58, 1.8], [160, 30, 1.1], [204, 64, 1.5], [246, 24, 1.3], [270, 104, 1.1], [362, 40, 1.4], [384, 112, 1.2], [20, 118, 1.2], [92, 100, 1], [146, 132, 1.3], [226, 140, 1], [352, 160, 1.1], [58, 168, 1], [190, 12, 1], [296, 150, 0.9], [12, 70, 1.1], [132, 176, 0.9], [236, 188, 1]];
+    const vig = uid('btv');
+    const tree = (x, by, w, h, c) =>
+      EF(x, by + 2, w * 0.52, 7, '#0c1a1a', 0.45) + S('M' + (x - 5) + ' ' + (by + 1) + 'Q' + (x - 3) + ' ' + (by - 20) + ' ' + (x - 4) + ' ' + (by - h * 0.42) + 'L' + (x + 4) + ' ' + (by - h * 0.42) + 'Q' + (x + 3) + ' ' + (by - 20) + ' ' + (x + 6) + ' ' + (by + 1) + 'Z', '#3a2c2a', null, null, sw(1.6)) +
+      S(cloudD(x, by - h * 0.32, w, h, 6), c, null, null, sw(1.6)) + F(crescent(x, by - h * 0.32 - h * 0.45, w * 0.46, h * 0.52, w * 0.1, h * 0.14), dk(c, 0.22)) +
+      F(cloudD(x + w * 0.16, by - h * 0.32 - h * 0.62, w * 0.36, h * 0.22, 3), lt(c, 0.18), 0.7); // (moonlight on its top)
+    const bush = (x, by, w, c) => EF(x, by + 2, w * 0.5, 4, '#0c1a1a', 0.4) + S(cloudD(x, by, w, w * 0.5, 4), c, null, null, sw(1.6)) + F(cloudD(x + w * 0.1, by - w * 0.3, w * 0.4, w * 0.14, 3), lt(c, 0.16), 0.6);
     const tuft = (x, y, c) => L('M' + x + ' ' + y + 'l-3 -8M' + x + ' ' + y + 'l1 -10M' + x + ' ' + y + 'l4 -7', c, 1.6);
+    const flower = (x, y, c) => L('M' + x + ' ' + y + 'l0 -7', '#3f6b4a', 1.4) + [0, 72, 144, 216, 288].map((a) => CF(n(x + 2.4 * Math.cos((a * Math.PI) / 180)), n(y - 8 + 2.4 * Math.sin((a * Math.PI) / 180)), 1.6, c)).join('') + CF(x, y - 8, 1, '#ffe9a8');
+    // the row of little trees far off, on the hills
+    let far = '';
+    for (let x = -8, k = 0; x < 412; x += 15 + (k % 3) * 4, k++) {
+      const h = 12 + ((k * 7) % 11),
+        yb = 252 + Math.round(6 * Math.sin(x / 40));
+      far += k % 2 ? F('M' + (x - h * 0.4) + ' ' + yb + 'L' + x + ' ' + (yb - h * 1.3) + 'L' + (x + h * 0.4) + ' ' + yb + 'Z', '#13283a') : F(cloudD(x, yb, h * 1.1, h, 3), '#152c3c');
+    }
     const g =
-      '<defs><linearGradient id="' + sky + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0d1033"/><stop offset=".62" stop-color="#232662"/><stop offset="1" stop-color="#3b3474"/></linearGradient>' +
+      '<defs><linearGradient id="' + sky + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b0e2e"/><stop offset=".6" stop-color="#20245f"/><stop offset="1" stop-color="#3d3574"/></linearGradient>' +
       '<radialGradient id="' + fire + '" cx="200" cy="392" r="250" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ffb05a" stop-opacity=".55"/><stop offset=".35" stop-color="#ff9a4a" stop-opacity=".22"/><stop offset="1" stop-color="#ff9a4a" stop-opacity="0"/></radialGradient>' +
-      '<radialGradient id="' + moon + '"><stop offset="0" stop-color="#fff3b0" stop-opacity=".35"/><stop offset="1" stop-color="#fff3b0" stop-opacity="0"/></radialGradient></defs>' +
+      '<radialGradient id="' + moon + '"><stop offset="0" stop-color="#fff3b0" stop-opacity=".35"/><stop offset="1" stop-color="#fff3b0" stop-opacity="0"/></radialGradient>' +
+      '<radialGradient id="' + vig + '" cx="200" cy="300" r="300" gradientUnits="userSpaceOnUse"><stop offset=".55" stop-color="#05061a" stop-opacity="0"/><stop offset="1" stop-color="#05061a" stop-opacity=".55"/></radialGradient></defs>' +
       '<rect width="400" height="440" fill="url(#' + sky + ')" stroke="none"/>' +
+      F('M-10 170Q140 120 300 150Q360 160 420 140L420 176Q360 190 300 182Q140 156 -10 206Z', '#8f8ad6', 0.07) + // (the sky's soft band)
       stars.map(([x, y, r], j) => '<circle class="bt-star" cx="' + x + '" cy="' + y + '" r="' + r + '" fill="#fff6d8" stroke="none" style="animation-delay:-' + (j * 0.7) % 5 + 's"/>').join('') +
       // the moon, its glow breathing slowly
       '<circle class="bt-moonglow" cx="322" cy="78" r="58" fill="url(#' + moon + ')" stroke="none"/>' + S(crescent(322, 78, 22, 22, -9, 5), '#ffe9a8', null, null, sw(1.6)) +
@@ -3947,15 +3963,20 @@
       G(F(cloudD(280, 150, 110, 24, 4), '#2c3372', 0.8), ' class="bt-cloud bt-cloud2"') +
       // a few birds flying home, now and then
       G(L('M0 0q5 -5 10 0q5 -5 10 0M26 -10q4 -4 8 0q4 -4 8 0M18 12q4 -4 8 0q4 -4 8 0', '#1a1d45', 1.8), ' class="bt-birds"') +
-      // far hills, then trees and bushes either side (lit by the fire on the inner side)
-      F('M0 252Q60 214 130 236Q200 204 276 232Q340 210 400 236V320H0Z', '#1d2452') +
-      tree(34, 262, 74, 70, '#1f4a40') + tree(88, 250, 58, 54, '#245548') + tree(372, 258, 78, 74, '#1f4a40') + tree(318, 248, 56, 52, '#245548') +
-      // soft grass
-      F('M0 278Q200 258 400 278V440H0Z', '#25463a') + F('M0 330Q200 300 400 330V440H0Z', '#2a4f40') +
-      bush(16, 300, 56, '#2a5a46') + bush(384, 302, 60, '#2a5a46') + bush(140, 284, 40, '#2c5c48') + bush(262, 284, 44, '#2c5c48') +
-      [[46, 352], [120, 330], [292, 334], [356, 356], [190, 318], [236, 322]].map(([x, y]) => tuft(x, y, '#4f7a4a')).join('') +
-      // the fire's warm light over the trees, bushes and grass
-      '<rect class="bt-glow" width="400" height="440" fill="url(#' + fire + ')" stroke="none"/>' +
+      // far mountains, the hills with their little trees
+      F('M0 236L42 206L78 224L122 192L168 226L214 200L262 228L302 204L348 224L400 202V270H0Z', '#1d2352') + F('M122 192L134 202L128 206L142 212L122 204Z', '#2b3270', 0.8) + F('M302 204L312 212L306 216L320 220L300 212Z', '#2b3270', 0.8) +
+      F('M0 250Q60 234 120 244Q190 230 250 246Q320 232 400 248V280H0Z', '#172a44') + far +
+      // the meadow: far, middle, near
+      F('M0 262Q100 250 200 256Q300 250 400 262V440H0Z', '#1e3b34') + F('M0 300Q110 284 200 292Q300 282 400 300V440H0Z', '#234539') + F('M0 368Q200 350 400 368V440H0Z', '#284d40') +
+      // trees, each with bushes at its foot
+      tree(42, 300, 92, 84, '#1f4a40') + tree(116, 288, 56, 52, '#245548') + tree(360, 302, 96, 88, '#1f4a40') + tree(290, 288, 58, 54, '#245548') +
+      bush(18, 306, 50, '#2a5a46') + bush(70, 304, 40, '#2c5c48') + bush(132, 292, 36, '#2c5c48') + bush(266, 294, 40, '#2c5c48') + bush(330, 306, 44, '#2a5a46') + bush(388, 308, 50, '#2a5a46') +
+      // night flowers, pebbles, grass
+      [[30, 336, '#c8b6ff'], [64, 350, '#f3d6ff'], [150, 322, '#c8b6ff'], [252, 324, '#f3d6ff'], [338, 340, '#c8b6ff'], [372, 352, '#f3d6ff'], [96, 372, '#e8dcff'], [306, 376, '#e8dcff']].map(([x, y, c]) => flower(x, y, c)).join('') +
+      [[52, 384], [348, 390], [178, 336], [226, 340]].map(([x, y]) => EF(x, y, 4, 2.4, '#4a5566', 0.9)).join('') +
+      [[46, 352], [120, 330], [292, 334], [356, 356], [190, 318], [236, 322], [16, 380], [384, 384], [140, 360], [262, 362]].map(([x, y]) => tuft(x, y, '#4f7a4a')).join('') +
+      // the fire's warm light over the trees, bushes and grass; the edges darker, all one night
+      '<rect class="bt-glow" width="400" height="440" fill="url(#' + fire + ')" stroke="none"/>' + '<rect width="400" height="440" fill="url(#' + vig + ')" stroke="none"/>' +
       // the explorer's mat, the Teacher's rug
       S('M8 426Q6 416 26 414L128 414Q148 416 146 426Q146 438 128 438L26 438Q8 438 8 426Z', '#8a5fb0', null, null, sw(1.8)) + L('M20 420L134 420M20 432L134 432', '#c3a6e0', 1.6) +
       S(rr(250, 410, 146, 26, 8), '#9a2f3e', null, null, sw(1.8)) + P(rr(256, 414, 134, 18, 5), 'none', ' stroke="#ffcf3f" stroke-width="1.6"') +
@@ -3964,7 +3985,7 @@
       nest(campfire(4, true), 140, 300, 120, 120, true) +
       // the Teacher and the explorer, sitting
       // (the Teacher a grown-up, the explorer a child: he is drawn about a third bigger)
-      nest(elder(happy ? 'happy' : '', true, true), 214, 116, 214, 321) +
+      G(nest(elder('', true, true), 214, 116, 214, 321), cls('bt-eld-n')) + G(nest(elder('happy', true, true), 214, 116, 214, 321), cls('bt-eld-h')) + // (v2.13.3: both faces; the smile fades in)
       nest(explorer(look, outfit, { sit: true }), 0, 198, 160, 240) +
       // fireflies
       [[60, 250], [124, 212], [300, 214], [352, 262], [94, 300], [328, 312], [200, 236], [260, 270]].map(([x, y], j) => '<g class="bt-fly" style="animation-delay:-' + n(j * 1.7) + 's"><circle cx="' + x + '" cy="' + y + '" r="6" fill="#f3ff9a" opacity=".25" stroke="none"/><circle cx="' + x + '" cy="' + y + '" r="2" fill="#f7ffb8" stroke="none"/></g>').join('');
