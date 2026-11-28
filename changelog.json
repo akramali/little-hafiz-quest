@@ -1,7 +1,10 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.13.6",
+ "latest": "2.13.7",
  "versions": [
+  { "v": "2.13.7", "notes": [
+   "Bucket hats, the straw hat and the safari helmet fit the head better"
+  ] },
   { "v": "2.13.6", "notes": [
    "Fixed a square border around some stickers (camel, cat, turtle, bee, butterfly)"
   ] },
