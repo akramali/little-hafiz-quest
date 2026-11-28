@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is a short public overview (highlights, install, privacy, credits); this file holds the detail.
 
-**Current version:** v2.13.0 (2026-11-27) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.13.1 (2026-11-28) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -221,6 +221,14 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
   the next), then the duʿā for lying down (بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا, once: the Sunnah order, Quls first),
   then goodnight by name (the scene dims). Listen in the bar plays the sūrah with its Basmalah (`fabTarget`). No gifts,
   no timer, nothing saved.
+- **Bedtime, v2.13.1:** the three Quls (Al-Ikhlāṣ, Al-Falaq, An-Nās; Al-Kāfirūn taken out) then the duʿā, as tabs
+  (`.bttabs`, `btgo`) to choose any one at any time (or swipe the scene); `st.cnt` counts each; "‹ Back" takes a bead
+  off, or goes back one; a finished one chosen again shows full beads and "Next ›"; after each is said the Teacher
+  smiles (`ART.bedtime(..., happy)`: `elder('happy')`) and it moves to the next not said yet, goodnight when all are.
+  A 🌙 Bedtime button (`.bedbtn`, under My Tree) shows on the map only after sunset; back and Goodnight come out where
+  it began (the world's map, or the Garden). The screen is fixed (`.btscr`): the scene shrinks before anything
+  scrolls, no taller than it is drawn (more sky above on tall phones), the Teacher's words anchored above his head.
+  Later (the user's plan): the house at the pavilion, where duʿās and bedtime will live.
 - **The journal's hints (v2.13.0):** beside each sūrah's name: My Explorer's red "new" dot (`.newdot.jnew`) when some
   of its pictures can be found now (a step done where they are, `jEarnable`), a faint 🔒 (`.jlock`) when none can yet
   (first written out as text lines: too much room).

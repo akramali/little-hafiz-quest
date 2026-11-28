@@ -3925,7 +3925,7 @@
      and then birds flying home), trees and bushes in the firelight, soft grass; the explorer sitting on a mat on one
      side, the Teacher on his rug on the other, a gentle campfire between them, fireflies. viewBox 0 0 400 440.
      (moving parts: css/game.css "bedtime"; the explorer's buddy beside them moves as it does everywhere) */
-  function bedtime(look, outfit) {
+  function bedtime(look, outfit, happy) {
     const nest = (svg, x, y, w, h, vis) => svg.replace('<svg ', '<svg x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '"' + (vis ? ' overflow="visible"' : ' style="overflow:hidden"') + ' ');
     const sky = uid('bts'),
       fire = uid('btf'),
@@ -3964,7 +3964,7 @@
       nest(campfire(4, true), 140, 300, 120, 120, true) +
       // the Teacher and the explorer, sitting
       // (the Teacher a grown-up, the explorer a child: he is drawn about a third bigger)
-      nest(elder('', true, true), 214, 116, 214, 321) +
+      nest(elder(happy ? 'happy' : '', true, true), 214, 116, 214, 321) +
       nest(explorer(look, outfit, { sit: true }), 0, 198, 160, 240) +
       // fireflies
       [[60, 250], [124, 212], [300, 214], [352, 262], [94, 300], [328, 312], [200, 236], [260, 270]].map(([x, y], j) => '<g class="bt-fly" style="animation-delay:-' + n(j * 1.7) + 's"><circle cx="' + x + '" cy="' + y + '" r="6" fill="#f3ff9a" opacity=".25" stroke="none"/><circle cx="' + x + '" cy="' + y + '" r="2" fill="#f7ffb8" stroke="none"/></g>').join('');

@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.13.0';
+  const VERSION = '2.13.1';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -2245,6 +2245,7 @@
     </div>
     <button class="wr-toggle jbtn" data-act="journal" aria-label="My journal: ${prof.found.length} of ${JKEYS.size} found">${BOOK_IC}<span class="wr-cur">Journal</span>${riddleOpen(prof) ? NEWDOT : ''}</button>
     <button class="wr-toggle tbtn" data-act="tree" aria-label="My tree"><span class="tbtn-ic">${ART.props['meadow-tree'] || '🌳'}</span><span class="wr-cur">My Tree</span></button>
+    ${bedtimeOpen() ? `<button class="wr-toggle tbtn bedbtn" data-act="bedtime" aria-label="Bedtime by the campfire"><span class="tbtn-ic">${ART.campfire(4)}</span><span class="wr-cur">Bedtime</span></button>` : ''}
     ${heroReady(prof) && prefs.teacher ? `<div class="mapfoot"><button class="btn small eldtest" data-act="challenge" aria-label="Take your Teacher’s test"><span class="eldtest-ic">${elderArt('')}</span>Test</button></div>` : ''}
     ${riddleBar()}
     <div id="map" class="mroot"></div>
@@ -5566,6 +5567,7 @@
         turnPage(+b.dataset.w, +b.dataset.w > st.w ? 1 : -1);
         break;
       // (v2.13.0) bedtime by the campfire
+      // (v2.13.0) bedtime by the campfire (v2.13.1: from the map's 🌙 button after sunset too; back out where it began)
       case 'bedtime':
         if (!bedtimeOpen()) {
           sfx.tap();
@@ -5573,37 +5575,48 @@
           break;
         }
         sfx.tap();
-        go('bedtime', { step: 0, n: 0, wait: false });
+        go('bedtime', { step: 0, cnt: BT_STEPS.map(() => 0), wait: false });
         break;
       case 'btsaid': {
-        const bs = BT_STEPS[st.step];
-        if (!bs || st.wait) break;
+        if (!BT_STEPS[st.step] || st.wait || btDone(st.step)) break;
         sfx.tap();
-        st.n++;
-        if (st.n < (bs.dua ? 1 : 3)) {
+        st.cnt[st.step]++;
+        if (!btDone(st.step)) {
           render();
           break;
         }
-        // all said: a moment's "MāshāAllāh", then on to the next
+        // all said: the Teacher smiles, "MāshāAllāh!", then on to the next one not said yet
         st.wait = true;
         stopAudio();
         render();
         setTimeout(() => {
           if (st.view !== 'bedtime' || !st.wait) return;
           st.wait = false;
-          st.step++;
-          st.n = 0;
+          st.step = btNext();
           render();
         }, 1600);
         break;
       }
-      case 'btback':
+      case 'btnext':
         if (st.wait) break;
-        if (st.n) st.n--;
-        else if (st.step) {
-          st.step--;
-          st.n = BT_STEPS[st.step].dua ? 0 : 2;
-        }
+        sfx.tap();
+        stopAudio();
+        st.step = btNext();
+        render();
+        break;
+      case 'btgo':
+        if (st.wait) break;
+        sfx.tap();
+        stopAudio();
+        st.step = +b.dataset.j;
+        render();
+        break;
+      case 'btback':
+        // one bead off; with none, back to the one before
+        if (st.wait) break;
+        sfx.tap();
+        if (st.cnt[st.step]) st.cnt[st.step]--;
+        else if (st.step) st.step--;
         stopAudio();
         render();
         break;
@@ -7755,34 +7768,47 @@
      turn, to say three times together with a grown-up (✓ Said it fills a bead; Back takes one off, or goes back a
      sūrah), then the duʿā for lying down, then goodnight. Listen (in the bar) plays the sūrah. No gifts, no timer. */
   const bedtimeOpen = () => (window.__bedtime != null ? !!window.__bedtime : sunDown());
-  const BT_STEPS = [{ n: 109 }, { n: 112 }, { n: 113 }, { n: 114 }, { dua: true }];
+  // (v2.13.1) the three Quls, then the duʿā; each one can be chosen at any time (its tab, or a swipe on the scene)
+  const BT_STEPS = [{ n: 112, tab: 'Ikhlāṣ' }, { n: 113, tab: 'Falaq' }, { n: 114, tab: 'Nās' }, { dua: true, tab: 'Duʿā' }];
   const BT_DUA = { ar: 'بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا', tr: 'Bismika Allāhumma amūtu wa aḥyā', en: 'In Your name, O Allah, I die and I live.' };
   const BT_AGAIN = ['', 'Again, gently.', 'One more time.'];
+  const btNeed = (j) => (BT_STEPS[j].dua ? 1 : 3);
+  const btDone = (j) => st.cnt[j] >= btNeed(j);
+  // after one is said in full: the next one not done yet (after this one, then from the start), or goodnight
+  const btNext = () => {
+    const order = [...BT_STEPS.keys()].map((x) => (st.step + 1 + x) % BT_STEPS.length);
+    const j = order.find((x) => !btDone(x));
+    return j == null ? BT_STEPS.length : j;
+  };
   V.bedtime = () => {
     const prof = P(),
       b = BT_STEPS[st.step],
       q = b && b.n && BYN[b.n],
-      need = b && b.dua ? 1 : 3,
+      need = b ? btNeed(st.step) : 0,
+      n = b ? Math.min(st.cnt[st.step], need) : 0,
+      done = b && n >= need,
       who = prof.name ? esc(prof.name) : 'little explorer';
     const say = !b
       ? `Goodnight, ${who}. Sleep well, in shā’ Allāh. 🌙`
       : st.wait
-        ? 'MāshāAllāh.'
-        : b.dua
-          ? 'Now lie down, and say the duʿā for sleeping.'
-          : st.n
-            ? `${BT_AGAIN[st.n]} <b>${q.name}</b>`
-            : `Let’s say <b>${q.name}</b> together, three times.`;
-    const dots = BT_STEPS.map((x, j) => `<i class="${j < st.step || !b ? 'done' : j === st.step ? 'on' : ''}"></i>`).join('');
-    const beads = b ? `<div class="btbeads" aria-label="${st.n} of ${need}">${[...Array(need).keys()].map((j) => `<i class="${j < st.n ? 'on' : ''}"></i>`).join('')}</div>` : '';
+        ? 'MāshāAllāh!'
+        : done
+          ? `MāshāAllāh, <b>${b.dua ? 'the duʿā' : q.name}</b> is said.`
+          : b.dua
+            ? 'Now lie down, and say the duʿā for sleeping.'
+            : n
+              ? `${BT_AGAIN[n]} <b>${q.name}</b>`
+              : `Let’s say <b>${q.name}</b> together, three times.`;
+    const tabs = `<div class="bttabs" role="tablist">${BT_STEPS.map((x, j) => `<button class="${j === st.step ? 'on' : ''} ${btDone(j) ? 'done' : ''}" data-act="btgo" data-j="${j}" role="tab" aria-selected="${j === st.step}">${btDone(j) ? '✓ ' : ''}${x.tab}</button>`).join('')}</div>`;
+    const beads = b ? `<div class="btbeads" aria-label="${n} of ${need}">${[...Array(need).keys()].map((j) => `<i class="${j < n ? 'on' : ''}"></i>`).join('')}</div>` : '';
     const panel = !b
       ? `<button class="btn go wide" data-act="btbye">🌙 Goodnight</button>`
       : `${b.dua ? `<div class="btdua"><p class="ar" dir="rtl" lang="ar">${BT_DUA.ar}</p><p class="tr">${BT_DUA.tr}</p><p class="en">${BT_DUA.en}</p></div>` : `<div class="btname"><b>${q.name}</b><span class="ar" dir="rtl" lang="ar">${q.ar}</span></div>`}
-        ${beads}<div class="row"><button class="btn" data-act="btback" ${st.step || st.n ? '' : 'disabled'} aria-label="Back">↶</button><button class="btn go wide" data-act="btsaid" ${st.wait ? 'disabled' : ''}>✓ Said it</button></div>`;
+        ${beads}<div class="row"><button class="btn" data-act="btback" ${st.step || n ? '' : 'disabled'}>‹ Back</button>${done ? `<button class="btn go wide" data-act="btnext" ${st.wait ? 'disabled' : ''}>Next ›</button>` : `<button class="btn go wide" data-act="btsaid" ${st.wait ? 'disabled' : ''}>✓ Said it</button>`}</div>`;
     return `<div class="screen btscr${b ? '' : ' btend'}">
     ${bar('Bedtime', '', 'map')}
-    <div class="btstage">${ART.bedtime(prof.look, drawnOutfit(prof))}<div class="btsay">${say}</div></div>
-    <div class="btpanel"><div class="btdots">${dots}</div>${panel}</div>
+    <div class="btstage">${ART.bedtime(prof.look, drawnOutfit(prof), st.wait || !b)}<div class="btsay">${say}</div></div>
+    <div class="btpanel">${tabs}${panel}</div>
   </div>`;
   };
   V.journal = () => {
@@ -7864,6 +7890,18 @@
     if (el && !reduceMotion) el.animate([{ transform: `translateX(${dir * 60}px)`, opacity: 0.3 }, { transform: 'none', opacity: 1 }], { duration: 260, easing: 'ease-out' });
   }
   // Look & Repeat: the next āyah or the one before (like tapping the numbers)
+  // (v2.13.1) bedtime: swipe the scene to the next one or back
+  onSwipe(
+    (t) => st.view === 'bedtime' && !!t.closest('.btstage'),
+    (dir) => {
+      const j = Math.max(0, Math.min(BT_STEPS.length - 1, (st.step >= BT_STEPS.length ? BT_STEPS.length - 1 : st.step) + dir));
+      if (j === st.step || st.wait) return;
+      sfx.tap();
+      stopAudio();
+      st.step = j;
+      render();
+    },
+  );
   onSwipe(
     (t) => st.view === 'learn' && st.phase !== 'chain' && !!t.closest('.lcard'),
     (dir) => {

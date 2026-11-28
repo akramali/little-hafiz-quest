@@ -1,7 +1,10 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.13.0",
+ "latest": "2.13.1",
  "versions": [
+  { "v": "2.13.1", "notes": [
+   "Bedtime: a 🌙 button on the map after sunset; the three Quls and the duʿā, choose any one"
+  ] },
   { "v": "2.13.0", "notes": [
    "Bedtime by the campfire: after sunset in the Hidden Garden, the four Quls and the duʿā for sleeping",
    "Rare badges for 30 and 100 days in a row; the journal shows what’s new to find",
