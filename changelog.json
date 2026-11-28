@@ -1,7 +1,11 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.13.7",
+ "latest": "2.13.8",
  "versions": [
+  { "v": "2.13.8", "notes": [
+   "New hats to win: a pilot cap, a ranch hat, a dino beanie, a firefighter helmet, glowing headphones",
+   "New tops and pants, and for girls a beret, headbands, a floppy sun hat and a sparkle tiara"
+  ] },
   { "v": "2.13.7", "notes": [
    "Bucket hats, the straw hat and the safari helmet fit the head better"
   ] },

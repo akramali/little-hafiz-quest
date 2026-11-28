@@ -95,7 +95,7 @@
   L.go('show'); await wait(300);
   const grid = d.querySelector('.achgrid').textContent;
   log('achievements', grid.replace(/\s+/g, ' '));
-  ok('My Achievements: sūrahs “of 37 … learned”, badges “of 15” (v2.13.0: + two streak badges), things “of 421” for a boy', /of 37 sūrahs learned/.test(grid) && /of 15 badges/.test(grid) && /of 421 things won/.test(grid) && /of 564 āyāt learned/.test(grid));
+  ok('My Achievements: sūrahs “of 37 … learned”, badges “of 15” (v2.13.0: + two streak badges), things “of 433” for a boy (v2.13.8: + 12 new things)', /of 37 sūrahs learned/.test(grid) && /of 15 badges/.test(grid) && /of 433 things won/.test(grid) && /of 564 āyāt learned/.test(grid));
   ok('…a whole percentage without “.0”', !/\.0%/.test(grid) && /\d%/.test(grid));
   // (v2.12.9) How to play: the campfire burns up from out to roaring and back down, its word under it
   L.go('settings'); await wait(300);

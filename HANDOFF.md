@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is a short public overview (highlights, install, privacy, credits); this file holds the detail.
 
-**Current version:** v2.13.7 (2026-11-28) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.13.8 (2026-11-28) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -221,6 +221,12 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
   the next), then the duʿā for lying down (بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا, once: the Sunnah order, Quls first),
   then goodnight by name (the scene dims). Listen in the bar plays the sūrah with its Basmalah (`fabTarget`). No gifts,
   no timer, nothing saved.
+- **More things to win (v2.13.8):** everyday surprises for all (`DROP_NEW`): a pilot cap with goggles, a ranch hat, a
+  dino spike beanie, a firefighter helmet, glowing headphones (tier 2); a varsity jacket, a puffy jacket, a number 7
+  jersey, a rocket tee; camo, corduroy and glowing stripe pants (tier 2). For girls only (`for: 'girl'`): a pink beret,
+  big bow and kitty ears headbands, a floppy sun hat, a sparkle tiara (tier 2); a heart sweater, a pinafore dress (the
+  top's colour white: the shirt under it); heart pants and rainbow-hem pants. Hats are drawn on the head's coordinates
+  with crowns about as wide as the head (~88); a bun shows under headbands, tiaras and headphones (`bunShows`).
 - **Hats (v2.13.7):** the bucket hat (and its colour and pattern versions) and the straw hat had crowns narrower than
   the head (about 64 wide against the beanie's and explorer cap's ~88), so they sat on top, too small: both redrawn with
   crowns as wide as the head and broader brims; the safari helmet a touch bigger. Their `box` widened for the icons.
@@ -340,8 +346,8 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
   (`GRAPES`, hand-placed, a few darker). Pomegranates a deeper wine red, apart from the apples.
 - **My Achievements' numbers (v2.12.8, checked):** % memorized without ".0" when whole (`questPct`, My Tree too); "N of 37
   sūrahs learned"; "N of 13 badges" (5 star badges + 8 world badges, `ART.BADGES`); āyāt learned counts Juz ʿAmma only (it
-  counted the Garden's too, against a total of 564). Totals: things won 421 for a boy, 464 for a girl (`winnable`: 380 /
-  423 things + the 40 stickers + Jumuʿah's; the Garden's things, bonus stickers, badges and yearly stickers are extras;
+  counted the Garden's too, against a total of 564). Totals: things won 433 for a boy, 485 for a girl (v2.13.8; `winnable`: 392 /
+  444 things + the 40 stickers + Jumuʿah's; the Garden's things, bonus stickers, badges and yearly stickers are extras;
   owning everything reaches it exactly), journal finds 276 (the Garden's page included), riddles 240 (Juz ʿAmma's), stars
   505.
 - **Fixes (v2.12.7):** the strip behind the status bar is a solid color (`--topbar`, set with theme-color in
