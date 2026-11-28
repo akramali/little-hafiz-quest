@@ -7,24 +7,28 @@
   const errs = watchErrors(w);
   const A = w.LHQ_ART,
     prof = L.store().profiles[0];
-  // 1. the campfire by the pavilion: cold before sunset, lit after
+  // 1. the campfire by the pavilion: lit any time (v2.13.4: the way into bedtime by day too)
   const pend0 = prof.pending.length; // (the sample explorer has gifts waiting already)
   w.__bedtime = false;
   L.garden(true);
   L.go('map');
   await wait(1200);
   let f = d.querySelector('.mbedfire');
-  ok('the bedtime campfire is by the pavilion, cold in the day', !!f && !f.classList.contains('lit'));
+  ok('the bedtime campfire is by the pavilion, lit even in the day', !!f && f.classList.contains('lit'));
+  ok('…no moon on the map in the day', !d.querySelector('.mmoon'));
   f.click();
-  await wait(300);
-  ok('…tapping it in the day only says it is lit after sunset', L.st().view === 'map');
+  await wait(1800);
+  ok('…tapping it in the day opens bedtime too', L.st().view === 'bedtime');
+  d.querySelector('.bar [data-act=back]').click();
+  await wait(1700);
+  ok('…Back: the Garden again', L.st().view === 'map' && L.garden());
   w.__bedtime = true;
   prof.items.push('kitten-buddy');
   prof.outfit.pet = 'kitten-buddy';
   L.go('map');
   await wait(1200);
   f = d.querySelector('.mbedfire');
-  ok('…lit after sunset', f && f.classList.contains('lit'));
+  ok('…and after sunset', f && f.classList.contains('lit'));
   f.click();
   await wait(400);
   ok('tapping it: night falls first (a dusk, stars, a sleepy moon; v2.13.3)', !!d.querySelector('.ntrip.in .nt-dusk') && L.st().view === 'map');

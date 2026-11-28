@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.13.3';
+  const VERSION = '2.13.4';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -2347,7 +2347,7 @@
       artWorld: () => GARDEN_W,
       badgeNum: (s) => (s.asma ? '99' : s.sura),
       topProp: 'garden-pavilion',
-      bedfire: { lit: bedtimeOpen(), svg: ART.campfire(bedtimeOpen() ? 3 : 0) }, // (v2.13.0)
+      bedfire: { lit: true, svg: ART.campfire(3) }, // (v2.13.0; v2.13.4: lit any time, the way into bedtime by day too)
       startLabel: '🌷 Start',
       gate: { at: 'start', act: 'gardenout', label: 'Back to the Summit' },
       night: isNight(),
@@ -5573,11 +5573,7 @@
       // (v2.13.0) bedtime by the campfire
       // (v2.13.0) bedtime by the campfire (v2.13.2: from the map's moon after sunset too; out where it began)
       case 'bedtime':
-        if (!bedtimeOpen()) {
-          sfx.tap();
-          toast('🌙 The bedtime campfire is lit after sunset');
-          break;
-        }
+        // (v2.13.4) the Garden's campfire opens it any time; the map's moon is only there after sunset
         sfx.tap();
         bedTrip(true, b);
         break;

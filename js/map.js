@@ -385,7 +385,7 @@
       if (fireAt) {
         const fx = fireAt.x,
           fy = fireAt.y;
-        html.push(`<button class="mbedfire${cfg.bedfire.lit ? ' lit' : ''}" data-act="bedtime" data-x="${fx.toFixed(1)}" data-y="${fy.toFixed(1)}" style="left:${(fx - 28).toFixed(1)}px;top:${(fy - 52).toFixed(1)}px" aria-label="${cfg.bedfire.lit ? 'The bedtime campfire' : 'The bedtime campfire, lit after sunset'}">${cfg.bedfire.svg}</button>`);
+        html.push(`<button class="mbedfire${cfg.bedfire.lit ? ' lit' : ''}" data-act="bedtime" data-x="${fx.toFixed(1)}" data-y="${fy.toFixed(1)}" style="left:${(fx - 28).toFixed(1)}px;top:${(fy - 52).toFixed(1)}px" aria-label="The bedtime campfire">${cfg.bedfire.svg}</button>`);
       }
       if (gateAt)
         html.push(
