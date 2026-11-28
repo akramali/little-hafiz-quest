@@ -1,7 +1,7 @@
 {
   "name": "Little Hafiz Quest",
   "short_name": "Hafiz Quest",
-  "description": "A picture-and-gesture game for memorizing Juz ‘Amma with a child.",
+  "description": "A picture game for memorizing Juz ‘Amma with a child.",
   "lang": "en",
   "start_url": "./",
   "scope": "./",

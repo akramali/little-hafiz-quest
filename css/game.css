@@ -836,24 +836,6 @@ body.hasbar::before {
 .scene .e {
   display: inline-block;
 }
-.gest {
-  display: inline-block;
-  margin-top: 4px;
-  background: var(--chip);
-  border-radius: 16px;
-  padding: 6px 14px;
-  font-weight: 700;
-  font-size: 18px;
-  line-height: 1.25;
-}
-.gest small {
-  display: block;
-  font-size: 13px;
-  color: var(--soft);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
 .ar-box {
   margin-top: 12px;
   background: var(--card2);
@@ -4489,15 +4471,6 @@ html {
 }
 body {
   overscroll-behavior-y: none;
-}
-/* smaller "Do it" box */
-.gest {
-  font-size: 15px;
-  padding: 3px 12px 4px;
-  border-radius: 12px;
-}
-.gest small {
-  font-size: 10.5px;
 }
 /* checkpoints: one row that scrolls sideways, with faded edges and a bouncing arrow while there's more */
 .cpwrap {
@@ -12194,4 +12167,13 @@ body:has(.wrail.open) .mmoon {
 .btscr .bar .listen:not(.show) {
   display: flex;
   visibility: hidden;
+}
+
+/* ---------- v2.13.9: word meanings and transliteration a size smaller ---------- */
+.tr {
+  font-size: 15px;
+}
+.wtl,
+.wen {
+  font-size: 11.5px;
 }

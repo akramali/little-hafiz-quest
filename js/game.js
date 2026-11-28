@@ -1,7 +1,7 @@
 /*
  * Little Hafiz Quest: game logic (v2)
  * ===================================
- * A picture-and-gesture adventure that helps a young child memorize Juz ‘Amma (sūrahs 78–114)
+ * A picture adventure that helps a young child memorize Juz ‘Amma (sūrahs 78–114)
  * with a grown-up who reads the Arabic. Plain browser JavaScript: no frameworks, no build step,
  * no network requests except the game's own files.
  *
@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.13.8';
+  const VERSION = '2.13.9';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -211,7 +211,6 @@
     speed: 1, // recitation speed (v2.5.2; replaces "slower" and "repeat each āyah": the loop button repeats)
     reciter: 'alafasy',
     hearts: true,
-    actions: false, // the "Do it" actions start off (v2.4.4); grown-ups can switch them on
     fullscreen: false,
     tajweed: false, // (v2.13.0) tajwīd colours on the Arabic
     pzrtl: false, // Picture Puzzle from right to left
@@ -430,7 +429,7 @@
   function cleanPrefs(o) {
     const out = Object.assign({}, DEFAULT_PREFS);
     if (!o || typeof o !== 'object') return out;
-    ['meaning', 'translit', 'sfx', 'audio', 'hearts', 'actions', 'fullscreen', 'pzrtl', 'wordmean', 'tajweed'].forEach((k) => {
+    ['meaning', 'translit', 'sfx', 'audio', 'hearts', 'fullscreen', 'pzrtl', 'wordmean', 'tajweed'].forEach((k) => {
       if (typeof o[k] === 'boolean') out[k] = o[k];
     });
     // your Teacher and the Stranger, under the names of each age: 'teacher' (v2.8.0 on), 'elder' (v2.6.11–v2.7.23),
@@ -1728,7 +1727,6 @@
   </div>`;
   }
   // the action to do with the āyah (can be switched off in the Grown-up Corner)
-  const gest = (a) => (prefs.actions ? `<div class="gest"><small>Do it</small>${a.gesture}</div>` : '');
   // the explorer's name under a title: with more than one explorer, tap it to switch (the page stays)
   const whoBtn = (prof, none) =>
     store.profiles.filter((p) => p.made).length > 1 ? `<button class="whobtn" data-act="whopick" aria-label="Switch explorer">${prof.name ? esc(prof.name) : 'Explorer'} ▾</button>` : prof.name ? esc(prof.name) : none;
@@ -2619,10 +2617,9 @@
         ck = L[Math.min(st.chain, L.length - 1)],
         cur = s.ayat[ck];
       body = `
-      ${coach(`🔗 <b>Chain time!</b> Say from ${AY(s)} ${L[0] + 1} all the way to ${AY(s)} ${k + 1}.${prefs.actions ? ' Do the actions too!' : ''}`, '🦉', toyBtn(s))}
+      ${coach(`🔗 <b>Chain time!</b> Say from ${AY(s)} ${L[0] + 1} all the way to ${AY(s)} ${k + 1}.`, '🦉', toyBtn(s))}
       <div class="lchead chainhead"><span class="lctags">${tag(s, ck)}</span><span class="lcbtns">${speedChip()}${loopBtn()}</span></div>
       <div class="chain">${L.map((x, j) => `<button class="link ${j < st.chain ? 'lit' : j === st.chain ? 'cur' : ''} ${!c.all && st.p > 0 && j === 0 ? 'bridge' : ''}" data-act="chainstep" data-j="${j}" aria-label="Āyah ${x + 1}${j < st.chain ? ', said: tap to go back to it' : ''}"><span class="num">${x + 1}</span>${pics(s.ayat[x])}</button>`).join('')}</div>
-      ${prefs.actions ? `<div style="text-align:center">${gest(cur)}</div>` : ''}
       <details class="adult"><summary>👁️ Grown-up check</summary><div class="ar sm" lang="ar">${tajAyah(s, cur)}</div></details>
       <div class="row"><button class="btn go wide" data-act="chainstep">✅ Said it! Next</button></div>`;
     } else {
@@ -2631,7 +2628,6 @@
       <div class="card lcard">
         <div class="lchead"><span class="lctags">${tag(s, k)}</span><span class="lcbtns">${speedChip()}${loopBtn()}</span></div>
         ${sceneHTML(a)}
-        ${gest(a)}
         ${arHTML(s, a, k, { blur, quiet: true })}
       </div>`;
       if (st.phase === 'repeat') {
@@ -2641,7 +2637,7 @@
         <div class="bubbles">${st.popped.map((p, b) => (p ? '<span class="bubble popped">⭐</span>' : `<button class="bubble" data-act="pop" data-b="${b}" aria-label="Pop bubble">Say!</button>`)).join('')}</div>`;
       } else {
         body += `
-        ${coach(`🙈 Now say it with <b>just the picture</b>!${prefs.actions ? ' Do the action to help you remember.' : ''}`, '🦉', toyBtn(s))}
+        ${coach(`🙈 Now say it with <b>just the picture</b>!`, '🦉', toyBtn(s))}
         <div class="row">
           <button class="btn wide" data-act="peek">${st.peek ? '🙈 Hide' : '👀 Peek'}</button>
           <button class="btn go wide" data-act="saidit">⭐ Said it!</button>
@@ -2977,7 +2973,6 @@
     <div class="card">
       <div class="lchead"><span class="lctags">${cl.pic ? (u.q == null ? tag(s, k) : `<span class="ayah-tag"><span class="num">${unitNum(u, idx)}</span>${a.hook}</span>`) : `<span class="ayah-tag"><span class="num">${unitNum(u, idx)}</span>${name.charAt(0).toUpperCase() + name.slice(1)}</span>`}</span><span class="lcbtns">${speedChip()}${loopBtn()}</span></div>
       ${cl.pic ? sceneHTML(a) : `<div class="mystery-q">?</div>`}
-      ${cl.pic ? gest(a) : ''}
       ${shown}
       ${cl.full ? '' : '<button class="hintbtn" data-act="hint" aria-label="A hint: one more word">💡 Hint</button>'}
     </div>
@@ -3164,7 +3159,7 @@
         : st.sel != null
           ? 'Now tap the place where it fits!'
           : saying
-            ? `🗣️ <b>Say ${saying.label}!</b>${!big && prefs.actions ? ` ${s.ayat[saying.say[0]].gesture}` : ''} Then the next piece.`
+            ? `🗣️ <b>Say ${saying.label}!</b> Then the next piece.`
             : big
               ? s.P.length >= 6
                 ? 'Each checkpoint is a big piece. <b>Drag</b> them together in order!'
@@ -4076,7 +4071,6 @@
       ${tg('meaning', 'Show simple meaning', 'A kid-friendly sentence under each āyah')}
       ${tg('wordmean', 'Show word meanings', 'The meaning of each word, in Word Steps and Read (📖). From the Quranic Arabic Corpus')}
       ${tg('translit', 'Show transliteration', "Latin letters, for helpers who can't read Arabic: under each āyah, and over each word in Word Steps and Read")}
-      ${tg('actions', 'Show the actions', 'The “Do it” movement for each āyah. Switch off for more room on screen')}
       ${tg('tajweed', 'Tajwīd colours', 'Colours the Arabic by tajwīd rule, where an āyah is shown to read')}${prefs.tajweed ? TAJ_KEY : ''}
     </div>
     <div class="sheet">

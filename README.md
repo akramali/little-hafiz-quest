@@ -1,6 +1,6 @@
 # Little Hafiz Quest
 
-A picture-and-gesture adventure that helps young children (about 4–7) **memorize Juz ‘Amma** (sūrahs 78–114).
+A picture adventure that helps young children (about 4–7) **memorize Juz ‘Amma** (sūrahs 78–114).
 A grown-up recites, the child listens, repeats and acts it out, and the clues fade step by step until they
 recite on their own.
 
@@ -68,7 +68,7 @@ recite on their own.
 - **A quest map:** the child's own explorer climbs 7 worlds, from a meadow at An-Nās to the mountain top at An-Naba’.
 - **World 8, the Hidden Garden:** a gate by the summit leads to Al-Fātiḥah, Āyat al-Kursī, the end of Al-Baqarah, Al-Kahf 1–10, Al-Mulk and Al-Wāqiʿah, with lanterns on the tree and treasures of its own.
 - **Four steps per sūrah:** 👀 Look & Repeat and Word Steps to learn, then 🐸 Stepping Stones and 🧩 Picture Puzzle to review.
-- **Pictures and actions** for every āyah, plus simple meanings, word meanings, transliteration and tajwīd colours (optional).
+- **Pictures** for every āyah, plus simple meanings, word meanings, transliteration and tajwīd colours (optional).
 - **Bedtime by the campfire:** after sunset in the Hidden Garden, the Teacher and your explorer say the four Quls (three times each) and the duʿā for sleeping.
 - **Campfires** beside memorized sūrahs burn down over three weeks (roaring, strong, steady, low, embers, out).
   Low ones glow on the map, your Teacher comes to test the cold ones, and practising lights them up again.

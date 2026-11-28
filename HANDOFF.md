@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is a short public overview (highlights, install, privacy, credits); this file holds the detail.
 
-**Current version:** v2.13.8 (2026-11-28) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.13.9 (2026-11-28) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -23,7 +23,7 @@ editions, star-track prizes, star badges, world rides and surprise gifts to dres
 
 | File | What |
 |---|---|
-| `js/data.js` | all content: Arabic text, pictures (`scene`), hooks, gestures, simple meanings, checkpoints (`parts`) |
+| `js/data.js` | all content: Arabic text, pictures (`scene`), hooks, gestures (no longer shown, v2.13.9), simple meanings, checkpoints (`parts`) |
 | `js/game.js` | everything else: state, views (`V.<name>`), the click handler (`switch (act)`), gifts, hearts, the Wise Elder |
 | `js/art.js` | every drawing as SVG: explorer and outfits, items (`CATALOG`, `TRACK_*`, `DROP_*`, `WORLD_RIDES`), props, worlds, the Wise Elder |
 | `js/map.js` | the quest map: path, props placement (back to front, never hidden), other explorers, world rail, walking |
@@ -221,6 +221,10 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
   the next), then the duʿā for lying down (بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا, once: the Sunnah order, Quls first),
   then goodnight by name (the scene dims). Listen in the bar plays the sūrah with its Basmalah (`fabTarget`). No gifts,
   no timer, nothing saved.
+- **No more actions (v2.13.9):** the "Do it" gestures and their Grown-up Corner switch ("Show the actions") are gone
+  from the game: no `prefs.actions` (an old save's is dropped by `cleanPrefs`), no `.gest` box, no "do the actions"
+  coaching. The `gesture` fields stay in `js/data.js`, unused. Word meanings (`.wtl`/`.wen` 11.5px) and transliteration
+  (`.tr` 15px) a size smaller.
 - **More things to win (v2.13.8):** everyday surprises for all (`DROP_NEW`): a pilot cap with goggles, a ranch hat, a
   dino spike beanie, a firefighter helmet, glowing headphones (tier 2); a varsity jacket, a puffy jacket, a number 7
   jersey, a rocket tee; camo, corduroy and glowing stripe pants (tier 2). For girls only (`for: 'girl'`): a pink beret,
