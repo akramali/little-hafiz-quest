@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.13.1';
+  const VERSION = '2.13.2';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -2245,7 +2245,7 @@
     </div>
     <button class="wr-toggle jbtn" data-act="journal" aria-label="My journal: ${prof.found.length} of ${JKEYS.size} found">${BOOK_IC}<span class="wr-cur">Journal</span>${riddleOpen(prof) ? NEWDOT : ''}</button>
     <button class="wr-toggle tbtn" data-act="tree" aria-label="My tree"><span class="tbtn-ic">${ART.props['meadow-tree'] || '🌳'}</span><span class="wr-cur">My Tree</span></button>
-    ${bedtimeOpen() ? `<button class="wr-toggle tbtn bedbtn" data-act="bedtime" aria-label="Bedtime by the campfire"><span class="tbtn-ic">${ART.campfire(4)}</span><span class="wr-cur">Bedtime</span></button>` : ''}
+    ${bedtimeOpen() ? `<button class="mmoon" data-act="bedtime" aria-label="Bedtime by the campfire"><span class="mm-moon">${MOON_IC}</span><i class="mz">z</i><i class="mz">z</i><i class="mz">z</i></button>` : ''}
     ${heroReady(prof) && prefs.teacher ? `<div class="mapfoot"><button class="btn small eldtest" data-act="challenge" aria-label="Take your Teacher’s test"><span class="eldtest-ic">${elderArt('')}</span>Test</button></div>` : ''}
     ${riddleBar()}
     <div id="map" class="mroot"></div>
@@ -5578,7 +5578,14 @@
         go('bedtime', { step: 0, cnt: BT_STEPS.map(() => 0), wait: false });
         break;
       case 'btsaid': {
-        if (!BT_STEPS[st.step] || st.wait || btDone(st.step)) break;
+        if (!BT_STEPS[st.step] || st.wait) break;
+        if (btDone(st.step)) {
+          // (a finished one chosen again: on to the next not said yet)
+          sfx.tap();
+          st.step = btNext();
+          render();
+          break;
+        }
         sfx.tap();
         st.cnt[st.step]++;
         if (!btDone(st.step)) {
@@ -5597,27 +5604,11 @@
         }, 1600);
         break;
       }
-      case 'btnext':
-        if (st.wait) break;
-        sfx.tap();
-        stopAudio();
-        st.step = btNext();
-        render();
-        break;
       case 'btgo':
         if (st.wait) break;
         sfx.tap();
         stopAudio();
         st.step = +b.dataset.j;
-        render();
-        break;
-      case 'btback':
-        // one bead off; with none, back to the one before
-        if (st.wait) break;
-        sfx.tap();
-        if (st.cnt[st.step]) st.cnt[st.step]--;
-        else if (st.step) st.step--;
-        stopAudio();
         render();
         break;
       case 'btbye':
@@ -7767,6 +7758,8 @@
   /* (v2.13.0) Bedtime by the campfire: in the Hidden Garden, after sunset. The Teacher names each of the four Quls in
      turn, to say three times together with a grown-up (✓ Said it fills a bead; Back takes one off, or goes back a
      sūrah), then the duʿā for lying down, then goodnight. Listen (in the bar) plays the sūrah. No gifts, no timer. */
+  // (v2.13.2) the map's Bedtime moon (after sunset): a sleepy crescent, its z's floating up (css "the map's moon")
+  const MOON_IC = '<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M24 6A15 15 0 1 0 34 30A12 12 0 1 1 24 6Z" fill="#ffd84d" stroke="#2b2340" stroke-width="2.4" stroke-linejoin="round"/><path d="M11 22Q13.5 24.6 16 22" fill="none" stroke="#2b2340" stroke-width="2" stroke-linecap="round"/><ellipse cx="12" cy="27" rx="2.6" ry="1.6" fill="#ff9fb5" opacity=".7"/></svg>';
   const bedtimeOpen = () => (window.__bedtime != null ? !!window.__bedtime : sunDown());
   // (v2.13.1) the three Quls, then the duʿā; each one can be chosen at any time (its tab, or a swipe on the scene)
   const BT_STEPS = [{ n: 112, tab: 'Ikhlāṣ' }, { n: 113, tab: 'Falaq' }, { n: 114, tab: 'Nās' }, { dua: true, tab: 'Duʿā' }];
@@ -7804,7 +7797,7 @@
     const panel = !b
       ? `<button class="btn go wide" data-act="btbye">🌙 Goodnight</button>`
       : `${b.dua ? `<div class="btdua"><p class="ar" dir="rtl" lang="ar">${BT_DUA.ar}</p><p class="tr">${BT_DUA.tr}</p><p class="en">${BT_DUA.en}</p></div>` : `<div class="btname"><b>${q.name}</b><span class="ar" dir="rtl" lang="ar">${q.ar}</span></div>`}
-        ${beads}<div class="row"><button class="btn" data-act="btback" ${st.step || n ? '' : 'disabled'}>‹ Back</button>${done ? `<button class="btn go wide" data-act="btnext" ${st.wait ? 'disabled' : ''}>Next ›</button>` : `<button class="btn go wide" data-act="btsaid" ${st.wait ? 'disabled' : ''}>✓ Said it</button>`}</div>`;
+        ${beads}<div class="row"><button class="btn go wide" data-act="btsaid" ${st.wait ? 'disabled' : ''}>✓ Said it</button></div>`; // (v2.13.2: no Back here, the bar has one; the tabs and swipes only move between them)
     return `<div class="screen btscr${b ? '' : ' btend'}">
     ${bar('Bedtime', '', 'map')}
     <div class="btstage">${ART.bedtime(prof.look, drawnOutfit(prof), st.wait || !b)}<div class="btsay">${say}</div></div>

@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is a short public overview (highlights, install, privacy, credits); this file holds the detail.
 
-**Current version:** v2.13.1 (2026-11-28) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.13.2 (2026-11-28) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -221,6 +221,13 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
   the next), then the duʿā for lying down (بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا, once: the Sunnah order, Quls first),
   then goodnight by name (the scene dims). Listen in the bar plays the sūrah with its Basmalah (`fabTarget`). No gifts,
   no timer, nothing saved.
+- **v2.13.2:** bedtime's panel has only "✓ Said it" (the bar's Back exits any time; tabs and swipes only move
+  between them, never take a bead off; on a finished one Said it moves on). The map's buttons are icons only (52px:
+  the world, the journal, My Tree; their labels hidden, `.wr-toggle .wr-cur`). After sunset a sleepy moon
+  (`.mmoon`, `MOON_IC`) floats at the map's top left, bobbing, z's rising and fading; tapping it opens bedtime (it
+  replaced v2.13.1's Bedtime button: a fire looked like a sūrah's campfire, and four buttons crowded the map). The
+  toy train's own drawn smoke is its moving part (`pr-mv-smoke`, drifts up and forms again) instead of a second puff
+  on top of it. Considered and dropped (the user): merging the world list into the journal.
 - **Bedtime, v2.13.1:** the three Quls (Al-Ikhlāṣ, Al-Falaq, An-Nās; Al-Kāfirūn taken out) then the duʿā, as tabs
   (`.bttabs`, `btgo`) to choose any one at any time (or swipe the scene); `st.cnt` counts each; "‹ Back" takes a bead
   off, or goes back one; a finished one chosen again shows full beads and "Next ›"; after each is said the Teacher

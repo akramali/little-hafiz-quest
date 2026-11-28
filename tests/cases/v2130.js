@@ -39,11 +39,7 @@
   await said();
   await said();
   ok('two said: two beads lit', d.querySelectorAll('.btbeads i.on').length === 2 && L.st().step === 0);
-  ok('…a clear “‹ Back”', /Back/.test(d.querySelector('[data-act=btback]').textContent));
-  d.querySelector('[data-act=btback]').click();
-  await wait(100);
-  ok('Back takes one off', L.st().cnt[0] === 1);
-  await said();
+  ok('…only “✓ Said it” under them (the bar has Back; v2.13.2)', !d.querySelector('[data-act=btback]') && d.querySelectorAll('.btpanel button.btn').length === 1);
   await said();
   ok('the third: the Teacher smiles, “MāshāAllāh!”', /MāshāAllāh/.test(say()) && !!d.querySelector('.btscene svg.elder.happy'));
   await wait(1800);
@@ -57,9 +53,10 @@
   ok('…said: on to the next not said yet (Al-Falaq)', L.st().step === 1, L.st().step);
   d.querySelector('[data-act=btgo][data-j="0"]').click();
   await wait(200);
-  ok('a finished one, chosen again: full beads and “Next ›”', d.querySelectorAll('.btbeads i.on').length === 3 && !!d.querySelector('[data-act=btnext]'));
-  d.querySelector('[data-act=btnext]').click();
+  ok('a finished one, chosen again: full beads; the tabs never take a bead off', d.querySelectorAll('.btbeads i.on').length === 3 && L.st().cnt[0] === 3);
+  d.querySelector('[data-act=btsaid]').click();
   await wait(200);
+  ok('…“✓ Said it” there moves on to the next not said yet', L.st().step === 1);
   for (const nm of ['Al-Falaq', 'An-Nās']) {
     ok('…' + nm, say().includes(nm));
     for (let j = 0; j < 3; j++) await said();
@@ -75,8 +72,8 @@
   L.garden(false);
   L.go('map');
   await wait(1200);
-  ok('after sunset: a 🌙 Bedtime button under My Tree', !!d.querySelector('.bedbtn'));
-  d.querySelector('.bedbtn').click();
+  ok('after sunset: a sleepy moon on the map (tap it for bedtime; no button, v2.13.2)', !!d.querySelector('.mmoon') && d.querySelectorAll('.mmoon .mz').length === 3 && !d.querySelector('.bedbtn'));
+  d.querySelector('.mmoon').click();
   await wait(400);
   ok('…it opens bedtime', L.st().view === 'bedtime');
   d.querySelector('.bar [data-act=back]').click();
@@ -85,7 +82,7 @@
   w.__bedtime = false;
   L.go('map');
   await wait(1200);
-  ok('in the day: no Bedtime button', !d.querySelector('.bedbtn'));
+  ok('in the day: no moon', !d.querySelector('.mmoon'));
   L.garden(false);
   // 2. the journal: a quiet hint under a sūrah's name
   L.go('journal', { w: 0 });

@@ -14,7 +14,7 @@
     'ladybug-buddy': ['lbwing', 'lbshell'], 'elephant-buddy': ['trunk', 'espray'], 'butterfly-buddy': ['bfly'], 'camel-buddy': ['nod', 'chew'],
     'eagle-buddy': ['flap'], 'golden-hoopoe': ['flap', 'crest'], 'sky-falcon': ['flap'], 'kitten-buddy': ['tail', 'ear', 'yawn'],
     'bird-buddy': ['bhop', 'note'], 'pink-bird-buddy': ['bhop', 'note'], 'turtle-buddy': ['thead'], 'bee-buddy': ['bloop', 'buzz'], 'bunny-buddy': ['bunhop', 'earl', 'earr', 'nose'],
-    'toy-car': ['wheel', 'puff'], 'toy-train': ['wheel', 'steam'], 'speed-boat': ['wake', 'rock'], 'monster-truck': ['wheel', 'mbody'], 'toy-helicopter': ['heli'],
+    'toy-car': ['wheel', 'puff'], 'toy-train': ['wheel', 'smoke'], 'speed-boat': ['wake', 'rock'], 'monster-truck': ['wheel', 'mbody'], 'toy-helicopter': ['heli'],
     'toy-plane': ['loop'], 'toy-rocket': ['lift', 'boost'], 'space-rocket': ['lift', 'boost'], 'garden-bike': ['wheel', 'ding'],
     'fire-truck': ['wheel', 'ladder', 'spray'], 'ambulance': ['wheel'], 'police-car': ['wheel'], 'crane-truck': ['wheel', 'boom', 'hook'],
     'digger': ['wheel', 'scoop'], 'school-bus': ['wheel', 'stop', 'haz'],

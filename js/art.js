@@ -2674,10 +2674,10 @@
   PET['toy-train'] = {
     box: [-44, -78, 44, 2],
     d: () =>
-      shadow(40) + G(ball(-27, -66, 7, 6, '#ffffff', { hl: false }) + ball(-20, -74, 9, 7, '#ffffff', { hl: false }), cls('pr-bob')) +
+      shadow(40) + mv(G(ball(-27, -66, 7, 6, '#ffffff', { hl: false }) + ball(-20, -74, 9, 7, '#ffffff', { hl: false }), cls('pr-bob')), 'smoke', -24, -70, 20, OCC) +
       S(rr(-31, -56, 10, 20, 2), '#3a2f45') + S(rr(-38, -40, 46, 24, 11), '#3d7be0', rr(-38, -28, 46, 12, 6)) + S(rr(6, -58, 30, 44, 4), '#ef4b4b', rr(26, -58, 10, 44, 3)) +
       S(rr(2, -62, 38, 6, 3), '#3a2f45') + F(rr(12, -52, 16, 12, 3), '#bfe8ff') + S('M-38 -16L-44 -6L-30 -16Z', '#3a2f45') + C(-10, -28, 3, GOLD, sw(1.6)) +
-      wheel(-28, 9) + wheel(-6, 9) + wheel(22, 11) + mv(ball(-26, -61, 4.4, 4, '#ffffff', { hl: false }) + ball(-22, -66, 3, 2.8, '#ffffff', { hl: false }), 'steam', -25, -63, 9, HID + OCC),
+      wheel(-28, 9) + wheel(-6, 9) + wheel(22, 11),
   };
   PET['speed-boat'] = {
     box: [-44, -64, 44, 4],

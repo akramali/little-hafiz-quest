@@ -1375,3 +1375,48 @@ svg.lhq-art {
     animation: none !important;
   }
 }
+
+/* ---------- 2026-11-28 · v2.13.2: the toy train's own smoke drifts up and forms again (now and then; all the way
+   while walking). Before, a second puff came out on top of the smoke it is drawn with. ---------- */
+:is(.ex, .tbud) .pr-mv-smoke {
+  animation: mv-smoke 6.1s ease-out 1.6s infinite;
+}
+:is(.ex.walk, .tbud.eat, .tbud.leave, .tbud.enter) .pr-mv-smoke {
+  animation: mv-smoke-run 1.3s ease-out infinite;
+}
+@keyframes mv-smoke {
+  0%,
+  22%,
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+  8% {
+    opacity: 0;
+    transform: translate(-5px, -16px) scale(1.5);
+  }
+  9% {
+    opacity: 0;
+    transform: translateY(4px) scale(0.4);
+  }
+}
+@keyframes mv-smoke-run {
+  0%,
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+  45% {
+    opacity: 0;
+    transform: translate(-6px, -16px) scale(1.5);
+  }
+  50% {
+    opacity: 0;
+    transform: translateY(4px) scale(0.4);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.ex, .tbud) .pr-mv-smoke {
+    animation: none !important;
+  }
+}

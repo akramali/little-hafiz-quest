@@ -11563,11 +11563,7 @@ body.v-bedtime .scn {
   display: flex;
   gap: 10px;
 }
-.btpanel .row .btn:first-child {
-  flex: 0 0 64px;
-  color: #2b2340;
-  font-size: 24px;
-}
+
 /* goodnight: the scene dims slowly */
 .btend .btstage::after {
   content: '';
@@ -11819,10 +11815,7 @@ body.v-bedtime .scn {
   background: #ffd88a;
   color: #2b2340;
 }
-.btpanel .row .btn:first-child {
-  flex: 0 0 auto;
-  font-size: inherit;
-}
+
 .btscr .btpanel .ar {
   line-height: 1.6;
 }
@@ -11847,4 +11840,113 @@ body.v-bedtime .scn {
   flex: 0 1 auto;
   max-height: calc(min(100vw, 560px) * 1.1);
   margin-top: auto;
+}
+
+/* ---------- 2026-11-28 · v2.13.2 ---------- */
+/* the map's buttons, icons only: smaller boxes, still easy to tap (the world, the journal, My Tree) */
+.wr-toggle {
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border-radius: 16px;
+}
+.wr-toggle .wr-cur {
+  display: none;
+}
+.wr-mapic {
+  width: 34px;
+  height: 30px;
+}
+.jbtn {
+  top: calc(max(10px, env(safe-area-inset-top, 0px)) + 66px + 60px);
+}
+.tbtn {
+  top: calc(max(10px, env(safe-area-inset-top, 0px)) + 66px + 120px);
+}
+.jbtn svg {
+  width: 30px;
+  height: 30px;
+}
+.tbtn-ic {
+  width: 28px;
+  height: 32px;
+}
+/* the map's moon (after sunset): tap it for bedtime. It bobs gently, its z's float up and fade, more come */
+.mmoon {
+  position: fixed;
+  left: max(12px, env(safe-area-inset-left, 0px));
+  top: calc(max(10px, env(safe-area-inset-top, 0px)) + 74px);
+  z-index: 10;
+  width: 58px;
+  height: 58px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 236, 150, 0.55), rgba(255, 236, 150, 0));
+  cursor: pointer;
+}
+.mmoon .mm-moon {
+  position: absolute;
+  inset: 8px;
+  animation: mmbob 3.4s ease-in-out infinite alternate;
+}
+.mmoon .mm-moon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.mmoon .mz {
+  position: absolute;
+  left: 38px;
+  top: 10px;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 14px;
+  line-height: 1;
+  color: #7c5cf0;
+  text-shadow: 0 1px 0 #fff;
+  opacity: 0;
+  animation: mmz 3.6s ease-out infinite;
+}
+.mmoon .mz:nth-of-type(2) {
+  animation-delay: 1.2s;
+}
+.mmoon .mz:nth-of-type(3) {
+  animation-delay: 2.4s;
+}
+@keyframes mmbob {
+  from {
+    transform: translateY(2px);
+  }
+  to {
+    transform: translateY(-4px);
+  }
+}
+@keyframes mmz {
+  0% {
+    opacity: 0;
+    transform: translate(0, 4px) scale(0.6);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(14px, -26px) scale(1.25);
+  }
+}
+.wrail.open ~ .mmoon,
+body:has(.wrail.open) .mmoon {
+  visibility: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mmoon .mm-moon {
+    animation: none;
+  }
+  .mmoon .mz {
+    animation: none;
+  }
+  .mmoon .mz:first-of-type {
+    opacity: 1;
+  }
 }
