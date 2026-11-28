@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is a short public overview (highlights, install, privacy, credits); this file holds the detail.
 
-**Current version:** v2.12.20 (2026-11-27) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.13.0 (2026-11-27) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -210,6 +210,38 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
   100%), and the blossoms thin out as fruit comes (from 8 down to 2). Fruit kinds come in order (dates, figs, olives,
   pomegranates, grapes, apples, oranges, bananas; `ART.FRUIT_TYPES`, `ART.TREE_STAGE`): one more about every 7.5% (2 at
   33%, 3 at 40.5%, 4 at 48%, 5 at 55.5%, 6 at 63%, 7 at 70.5%), all eight by ~78% (v2.12.11; figs brighter for night).
+- **Bedtime by the campfire (v2.13.0):** a campfire beside the Garden's pavilion (`cfg.bedfire` in js/map.js, the
+  scenery kept clear of it), lit after sunset (`bedtimeOpen()`: `sunDown()`, the same local sunset as Auto theme;
+  `window.__bedtime` forces it in tests); in the day cold logs, a tap says it is lit after sunset. It opens
+  `V.bedtime`: `ART.bedtime(look, outfit)` draws the night (moon, stars, slow clouds, birds now and then, trees and
+  bushes in the firelight, soft grass, fireflies; css "bedtime"), the explorer sitting cross-legged on a mat
+  (`explorer(..., { sit: true })`: staff, shield and cape put down, the buddy beside, moving as everywhere) and the
+  Teacher sitting on his rug (`elder(mood, noStaff, sit)`). `BT_STEPS`: Al-Kāfirūn, Al-Ikhlāṣ, Al-Falaq, An-Nās,
+  three times each (✓ Said it fills a bead; ↶ takes one off or goes back a sūrah; after the third, "MāshāAllāh" and
+  the next), then the duʿā for lying down (بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا, once: the Sunnah order, Quls first),
+  then goodnight by name (the scene dims). Listen in the bar plays the sūrah with its Basmalah (`fabTarget`). No gifts,
+  no timer, nothing saved.
+- **The journal's hints (v2.13.0):** beside each sūrah's name: My Explorer's red "new" dot (`.newdot.jnew`) when some
+  of its pictures can be found now (a step done where they are, `jEarnable`), a faint 🔒 (`.jlock`) when none can yet
+  (first written out as text lines: too much room).
+- **Also in v2.13.0:** the start screen's clouds drift slowly but visibly (`lhq-cloud`: −110 → 150 and back, eased;
+  they moved about a pixel a second before); a tapped fruit tree's fruit lands spread out beside it (`dropFruit`: a
+  random spot, clear of fruit already lying there); at bedtime the Teacher is drawn about a third bigger than the
+  explorer (a grown-up with a child).
+- **Streak badges (v2.13.0):** `streak30` and `streak100` in `ART.BADGES` (15 badges now), a gold rosette with a flame
+  and the days; given by `giveStarBadges` when the best streak reaches 30 / 100 (also at the day it happens, from
+  `countDay`, with a toast). The streak card names the next one. They are stickers (`prof.stickers`), so backups and
+  links carry them as before.
+- **Tajwīd colours (v2.13.0):** `prefs.tajweed` (off at first; the Grown-up Corner, with a colour key). `tajweed.json`
+  (33 KB, in the offline files) is built by `tools/build_tajweed.py` from quran-tajweed by Collin Fair (CC BY 4.0,
+  credited in the README and the app's sources): its annotations over the Tanzil text are aligned onto our text
+  (difflib on a normalised form) and widened to whole letters (all 2,547 placed); `[start, end, rule]` per
+  "sūrah:āyah". `tajWordsFor` colours each word (`.tj-m6/m4/mp/m2/gh/q/s`, brighter on dim). Shown where an āyah is
+  read (Look & Repeat's card, Read, the grown-up checks, the Teacher's questions); not in Word Steps, Stepping Stones
+  or the puzzles (their colours are each word's place), nor a chosen āyah in Read. The data has no tafkhīm; qalqalah
+  and madd ʿāriḍ at an āyah's end are marked as when stopping.
+- **Text fix (v2.13.0):** Āyat al-Kursī's «يَـُٔودُهُۥ» had its two vowels swapped (yā' with ḍammah, hamzah with
+  fatḥah); now as in the KFGQPC and Tanzil texts. Found by the tajwīd alignment.
 - **Buddies and worn things move (v2.12.20):** parts that move on their own are groups of class `pr-mv-<name>` made
   with `mv(m, k, x, y, R, a)` in js/art.js: an unseen square (fill/stroke none) of half-side R centred on (x, y) makes the
   group's box, so CSS `transform-box: fill-box; transform-origin: 50% 50%` turns it about that point (R must reach past

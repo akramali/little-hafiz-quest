@@ -349,7 +349,7 @@ svg.lhq-art {
 
 /* ---------- splash scene ---------- */
 .lhq-splash .sp-cloud {
-  animation: lhq-cloud 90s linear infinite;
+  animation: lhq-cloud 90s ease-in-out infinite; /* (v2.13.0: further, so they are seen drifting slowly) */
 }
 .lhq-splash .sp-bird {
   animation: lhq-spbird 30s linear infinite;
@@ -365,9 +365,9 @@ svg.lhq-art {
   animation: lhq-beacon 2.8s ease-in-out infinite;
 }
 @keyframes lhq-cloud {
-  0% { transform: translateX(0); }
-  50% { transform: translateX(90px); }
-  100% { transform: translateX(0); }
+  0% { transform: translateX(-110px); }
+  50% { transform: translateX(150px); }
+  100% { transform: translateX(-110px); }
 }
 @keyframes lhq-spbird {
   0% { transform: translate(0, 0); opacity: 0; }

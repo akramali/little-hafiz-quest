@@ -3056,7 +3056,7 @@
     const t = TIPS[rootOf(id)];
     return t ? '<path class="pr-mv-spark" data-o="1" d="' + star4(t[0], t[1], 7) + '" fill="#ffffff" stroke="#f2b12a" stroke-width="1.2" opacity="0"/>' : '';
   };
-  function explorerInner(look, outfit, back, mood) {
+  function explorerInner(look, outfit, back, mood, sit) {
     look = normLook(look);
     const hjId = outfit && outfit.hijab && ART[outfit.hijab] && ART[outfit.hijab].hj ? outfit.hijab : null,
       hs = hjId ? ART[hjId].hj : null;
@@ -3065,6 +3065,7 @@
       mess = sad ? scruffy(look, back) : null;
     const o = normOutfit(outfit, look),
       v = back ? 'back' : 'front',
+      _sit = sit && !back && Object.assign(o, { stick: null, shield: null, cape: null }), // (v2.13.0) sitting by the campfire: the staff, shield and cape put down
       sk = SKIN[look.skin],
       T = (s) => (o[s] ? BYID[o[s]].tier : 0),
       fxOf = (s) => (o[s] ? fxm(T(s), ART[o[s]].fx) : ''),
@@ -3082,7 +3083,11 @@
       auras += aura(n(a[0]), n(a[1]), n(a[2]), n(a[3]));
     });
     const leg = legOf(ART[o.pants]) + ART[o.shoes].shoe(sk, back) + (back ? '' : fxOf('shoes')); // (v2.12.1: from behind, the heels)
-    const legs = back ? G(leg, cls('ex-leg-l')) + G(G(leg, MIR), cls('ex-leg-r')) : G(leg, cls('ex-leg-r')) + G(G(leg, MIR), cls('ex-leg-l'));
+    const legs = _sit ? '' : back ? G(leg, cls('ex-leg-l')) + G(G(leg, MIR), cls('ex-leg-r')) : G(leg, cls('ex-leg-r')) + G(G(leg, MIR), cls('ex-leg-l'));
+    // (v2.13.0) sitting cross-legged: the legs crossed in front (the pants' colour), the shoes tucked in at the middle
+    const pc = (ART[o.pants] && ART[o.pants].pants) || '#3d5a9e',
+      shin = S('M44 282Q42 262 62 256Q84 251 99 262Q106 272 98 284Q72 294 44 282Z', pc, 'M86 256Q99 262 99 268Q104 276 96 284Q90 286 84 287Q100 276 86 256Z'),
+      lap = _sit ? G(ART[o.shoes].shoe(sk), ' transform="translate(38 108) scale(0.6)"') + G(G(ART[o.shoes].shoe(sk), ' transform="translate(38 108) scale(0.6)"'), MIR) + shin + G(shin, MIR) + L('M92 262L92 284', dk(pc, 0.3), 1.6) : '';
     const sleeve = S(SLEEVE, top.sl, SLEEVE_SH) + S(CUFF, top.cf);
     const hand = ball(HAND[0], HAND[1], HAND[2], HAND[2], sk, { hl: false, dx: 0.2, dy: 0.25 });
     const stickArt = o.stick ? G(G(ART[o.stick].ex() + fxOf('stick') + tipSpark(o.stick), STICK_TILT), cls('ex-stick')) : '',
@@ -3118,7 +3123,7 @@
     if (mood === 'shine') auras = aura(92, 170, 90, 120) + auras;
     return OUT(
       G(auras, cls('ex-aura')) + EF(92, 291, 36, 5.5, INK, 0.16) + (o.pet ? EF(PET_AT[0], 291, 24, 4.5, INK, 0.14) : '') +
-        G((back ? '' : cape + wingsF) + legs + G(body, cls('ex-body')), cls('ex-all')) + pet + (shine ? OUT(shine, 1.2) : '')
+        G((back ? '' : cape + wingsF) + legs + (_sit ? G(G(body, cls('ex-body')), ' transform="translate(0 30)"') + lap : G(body, cls('ex-body'))), cls('ex-all')) + pet + (shine ? OUT(shine, 1.2) : '')
     );
   }
   function explorer(look, outfit, opts) {
@@ -3126,15 +3131,15 @@
     const back = opts.view === 'back',
       extra = String(opts.cls || '').replace(/[^\w -]/g, '');
     const mood = opts.mood === 'sad' || opts.mood === 'shine' ? opts.mood : '';
-    return '<svg class="ex lhq-art ex-' + (back ? 'back' : 'front') + (opts.walk ? ' walk' : '') + (mood ? ' ex-' + mood : '') + (extra ? ' ' + extra : '') + '" viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' +
-      explorerInner(look, outfit, back, mood) + '</svg>';
+    return '<svg class="ex lhq-art ex-' + (back ? 'back' : 'front') + (opts.walk ? ' walk' : '') + (opts.sit ? ' ex-sit' : '') + (mood ? ' ex-' + mood : '') + (extra ? ' ' + extra : '') + '" viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' +
+      explorerInner(look, outfit, back, mood, !!opts.sit) + '</svg>';
   }
 
   /* The Wise Elder: a kind elder who knows the whole Qur'an by heart (viewBox 0 0 200 300, feet at the bottom like
      the explorer): a white kufi and beard, a midnight-blue robe with a gold trim and a woven belt, and a staff
      topped by an eight-pointed star (as marks the quarters in a muṣḥaf) with a green gem. His robe sways gently.
      mood: '' | 'hit' (surprised, he staggers) | 'happy' (eyes smiling). noStaff: he gave it away (hands tucked in his sleeves). */
-  function elder(mood, noStaff) {
+  function elder(mood, noStaff, sit) {
     const skin = '#f6c49c',
       robeC = '#2c3f7a',
       gold = '#ffcf3f',
@@ -3172,7 +3177,10 @@
       S('M74 104Q74 150 100 156Q126 150 126 104Q114 120 100 120Q86 120 74 104Z', '#f4f1ea', 'M112 116Q126 112 126 104Q126 146 104 155Q122 136 112 116Z') +
       cheeks(83, 104, 117, 104, 6) + eyes + S('M80 86Q88 80 96 86Q88 84 80 89Z', '#eeeae0') + S('M120 86Q112 80 104 86Q112 84 120 89Z', '#eeeae0') +
       P('M88 116Q94 110 100 114Q106 110 112 116Q106 118 100 116Q94 118 88 116Z', '#e7e2d6', sw(1.8)) + mouth;
-    return '<svg class="lhq-art elder ' + (mood || '') + '" viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' + OUT(g) + '</svg>';
+    // (v2.13.0) sitting cross-legged by the campfire: lower down, his robe folded over his lap
+    const seated = sit ? EF(100, 294, 58, 6, INK, 0.16) + G(g, ' transform="translate(0 42)"') +
+      S('M46 294Q42 268 66 260Q100 253 134 260Q158 268 154 294Q100 300 46 294Z', robeC, 'M126 258Q158 268 154 294Q144 296 132 297Q150 280 126 258Z') + L('M54 282Q100 272 146 282', gold, 2) : '';
+    return '<svg class="lhq-art elder ' + (mood || '') + (sit ? ' elder-sit' : '') + '" viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' + OUT(sit ? seated : g) + '</svg>';
   }
 
   /* The Stranger (v2.7.24, back from v2.6.0–2.6.10): a hooded figure in a starry cloak with glowing eyes and a staff
@@ -3887,7 +3895,7 @@
   /* A campfire beside each memorized sūrah on the map (viewBox 0 0 60 60, standing on y=54). It burns down over
      three weeks until the sūrah is practised: 5 roaring (a big fire, side flames, sparks), 4 strong, 3 steady,
      2 low, 1 embers, 0 out (grey logs, a wisp of smoke). */
-  function campfire(lvl) {
+  function campfire(lvl, noGlow) {
     const logs = (c1, c2) => S(limb(10, 52, 50, 44, 4.2, 4.2), c1) + S(limb(10, 44, 50, 52, 4.2, 4.2), c2) + EF(30, 55, 22, 3, INK, 0.15);
     const flame = (k, dx) =>
       G(
@@ -3900,7 +3908,7 @@
       S('M32 -8Q18 14 16 33Q16 50 30 50Q44 50 45 33Q46 18 38.5 4.5Q37 13 32.8 12.8Q28.6 3 32 -8Z', '#ff7a3d', null, 'M22 40Q20 28 27 16Q24 30 26 42Z') +
       F('M31 13Q42 28 39 40Q37 49 30 49Q23 49 21 40Q19 28 31 13Z', '#ffd23f');
     const embers = [[31, -13], [41, 1], [20, 4], [35, -19], [25, -6]].map(([x, y], j) => '<circle class="cf-spark" cx="' + x + '" cy="' + y + '" r="1.5" fill="' + (j % 2 ? '#ffb347' : '#ffd23f') + '" stroke="none" style="animation-delay:' + [0, 0.5, 0.9, 1.3, 0.25][j] + 's"/>').join('');
-    const glow = (ry, o) => EF(30, 50 - ry * 0.55, ry * 1.3, ry, '#ffb347', o);
+    const glow = (ry, o) => (noGlow ? '' : EF(30, 50 - ry * 0.55, ry * 1.3, ry, '#ffb347', o)); // (v2.13.0: the bedtime scene has its own light)
     const smoke = (o) =>
       G(L('M27 40Q22 30 28 22Q33 15 27 6', '#a9a2b8', 2.6) + L('M34 38Q38 30 34 23Q31 17 36 10', '#bdb7c9', 2.2), cls('cf-smoke')) + (o ? G(EF(30, 4, 6, 4, '#c9c3d4', 0.7) + EF(36, -4, 4, 3, '#d6d1df', 0.6), cls('cf-smoke')) : '');
     let g;
@@ -3911,6 +3919,56 @@
     else if (lvl === 1) g = logs('#7a5038', '#8a5a35') + EF(30, 47, 11, 4, '#ff5d3d', 0.75) + CF(24, 46, 2, '#ffb347') + CF(35, 45, 1.6, '#ffd23f') + G(L('M30 40Q26 32 31 26Q35 20 31 14', '#b8b0c4', 2.2), cls('cf-smoke'));
     else g = logs('#8f8a96', '#a39fab') + smoke(true); // burned out: grey logs and smoke drifting up
     return '<svg class="lhq-art campfire" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' + OUT(g, 2.2) + '</svg>';
+  }
+
+  /* (v2.13.0) Bedtime by the campfire, in the Hidden Garden after sunset: a night sky (moon, stars, slow clouds, now
+     and then birds flying home), trees and bushes in the firelight, soft grass; the explorer sitting on a mat on one
+     side, the Teacher on his rug on the other, a gentle campfire between them, fireflies. viewBox 0 0 400 440.
+     (moving parts: css/game.css "bedtime"; the explorer's buddy beside them moves as it does everywhere) */
+  function bedtime(look, outfit) {
+    const nest = (svg, x, y, w, h, vis) => svg.replace('<svg ', '<svg x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '"' + (vis ? ' overflow="visible"' : ' style="overflow:hidden"') + ' ');
+    const sky = uid('bts'),
+      fire = uid('btf'),
+      moon = uid('btm');
+    const stars = [[30, 40, 1.6], [76, 22, 1.2], [118, 58, 1.8], [160, 30, 1.1], [204, 64, 1.5], [246, 24, 1.3], [270, 104, 1.1], [362, 40, 1.4], [384, 112, 1.2], [20, 118, 1.2], [92, 100, 1], [146, 132, 1.3], [226, 140, 1], [352, 160, 1.1], [58, 168, 1]];
+    const tree = (x, by, w, h, c) => S(rr(x - 4, by - 26, 8, 28, 3), '#2a2433', null, null, sw(1.6)) + S(cloudD(x, by - 20, w, h, 5), c, null, null, sw(1.6)) + F(crescent(x, by - 20 - h * 0.45, w * 0.46, h * 0.52, w * 0.1, h * 0.14), dk(c, 0.2));
+    const bush = (x, by, w, c) => S(cloudD(x, by, w, w * 0.5, 4), c, null, null, sw(1.6));
+    const tuft = (x, y, c) => L('M' + x + ' ' + y + 'l-3 -8M' + x + ' ' + y + 'l1 -10M' + x + ' ' + y + 'l4 -7', c, 1.6);
+    const g =
+      '<defs><linearGradient id="' + sky + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0d1033"/><stop offset=".62" stop-color="#232662"/><stop offset="1" stop-color="#3b3474"/></linearGradient>' +
+      '<radialGradient id="' + fire + '" cx="200" cy="392" r="250" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ffb05a" stop-opacity=".55"/><stop offset=".35" stop-color="#ff9a4a" stop-opacity=".22"/><stop offset="1" stop-color="#ff9a4a" stop-opacity="0"/></radialGradient>' +
+      '<radialGradient id="' + moon + '"><stop offset="0" stop-color="#fff3b0" stop-opacity=".35"/><stop offset="1" stop-color="#fff3b0" stop-opacity="0"/></radialGradient></defs>' +
+      '<rect width="400" height="440" fill="url(#' + sky + ')" stroke="none"/>' +
+      stars.map(([x, y, r], j) => '<circle class="bt-star" cx="' + x + '" cy="' + y + '" r="' + r + '" fill="#fff6d8" stroke="none" style="animation-delay:-' + (j * 0.7) % 5 + 's"/>').join('') +
+      // the moon, its glow breathing slowly
+      '<circle class="bt-moonglow" cx="322" cy="78" r="58" fill="url(#' + moon + ')" stroke="none"/>' + S(crescent(322, 78, 22, 22, -9, 5), '#ffe9a8', null, null, sw(1.6)) +
+      // clouds drifting slowly
+      G(F(cloudD(110, 92, 120, 30, 5), '#323a7c', 0.85) + F(cloudD(104, 86, 70, 16, 3), '#3d4689', 0.8), cls('bt-cloud')) +
+      G(F(cloudD(280, 150, 110, 24, 4), '#2c3372', 0.8), ' class="bt-cloud bt-cloud2"') +
+      // a few birds flying home, now and then
+      G(L('M0 0q5 -5 10 0q5 -5 10 0M26 -10q4 -4 8 0q4 -4 8 0M18 12q4 -4 8 0q4 -4 8 0', '#1a1d45', 1.8), ' class="bt-birds"') +
+      // far hills, then trees and bushes either side (lit by the fire on the inner side)
+      F('M0 252Q60 214 130 236Q200 204 276 232Q340 210 400 236V320H0Z', '#1d2452') +
+      tree(34, 262, 74, 70, '#1f4a40') + tree(88, 250, 58, 54, '#245548') + tree(372, 258, 78, 74, '#1f4a40') + tree(318, 248, 56, 52, '#245548') +
+      // soft grass
+      F('M0 278Q200 258 400 278V440H0Z', '#25463a') + F('M0 330Q200 300 400 330V440H0Z', '#2a4f40') +
+      bush(16, 300, 56, '#2a5a46') + bush(384, 302, 60, '#2a5a46') + bush(140, 284, 40, '#2c5c48') + bush(262, 284, 44, '#2c5c48') +
+      [[46, 352], [120, 330], [292, 334], [356, 356], [190, 318], [236, 322]].map(([x, y]) => tuft(x, y, '#4f7a4a')).join('') +
+      // the fire's warm light over the trees, bushes and grass
+      '<rect class="bt-glow" width="400" height="440" fill="url(#' + fire + ')" stroke="none"/>' +
+      // the explorer's mat, the Teacher's rug
+      S('M8 426Q6 416 26 414L128 414Q148 416 146 426Q146 438 128 438L26 438Q8 438 8 426Z', '#8a5fb0', null, null, sw(1.8)) + L('M20 420L134 420M20 432L134 432', '#c3a6e0', 1.6) +
+      S(rr(250, 410, 146, 26, 8), '#9a2f3e', null, null, sw(1.8)) + P(rr(256, 414, 134, 18, 5), 'none', ' stroke="#ffcf3f" stroke-width="1.6"') +
+      // stones round the fire, the fire, its warm glow on the ground
+      [[150, 418], [166, 426], [186, 430], [212, 430], [234, 426], [250, 418]].map(([x, y]) => S(rr(x - 9, y - 6, 18, 11, 5), '#6f6880', null, null, sw(1.6))).join('') +
+      nest(campfire(4, true), 140, 300, 120, 120, true) +
+      // the Teacher and the explorer, sitting
+      // (the Teacher a grown-up, the explorer a child: he is drawn about a third bigger)
+      nest(elder('', true, true), 214, 116, 214, 321) +
+      nest(explorer(look, outfit, { sit: true }), 0, 198, 160, 240) +
+      // fireflies
+      [[60, 250], [124, 212], [300, 214], [352, 262], [94, 300], [328, 312], [200, 236], [260, 270]].map(([x, y], j) => '<g class="bt-fly" style="animation-delay:-' + n(j * 1.7) + 's"><circle cx="' + x + '" cy="' + y + '" r="6" fill="#f3ff9a" opacity=".25" stroke="none"/><circle cx="' + x + '" cy="' + y + '" r="2" fill="#f7ffb8" stroke="none"/></g>').join('');
+    return '<svg class="lhq-art btscene" viewBox="0 0 400 440" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' + OUT(g, 2) + '</svg>';
   }
 
   /* =================================================================================================
@@ -4160,6 +4218,20 @@
   const WORLD_BADGE_NAMES = ['First Steps', 'Little Treasures', 'Shining Sands', 'Sun & Moon', 'Starry Path', 'Sky Kingdom', 'The Great Climb'];
   WORLD_BADGE_NAMES.forEach((nm, wi) => BADGES.push({ id: 'world' + (wi + 1), name: nm, world: wi + 1, badge: true }));
   BADGES.push({ id: 'world8', name: 'The Hidden Garden', world: 8, badge: true }); // (v2.12.0)
+  // (v2.13.0) streak badges, rare: 30 and 100 days in a row on the trail (the best streak counts)
+  BADGES.push({ id: 'streak30', name: '30 days in a row', streak: 30, badge: true }, { id: 'streak100', name: '100 days in a row', streak: 100, badge: true });
+  const STREAK_C = { 30: '#ff7a3d', 100: '#7a5cd6' };
+  // a gold rosette, ribbons, the badge's colour inside, a flame and the number of days
+  const streakBadgeArt = (d) => {
+    const c = STREAK_C[d],
+      ros = 'M' + [...Array(32).keys()].map((i) => { const a = (i * Math.PI) / 16 - Math.PI / 2, r = i % 2 ? 34.5 : 39; return n(50 + r * Math.cos(a)) + ' ' + n(44 + r * Math.sin(a)); }).join('L') + 'Z';
+    return P('M34 60L24 96L36 90L44 99L50 64Z', c) + P('M66 60L76 96L64 90L56 99L50 64Z', dk(c, 0.18)) +
+      S(ros, GOLD, null, null, sw(2)) + ball(50, 44, 29, 29, c) + C(50, 44, 24, 'none', ' stroke="' + lt(c, 0.5) + '" stroke-width="1.8"') +
+      S('M50 16Q63 28 59 40Q66 37 65 29Q74 42 67 52Q61 59 50 59Q39 59 34 51Q29 41 39 31Q40 39 46 41Q41 28 50 16Z', '#ffb02e', 'M60 33Q74 42 67 52Q61 59 52 59Q66 50 60 33Z') +
+      F('M50 34Q57 42 55 48Q53 55 50 55Q45 55 44 50Q43 44 47 40Q48 45 51 45Q47 39 50 34Z', '#fff3b0') +
+      S(rr(33, 58, 34, 13, 6), '#fffaf0', null, null, sw(1.8)) +
+      '<text x="50" y="68.6" text-anchor="middle" font-family="\'Baloo 2\', ui-rounded, system-ui, sans-serif" font-weight="800" font-size="' + (d >= 100 ? 11.5 : 12.5) + '" fill="#2b2340" stroke="none">' + d + '</text>';
+  };
   const GARDEN_PAL = { sky: ['#ffe2a8', '#d9f5e4'], ground: ['#9fe08a', '#4fb06a'], accent: '#2fb89a' };
   const CREST = 'M50 8L84 20Q86 60 50 92Q14 60 16 20Z',
     CREST_IN = 'M50 15.5L77.4 25.4Q78 57.6 50 83.6Q22 57.6 22.6 25.4Z';
@@ -4220,7 +4292,7 @@
   };
   const STKBY = Object.create(null);
   STK.forEach((s) => (STKBY[s[0]] = s[2]));
-  BADGES.forEach((b) => (STKBY[b.id] = b.world ? () => worldBadgeArt(b.world - 1) : () => badgeArt(b.stars, b.c)));
+  BADGES.forEach((b) => (STKBY[b.id] = b.world ? () => worldBadgeArt(b.world - 1) : b.streak ? () => streakBadgeArt(b.streak) : () => badgeArt(b.stars, b.c)));
   SEASONS.forEach((x) => (STKBY[x.id] = x.year ? () => yearArt(x.kind, x.year) : SEASON_ART[x.id]));
   /* ---------- the Hidden Garden's stickers (v2.12.0): its journal, riddles and surprises (with gold and shimmer editions) ---------- */
   const GARDEN_STK = [
@@ -5001,6 +5073,7 @@
     bridge,
     fruit,
     elder,
+    bedtime,
     stranger,
     campfire,
     garland,

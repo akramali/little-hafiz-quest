@@ -259,6 +259,9 @@
       // the gate to the Hidden Garden, by the summit (or, in the Garden, the gate back, at its start)
       const gateAt = cfg.gate ? (cfg.gate.at === 'start' ? { x: Math.min(width - 70, L.startPt.x + 110), y: L.startPt.y + 6 } : { x: Math.min(width - 62, L.summit.x + szS * 0.3), y: L.summit.y + 112 }) : null;
       if (gateAt) boxes.push({ x0: gateAt.x - 52, x1: gateAt.x + 52, y0: gateAt.y - 112, y1: gateAt.y + 10 });
+      // (v2.13.0) the bedtime campfire beside the pavilion: scenery keeps clear of it
+      const fireAt = cfg.bedfire ? { x: L.summit.x - szS * 0.6, y: L.summit.y + 60 } : null;
+      if (fireAt) boxes.push({ x0: fireAt.x - 44, x1: fireAt.x + 44, y0: fireAt.y - 70, y1: fireAt.y + 16 });
       const exAt = exPos();
       boxes.push(boxOf(exAt.x, exAt.y, 72, 108));
       // each stop's campfire burns on its outer side once the sūrah is memorized: scenery keeps clear of that spot
@@ -378,6 +381,12 @@
       html.push(
         `<div class="msummit${cfg.topProp ? ' mtop-' + cfg.topProp : ''}"${cfg.topProp ? ` data-act="poke" data-k="${cfg.topProp}" role="button" aria-label="Pavilion"` : ''} data-x="${L.summit.x.toFixed(1)}" data-y="${(L.summit.y + 60).toFixed(1)}" style="left:${(L.summit.x - sz / 2).toFixed(1)}px;top:${(L.summit.y + 60 - topH).toFixed(1)}px;width:${sz}px;height:${topH.toFixed(0)}px">${cfg.topProp ? thinLines(ART.props[cfg.topProp] || '', 0.5) : ART.props['peak-summit'] || ''}</div>`,
       );
+      // (v2.13.0) the bedtime campfire beside the Garden's pavilion (lit after sunset)
+      if (fireAt) {
+        const fx = fireAt.x,
+          fy = fireAt.y;
+        html.push(`<button class="mbedfire${cfg.bedfire.lit ? ' lit' : ''}" data-act="bedtime" data-x="${fx.toFixed(1)}" data-y="${fy.toFixed(1)}" style="left:${(fx - 28).toFixed(1)}px;top:${(fy - 52).toFixed(1)}px" aria-label="${cfg.bedfire.lit ? 'The bedtime campfire' : 'The bedtime campfire, lit after sunset'}">${cfg.bedfire.svg}</button>`);
+      }
       if (gateAt)
         html.push(
           `<button class="mgate8 ${cfg.gate.at === 'start' ? 'back' : ''}" data-act="${cfg.gate.act}" data-x="${gateAt.x.toFixed(1)}" data-y="${gateAt.y.toFixed(1)}" style="left:${(gateAt.x - 50).toFixed(1)}px;top:${(gateAt.y - 106).toFixed(1)}px" aria-label="${cfg.gate.label}"><span class="mg8-art">${ART.gardenGate ? ART.gardenGate(cfg.gate.at === 'start') : '🚪'}</span></button>`, // (v2.12.1: no label, just the gate)

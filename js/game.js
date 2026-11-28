@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.12.20';
+  const VERSION = '2.13.0';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -213,6 +213,7 @@
     hearts: true,
     actions: false, // the "Do it" actions start off (v2.4.4); grown-ups can switch them on
     fullscreen: false,
+    tajweed: false, // (v2.13.0) tajwīd colours on the Arabic
     pzrtl: false, // Picture Puzzle from right to left
     wordmean: false, // the meaning of each word (Word Steps, the muṣḥaf)
   };
@@ -429,7 +430,7 @@
   function cleanPrefs(o) {
     const out = Object.assign({}, DEFAULT_PREFS);
     if (!o || typeof o !== 'object') return out;
-    ['meaning', 'translit', 'sfx', 'audio', 'hearts', 'actions', 'fullscreen', 'pzrtl', 'wordmean'].forEach((k) => {
+    ['meaning', 'translit', 'sfx', 'audio', 'hearts', 'actions', 'fullscreen', 'pzrtl', 'wordmean', 'tajweed'].forEach((k) => {
       if (typeof o[k] === 'boolean') out[k] = o[k];
     });
     // your Teacher and the Stranger, under the names of each age: 'teacher' (v2.8.0 on), 'elder' (v2.6.11–v2.7.23),
@@ -1355,6 +1356,11 @@
   function fabTarget() {
     const v = st.view,
       s = S[st.i];
+    if (v === 'bedtime') {
+      const b = BT_STEPS[st.step],
+        q = b && b.n && BYN[b.n];
+      return q ? { key: 'bt:' + b.n, label: q.name, items: [[1, 1], ...q.ayat.map((_, k) => [b.n, k + 1])] } : null;
+    }
     if (!s || s.silent || !['surah', 'learn', 'path', 'order', 'words', 'mushaf', 'elder'].includes(v)) return null; // (no Listen where there's no recitation yet)
     const one = (k) => ({ key: `${s.n}:${k}`, label: `Āyah ${k + 1}`, items: [[s.n, k + 1]] });
     const many = (ks, label) => ({ key: `${s.n}:${ks.join(',')}`, label, items: ks.map((k) => [s.n, k + 1]) });
@@ -1556,6 +1562,77 @@
     return out;
   }
   const firstWord = (ar) => wordsOf(ar)[0];
+  /* (v2.13.0) Tajwīd colours (the Grown-up Corner, off at first): tajweed.json (tools/build_tajweed.py, from
+     quran-tajweed by Collin Fair, CC BY 4.0) gives each āyah's rules as [start, end, rule] over its Arabic here, whole
+     letters with their marks. Colour families as in colour-coded tajwīd muṣḥafs: the madds (6, 4–5, 2/4/6, 2),
+     ghunnah (with ikhfāʾ, iqlāb and idghām with ghunnah), qalqalah, and letters not pronounced (grey). Only where an
+     āyah is shown to read (Look & Repeat, Read, the grown-up checks, the Teacher's questions): the word games keep
+     their colour for each word's place. Loaded when first needed. */
+  let TAJ = null,
+    tajBusy = false;
+  const TAJ_FAM = { madd_6: 'm6', madd_muttasil: 'm4', madd_munfasil: 'mp', madd_246: 'mp', madd_2: 'm2', ghunnah: 'gh', idghaam_ghunnah: 'gh', ikhfa: 'gh', ikhfa_shafawi: 'gh', iqlab: 'gh', idghaam_shafawi: 'gh', qalqalah: 'q', hamzat_wasl: 's', lam_shamsiyyah: 's', silent: 's', idghaam_no_ghunnah: 's', idghaam_mutajanisayn: 's', idghaam_mutaqaribayn: 's' };
+  const TAJ_ORDER = ['m6', 'm4', 'mp', 'm2', 'gh', 'q', 's']; // (where two rules meet on a letter, the first wins)
+  function loadTaj() {
+    if (TAJ || tajBusy || !prefs.tajweed) return;
+    tajBusy = true;
+    fetch('tajweed.json')
+      .then((r) => r.json())
+      .then((d) => {
+        TAJ = d;
+        tajBusy = false;
+        render();
+      })
+      .catch(() => (tajBusy = false));
+  }
+  const tajMemo = new Map();
+  // the words of an āyah (as wordsOf gives them), each as HTML with its tajwīd letters coloured; null when off
+  function tajWordsFor(key, ar) {
+    if (!prefs.tajweed || !TAJ) return null;
+    const spans = TAJ.ayat[key];
+    if (!spans) return null;
+    if (tajMemo.has(key + ar)) return tajMemo.get(key + ar);
+    const fam = new Array(ar.length).fill('');
+    spans.forEach(([b, e, r]) => {
+      const f = TAJ_FAM[TAJ.rules[r]];
+      for (let i = b; i < e && i < ar.length; i++) if (f && (!fam[i] || TAJ_ORDER.indexOf(f) < TAJ_ORDER.indexOf(fam[i]))) fam[i] = f;
+    });
+    let at = 0;
+    const out = wordsOf(ar).map((w) => {
+      const i0 = ar.indexOf(w, at);
+      if (i0 < 0) return w;
+      at = i0 + w.length;
+      let html = '',
+        run = '',
+        rf = '';
+      for (let i = i0; i < at; i++) {
+        if (fam[i] !== rf) {
+          if (run) html += rf ? `<span class="tj tj-${rf}">${run}</span>` : run;
+          run = '';
+          rf = fam[i];
+        }
+        run += ar[i];
+      }
+      return html + (run ? (rf ? `<span class="tj tj-${rf}">${run}</span>` : run) : '');
+    });
+    tajMemo.set(key + ar, out);
+    return out;
+  }
+  // the colours' key, under the setting
+  const TAJ_KEY = `<div class="tajkey">${[['m6', 'Madd 6'], ['m4', 'Madd 4–5'], ['mp', 'Madd 2/4/6'], ['m2', 'Madd 2'], ['gh', 'Ghunnah'], ['q', 'Qalqalah'], ['s', 'Not said']].map(([c, t]) => `<span><i class="tj-${c}"></i>${t}</span>`).join('')}</div>`;
+  const tajKey = (s, k) => (s.sura || s.n) + ':' + ((s.from || 1) + k);
+  const tajWords = (s, a) => {
+    const k = s && !s.asma ? s.ayat.indexOf(a) : -1;
+    return k < 0 ? null : tajWordsFor(tajKey(s, k), a.ar);
+  };
+  const tajAyah = (s, a) => {
+    const t = tajWords(s, a);
+    return t ? t.join(' ') : a.ar;
+  };
+  // the Basmalah before a sūrah: Al-Fātiḥah's first āyah, when it is the same text
+  const tajBism = () => {
+    const f = S.find((x) => x.sura === 1 && (x.from || 1) === 1);
+    return f && f.ayat[0].ar === BISM ? tajWordsFor('1:1', BISM) : null;
+  };
   /* (v2.12.1) Word Steps takes a long āyah (over PIECE_OVER words, like Āyat al-Kursī's 50) one sentence at a time:
      cut at its own pause marks (ۖ ۗ ۚ …), a short sentence joined to the next (pieces of about 4 to 10 words), a long
      one without marks cut evenly. [from, to] word ranges (to included); a short āyah is one piece. */
@@ -1645,7 +1722,7 @@
   function arHTML(s, a, k, opts = {}) {
     return `<div class="ar-box">
     <div class="ar-label">${opts.label || '📖 Grown-up reads'}</div>
-    <div class="ar ${opts.blur ? 'blur' : ''} ${opts.sm ? 'sm' : ''}" lang="ar" ${opts.quiet ? '' : `data-act="say" data-n="${s.n}" data-k="${k}"`}>${a.ar} ${s.asma ? '✦' : `﴿${toArNum(k + 1)}﴾`}</div>
+    <div class="ar ${opts.blur ? 'blur' : ''} ${opts.sm ? 'sm' : ''}" lang="ar" ${opts.quiet ? '' : `data-act="say" data-n="${s.n}" data-k="${k}"`}>${tajAyah(s, a)} ${s.asma ? '✦' : `﴿${toArNum(k + 1)}﴾`}</div>
     ${prefs.translit && !opts.blur ? `<div class="tr">${a.tr}</div>` : ''}
     ${prefs.meaning && !opts.blur ? `<div class="mean">💬 ${a.kid}</div>` : ''}
   </div>`;
@@ -1883,6 +1960,9 @@
     if (st.view === 'splash' || st.view === 'summit') {
       setTopColor(SPLASH_SKY[+night]);
       document.documentElement.style.setProperty('--pagebg', SPLASH_GROUND[+night]);
+    } else if (st.view === 'bedtime') {
+      setTopColor('#0d1033'); // (v2.13.0: the night sky over the campfire)
+      document.documentElement.style.setProperty('--pagebg', '#151a3d');
     } else if (st.view === 'tree') {
       setTopColor(night ? '#141a3f' : '#8fd0ff'); // (my tree's sky, right up under the status bar)
       document.documentElement.style.setProperty('--pagebg', night ? '#4d8456' : '#69bb59'); // (the grass, darker at night)
@@ -2266,6 +2346,7 @@
       artWorld: () => GARDEN_W,
       badgeNum: (s) => (s.asma ? '99' : s.sura),
       topProp: 'garden-pavilion',
+      bedfire: { lit: bedtimeOpen(), svg: ART.campfire(bedtimeOpen() ? 3 : 0) }, // (v2.13.0)
       startLabel: '🌷 Start',
       gate: { at: 'start', act: 'gardenout', label: 'Back to the Summit' },
       night: isNight(),
@@ -2541,7 +2622,7 @@
       <div class="lchead chainhead"><span class="lctags">${tag(s, ck)}</span><span class="lcbtns">${speedChip()}${loopBtn()}</span></div>
       <div class="chain">${L.map((x, j) => `<button class="link ${j < st.chain ? 'lit' : j === st.chain ? 'cur' : ''} ${!c.all && st.p > 0 && j === 0 ? 'bridge' : ''}" data-act="chainstep" data-j="${j}" aria-label="Āyah ${x + 1}${j < st.chain ? ', said: tap to go back to it' : ''}"><span class="num">${x + 1}</span>${pics(s.ayat[x])}</button>`).join('')}</div>
       ${prefs.actions ? `<div style="text-align:center">${gest(cur)}</div>` : ''}
-      <details class="adult"><summary>👁️ Grown-up check</summary><div class="ar sm" lang="ar">${cur.ar}</div></details>
+      <details class="adult"><summary>👁️ Grown-up check</summary><div class="ar sm" lang="ar">${tajAyah(s, cur)}</div></details>
       <div class="row"><button class="btn go wide" data-act="chainstep">✅ Said it! Next</button></div>`;
     } else {
       const blur = st.phase === 'alone' && !st.peek;
@@ -2580,9 +2661,10 @@
     const s = S[st.i];
     const ayat = s.ayat
       .map((a, k) => {
-        const sel = st.sel === k;
+        const sel = st.sel === k,
+          tw = sel ? null : tajWords(s, a); // (v2.13.0: tajwīd colours; a chosen āyah keeps its word colours)
         const words = wordsOf(a.ar)
-          .map((w, j) => (sel ? `<span class="mw" style="${wv(WCOL[j % WCOL.length])}">${w}</span>` : w))
+          .map((w, j) => (sel ? `<span class="mw" style="${wv(WCOL[j % WCOL.length])}">${w}</span>` : tw ? tw[j] : w))
           .join(' ');
         return `<span class="mayah ${sel ? 'sel' : ''}" data-k="${k}">${words} <span class="mnum">${s.asma ? '✦' : `﴿${toArNum(ayNo(s, k))}﴾`}</span></span>`;
       })
@@ -2594,7 +2676,7 @@
     <div class="card mushaf ${focus ? 'focusing' : ''}">
       <div class="mtitle" lang="ar">${sTitle(s)}</div>
       ${s.bism === false && !s.opening ? '' : `<div class="mbism" lang="ar" dir="rtl"><span class="mayah ${st.sel === -1 ? 'sel' : ''}" data-k="-1">${wordsOf(s.opening ? s.opening.ar : BISM)
-        .map((w, j) => (st.sel === -1 ? `<span class="mw" style="${wv(WCOL[j % WCOL.length])}">${w}</span>` : w))
+        .map((w, j, all, tb = !s.opening && st.sel !== -1 && tajBism()) => (st.sel === -1 ? `<span class="mw" style="${wv(WCOL[j % WCOL.length])}">${w}</span>` : tb ? tb[j] : w))
         .join(' ')}</span></div>`}
       <div class="mtext" lang="ar" dir="rtl">${ayat}</div>
     </div>
@@ -3094,7 +3176,7 @@
       ${slots}
     </div>
     <div class="deck pzdeck">${left.map((j) => `<div class="pcard pzt ${st.sel === j ? 'sel' : ''}" data-k="${j}" role="button" aria-label="Puzzle piece">${pieceSVG(J.cells[j].path, pzFill(items[j], j))}<span class="pzbody">${items[j].html}</span></div>`).join('')}</div>
-    ${saying && !big ? `<details class="adult"><summary>👁️ Grown-up check · ${saying.label}</summary><div class="ar sm" lang="ar">${saying.ar || s.ayat[saying.say[0]].ar}</div></details>` : ''}
+    ${saying && !big ? `<details class="adult"><summary>👁️ Grown-up check · ${saying.label}</summary><div class="ar sm" lang="ar">${saying.ar || tajAyah(s, s.ayat[saying.say[0]])}</div></details>` : ''}
   </div>`;
   };
 
@@ -3254,8 +3336,8 @@
     } else if (tab === 'badges') {
       // (v2.11.0) the badges, worn on the other side of the shirt from the sticker; still to win: a shadow. Star badges
       // for every 100 stars, world badges (v2.11.1) for every world memorized
-      const badges = ART.BADGES.map((b) => (prof.stickers.includes(b.id) ? stickerCell(b.id, prof) : `<div class="icell locked goldlock"><span class="iart sil">${ART.sticker(b.id)}</span><small>${b.world ? `Memorize World ${b.world}` : `At ${b.stars} ⭐`}</small></div>`)).join('');
-      body = `<div class="wrow">${badges}</div><p class="wnote2">For every 100 stars and every world memorized · tap to pin one on</p>`;
+      const badges = ART.BADGES.map((b) => (prof.stickers.includes(b.id) ? stickerCell(b.id, prof) : `<div class="icell locked goldlock"><span class="iart sil">${ART.sticker(b.id)}</span><small>${b.world ? `Memorize World ${b.world}` : b.streak ? `${b.streak} days in a row` : `At ${b.stars} ⭐`}</small></div>`)).join('');
+      body = `<div class="wrow">${badges}</div><p class="wnote2">For stars, worlds and long streaks · tap to pin one on</p>`;
     } else {
       // won things newest first, then the starting clothes, then the ones still to find
       const list = ITEMS.filter((it) => it.slot === tab && forKid(it, prof) && (!it.gold || prof.items.includes(it.id) || prof.items.includes(it.base)));
@@ -3994,6 +4076,7 @@
       ${tg('wordmean', 'Show word meanings', 'The meaning of each word, in Word Steps and Read (📖). From the Quranic Arabic Corpus')}
       ${tg('translit', 'Show transliteration', "Latin letters, for helpers who can't read Arabic: under each āyah, and over each word in Word Steps and Read")}
       ${tg('actions', 'Show the actions', 'The “Do it” movement for each āyah. Switch off for more room on screen')}
+      ${tg('tajweed', 'Tajwīd colours', 'Colours the Arabic by tajwīd rule, where an āyah is shown to read')}${prefs.tajweed ? TAJ_KEY : ''}
     </div>
     <div class="sheet">
       <h3>🔊 Sounds</h3>
@@ -4338,12 +4421,13 @@
     prof.pending.push({ k: 's', id: pool[(Math.random() * pool.length) | 0].id, m: 1 });
     return true;
   }
-  /* a star badge for every 100 stars (100 stars, 200 stars …), and (v2.11.1) a world badge for every world memorized */
+  /* a star badge for every 100 stars (100 stars, 200 stars …), (v2.11.1) a world badge for every world memorized, and
+     (v2.13.0) a streak badge at 30 and at 100 days in a row (the best streak: a long one in the past counts too) */
   function giveStarBadges(prof) {
     const t = totalStars(prof);
     let got = '';
     ART.BADGES.forEach((b) => {
-      const due = b.world ? S.filter((s) => worldOf(s) === b.world - 1).every((s) => surahDone(s, prof)) : b.stars <= t;
+      const due = b.world ? S.filter((s) => worldOf(s) === b.world - 1).every((s) => surahDone(s, prof)) : b.streak ? (prof.best || 0) >= b.streak : b.stars <= t;
       if (!due || prof.stickers.includes(b.id) || prof.pending.some((g) => g.id === b.id)) return;
       prof.pending.push({ k: 's', id: b.id });
       got = b.name;
@@ -4417,6 +4501,7 @@
         <li><b>Qur'an text</b> (Uthmani): ${ext('https://quranenc.com', 'The Noble Qur\'an Encyclopedia')}, via ${ext('https://github.com/risan/quran-json', 'quran-json')} (CC BY-SA 4.0)</li>
         <li><b>Recitation</b>: Alafasy, Al-Husary, Al-Minshawi and Abdul Basit, from ${ext('https://everyayah.com', 'EveryAyah.com')}; Alafasy (live, California) from ${ext('https://quranicaudio.com', 'QuranicAudio.com')}</li>
         <li><b>Word timings</b>: ${ext('https://quran.com', 'Quran.com')}; for the California recording, ${ext('https://github.com/QUD-Technologies/quranic-universal-audio', 'Qur’anic Universal Audio')} (CC BY 4.0, cut to the game’s āyāt)</li>
+        <li><b>Tajwīd colours</b>: ${ext('https://github.com/cpfair/quran-tajweed', 'quran-tajweed')} by Collin Fair (CC BY 4.0), realigned to this text and recoloured</li>
         <li><b>Word-by-word meanings and transliteration</b>: the ${ext('https://corpus.quran.com', 'Quranic Arabic Corpus')} (GNU GPL v3), via the ${ext('https://api-docs.quran.com', 'Quran.com API')}</li>
         <li><b>Simple meanings, memory cues and āyah transliterations</b>: written for this game</li>
         <li><b>Fonts</b>: Amiri Quran and Baloo 2 (SIL Open Font License)</li>
@@ -4478,7 +4563,7 @@
       art = ART.sticker(g.id);
       const bd = STICKER[g.id];
       name = bd.badge ? `${bd.name} badge` : bd.name + ' sticker';
-      sub = bd.world ? `For memorizing every sūrah of World ${bd.world}! MāshāAllāh! Pin it on your explorer to show it off.` : bd.stars ? `For collecting ${bd.stars} stars! MāshāAllāh! Pin it on your explorer to show it off.` : 'Stick it on your explorer, or keep it in your sticker book.';
+      sub = bd.world ? `For memorizing every sūrah of World ${bd.world}! MāshāAllāh! Pin it on your explorer to show it off.` : bd.streak ? `For ${bd.streak} days in a row on the trail! MāshāAllāh! Pin it on your explorer to show it off.` : bd.stars ? `For collecting ${bd.stars} stars! MāshāAllāh! Pin it on your explorer to show it off.` : 'Stick it on your explorer, or keep it in your sticker book.';
     }
     save();
     sfx.open();
@@ -4691,6 +4776,13 @@
     if (prof.dayT[1] < 60 || prof.streak[0] === d) return;
     prof.streak = [d, prof.streak[0] === yesterday() ? prof.streak[1] + 1 : 1];
     prof.best = Math.max(prof.best, prof.streak[1]);
+    // (v2.13.0) 30 and 100 days in a row: a rare streak badge
+    const sb = ART.BADGES.find((b) => b.streak === prof.streak[1]);
+    if (sb && giveStarBadges(prof)) {
+      save();
+      toast(`🏅 ${prof.streak[1]} days in a row! A special badge is waiting for you`);
+      return;
+    }
     // every 7 days in a row on the trail: a little gift
     if (prof.streak[1] % 7 === 0 && (giveSurprise(prof, false, true) || giveLevelGift(prof, true))) {
       save();
@@ -4707,7 +4799,7 @@
     m.innerHTML = `<div class="card streakcard"><button class="cardx" data-act="cno" aria-label="Close">✕</button>
       <div class="streakart">🏃</div><h3>${days(now)} on the trail!</h3>
       <p class="eldsay">Your best so far: <b>${days(Math.max(prof.best, now))}</b> in a row.</p>
-      <p class="saveinfo center">🎁 ${next === 7 && now ? 'A gift for every 7 days in a row. Keep going!' : `${days(next)} more for a gift. Learn a little every day!`}</p></div>`;
+      <p class="saveinfo center">🎁 ${next === 7 && now ? 'A gift for every 7 days in a row. Keep going!' : `${days(next)} more for a gift. Learn a little every day!`}${(prof.best || 0) < 100 ? `<br>🏅 A rare badge at ${(prof.best || 0) < 30 ? 30 : 100} days in a row.` : ''}</p></div>`;
     m.classList.add('show');
   }
   // the streak still alive: learned today or yesterday
@@ -5398,6 +5490,7 @@
         prefs[b.dataset.k] = !prefs[b.dataset.k];
         save();
         if (prefs.translit || prefs.wordmean) loadWords();
+        loadTaj(); // (v2.13.0)
         sfx.tap();
         if (b.dataset.k === 'audio') stopAudio();
         render();
@@ -5471,6 +5564,51 @@
         break;
       case 'jpage':
         turnPage(+b.dataset.w, +b.dataset.w > st.w ? 1 : -1);
+        break;
+      // (v2.13.0) bedtime by the campfire
+      case 'bedtime':
+        if (!bedtimeOpen()) {
+          sfx.tap();
+          toast('🌙 The bedtime campfire is lit after sunset');
+          break;
+        }
+        sfx.tap();
+        go('bedtime', { step: 0, n: 0, wait: false });
+        break;
+      case 'btsaid': {
+        const bs = BT_STEPS[st.step];
+        if (!bs || st.wait) break;
+        sfx.tap();
+        st.n++;
+        if (st.n < (bs.dua ? 1 : 3)) {
+          render();
+          break;
+        }
+        // all said: a moment's "MāshāAllāh", then on to the next
+        st.wait = true;
+        stopAudio();
+        render();
+        setTimeout(() => {
+          if (st.view !== 'bedtime' || !st.wait) return;
+          st.wait = false;
+          st.step++;
+          st.n = 0;
+          render();
+        }, 1600);
+        break;
+      }
+      case 'btback':
+        if (st.wait) break;
+        if (st.n) st.n--;
+        else if (st.step) {
+          st.step--;
+          st.n = BT_STEPS[st.step].dua ? 0 : 2;
+        }
+        stopAudio();
+        render();
+        break;
+      case 'btbye':
+        go('map');
         break;
       case 'jhint': {
         const k = b.dataset.k;
@@ -6289,8 +6427,15 @@
       .filter((o) => o.d < 520)
       .sort((p, q) => p.d - q.d)[0];
     const side = near ? (+near.a.dataset.x < tx ? -1 : 1) : Math.random() < 0.5 ? -1 : 1;
-    const fx = tx + side * (tree.offsetWidth * 0.32 + 12),
-      fy = ty + 2;
+    // (v2.13.0) a little spread out: each fruit lands at its own spot beside the tree, clear of the others there
+    const lying = [...layer.querySelectorAll('.mfruit')].map((o) => [+o.dataset.x, +o.dataset.y]);
+    let fx = 0,
+      fy = 0;
+    for (let t = 0; t < 8; t++) {
+      fx = tx + side * (tree.offsetWidth * 0.26 + 8 + Math.random() * 26);
+      fy = ty - 4 + Math.random() * 14;
+      if (lying.every(([x, y]) => Math.hypot(x - fx, y - fy) > 18)) break;
+    }
     const f = document.createElement('div');
     f.className = 'mfruit';
     f.dataset.f = FRUIT_OF[tree.dataset.k];
@@ -7606,6 +7751,40 @@
     true,
   );
   addEventListener('scroll', dropChip, { passive: true });
+  /* (v2.13.0) Bedtime by the campfire: in the Hidden Garden, after sunset. The Teacher names each of the four Quls in
+     turn, to say three times together with a grown-up (✓ Said it fills a bead; Back takes one off, or goes back a
+     sūrah), then the duʿā for lying down, then goodnight. Listen (in the bar) plays the sūrah. No gifts, no timer. */
+  const bedtimeOpen = () => (window.__bedtime != null ? !!window.__bedtime : sunDown());
+  const BT_STEPS = [{ n: 109 }, { n: 112 }, { n: 113 }, { n: 114 }, { dua: true }];
+  const BT_DUA = { ar: 'بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا', tr: 'Bismika Allāhumma amūtu wa aḥyā', en: 'In Your name, O Allah, I die and I live.' };
+  const BT_AGAIN = ['', 'Again, gently.', 'One more time.'];
+  V.bedtime = () => {
+    const prof = P(),
+      b = BT_STEPS[st.step],
+      q = b && b.n && BYN[b.n],
+      need = b && b.dua ? 1 : 3,
+      who = prof.name ? esc(prof.name) : 'little explorer';
+    const say = !b
+      ? `Goodnight, ${who}. Sleep well, in shā’ Allāh. 🌙`
+      : st.wait
+        ? 'MāshāAllāh.'
+        : b.dua
+          ? 'Now lie down, and say the duʿā for sleeping.'
+          : st.n
+            ? `${BT_AGAIN[st.n]} <b>${q.name}</b>`
+            : `Let’s say <b>${q.name}</b> together, three times.`;
+    const dots = BT_STEPS.map((x, j) => `<i class="${j < st.step || !b ? 'done' : j === st.step ? 'on' : ''}"></i>`).join('');
+    const beads = b ? `<div class="btbeads" aria-label="${st.n} of ${need}">${[...Array(need).keys()].map((j) => `<i class="${j < st.n ? 'on' : ''}"></i>`).join('')}</div>` : '';
+    const panel = !b
+      ? `<button class="btn go wide" data-act="btbye">🌙 Goodnight</button>`
+      : `${b.dua ? `<div class="btdua"><p class="ar" dir="rtl" lang="ar">${BT_DUA.ar}</p><p class="tr">${BT_DUA.tr}</p><p class="en">${BT_DUA.en}</p></div>` : `<div class="btname"><b>${q.name}</b><span class="ar" dir="rtl" lang="ar">${q.ar}</span></div>`}
+        ${beads}<div class="row"><button class="btn" data-act="btback" ${st.step || st.n ? '' : 'disabled'} aria-label="Back">↶</button><button class="btn go wide" data-act="btsaid" ${st.wait ? 'disabled' : ''}>✓ Said it</button></div>`;
+    return `<div class="screen btscr${b ? '' : ' btend'}">
+    ${bar('Bedtime', '', 'map')}
+    <div class="btstage">${ART.bedtime(prof.look, drawnOutfit(prof))}<div class="btsay">${say}</div></div>
+    <div class="btpanel"><div class="btdots">${dots}</div>${panel}</div>
+  </div>`;
+  };
   V.journal = () => {
     const prof = P(),
       wi = inGarden ? GARDEN_W : st.w != null && st.w !== GARDEN_W ? st.w : Math.max(0, worldOf(S[prof.at] || S[0])),
@@ -7620,8 +7799,14 @@
     const things = pg.map
       .map((k) => `<button class="jit ${has('p:' + k) ? 'got' : ''}" data-act="jhint" data-k="p:${k}"><span class="jpic">${ART.props[k]}</span><small>${has('p:' + k) ? PROP_NAME[k] : '?'}</small></button>`)
       .join('');
+    // (v2.13.0) beside a sūrah's name: the red "new" dot (as in My Explorer) when some of its pictures can be found
+    // now, a faint 🔒 while none can yet (no step finished where they are)
+    const jtip = (x) => {
+      const left = x.es.filter((e) => !has('e:' + e));
+      return left.some((e) => jEarnable('e:' + e, prof)) ? '<i class="newdot jnew" aria-label="New things to find"></i>' : left.length ? '<span class="jlock" aria-label="Finish a step first">🔒</span>' : '';
+    };
     const suras = pg.suras
-      .map((x) => `<div class="jsura"><button class="jsname" data-act="jgo" data-n="${x.n}">${BYN[x.n].name} ›</button><div class="jems">${x.es.map((e) => `<span class="jem ${has('e:' + e) ? 'got' : ''}">${e}</span>`).join('')}</div></div>`)
+      .map((x) => `<div class="jsura"><button class="jsname" data-act="jgo" data-n="${x.n}">${BYN[x.n].name} ›${jtip(x)}</button><div class="jems">${x.es.map((e) => `<span class="jem ${has('e:' + e) ? 'got' : ''}">${e}</span>`).join('')}</div></div>`)
       .join('');
     return `<div class="screen jscr">
     ${bar(inGarden ? 'The Garden Journal' : 'My Journal', inGarden ? `${got} of ${keys.length} found` : `${prof.found.length} of ${JKEYS.size} found`, 'map', riddleBtn(prof))}
@@ -8213,9 +8398,9 @@
       panel = `<div class="eldend">${r.html}${g ? `<button class="giftbtn dgift" data-act="opengift"><span class="rattle">${giftArt(g)}</span><b>A gift for you!</b><small>Tap to open</small></button>` : ''}</div><div class="row"><button class="btn ${g ? '' : 'go'} wide" data-act="elddone">🗺️ Back to the map</button></div>`;
     } else {
       const a = s.ayat[q.k],
-        words = wordsOf(a.ar);
-      const shown = q.kind === 'finish' ? words.slice(0, q.cut).join(' ') + ' …' : a.ar;
-      const answer = q.kind === 'finish' ? a.ar : s.ayat[q.k + 1].ar;
+        words = tajWords(s, a) || wordsOf(a.ar);
+      const shown = q.kind === 'finish' ? words.slice(0, q.cut).join(' ') + ' …' : tajAyah(s, a);
+      const answer = q.kind === 'finish' ? tajAyah(s, a) : tajAyah(s, s.ayat[q.k + 1]);
       say = st.ack || (q.kind === 'next' ? `${s.asma ? 'Line' : 'Āyah'} ${q.k + 1} of ${s.name}… <b>what comes after it?</b>` : `<b>Finish this ${AY(s)}</b> of ${s.name}!`);
       panel = `<div class="card eldq">
         <div class="ar-label">📖 Grown-up reads the question</div>
@@ -8689,9 +8874,10 @@
   if (prefs.translit || prefs.wordmean) loadWords();
   document.getElementById('defs').innerHTML = ART.defs();
   render();
+  loadTaj(); // (v2.13.0: when the tajwīd colours are on)
   loadReciters().then(() => loadTimings(reciter().id).catch(() => {}));
   registerOffline();
   if (linkCode) setTimeout(() => openSync(linkCode, `${appURL()}#sync=${linkCode}`), 400);
   if (justUpdated) loadChangelog().then(() => st.view === 'splash' && render());
-  window.__lhq = { st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder, world: elderWorld, size: testSize, tap: tapElder }, sunDown, journal: JKEYS, countDay, installSteps: showInstallSteps, cleanStore, cleanProfile, syncCtx, openSync, markNow, fabTarget, riddleNow, riddleCount, occasion, treeInfo, hungry: () => treeHungry, treeReset: () => (treeFedAt = 0), critterFor, riddleSet: (k, clue) => riddleOn && ((riddleOn.k = k), clue && (riddleOn.clue = clue)), riddleKey: () => riddleOn && riddleOn.k, bonusSticker: giveBonusSticker, surprise: giveSurprise, levelGift: giveLevelGift, lastKind, garden: (v) => (v != null && (inGarden = !!v), inGarden), gardenGift: giveGardenGift, riddleKeys: (rz) => RIDDLE_SETS(rz).flat(), riddleSets: (rz) => RIDDLE_SETS(rz), pieces: piecesOf, chainNow, prefs: () => prefs, achievements, winnable }; // for testing in the browser console
+  window.__lhq = { starBadges: giveStarBadges, st: () => st, store: () => store, go, player, elder: { strikeFor, blocksOf, WORLD_THROWS, maybe: maybeElder, world: elderWorld, size: testSize, tap: tapElder }, sunDown, journal: JKEYS, countDay, installSteps: showInstallSteps, cleanStore, cleanProfile, syncCtx, openSync, markNow, fabTarget, riddleNow, riddleCount, occasion, treeInfo, hungry: () => treeHungry, treeReset: () => (treeFedAt = 0), critterFor, riddleSet: (k, clue) => riddleOn && ((riddleOn.k = k), clue && (riddleOn.clue = clue)), riddleKey: () => riddleOn && riddleOn.k, bonusSticker: giveBonusSticker, surprise: giveSurprise, levelGift: giveLevelGift, lastKind, garden: (v) => (v != null && (inGarden = !!v), inGarden), gardenGift: giveGardenGift, riddleKeys: (rz) => RIDDLE_SETS(rz).flat(), riddleSets: (rz) => RIDDLE_SETS(rz), pieces: piecesOf, chainNow, prefs: () => prefs, achievements, winnable }; // for testing in the browser console
 })();

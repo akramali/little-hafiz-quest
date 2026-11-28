@@ -1,7 +1,12 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.12.20",
+ "latest": "2.13.0",
  "versions": [
+  { "v": "2.13.0", "notes": [
+   "Bedtime by the campfire: after sunset in the Hidden Garden, the four Quls and the duʿā for sleeping",
+   "Rare badges for 30 and 100 days in a row; the journal shows what’s new to find",
+   "Tajwīd colours in the Grown-up Corner (off at first)"
+  ] },
   { "v": "2.12.20", "notes": [
    "Buddies come alive: lights flash, wheels turn, the elephant trumpets… tap yours!",
    "Worn things move as you walk: bobbles bounce, light-up soles flash, shields shine"

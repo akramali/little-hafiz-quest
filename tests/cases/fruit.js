@@ -27,10 +27,22 @@
   log('after: fruit left', d.querySelectorAll('.mfruit').length, '| still busy', !!best.a._busy, '| stroll running', best.a.firstElementChild.getAnimations().filter((x) => x.playState === 'running').length);
   ok('the animal ate the fruit and went back to strolling', !d.querySelectorAll('.mfruit').length && !best.a._busy);
   // tap again 5 times quickly: at most 4 fruits at once, no errors
-  for (let i = 0; i < 6; i++) t.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  const t2 = () => d.querySelector(`.mprop[data-k="${want}"][data-x="${t.dataset.x}"][data-y="${t.dataset.y}"]`) || t; // (the map may have been drawn afresh)
+  for (let i = 0; i < 6; i++) t2().dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
   await wait(200);
   log('rapid taps: fruits', d.querySelectorAll('.mfruit').length);
   ok('at most 4 fruits at once', d.querySelectorAll('.mfruit').length <= 4);
+  // (v2.13.0) spread out: each at its own spot, none on top of another (taps a moment apart)
+  await wait(6000); // (the rapid taps' fruit eaten first)
+  for (let i = 0; i < 3; i++) {
+    t2().dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+    await wait(350);
+    log('tap', i, 'fruits', d.querySelectorAll('.mfruit').length);
+  }
+  const spots = [...d.querySelectorAll('.mfruit')].map((f) => [+f.dataset.x, +f.dataset.y]);
+  const close = spots.some((p, i) => spots.some((q, j) => j > i && Math.hypot(p[0] - q[0], p[1] - q[1]) < 10));
+  log('fruit spots', spots.map((p) => p.map((v) => v.toFixed(0)).join(',')).join(' | '));
+  ok('fruits from several taps land spread out, not on one spot', spots.length > 1 && !close);
   ok('no game errors', !errs.length, errs.slice(0, 3).join('; ')); log('errors', errs);
   done();
 })();
