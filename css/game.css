@@ -12187,3 +12187,11 @@ body:has(.wrail.open) .mmoon {
   background: linear-gradient(#0b0e2e, rgba(11, 14, 46, 0));
   pointer-events: none;
 }
+
+/* ---------- 2026-11-28 · v2.13.5 ---------- */
+/* bedtime: Listen keeps its place on the duʿā (no recitation there): hidden, not taken out, so the bar's height and
+   its title don't shift a few pixels between a sūrah and the duʿā */
+.btscr .bar .listen:not(.show) {
+  display: flex;
+  visibility: hidden;
+}

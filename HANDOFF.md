@@ -3,7 +3,7 @@
 Read this first in a new session. It is kept up to date with every release (see "Release flow" below).
 `README.md` is a short public overview (highlights, install, privacy, credits); this file holds the detail.
 
-**Current version:** v2.13.4 (2026-11-28) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
+**Current version:** v2.13.5 (2026-11-28) · **Live:** https://akramali.github.io/little-hafiz-quest/ ·
 **Repo:** https://github.com/akramali/little-hafiz-quest (branch `main`; `v1` keeps the retired classic version)
 
 ---
@@ -221,6 +221,10 @@ The test fixture's memorized sūrahs have campfires lit two days ago (roaring, b
   the next), then the duʿā for lying down (بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا, once: the Sunnah order, Quls first),
   then goodnight by name (the scene dims). Listen in the bar plays the sūrah with its Basmalah (`fabTarget`). No gifts,
   no timer, nothing saved.
+- **Bedtime, v2.13.5:** the duʿā is «اللَّهُمَّ بِاسْمِكَ أَمُوتُ وَأَحْيَا» (Allāhumma bismika amūtu wa aḥyā; al-Bukhārī and
+  Muslim, from al-Barā'), the user's choice of the two authentic wordings. On the duʿā the bar's Listen is hidden but
+  keeps its place (`.btscr .bar .listen:not(.show)`), so Back and the title never shift between steps (they moved a few
+  pixels). The scene's trees a little taller.
 - **Bedtime, v2.13.4:** the Garden's campfire by the pavilion is always lit and opens bedtime at any time of day
   (the way in when wanted); the map's sleepy moon still shows only after sunset (`bedtimeOpen()`).
 - **Bedtime, v2.13.3:** the scene is drawn once (render); a tap or swipe changes only the Teacher's words (`btSay`,

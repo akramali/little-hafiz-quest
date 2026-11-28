@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '2.13.4';
+  const VERSION = '2.13.5';
   const DATA = window.LHQ_DATA;
   if (!DATA || !Array.isArray(DATA.surahs)) throw new Error('Little Hafiz Quest: js/data.js did not load.');
   const ART = window.LHQ_ART;
@@ -7765,7 +7765,8 @@
   const bedtimeOpen = () => (window.__bedtime != null ? !!window.__bedtime : sunDown());
   // (v2.13.1) the three Quls, then the duʿā; each one can be chosen at any time (its tab, or a swipe on the scene)
   const BT_STEPS = [{ n: 112, tab: 'Ikhlāṣ' }, { n: 113, tab: 'Falaq' }, { n: 114, tab: 'Nās' }, { dua: true, tab: 'Duʿā' }];
-  const BT_DUA = { ar: 'بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا', tr: 'Bismika Allāhumma amūtu wa aḥyā', en: 'In Your name, O Allah, I die and I live.' };
+  // the duʿā for sleeping (al-Bukhārī and Muslim, from al-Barā'; v2.13.5: Allāhumma first, as the user prefers)
+  const BT_DUA = { ar: 'اللَّهُمَّ بِاسْمِكَ أَمُوتُ وَأَحْيَا', tr: 'Allāhumma bismika amūtu wa aḥyā', en: 'O Allah, in Your name I die and I live.' };
   const BT_AGAIN = ['', 'Once more:', 'One last time:'];
   const btNeed = (j) => (BT_STEPS[j].dua ? 1 : 3);
   const btDone = (j) => st.cnt[j] >= btNeed(j);

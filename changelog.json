@@ -1,7 +1,11 @@
 {
  "about": "What changed in each version, for families: short, only what affects play. The game shows the newest entry only (js/game.js).",
- "latest": "2.13.4",
+ "latest": "2.13.5",
  "versions": [
+  { "v": "2.13.5", "notes": [
+   "Bedtime: the duʿā as Allāhumma bismika…",
+   "Small visual tweaks"
+  ] },
   { "v": "2.13.4", "notes": [
    "Bedtime any time: tap the campfire by the Hidden Garden’s pavilion"
   ] },

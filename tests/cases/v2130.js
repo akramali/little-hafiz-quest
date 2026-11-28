@@ -38,7 +38,9 @@
   const say = () => d.querySelector('.btsay').textContent;
   ok('the Teacher names Al-Ikhlāṣ first (three Quls), three beads to fill, four little dots (no tabs; v2.13.3)', /Al-Ikhlāṣ/.test(say()) && d.querySelectorAll('.btbeads i').length === 3 && d.querySelectorAll('.btdots [data-act=btgo]').length === 4 && !d.querySelector('.bttabs'));
   const scene0 = d.querySelector('.btscene'),
-    btn0 = d.querySelector('.btbtn').getBoundingClientRect().top;
+    btn0 = d.querySelector('.btbtn').getBoundingClientRect().top,
+    barAt = () => ['.bar [data-act=back]', '.bar .bar-title'].map((q) => { const r = d.querySelector(q).getBoundingClientRect(); return Math.round(r.left) + ',' + Math.round(r.top); }).join(' '),
+    bar0 = barAt();
   ok('…Listen plays it (Basmalah first)', JSON.stringify(w.__lhq.fabTarget().items.slice(0, 2)) === '[[1,1],[112,1]]', JSON.stringify(w.__lhq.fabTarget() && w.__lhq.fabTarget().items.slice(0, 2)));
   const said = async () => {
     d.querySelector('[data-act=btsaid]').click();
@@ -56,8 +58,9 @@
   // any one, at any time: the duʿā's tab
   d.querySelector('[data-act=btgo][data-j="3"]').click();
   await wait(200);
-  ok('a dot chooses any of them: the duʿā (said once, no Listen)', L.st().step === 3 && /Bismika/.test(d.querySelector('.btbody').textContent) && d.querySelectorAll('.btbeads i').length === 1 && !w.__lhq.fabTarget());
+  ok('a dot chooses any of them: the duʿā (said once, no Listen)', L.st().step === 3 && /Allāhumma bismika/.test(d.querySelector('.btbody').textContent) && /اللَّهُمَّ بِاسْمِكَ/.test(d.querySelector('.btbody').textContent) && d.querySelectorAll('.btbeads i').length === 1 && !w.__lhq.fabTarget());
   ok('…the panel the same height: the button where it was', Math.abs(d.querySelector('.btbtn').getBoundingClientRect().top - btn0) < 1);
+  ok('…and the bar: Back and the title exactly where they were (Listen hidden, not taken out; v2.13.5)', barAt() === bar0, barAt() + ' vs ' + bar0);
   await said();
   await wait(1800);
   ok('…said: on to the next not said yet (Al-Falaq)', L.st().step === 1, L.st().step);
