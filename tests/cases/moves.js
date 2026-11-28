@@ -96,6 +96,9 @@
   // stickers stay still (and the yawn stays hidden)
   const cat = A.sticker('cat');
   ok('the cat sticker has no moving parts', !/pr-mv-/.test(cat), cat.slice(0, 80));
+  // (v2.13.6) no sticker keeps a moving part's unseen square: its white edge drew it as a square border
+  const sq = A.STICKERS.filter((x) => /<rect x="[^"]*" y="[^"]*" width="[^"]*" height="[^"]*" fill="none" stroke="[^"]*"\/>/.test(A.sticker(x.id))).map((x) => x.id);
+  ok('no sticker has a square border (camel, cat, turtle, bee, butterfly and their editions)', sq.length === 0, sq.join(' '));
   // walking: wheels turn, lamps flash in turn, the bobble bounces, the soles flash
   prof.look.hair = 'short';
   prof.look.kid = 'boy';

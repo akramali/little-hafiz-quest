@@ -191,7 +191,10 @@
     return s + C(cx, cy, n(r * 0.36), mid || '#ffd23f', sw(2));
   }
   // Recolor markup to one flat color (silhouettes, die-cut sticker borders, masks).
+  // (v2.13.6) the unseen squares that set a moving part's turning point (mv): never part of an outline or a sticker
+  const PIVOT = /<rect x="[^"]*" y="[^"]*" width="[^"]*" height="[^"]*" fill="none" stroke="none"\/>/g;
   function flat(m, col, w) {
+    m = m.replace(PIVOT, '');
     m = m.replace(/ (fill|stroke)="(?!none")[^"]*"/g, ' $1="' + col + '"').replace(/ (?:stroke-|fill-)?opacity="[^"]*"/g, '').replace(/ class="[^"]*"/g, '');
     if (w) m = m.replace(/ stroke-width="[^"]*"/g, ' stroke-width="' + w + '"').replace(/ stroke="none"/g, ' stroke="' + col + '"');
     return m;
@@ -4225,7 +4228,7 @@
   // stickers stay still (only buddies move): drop the flapping, blinking and swaying from their art
   // (v2.12.7) every motion stripped (a spinning windmill's blades turned away from the sticker's white edge, which is a
   // still copy); the hidden shut eyes stay hidden by their display attribute
-  const stillArt = (m) => m.replace(/ class="(?:lhq-(?!art\b)[a-z-]+|pr-[a-z-]+|cf-[a-z-]+|wglow)"/g, '');
+  const stillArt = (m) => m.replace(/ class="(?:lhq-(?!art\b)[a-z-]+|pr-[a-z-]+|cf-[a-z-]+|wglow)"/g, '').replace(PIVOT, '');
   /* Star badges: one for every 100 stars, each its own color. Earned, never given at random. */
   const BADGE_C = ['#d9905a', '#b9c6d8', '#ffc83d', '#5fd27a', '#5fb2ff']; // 100 … 500 (the Juz has 505 stars)
   const badgeArt = (m, c) =>
